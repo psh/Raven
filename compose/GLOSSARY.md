@@ -6,7 +6,7 @@ the way compose-ui does for Skia and Mosaic does for terminals.
 ## Language
 
 **compose-raven**:
-The Kotlin/Native library that drives Raven's retained widgets from the Compose runtime.
+The family of Kotlin/Native modules that drives Raven's retained widgets from the Compose runtime, the way the Compose name covers runtime, ui, foundation and material.
 _Avoid_: compose-ui (that is the Skia-bound JetBrains/Google layer), Raven bindings (those are the per-language C API wrappers in `bindings/`)
 
 **Compose runtime**:
@@ -16,3 +16,7 @@ _Avoid_: Compose (unqualified), Jetpack Compose
 **Raven widget**:
 An object in Raven's retained widget tree, addressed by a handle; Raven owns its layout and painting.
 _Avoid_: control, view, component
+
+**raven-native**:
+The lowest compose-raven module: Raven's C API as seen from Kotlin/Native, with no Compose in it. The modules above it wrap it, so apps never see it.
+_Avoid_: compose-raven (that is the family), the binding (ambiguous with the generated bindings in `bindings/`)
