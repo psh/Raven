@@ -91,10 +91,11 @@ Decided in: [Layering over cinterop](issues/0006-cinterop-layering.md).
 
 ## 4. Application host
 
-`fun ravenApplication(title: String, width: Int, height: Int, content: @Composable RavenApplicationScope.() -> Unit)`
+`fun ravenApplication(title: String, width: Int, height: Int, customHeader: Boolean = false, content: @Composable RavenApplicationScope.() -> Unit)`
 is in `raven.compose.ui`. It blocks, and it must be called from `main()` on the main thread, which
 becomes the **UI thread** (AppKit requires this). It returns when the window closes. v1 has one
-window. Growing it into `application { Window { } }` waits for the multi-window fog.
+window. `customHeader = true` creates it with `R_WINDOW_CUSTOM_HEADER`, for a `HeaderBar`
+([section 8](#8-v1-component-vocabulary)). Growing it into `application { Window { } }` waits for the multi-window fog.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
 `close()`. `ravenApplication` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is
@@ -253,7 +254,24 @@ v1 covers what the translator sample and a basic settings form need. All composa
 | `CodeEditor(value, onValueChange, modifier, language: String?, readOnly, lineNumbers)` | TextEditor | controlled. Its change callback carries no text, so the node reads `Rtext_editor_get_text`. `language` is a name for `Rtext_editor_set_language` |
 | `HorizontalSplitter { }`, `VerticalSplitter { }` | Splitter | a child's `Modifier.weight` is its relative pane size |
 
-Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md).
+### Wave 2: menus and the header bar
+
+Added for the `notepad` port:
+
+| Composable | Raven widget | Notes |
+|---|---|---|
+| `MenuBar { }` | MenuBar | a layout composable; `MenuBarScope` allows only `Menu` |
+| `Menu(text) { }` | Menu | `MenuScope` allows `Item`, `CheckboxItem`, `Separator` and sub-`Menu` |
+| `Item(text, onClick, shortcut: KeyShortcut? = null, enabled = true)` | MenuItem | no children |
+| `CheckboxItem(text, checked, onCheckedChange, shortcut, enabled)` | MenuItem, checkable | controlled |
+| `Separator()` (in `MenuScope`) | Separator | to verify first: Raven treats an inserted separator as a menu separator |
+| `HeaderBar(modifier, title: String? = null, buttons: Set<WindowButton> = WindowButton.all()) { }` | HeaderBar | needs `ravenApplication(customHeader = true)`, otherwise a warning is logged; in `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right |
+
+`KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
+Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the named keys.
+
+Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
+[Menus and the header bar](issues/0018-menus-and-header-bar.md).
 
 ## 9. Testing
 
@@ -428,6 +446,9 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 | `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter` | no counterpart | [8](#8-v1-component-vocabulary) |
 | No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
 | A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
+| `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-v1-component-vocabulary) |
+| Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-v1-component-vocabulary) |
+| `customHeader = true` keeps resizing and system behaviour | `undecorated = true` removes all decoration | [4](#4-application-host) |
 
 ## 13. Roadmap
 
@@ -442,7 +463,6 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 
 **Open tickets**: when each closes, it updates this file.
 
-- [Menus and the header bar](issues/0018-menus-and-header-bar.md)
 - [ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md)
 - [Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md)
 - [Theming](issues/0021-theming.md)
@@ -454,7 +474,8 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 - custom drawing and `Layout {}`
 - multiple windows, dialogs and popups
 - generic input and focus
-- the wider vocabulary for wave 3
+- accessibility semantics
+- the wider vocabulary for wave 3, including a `Toolbar { }`
 - a public `compose-raven-test` for apps
 - the translator as a tool
 - packaging and publishing

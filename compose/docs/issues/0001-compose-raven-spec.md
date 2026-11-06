@@ -51,6 +51,7 @@ implementation. This map does not do the implementation.
 - [Assemble the spec](0015-assemble-the-spec.md): [`spec.md`](../spec.md) written and accepted as v1 complete, in 14 sections stating the final state with links to the deciding tickets; one table of differences from Compose; the map stays open, and each remaining ticket updates the spec when it closes.
 - [Templates in the XML translator](0016-xml-translator-templates.md): `<Widget>` declarations become top-level composables (types from defaults, `<Children>` as slot lambdas, layout through `modifier`); the whole `{...}` language is translated except `{Instance}`; `If`/`Repeat`/`ForEach` become `if`/`repeat`/`forEachIndexed`; `Include` stays a TODO; parsing must not register tags globally.
 - [Kotlin highlighting in CodeEditor](0017-kotlin-highlighting.md): a built-in Kotlin language in Raven's `syntax.c` (fork change 3), with Prism.js's keyword list, a short list of standard-library types and nested comments; templates, labels and trailing-lambda calls are documented as not highlighted.
+- [Menus and the header bar](0018-menus-and-header-bar.md): Compose Desktop's `MenuBar`/`Menu`/`Item`/`CheckboxItem`/`Separator`, but `MenuBar` is placed in the layout; `KeyShortcut` over Raven keys with no automatic Ctrl-to-Cmd; `HeaderBar` plus `ravenApplication(customHeader = true)`; context menus go to the Generic input fog.
 
 ## Not yet specified
 
@@ -60,11 +61,17 @@ implementation. This map does not do the implementation.
   transient Raven windows map onto composables. v1's `ravenApplication` is one window; this is where it would grow
   into `application { Window { } }`.
 - **Generic input and focus**: `Modifier.clickable`, key and pointer modifiers over
-  `RWidgetEventCallback`, and focus control (`FocusRequester`), beyond v1's widget-specific callbacks.
+  `RWidgetEventCallback`, focus control (`FocusRequester`), and context menus
+  (`ContextMenuArea` over `Rmenu_open`), beyond v1's widget-specific callbacks.
 - **Wider vocabulary**: lists and trees (virtual, callback-driven), Image, TabView, Grid,
-  UniformGrid, TreeView, ListView, Island, Appear transitions, docking, FileBrowser, and the specialist
+  UniformGrid, TreeView, ListView, Island, Appear transitions, docking, FileBrowser, a `Toolbar { }`
+  (a Row with toolbar spacing and padding and `R_ROLE_TOOLBAR`, for `editor`, `workspace` and
+  `studio`; until then, a Row of `TextButton`s works), and the specialist
   widgets (Timeline, NodeGraph, WebView, ColorPicker): what wave 3 of [Port the Raven samples to
   Compose](0014-port-raven-samples.md) needs.
+- **Accessibility**: semantics for compose-raven, meaning Compose's `Modifier.semantics` /
+  `contentDescription` over Raven's `Rwidget_set_accessible_role`, `_name`, `_description`,
+  `_hidden` and `_labelled_by`, and which roles composables set by default.
 - **App testing**: a public `compose-raven-test` module so apps can test their own UIs, once the
   internal harness has settled.
 - **Translator as a tool**: extracting the sample's XML parsing and translator into a shared
