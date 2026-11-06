@@ -44,6 +44,7 @@ implementation. This map does not do the implementation.
 - [Events and state](0010-events-and-state.md): callbacks registered once per node with lambdas in fields; controlled inputs as in Compose, checked in the frame callback once the Recomposer settles; `TextField` takes a `String` with a documented caret jump on rewrite; exceptions caught at the C boundary; widget-specific events only in v1.
 - [v1 component vocabulary](0011-v1-component-vocabulary.md): sized by the XML translator sample; Compose-named `Text`, three Buttons, `Checkbox`/`Switch`/`RadioButton`, single-line `TextField`, `Slider`, progress, dividers, `Spacer`; `VerticalScroll`/`HorizontalScroll` containers; compose-raven's own `CodeEditor` and splitters.
 - [Testing strategy](0012-testing-strategy.md): an internal `RavenHost` shared by `ravenApplication` and a headless test harness; Compose-style `runRavenTest` finders and actions over Raven input injection; memory and `StableRef` leak checks after each test; fresh Raven per test (verify first); CI on macOS and Linux.
+- [XML to Compose translator sample](0013-xml-to-compose-translator.md): the translator lives in `sample` and parses with Raven's parser through a private cinterop and one adapter into a Kotlin tree; it maps the v1 vocabulary faithfully (explicit `fillMax*`), hoists state, and leaves TODOs plus warnings for anything unsupported; the sample shows XML and generated code side by side, live.
 
 ## Not yet specified
 
@@ -61,6 +62,8 @@ implementation. This map does not do the implementation.
   through [Port the Raven samples to Compose](0014-port-raven-samples.md).
 - **App testing**: a public `compose-raven-test` module so apps can test their own UIs, once the
   internal harness has settled.
+- **Translator as a tool**: extracting the sample's XML parsing and translator into a shared
+  module, a command-line tool or a Gradle task, once the sample proves it useful.
 - **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
   bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
 - **Windows (mingwX64)**: adding the third target after v1.
