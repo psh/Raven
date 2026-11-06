@@ -51,8 +51,8 @@ implementation.
 - **JVM / the `raven-gui` Java binding**: this effort is Kotlin/Native only.
 - **Source compatibility with Compose Foundation / Material**: names and shapes follow Compose,
   but code written against androidx foundation or material isn't guaranteed to compile.
-- **Mixing Raven XML documents with composables at run time**: composables build the whole tree for this pass. (Translating XML into Compose *source* is a separate question and in scope: [XML to Compose translator sample](0013-xml-to-compose-translator.md).)
+- **Mixing Raven XML documents with composables at run time**: composables build the whole tree for this pass. (Translating XML into Compose *source* is a separate question and in scope: [XML to Compose translator sample](archive/0013-xml-to-compose-translator.md).)
 - **A Material-like module above foundation**: Raven's looks already imitate each platform, and a
-  Material layer would compete with them ([Theming](0021-theming.md)).
+  Material layer would compete with them ([Theming](archive/0021-theming.md)).
 - **Cross-compilation**: each target builds on its own host, since libraven's C build needs the
-  host's toolchain and headers (see [Kotlin/Native targets and build](0005-kotlin-native-targets-and-build.md)).
+  host's toolchain and headers (see [Kotlin/Native targets and build](archive/0005-kotlin-native-targets-and-build.md)).

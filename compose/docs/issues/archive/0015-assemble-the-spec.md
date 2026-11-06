@@ -14,7 +14,7 @@ What is the structure of `compose/docs/spec.md`, the map's destination, and how 
 
 ## Resolution
 
-- **Written**: [`compose/docs/spec.md`](../spec.md), status "v1 complete", reviewed and accepted.
+- **Written**: [`compose/docs/spec.md`](../../spec.md), status "v1 complete", reviewed and accepted.
 - **Structure**: 14 sections from the outside in: Overview, Modules and build, raven-native, Application host, Node model and Applier, Layout and Modifiers, Events and state, v1 component vocabulary, Testing, Samples, Required Raven changes, Differences from Compose, Roadmap, Out of scope.
 - **Folding decisions in**: the spec is self-contained and states only the final state, so where a later ticket amended an earlier one, only the result appears. It says *what*, and each section ends with "Decided in" links to the tickets, which keep the *why*.
 - **Differences from Compose**: one table (section 12), each row linking to its section. The sections themselves state behaviour without repeated "unlike Compose" notes.

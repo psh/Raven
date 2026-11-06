@@ -65,10 +65,10 @@ The two packages already allow a later split into `compose-raven-ui` and
 - **MoltenVK** is needed at run time only. Raven loads Vulkan dynamically, so nothing is linked.
   On macOS, users install it with `brew install molten-vk` or the Vulkan SDK.
 
-Decided in: [Compose runtime on Kotlin/Native](issues/0002-compose-runtime-on-kotlin-native.md),
-[Kotlin/Native targets and build](issues/0005-kotlin-native-targets-and-build.md),
-[Layering over cinterop](issues/0006-cinterop-layering.md),
-[Port the Raven samples to Compose](issues/0014-port-raven-samples.md).
+Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runtime-on-kotlin-native.md),
+[Kotlin/Native targets and build](issues/archive/0005-kotlin-native-targets-and-build.md),
+[Layering over cinterop](issues/archive/0006-cinterop-layering.md),
+[Port the Raven samples to Compose](issues/archive/0014-port-raven-samples.md).
 
 ## 3. raven-native
 
@@ -88,7 +88,7 @@ Decided in: [Compose runtime on Kotlin/Native](issues/0002-compose-runtime-on-ko
   counterparts (such as `TextAlign`) only where a composable needs them, and they are mapped
   internally.
 
-Decided in: [Layering over cinterop](issues/0006-cinterop-layering.md).
+Decided in: [Layering over cinterop](issues/archive/0006-cinterop-layering.md).
 
 ## 4. Application host
 
@@ -133,8 +133,8 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
 - **Exit**: `RavenApplicationScope.exitApplication()` calls `Rquit()`, which is thread-safe.
   Closing the window also ends the loop.
 
-Decided in: [Frame loop and threading](issues/0008-frame-loop-and-threading.md),
-[Testing strategy](issues/0012-testing-strategy.md).
+Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-threading.md),
+[Testing strategy](issues/archive/0012-testing-strategy.md).
 
 ## 5. Node model and Applier
 
@@ -174,9 +174,9 @@ Decided in: [Frame loop and threading](issues/0008-frame-loop-and-threading.md),
   the Raven child currently attached. That child stays alive in the mirror list. Removing a node
   that is no longer attached skips the Raven call.
 
-Decided in: [How Mosaic is built](issues/0003-how-mosaic-is-built.md),
-[Raven widget tree API for an Applier](issues/0004-raven-widget-tree-api.md),
-[Node model and Applier](issues/0007-node-model-and-applier.md).
+Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
+[Raven widget tree API for an Applier](issues/archive/0004-raven-widget-tree-api.md),
+[Node model and Applier](issues/archive/0007-node-model-and-applier.md).
 
 ## 6. Layout and Modifiers
 
@@ -214,7 +214,7 @@ Decided in: [How Mosaic is built](issues/0003-how-mosaic-is-built.md),
 - `Alignment.Start` and `Alignment.End` map to `LEFT` and `RIGHT`. Phase 1 has no right-to-left
   support.
 
-Decided in: [Layout and Modifiers](issues/0009-layout-and-modifiers.md).
+Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
 
 ## 7. Events and state
 
@@ -239,7 +239,7 @@ Decided in: [Layout and Modifiers](issues/0009-layout-and-modifiers.md).
 - **Phase 1 events** are only the callbacks that belong to each widget, listed in
   [section 8](#8-component-vocabulary).
 
-Decided in: [Events and state](issues/0010-events-and-state.md).
+Decided in: [Events and state](issues/archive/0010-events-and-state.md).
 
 ## 8. Component vocabulary
 
@@ -372,12 +372,12 @@ Added for the `overlay` and `glass` ports:
     `Native`, `Plain`, or control over the blur.
 - The theme's glass metrics (frost, refraction, rim, ...) are set in theme files only.
 
-Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
-[Menus and the header bar](issues/0018-menus-and-header-bar.md),
-[ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md),
-[Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md),
-[Theming](issues/0021-theming.md),
-[Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md).
+Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
+[Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
+[ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
+[Border, WrapBox and Expander](issues/archive/0020-border-wrapbox-expander.md),
+[Theming](issues/archive/0021-theming.md),
+[Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md).
 
 ## 9. Testing
 
@@ -409,7 +409,7 @@ Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
 - **CI**: a compose job in `.github/workflows/build.yml` on a macOS and a Linux runner, running
   `./gradlew -p compose allTests`.
 
-Decided in: [Testing strategy](issues/0012-testing-strategy.md).
+Decided in: [Testing strategy](issues/archive/0012-testing-strategy.md).
 
 ## 10. Samples
 
@@ -498,9 +498,9 @@ This sample translates Raven XML into compose-raven source.
 - **Tests**: most tests build `XmlElement` trees and check the generated code, as plain unit
   tests. A few headless smoke tests cover `parseRavenXml`.
 
-Decided in: [XML to Compose translator sample](issues/0013-xml-to-compose-translator.md),
-[Templates in the XML translator](issues/0016-xml-translator-templates.md),
-[Port the Raven samples to Compose](issues/0014-port-raven-samples.md).
+Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compose-translator.md),
+[Templates in the XML translator](issues/archive/0016-xml-translator-templates.md),
+[Port the Raven samples to Compose](issues/archive/0014-port-raven-samples.md).
 
 ## 11. Required Raven changes
 
@@ -531,9 +531,9 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
      trailing-lambda calls aren't marked as functions, and a keyword right after a `.` may be
      highlighted.
 
-Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
-[Testing strategy](issues/0012-testing-strategy.md),
-[Kotlin highlighting in CodeEditor](issues/0017-kotlin-highlighting.md).
+Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
+[Testing strategy](issues/archive/0012-testing-strategy.md),
+[Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md).
 
 ## 12. Differences from Compose
 

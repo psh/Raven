@@ -1,8 +1,8 @@
 # Issue/Ticket Format
 
 Tickets for compose-raven live here, in `compose/docs/issues/`, numbered sequentially:
-`0001-slug.md`, `0002-slug.md`, and so on. To pick the next number, scan this directory for the
-highest existing one and add one; never guess or reuse a remembered number.
+`0001-slug.md`, `0002-slug.md`, and so on. To pick the next number, scan this directory **and
+`archive/`** for the highest existing one and add one; never guess or reuse a remembered number.
 
 ## Template
 
@@ -22,6 +22,28 @@ status: open
 - `in-progress`: actively being worked
 - `closed`: done
 - `wont-fix`: decided against, keep the record
+
+## Archive
+
+`archive/` holds finished tickets, meaning those with `status: closed` or `status: wont-fix`, so
+that this directory stays easy to scan. **Wayfinder maps (`wayfinder: map`) are never
+archived**, closed or not. They stay here permanently as tables of contents, even after every
+child ticket has moved.
+
+When a ticket other than a map reaches `closed` or `wont-fix`, move it into `archive/` with
+`git mv`, keeping the same filename, and fix the links in both directions:
+
+- **Links to the moved ticket.** Every file that links to it needs its relative link pointed into
+  `archive/`. That is most often the parent map's `## Decisions so far`, but also check
+  `compose/docs/spec.md`, `compose/docs/roadmap.md` and other tickets. A file that is itself in
+  `archive/` needs no change for this.
+- **The moved ticket's own links.** A link to something still in this directory gains a `../`
+  prefix, and a link to `compose/docs/` gains one more (`../spec.md` becomes `../../spec.md`). A
+  link to another archived ticket needs no change.
+
+Don't infer a ticket's location from its number. Look up the actual path, here or in `archive/`.
+`blocked_by` lists numbers, not paths, so a blocker that has been archived is closed by
+definition.
 
 ## Wayfinding operations
 
