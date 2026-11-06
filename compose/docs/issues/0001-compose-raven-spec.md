@@ -45,21 +45,21 @@ implementation. This map does not do the implementation.
 - [v1 component vocabulary](0011-v1-component-vocabulary.md): sized by the XML translator sample; Compose-named `Text`, three Buttons, `Checkbox`/`Switch`/`RadioButton`, single-line `TextField`, `Slider`, progress, dividers, `Spacer`; `VerticalScroll`/`HorizontalScroll` containers; compose-raven's own `CodeEditor` and splitters.
 - [Testing strategy](0012-testing-strategy.md): an internal `RavenHost` shared by `ravenApplication` and a headless test harness; Compose-style `runRavenTest` finders and actions over Raven input injection; memory and `StableRef` leak checks after each test; fresh Raven per test (verify first); CI on macOS and Linux.
 - [XML to Compose translator sample](0013-xml-to-compose-translator.md): the translator lives in `sample` and parses with Raven's parser through a private cinterop and one adapter into a Kotlin tree; it maps the v1 vocabulary faithfully (explicit `fillMax*`), hoists state, and leaves TODOs plus warnings for anything unsupported; the sample shows XML and generated code side by side, live.
+- [Port the Raven samples to Compose](0014-port-raven-samples.md): ports in waves (`hello` in v1; wave 2 is notepad, components, themes, overlay and glass; later waves and fog-bound examples recorded), as a roadmap in the spec; wave-2 tickets don't block assembly; each port is its own module under `compose/samples/`, and `sample` becomes `samples/xml-translator`.
 
 ## Not yet specified
 
 - **Custom drawing**: an escape hatch into Raven viewport draw callbacks for content Raven's
   widgets can't express. Also custom `Layout {}`, which needs an arrange hook Raven doesn't have yet.
-- **Theming and styles**: how Raven themes and styles show up in composables, if at all, beyond
-  the defaults, and whether that becomes a Material-like module above foundation.
 - **Multiple windows, dialogs, popups**: whether a composition owns one window or many, and how
   transient Raven windows map onto composables. v1's `ravenApplication` is one window; this is where it would grow
   into `application { Window { } }`.
 - **Generic input and focus**: `Modifier.clickable`, key and pointer modifiers over
   `RWidgetEventCallback`, and focus control (`FocusRequester`), beyond v1's widget-specific callbacks.
-- **Wider vocabulary**: lists and trees (virtual, callback-driven), ComboBox, SpinBox, Image,
-  TabView, Expander, Grid, menus and the header bar, docking, and the specialist widgets. Graduates
-  through [Port the Raven samples to Compose](0014-port-raven-samples.md).
+- **Wider vocabulary**: lists and trees (virtual, callback-driven), Image, TabView, Grid,
+  UniformGrid, TreeView, ListView, Island, Appear transitions, docking, FileBrowser, and the specialist
+  widgets (Timeline, NodeGraph, WebView, ColorPicker): what wave 3 of [Port the Raven samples to
+  Compose](0014-port-raven-samples.md) needs.
 - **App testing**: a public `compose-raven-test` module so apps can test their own UIs, once the
   internal harness has settled.
 - **Translator as a tool**: extracting the sample's XML parsing and translator into a shared
