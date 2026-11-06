@@ -28,3 +28,7 @@ _Avoid_: element, view, layout node (that is compose-ui's measuring node)
 **UI thread**:
 The one thread that starts Raven and runs its event loop; every change to Raven widgets, and every recomposition, happens on it. Other threads reach it only by posting work to it.
 _Avoid_: main thread (it is the main thread on macOS, but the term names the role, not the OS thread)
+
+**Modifier**:
+How a composable states its place in its parent: padding around it, its size, how it aligns, and what share of free space it takes. What the widget itself is or shows belongs to its parameters, not its Modifier.
+_Avoid_: slot (Raven's word for the same settings, as seen from the parent), layout params

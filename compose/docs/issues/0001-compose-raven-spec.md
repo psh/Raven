@@ -25,6 +25,9 @@ implementation. This map does not do the implementation.
   layering and Applier/node-model tickets.
 - Standing preference: **keep it slim.** This is a first pass, so lean towards the smallest spec
   that works and push extras to fog or out of scope.
+- Standing preference: **favour Compose conventions and ergonomics.** Names, parameter shapes,
+  defaults and behaviour follow Compose. Wherever Raven differs, compose-raven adapts to Compose
+  and the spec documents the difference clearly. Grilling recommendations default to this.
 - Ticket conventions: `ISSUES-FORMAT.md` in this directory.
 
 ## Decisions so far
@@ -37,11 +40,12 @@ implementation. This map does not do the implementation.
 - [Layering over cinterop](0006-cinterop-layering.md): two modules, `raven-native` (public cinterop `raven.cinterop` + small `raven.native` helpers for callbacks, strings, thread check; no Compose) under `compose-raven-foundation` (everything Compose, depends on it with `implementation`, so no Raven type is public); `sample` depends on foundation only.
 - [Node model and Applier](0007-node-model-and-applier.md): one internal `RavenNode` per Raven widget, with a mirror child list; remove detaches and `onRelease` destroys; a fixed Overlay root; setters call cinterop directly; moves need a new `Rwidget_move_child` in the fork; single-child parents are handled in the Applier.
 - [Frame loop and threading](0008-frame-loop-and-threading.md): a blocking `ravenApplication(...) { }` owns the `Rwait_frame` loop; an internal `Rtask_post` dispatcher, a `BroadcastFrameClock` ticked from the frame callback compose-raven owns, and a global write observer wake it from any thread; a fixed shutdown order; errors quit, then rethrow; `exitApplication()` quits.
+- [Layout and Modifiers](0009-layout-and-modifiers.md): an own `Modifier` and `Dp`; `Column`/`Row`/`Box` over VBox/HBox/Overlay with Compose's start/top defaults; padding, size, sizeIn, fillMax, weight and align map onto slots and size setters; Compose's `Arrangement` shape with only `spacedBy` in v1; no `Layout {}` or RTL yet.
 
 ## Not yet specified
 
 - **Custom drawing**: an escape hatch into Raven viewport draw callbacks for content Raven's
-  widgets can't express.
+  widgets can't express. Also custom `Layout {}`, which needs an arrange hook Raven doesn't have yet.
 - **Theming and styles**: how Raven themes and styles show up in composables, if at all, beyond
   the defaults, and whether that becomes a Material-like module above foundation.
 - **Multiple windows, dialogs, popups**: whether a composition owns one window or many, and how
