@@ -31,8 +31,9 @@ implementation.
   and the spec documents the difference clearly. Grilling recommendations default to this.
 - The decisions of the previous map, [compose-raven spec](0001-compose-raven-spec.md), are settled
   and live in `compose/docs/spec.md`. Build on them, don't reopen them.
-- Closing a ticket also updates `compose/docs/spec.md` (its section, the Roadmap, and
-  the Differences from Compose table where relevant).
+- Closing a ticket also updates `compose/docs/spec.md` (its section, and the Differences from
+  Compose table where relevant) and `compose/docs/roadmap.md` (which milestone it serves, and
+  the open tickets and fog).
 - Ticket conventions: `ISSUES-FORMAT.md` in this directory.
 
 ## Decisions so far

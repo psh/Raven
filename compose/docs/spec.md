@@ -3,7 +3,7 @@
 **Status: v1 and wave 2 complete.** Every decision below is settled. The first wayfinder map,
 [compose-raven spec](issues/0001-compose-raven-spec.md), is closed. The open work is on
 [compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md), and each of its tickets
-updates this file when it closes ([Roadmap](#13-roadmap)). The vocabulary is in
+updates this file and [`roadmap.md`](roadmap.md) when it closes. The vocabulary is in
 [`compose/GLOSSARY.md`](../GLOSSARY.md).
 
 ## 1. Overview
@@ -571,35 +571,12 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 
 ## 13. Roadmap
 
-**Sample ports, in waves**:
-
-- **Wave 1 (v1)**: `hello`.
-- **Wave 2**: `notepad`, `components`, `themes`, `overlay`, `glass`.
-- **Wave 3**: `editor`, `workspace`, `music`, `animations`.
-- **Waiting on fog**: `effects`, `viewport_opengl` and `viewport_vulkan` (custom drawing), plus
-  `studio` and `browser` (specialist widgets).
-- **Not ported**: `memory` (C-level allocator), `languages` and `bevy_editor` (other bindings).
-
-**Open tickets**: on [compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md).
-
-- [Multiple windows, dialogs and popups](issues/0024-multiple-windows.md)
-- [Generic input and focus](issues/0025-generic-input-and-focus.md)
-- [Accessibility semantics](issues/0026-accessibility-semantics.md)
-- [Fonts and text styling](issues/0027-fonts-and-text-styling.md)
-- [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md)
-- [Public test module for apps](issues/0029-app-testing-module.md)
-- [XML translator as a tool](issues/0030-translator-as-a-tool.md)
-- [Packaging and publishing](issues/0031-packaging-and-publishing.md)
-- [Windows (mingwX64) target](issues/0032-windows-target.md)
-- [Lists and trees](issues/0033-lists-and-trees.md)
-- [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md)
-- [Image and resources](issues/0035-image-and-resources.md)
-- [Island and appear transitions](issues/0036-island-and-appear-transitions.md)
-- [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), after multiple windows
-- [Toolbar](issues/0038-toolbar.md), after accessibility
-
-**Not yet specified**: the specialist widgets (Timeline, NodeGraph, ColorPicker, WebView,
-BlockEditor) for `studio` and `browser`.
+What gets built and in what order is in [`roadmap.md`](roadmap.md):
+- verification spikes
+- the fork changes
+- the v1 and wave-2 milestones
+- the wave-3 samples and the open tickets each one waits on
+- what waits on fog
 
 ## 14. Out of scope
 
