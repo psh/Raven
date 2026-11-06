@@ -36,3 +36,7 @@ _Avoid_: slot (Raven's word for the same settings, as seen from the parent), lay
 **Controlled input**:
 An input composable whose shown value is always the value the app composed. A user's edit is only a proposal, which the app accepts by updating its state; otherwise the input goes back to the composed value.
 _Avoid_: bound field, two-way binding
+
+**Phase**:
+A numbered stage of compose-raven's roadmap (phase 1, phase 2, ...): a set of capabilities built together, and the sample ports they unlock.
+_Avoid_: v1, wave, release (a phase is a stage of planning, not a published version)

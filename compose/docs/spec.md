@@ -1,8 +1,8 @@
 # compose-raven specification
 
-**Status: v1 and wave 2 complete.** Every decision below is settled. The first wayfinder map,
+**Status: phases 1 and 2 complete.** Every decision below is settled. The first wayfinder map,
 [compose-raven spec](issues/0001-compose-raven-spec.md), is closed. The open work is on
-[compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md), and each of its tickets
+[compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), and each of its tickets
 updates this file and [`roadmap.md`](roadmap.md) when it closes. The vocabulary is in
 [`compose/GLOSSARY.md`](../GLOSSARY.md).
 
@@ -19,7 +19,7 @@ Two standing preferences shape every section:
   Compose. Where Raven differs, compose-raven adapts to Compose, and the
   [Differences from Compose](#12-differences-from-compose) table lists every place where the two
   still differ.
-- **Keep it slim.** v1 is the smallest spec that makes a real small tool. Everything else is on
+- **Keep it slim.** Phase 1 is the smallest spec that makes a real small tool. Everything else is on
   the [Roadmap](#13-roadmap).
 
 An app looks like this:
@@ -94,9 +94,9 @@ Decided in: [Layering over cinterop](issues/0006-cinterop-layering.md).
 
 `fun ravenApplication(title: String, width: Int, height: Int, customHeader: Boolean = false, transparent: Boolean = false, undecorated: Boolean = false, content: @Composable RavenApplicationScope.() -> Unit)`
 is in `raven.compose.ui`. It blocks, and it must be called from `main()` on the main thread, which
-becomes the **UI thread** (AppKit requires this). It returns when the window closes. v1 has one
+becomes the **UI thread** (AppKit requires this). It returns when the window closes. Phase 1 has one
 window. `customHeader = true` creates it with `R_WINDOW_CUSTOM_HEADER`, for a `HeaderBar`
-([section 8](#8-v1-component-vocabulary)).
+([section 8](#8-component-vocabulary)).
 `transparent` uses `R_WINDOW_TRANSPARENT` and `undecorated` uses `R_WINDOW_BORDERLESS`. Inside
 the content, `WindowBackdrop(backdrop: Backdrop)` declaratively calls `Rwindow_set_backdrop`.
 `Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning is logged when
@@ -152,7 +152,7 @@ Decided in: [Frame loop and threading](issues/0008-frame-loop-and-threading.md),
 - **Lifetime**: the factory creates the widget. `Applier.remove` only detaches it
   (`Rwidget_remove_child`), so `movableContentOf` can insert the same node again somewhere else.
   `RavenNode` implements `ComposeNodeLifecycleCallback`: `onRelease` calls `Rwidget_destroy`, and
-  the destroy callback disposes the `StableRef`. v1 has no node reuse (no `ReusableComposeNode`),
+  the destroy callback disposes the `StableRef`. Phase 1 has no node reuse (no `ReusableComposeNode`),
   so `onReuse` and `onDeactivate` do nothing.
 - **Root**: the host creates an `R_WIDGET_OVERLAY`, sets it once with `Rwindow_set_content`, and
   wraps it as the Applier's root node. It stacks its children like `Box`, and the Applier never
@@ -191,7 +191,7 @@ Decided in: [How Mosaic is built](issues/0003-how-mosaic-is-built.md),
 - **Containers**: `Column` uses VBox, `Row` uses HBox and `Box` uses Overlay.
 - **Defaults are Compose's**: each node sets its slot to start/top alignment when it is created,
   overriding Raven's `FILL`. Stretching is opt-in.
-- **v1 elements**:
+- **Phase 1 elements**:
 
 | Element | Scope | Raven |
 |---|---|---|
@@ -202,16 +202,16 @@ Decided in: [How Mosaic is built](issues/0003-how-mosaic-is-built.md),
 | `weight(Float)` | `RowScope`, `ColumnScope` | `Rslot_set_fill` |
 | `align(Alignment)` / `align(Alignment.Horizontal)` / `align(Alignment.Vertical)` | `BoxScope` / `ColumnScope` / `RowScope` | `Rslot_set_halign` / `_valign` |
 | `testTag(String)` | any | stored on the node only, with no Raven call ([section 9](#9-testing)) |
-| `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-v1-component-vocabulary)) |
+| `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
-  because v1 has no drawing modifiers.
+  because phase 1 has no drawing modifiers.
 - **Arrangement and container alignment** keep Compose's parameter shape, for example
   `Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.Start)`.
-  v1's `Arrangement` offers only `Top`/`Start` and `spacedBy(dp)`, which uses `Rpanel_set_spacing`.
+  Phase 1's `Arrangement` offers only `Top`/`Start` and `spacedBy(dp)`, which uses `Rpanel_set_spacing`.
   The container's alignment sets each child's default cross-axis alignment, and `Modifier.align`
   overrides it.
-- `Alignment.Start` and `Alignment.End` map to `LEFT` and `RIGHT`. v1 has no right-to-left
+- `Alignment.Start` and `Alignment.End` map to `LEFT` and `RIGHT`. Phase 1 has no right-to-left
   support.
 
 Decided in: [Layout and Modifiers](issues/0009-layout-and-modifiers.md).
@@ -236,14 +236,14 @@ Decided in: [Layout and Modifiers](issues/0009-layout-and-modifiers.md).
   from what the widget shows, so typing never moves the caret.
 - **Errors**: a Kotlin exception must not cross a `staticCFunction`. Each shared callback catches
   it and passes it to the host's error path ([section 4](#4-application-host)).
-- **v1 events** are only the callbacks that belong to each widget, listed in
-  [section 8](#8-v1-component-vocabulary).
+- **Phase 1 events** are only the callbacks that belong to each widget, listed in
+  [section 8](#8-component-vocabulary).
 
 Decided in: [Events and state](issues/0010-events-and-state.md).
 
-## 8. v1 component vocabulary
+## 8. Component vocabulary
 
-v1 covers what the translator sample and a basic settings form need. All composables take
+Phase 1 covers what the translator sample and a basic settings form need. All composables take
 `modifier: Modifier = Modifier`.
 
 | Composable | Raven widget | Notes |
@@ -264,7 +264,7 @@ v1 covers what the translator sample and a basic settings form need. All composa
 | `CodeEditor(value, onValueChange, modifier, language: String?, readOnly, lineNumbers)` | TextEditor | controlled. Its change callback carries no text, so the node reads `Rtext_editor_get_text`. `language` is a name for `Rtext_editor_set_language` |
 | `HorizontalSplitter { }`, `VerticalSplitter { }` | Splitter | a child's `Modifier.weight` is its relative pane size |
 
-### Wave 2: menus and the header bar
+### Phase 2: menus and the header bar
 
 Added for the `notepad` port:
 
@@ -280,7 +280,7 @@ Added for the `notepad` port:
 `KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
 Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the named keys.
 
-### Wave 2: ComboBox and SpinBox
+### Phase 2: ComboBox and SpinBox
 
 Added for the `notepad`, `themes`, `glass` and `overlay` ports. All three are controlled.
 
@@ -293,7 +293,7 @@ Added for the `notepad`, `themes`, `glass` and `overlay` ports. All three are co
 `codeEditorLanguages(): List<String>` lists Raven's editor languages (`Rlanguage_get_count`/`_name`).
 It is valid only inside the composition.
 
-### Wave 2: Surface, FlowRow and Expander
+### Phase 2: Surface, FlowRow and Expander
 
 Added for the `components` port:
 
@@ -313,7 +313,7 @@ Graphics types live in `raven.compose.ui.graphics`:
   large radius that Raven clamps.
 - **`BorderStroke(width: Dp, color: Color)`** uses `Rborder_set_outline`.
 
-### Wave 2: theming
+### Phase 2: theming
 
 Added for the `themes` port:
 
@@ -353,7 +353,7 @@ Added for the `themes` port:
   - `contentPadding` uses `R_METRIC_PADDING_X`/`_Y` (start, top). Non-symmetric values log a
     warning.
 
-### Wave 2: glass and BackgroundBlur
+### Phase 2: glass and BackgroundBlur
 
 Added for the `overlay` and `glass` ports:
 
@@ -441,7 +441,7 @@ This sample translates Raven XML into compose-raven source.
   document.
 - **Translator**: `translate(xml: String): Translation(code, warnings)`, working on the Kotlin
   tree. Names are matched case-insensitively, through an alias table taken from `docs/XML.md`.
-- **Mapping** (exactly the [v1 vocabulary](#8-v1-component-vocabulary)):
+- **Mapping** (exactly the [phase 1 vocabulary](#8-component-vocabulary)):
 
   | XML | Compose |
   |---|---|
@@ -544,29 +544,29 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 | `Arrangement` offers only `Top`/`Start` and `spacedBy` | Center, End, SpaceBetween, ... | [6](#6-layout-and-modifiers) |
 | `padding` is always outside the widget (no drawing modifiers) | position in the chain decides | [6](#6-layout-and-modifiers) |
 | No `Layout {}`, no right-to-left (`Start`/`End` are left/right) | custom layouts, `LayoutDirection` | [6](#6-layout-and-modifiers) |
-| `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-v1-component-vocabulary) |
-| `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-v1-component-vocabulary) |
+| `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-component-vocabulary) |
+| `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
-| Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-v1-component-vocabulary) |
-| `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter`, `ComboBox`, `SpinBox` | no counterpart in Compose Foundation | [8](#8-v1-component-vocabulary) |
-| `SpinBox` shows 2 decimals unless told otherwise (Raven's default) | none | [8](#8-v1-component-vocabulary) |
-| `Surface` container for background, border, corners and shadow | `Modifier.background` / `.border` / `.clip` / `.shadow` | [8](#8-v1-component-vocabulary) |
-| `shadowElevation` maps to blur and offset as an approximation | Material elevation | [8](#8-v1-component-vocabulary) |
-| `Shape` is rounded rectangles only, and Start/End mean left/right | any `Shape`, RTL-aware | [8](#8-v1-component-vocabulary) |
-| `FlowRow` has one spacing for both items and lines, and no `verticalArrangement` | separate arrangements | [8](#8-v1-component-vocabulary) |
-| `Expander` | no counterpart | [8](#8-v1-component-vocabulary) |
-| Colour defaults are `Unspecified` (the Raven theme), and there is no `disabledContainerColor` | Material defaults read its theme | [8](#8-v1-component-vocabulary) |
-| `shape` is one corner radius, and `contentPadding` is symmetric | any shape and padding | [8](#8-v1-component-vocabulary) |
-| The look can only be set by the outermost `RavenTheme`, and `RavenTheme.colors` shows only the app theme | nested themes are fully independent | [8](#8-v1-component-vocabulary) |
-| No style classes; theme rules by class don't apply | no such concept | [8](#8-v1-component-vocabulary) |
+| Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-component-vocabulary) |
+| `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter`, `ComboBox`, `SpinBox` | no counterpart in Compose Foundation | [8](#8-component-vocabulary) |
+| `SpinBox` shows 2 decimals unless told otherwise (Raven's default) | none | [8](#8-component-vocabulary) |
+| `Surface` container for background, border, corners and shadow | `Modifier.background` / `.border` / `.clip` / `.shadow` | [8](#8-component-vocabulary) |
+| `shadowElevation` maps to blur and offset as an approximation | Material elevation | [8](#8-component-vocabulary) |
+| `Shape` is rounded rectangles only, and Start/End mean left/right | any `Shape`, RTL-aware | [8](#8-component-vocabulary) |
+| `FlowRow` has one spacing for both items and lines, and no `verticalArrangement` | separate arrangements | [8](#8-component-vocabulary) |
+| `Expander` | no counterpart | [8](#8-component-vocabulary) |
+| Colour defaults are `Unspecified` (the Raven theme), and there is no `disabledContainerColor` | Material defaults read its theme | [8](#8-component-vocabulary) |
+| `shape` is one corner radius, and `contentPadding` is symmetric | any shape and padding | [8](#8-component-vocabulary) |
+| The look can only be set by the outermost `RavenTheme`, and `RavenTheme.colors` shows only the app theme | nested themes are fully independent | [8](#8-component-vocabulary) |
+| No style classes; theme rules by class don't apply | no such concept | [8](#8-component-vocabulary) |
 | No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
 | A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
-| `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-v1-component-vocabulary) |
-| Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-v1-component-vocabulary) |
+| `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
+| Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |
 | `customHeader = true` keeps the OS's resizing and window behaviour; `undecorated = true` removes all decoration, as in Compose Desktop | only `undecorated` | [4](#4-application-host) |
 | `Modifier.material(...)` gives any widget a glass or solid surface | no counterpart | [6](#6-layout-and-modifiers) |
-| `BackgroundBlur` blurs what is behind it (backdrop blur) | `Modifier.blur` blurs the element itself | [8](#8-v1-component-vocabulary) |
+| `BackgroundBlur` blurs what is behind it (backdrop blur) | `Modifier.blur` blurs the element itself | [8](#8-component-vocabulary) |
 | The backdrop is set with the `WindowBackdrop(...)` composable | no counterpart | [4](#4-application-host) |
 
 ## 13. Roadmap
@@ -574,8 +574,8 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 What gets built and in what order is in [`roadmap.md`](roadmap.md):
 - verification spikes
 - the fork changes
-- the v1 and wave-2 milestones
-- the wave-3 samples and the open tickets each one waits on
+- the phase 1 and phase 2 milestones
+- the phase-3 samples and the open tickets each one waits on
 - what waits on fog
 
 ## 14. Out of scope

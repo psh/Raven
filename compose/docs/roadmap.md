@@ -3,7 +3,7 @@
 The source of truth for **what gets built, in what order**. [`spec.md`](spec.md) says *what*
 compose-raven is, and this file says *when*. Implementation planning starts here: each milestone
 links to the spec sections that define it. The open design work is on the wayfinder map
-[compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md), and each of its tickets
+[compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), and each of its tickets
 updates this file when it closes.
 
 ## Milestones at a glance
@@ -12,9 +12,9 @@ updates this file when it closes.
 |---|---|---|
 | [0. Verify first](#0-verify-first) | answers to four open facts about Raven | none |
 | [1. Raven fork changes](#1-raven-fork-changes) | the changes compose-raven needs in `psh/Raven` | none |
-| [2. v1](#2-v1) | the library, the host, the v1 vocabulary, tests and CI | `hello`, `xml-translator` |
-| [3. Wave 2](#3-wave-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
-| [4. Wave 3](#4-wave-3) | still being decided on the wave 3 map | `editor`, `workspace`, `music`, `animations`, `glass` |
+| [2. Phase 1](#2-phase-1) | the library, the host, the phase 1 vocabulary, tests and CI | `hello`, `xml-translator` |
+| [3. Phase 2](#3-phase-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
+| [4. Phase 3](#4-phase-3) | still being decided on the phase 3 map | `editor`, `workspace`, `music`, `animations`, `glass` |
 | [Later](#later) | waits on fog | `effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser` |
 
 Not ported: `memory` (it demonstrates the C-level allocator), `languages` and `bevy_editor` (they
@@ -29,8 +29,8 @@ its result can change the plan:
 |---|---|---|
 | `Rinit`/`Rshutdown` can be repeated in one process | fix it in the fork (fork change 2) | [11](spec.md#11-required-raven-changes), [9](spec.md#9-testing) |
 | `Rxml_document_parse` registers no `<Widget>` declarations globally | `parseRavenXml` unregisters them | [10](spec.md#10-samples) |
-| A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of wave 2 | [8](spec.md#8-v1-component-vocabulary) |
-| Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-v1-component-vocabulary) |
+| A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) |
+| Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) |
 
 ## 1. Raven fork changes
 
@@ -40,7 +40,7 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 2. A fix for repeated `Rinit`/`Rshutdown`: only if milestone 0 finds it necessary.
 3. A built-in Kotlin language in `src/widgets/syntax.c`: needed by the `xml-translator` sample.
 
-## 2. v1
+## 2. Phase 1
 
 | Part | Spec |
 |---|---|
@@ -50,26 +50,26 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 | `RavenNode` and `RavenApplier`, including the internal content node for single-child widgets | [5](spec.md#5-node-model-and-applier) |
 | `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) |
 | Callbacks and controlled inputs | [7](spec.md#7-events-and-state) |
-| The v1 vocabulary table | [8](spec.md#8-v1-component-vocabulary) |
+| The phase 1 vocabulary table | [8](spec.md#8-component-vocabulary) |
 | Test harness, leak checks, unit tests, CI on macOS and Linux | [9](spec.md#9-testing) |
 | `samples/hello` | [10](spec.md#10-samples) |
 | `samples/xml-translator`, including templates and its private cinterop (needs fork change 3) | [10](spec.md#10-samples) |
 
-## 3. Wave 2
+## 3. Phase 2
 
 Each family is fully decided. The samples port when their families are done:
 
 | Family | Spec | Needed by |
 |---|---|---|
-| Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#wave-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` |
-| ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#wave-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in wave 3) |
-| Surface, FlowRow, Expander; `Color`, `Shape`, `BorderStroke` | [8: Surface](spec.md#wave-2-surface-flowrow-and-expander) | `components` |
-| Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding`, `Text(color, fontSize)` | [8: theming](spec.md#wave-2-theming) | `themes` |
-| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#wave-2-glass-and-backgroundblur) | `overlay` (and `glass` in wave 3) |
+| Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` |
+| ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) |
+| Surface, FlowRow, Expander; `Color`, `Shape`, `BorderStroke` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` |
+| Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding`, `Text(color, fontSize)` | [8: theming](spec.md#phase-2-theming) | `themes` |
+| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#phase-2-glass-and-backgroundblur) | `overlay` (and `glass` in phase 3) |
 
-## 4. Wave 3
+## 4. Phase 3
 
-Still being designed on [compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md).
+Still being designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md).
 Each port waits on these open tickets:
 
 | Sample | Open tickets it needs |
@@ -78,7 +78,7 @@ Each port waits on these open tickets:
 | `workspace` | [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), [Lists and trees](issues/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Toolbar](issues/0038-toolbar.md) |
 | `music` | [Lists and trees](issues/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Image and resources](issues/0035-image-and-resources.md) |
 | `animations` | [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md) |
-| `glass` | [Lists and trees](issues/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses wave 2's glass, ComboBox and SpinBox too |
+| `glass` | [Lists and trees](issues/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
 
 Open tickets that serve every app rather than one sample:
 
@@ -95,4 +95,4 @@ Open tickets that serve every app rather than one sample:
 
 - `effects`, `viewport_opengl`, `viewport_vulkan`: after [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md).
 - `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, ColorPicker, WebView,
-  BlockEditor), which are still fog on the wave 3 map.
+  BlockEditor), which are still fog on the phase 3 map.

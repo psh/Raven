@@ -60,7 +60,7 @@ implementation. This map does not do the implementation.
 ## Not yet specified
 
 None left here. Closed on 2026-11-06 with the destination reached for v1 and wave 2. The remaining
-fog moved, unchanged in scope, to the next map, [compose-raven wave 3 spec](0023-compose-raven-wave-3-spec.md).
+fog moved, unchanged in scope, to the next map, [compose-raven phase 3 spec](0023-compose-raven-phase-3-spec.md).
 
 ## Out of scope
 

@@ -3,13 +3,13 @@ status: open
 wayfinder: map
 ---
 
-# compose-raven wave 3 spec
+# compose-raven phase 3 spec
 
 ## Destination
 
-`compose/docs/spec.md` extended past v1 and wave 2. Every area left as fog by
+`compose/docs/spec.md` extended past phases 1 and 2. Every area left as fog by
 [compose-raven spec](0001-compose-raven-spec.md) is either decided and written into the spec, or
-ruled out of scope, so that wave 3 of the sample ports (`editor`, `workspace`, `music`,
+ruled out of scope, so that phase 3 of the sample ports (`editor`, `workspace`, `music`,
 `animations`, `glass`) and the examples waiting on fog can be ported. This map does not do the
 implementation.
 
@@ -19,7 +19,7 @@ implementation.
   widget tree. Vocabulary is in `compose/GLOSSARY.md`; keep it current as terms resolve.
 - Shape: like a native-widgets binding. Each composable node owns a Raven widget, Raven does
   layout and painting, and Compose only manages the tree. Mosaic is the template / role model.
-- Platform: Kotlin/Native with cinterop. v1 targets are macosArm64 and linuxX64.
+- Platform: Kotlin/Native with cinterop. Phase 1 targets are macosArm64 and linuxX64.
 - Required reading for Raven questions: `docs/ARCHITECTURE.md` (layers, handles, threads) and
   `include/raven/`.
 - Skills: grilling tickets call `grilling` + `domain-modeling`; call `codebase-design` for the
