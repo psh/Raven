@@ -28,6 +28,8 @@ implementation. This map does not do the implementation.
 - Standing preference: **favour Compose conventions and ergonomics.** Names, parameter shapes,
   defaults and behaviour follow Compose. Wherever Raven differs, compose-raven adapts to Compose
   and the spec documents the difference clearly. Grilling recommendations default to this.
+- Closing a ticket from here on also updates `compose/docs/spec.md` (its section, the Roadmap, and
+  the Differences from Compose table where relevant).
 - Ticket conventions: `ISSUES-FORMAT.md` in this directory.
 
 ## Decisions so far
@@ -46,6 +48,7 @@ implementation. This map does not do the implementation.
 - [Testing strategy](0012-testing-strategy.md): an internal `RavenHost` shared by `ravenApplication` and a headless test harness; Compose-style `runRavenTest` finders and actions over Raven input injection; memory and `StableRef` leak checks after each test; fresh Raven per test (verify first); CI on macOS and Linux.
 - [XML to Compose translator sample](0013-xml-to-compose-translator.md): the translator lives in `sample` and parses with Raven's parser through a private cinterop and one adapter into a Kotlin tree; it maps the v1 vocabulary faithfully (explicit `fillMax*`), hoists state, and leaves TODOs plus warnings for anything unsupported; the sample shows XML and generated code side by side, live.
 - [Port the Raven samples to Compose](0014-port-raven-samples.md): ports in waves (`hello` in v1; wave 2 is notepad, components, themes, overlay and glass; later waves and fog-bound examples recorded), as a roadmap in the spec; wave-2 tickets don't block assembly; each port is its own module under `compose/samples/`, and `sample` becomes `samples/xml-translator`.
+- [Assemble the spec](0015-assemble-the-spec.md): [`spec.md`](../spec.md) written and accepted as v1 complete, in 14 sections stating the final state with links to the deciding tickets; one table of differences from Compose; the map stays open, and each remaining ticket updates the spec when it closes.
 
 ## Not yet specified
 
@@ -71,7 +74,8 @@ implementation. This map does not do the implementation.
 ## Out of scope
 
 - **JVM / the `raven-gui` Java binding**: this effort is Kotlin/Native only.
-- **Source compatibility with Material / Foundation**: the component vocabulary is Raven-native.
+- **Source compatibility with Compose Foundation / Material**: names and shapes follow Compose,
+  but code written against androidx foundation or material isn't guaranteed to compile.
 - **Mixing Raven XML documents with composables at run time**: composables build the whole tree for this pass. (Translating XML into Compose *source* is a separate question and in scope: [XML to Compose translator sample](0013-xml-to-compose-translator.md).)
 - **Cross-compilation**: each target builds on its own host, since libraven's C build needs the
   host's toolchain and headers (see [Kotlin/Native targets and build](0005-kotlin-native-targets-and-build.md)).
