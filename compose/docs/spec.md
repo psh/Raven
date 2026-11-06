@@ -342,9 +342,31 @@ This sample translates Raven XML into compose-raven source.
   `var <name> by remember { mutableStateOf(<initial>) }` and is wired as a controlled input. The
   name comes from `Name`, or is generated (`checkbox1`). Actions become stub lambdas, for example
   `onClick = { /* file.save */ }`.
+- **Templates**:
+  - Each `<Widget Name="Card" Title="Untitled" Wide="false">` becomes a top-level composable,
+    `@Composable fun Card(modifier: Modifier = Modifier, title: String = "Untitled", wide: Boolean = false, content: @Composable () -> Unit = {})`,
+    emitted before `TranslatedUi()`.
+    - Parameters are renamed to lowerCamelCase.
+    - Types come from the default value: `Boolean`, `Float` (a number with a dot), `Int`, or
+      `String`.
+    - Inputs get `remember` state inside the function.
+    - A `<Widgets>` root produces only the functions.
+  - `<Children/>` becomes the trailing `content` slot, and `<Children Name="x"/>` becomes a slot
+    `x: @Composable () -> Unit = {}`. At the use site, children with `Into="x"` go to `x = { }`.
+  - Layout attributes at the use site become the call's `modifier`, which the function passes to
+    its root. Any other attribute that would pass through becomes a warning.
+  - The whole `{...}` expression language is translated into Kotlin, with the type taken from the
+    target attribute: `Width="{Wide ? 452 : 220}"` becomes
+    `Modifier.width((if (wide) 452 else 220).dp)`. Interpolated text becomes string templates.
+    `{Instance}` becomes a comment.
+  - `If`/`<If>` becomes `if`, `<Repeat>` becomes `repeat(n) { i -> }`, and `<ForEach>` becomes
+    `listOf(...).forEachIndexed { n, x -> }`.
+  - `<Include>` stays a TODO plus a warning.
+  - The implementation first verifies that `Rxml_document_parse` registers no declarations
+    globally. If it does, `parseRavenXml` unregisters each one with `Rxml_unregister_widget`.
 - **Unsupported input** is never refused:
-  - An element with no composable, or a template, becomes `// TODO(raven-xml): ...` in its place,
-    plus a warning with its line and column.
+  - An element with no composable, `<Include>`, or an expression that fails to parse becomes
+    `// TODO(raven-xml): ...` in its place, plus a warning with its line and column.
   - An attribute with no equivalent becomes a warning plus a trailing comment.
 - **Output**: one compilable file, with 4-space indents. It holds the imports, then
   `@Composable fun TranslatedUi()` with the hoisted state at the top, then `main()` when the root
@@ -353,6 +375,7 @@ This sample translates Raven XML into compose-raven source.
   tests. A few headless smoke tests cover `parseRavenXml`.
 
 Decided in: [XML to Compose translator sample](issues/0013-xml-to-compose-translator.md),
+[Templates in the XML translator](issues/0016-xml-translator-templates.md),
 [Port the Raven samples to Compose](issues/0014-port-raven-samples.md).
 
 ## 11. Required Raven changes
@@ -406,7 +429,6 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 - [Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md)
 - [Theming](issues/0021-theming.md)
 - [Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md)
-- [Templates in the XML translator](issues/0016-xml-translator-templates.md)
 - [Kotlin highlighting in CodeEditor](issues/0017-kotlin-highlighting.md)
 
 **Not yet specified**: the "Not yet specified" section of the
