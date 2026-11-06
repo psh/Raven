@@ -1,8 +1,7 @@
 # compose-raven specification
 
-**Status: v1 complete.** Every v1 decision is settled and below. The wave-2 work in the
-[Roadmap](#13-roadmap) is still being decided, and each of those tickets updates this file when it
-closes. The wayfinder map is [compose-raven spec](issues/0001-compose-raven-spec.md), and the
+**Status: v1 and wave 2 complete.** Every decision on the map is settled and below. What remains
+is fog, listed in the [Roadmap](#13-roadmap). The wayfinder map is [compose-raven spec](issues/0001-compose-raven-spec.md), and the
 vocabulary is in [`compose/GLOSSARY.md`](../GLOSSARY.md).
 
 ## 1. Overview
@@ -91,11 +90,15 @@ Decided in: [Layering over cinterop](issues/0006-cinterop-layering.md).
 
 ## 4. Application host
 
-`fun ravenApplication(title: String, width: Int, height: Int, customHeader: Boolean = false, content: @Composable RavenApplicationScope.() -> Unit)`
+`fun ravenApplication(title: String, width: Int, height: Int, customHeader: Boolean = false, transparent: Boolean = false, undecorated: Boolean = false, content: @Composable RavenApplicationScope.() -> Unit)`
 is in `raven.compose.ui`. It blocks, and it must be called from `main()` on the main thread, which
 becomes the **UI thread** (AppKit requires this). It returns when the window closes. v1 has one
 window. `customHeader = true` creates it with `R_WINDOW_CUSTOM_HEADER`, for a `HeaderBar`
-([section 8](#8-v1-component-vocabulary)). Growing it into `application { Window { } }` waits for the multi-window fog.
+([section 8](#8-v1-component-vocabulary)).
+`transparent` uses `R_WINDOW_TRANSPARENT` and `undecorated` uses `R_WINDOW_BORDERLESS`. Inside
+the content, `WindowBackdrop(backdrop: Backdrop)` declaratively calls `Rwindow_set_backdrop`.
+`Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning is logged when
+the window isn't transparent or the system refuses. Growing it into `application { Window { } }` waits for the multi-window fog.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
 `close()`. `ravenApplication` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is
@@ -197,6 +200,7 @@ Decided in: [How Mosaic is built](issues/0003-how-mosaic-is-built.md),
 | `weight(Float)` | `RowScope`, `ColumnScope` | `Rslot_set_fill` |
 | `align(Alignment)` / `align(Alignment.Horizontal)` / `align(Alignment.Vertical)` | `BoxScope` / `ColumnScope` / `RowScope` | `Rslot_set_halign` / `_valign` |
 | `testTag(String)` | any | stored on the node only, with no Raven call ([section 9](#9-testing)) |
+| `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-v1-component-vocabulary)) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
   because v1 has no drawing modifiers.
@@ -347,11 +351,31 @@ Added for the `themes` port:
   - `contentPadding` uses `R_METRIC_PADDING_X`/`_Y` (start, top). Non-symmetric values log a
     warning.
 
+### Wave 2: glass and BackgroundBlur
+
+Added for the `overlay` and `glass` ports:
+
+- **`Modifier.material(Material)`** gives any widget a material of its own: `Default`, `Solid`,
+  `Glass`, `FrostedGlass` or `TintedGlass`. On `Surface`, `color` then tints the glass:
+  `Surface(Modifier.material(Material.FrostedGlass), color = tint)`.
+- **`RavenTheme(..., material: Material? = null)`** sets the material app-wide with
+  `Rtheme_set_material`. Only the outermost `RavenTheme` may set it. Controls get glass from the
+  Glass and macOS Glass looks.
+- **`BackgroundBlur(modifier, style: BlurStyle = BlurStyle.Frosted, shape: Shape = RectangleShape, tint: Color = Color.Unspecified, radius: Dp = Dp.Unspecified, saturation: Float? = null, grain: Float? = null, shadowElevation: Dp = 0.dp) { }`**:
+  - It is a container over BackgroundBlur, and its content goes in an internal Box.
+  - `BlurStyle` is `Plain`, `Frosted`, `Glass` or `Native`; with `Native`, the OS blurs the
+    desktop.
+  - `radius = Unspecified` uses the theme's blur radius.
+  - Use `Modifier.material(FrostedGlass)` for an ordinary glass panel, and `BackgroundBlur` for
+    `Native`, `Plain`, or control over the blur.
+- The theme's glass metrics (frost, refraction, rim, ...) are set in theme files only.
+
 Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md),
 [Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md),
-[Theming](issues/0021-theming.md).
+[Theming](issues/0021-theming.md),
+[Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md).
 
 ## 9. Testing
 
@@ -538,7 +562,10 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 | A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-v1-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-v1-component-vocabulary) |
-| `customHeader = true` keeps resizing and system behaviour | `undecorated = true` removes all decoration | [4](#4-application-host) |
+| `customHeader = true` keeps the OS's resizing and window behaviour; `undecorated = true` removes all decoration, as in Compose Desktop | only `undecorated` | [4](#4-application-host) |
+| `Modifier.material(...)` gives any widget a glass or solid surface | no counterpart | [6](#6-layout-and-modifiers) |
+| `BackgroundBlur` blurs what is behind it (backdrop blur) | `Modifier.blur` blurs the element itself | [8](#8-v1-component-vocabulary) |
+| The backdrop is set with the `WindowBackdrop(...)` composable | no counterpart | [4](#4-application-host) |
 
 ## 13. Roadmap
 
@@ -551,9 +578,7 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
   `studio` and `browser` (specialist widgets).
 - **Not ported**: `memory` (C-level allocator), `languages` and `bevy_editor` (other bindings).
 
-**Open tickets**: when each closes, it updates this file.
-
-- [Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md)
+**Open tickets**: none. Every ticket on the map is closed.
 
 **Not yet specified**: the "Not yet specified" section of the
 [map](issues/0001-compose-raven-spec.md#not-yet-specified) holds the rest:

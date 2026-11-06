@@ -55,6 +55,7 @@ implementation. This map does not do the implementation.
 - [ComboBox and SpinBox](0019-combobox-and-spinbox.md): `ComboBox` over strings and an index; `SpinBox` with `Double` and `Int` versions, using Raven's defaults; both controlled; `codeEditorLanguages()` lists the editor languages.
 - [Border, WrapBox and Expander](0020-border-wrapbox-expander.md): a `Surface` container over Border (padding through the content's Modifier), `FlowRow` with one spacing, a controlled `Expander`; single-child widgets get an internal Box or Row for their content (amends v1's buttons); own `Color`, rounded-rectangle `Shape` and `BorderStroke`.
 - [Theming](0021-theming.md): `RavenTheme(look, dark, theme)` with the look app-wide and themes per subtree; theme files loaded by name; `RavenTheme.colors` for the app theme; Material-style `XxxDefaults.colors()` defaulting to `Unspecified` (the Raven theme), plus `shape`/`contentPadding` as Raven metrics; `Text(color, fontSize)`; no style classes.
+- [Glass and BackgroundBlur](0022-glass-and-background-blur.md): `Modifier.material` on any widget (the glossary's Modifier now includes material); `RavenTheme(material)` app-wide; `BackgroundBlur` stays a container for full control and `Native`; `ravenApplication(transparent, undecorated)` plus a declarative `WindowBackdrop`.
 
 ## Not yet specified
 
@@ -62,7 +63,8 @@ implementation. This map does not do the implementation.
   widgets can't express. Also custom `Layout {}`, which needs an arrange hook Raven doesn't have yet.
 - **Multiple windows, dialogs, popups**: whether a composition owns one window or many, and how
   transient Raven windows map onto composables. v1's `ravenApplication` is one window; this is where it would grow
-  into `application { Window { } }`.
+  into `application { Window { } }`. This patch also covers window
+  background, wallpaper and clear colour (`Rwindow_set_background`, `Rwindow_set_clear_color`).
 - **Generic input and focus**: `Modifier.clickable`, key and pointer modifiers over
   `RWidgetEventCallback`, focus control (`FocusRequester`), and context menus
   (`ContextMenuArea` over `Rmenu_open`), beyond v1's widget-specific callbacks.
