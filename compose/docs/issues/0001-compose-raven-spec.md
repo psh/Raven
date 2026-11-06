@@ -35,6 +35,7 @@ implementation. This map does not do the implementation.
 - [Raven widget tree API for an Applier](0004-raven-widget-tree-api.md): create/insert-at-index/remove/destroy, per-child slots and `(Rid, ..., void*)` callbacks cover an Applier; calls are UI-thread-only, `Rtask_post` is the dispatcher and `Rset_frame_callback` + `Rwake_up` the frame clock. Gaps: no in-place move, single-child parents destroy on a second insert, one global frame callback, no custom arrange.
 - [Kotlin/Native targets and build](0005-kotlin-native-targets-and-build.md): standalone Gradle build in `compose/` (`compose-raven` + `sample`); Gradle drives CMake for a Release `libraven.a` linked statically through one `raven.def` over `Raven.h`; each target on its own host; MoltenVK is run-time only.
 - [Layering over cinterop](0006-cinterop-layering.md): two modules, `raven-native` (public cinterop `raven.cinterop` + small `raven.native` helpers for callbacks, strings, thread check; no Compose) under `compose-raven-foundation` (everything Compose, depends on it with `implementation`, so no Raven type is public); `sample` depends on foundation only.
+- [Node model and Applier](0007-node-model-and-applier.md): one internal `RavenNode` per Raven widget, with a mirror child list; remove detaches and `onRelease` destroys; a fixed Overlay root; setters call cinterop directly; moves need a new `Rwidget_move_child` in the fork; single-child parents are handled in the Applier.
 
 ## Not yet specified
 
@@ -47,7 +48,9 @@ implementation. This map does not do the implementation.
 - **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
   bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
 - **Windows (mingwX64)**: adding the third target after v1.
-- **Spec assembly**: the structure of `spec.md` itself, once enough decisions exist to fill it.
+- **Spec assembly**: the structure of `spec.md` itself, once enough decisions exist to fill it,
+  including a section listing the changes the spec requires in the `psh/Raven` fork (so far
+  `Rwidget_move_child`).
 
 ## Out of scope
 
