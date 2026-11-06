@@ -24,3 +24,7 @@ _Avoid_: compose-raven (that is the family), the binding (ambiguous with the gen
 **Node**:
 What the Compose runtime's tree is made of: each node stands for exactly one Raven widget, and the tree of nodes mirrors the Raven widget tree under a window's root.
 _Avoid_: element, view, layout node (that is compose-ui's measuring node)
+
+**UI thread**:
+The one thread that starts Raven and runs its event loop; every change to Raven widgets, and every recomposition, happens on it. Other threads reach it only by posting work to it.
+_Avoid_: main thread (it is the main thread on macOS, but the term names the role, not the OS thread)

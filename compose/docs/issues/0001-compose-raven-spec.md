@@ -36,6 +36,7 @@ implementation. This map does not do the implementation.
 - [Kotlin/Native targets and build](0005-kotlin-native-targets-and-build.md): standalone Gradle build in `compose/` (`compose-raven` + `sample`); Gradle drives CMake for a Release `libraven.a` linked statically through one `raven.def` over `Raven.h`; each target on its own host; MoltenVK is run-time only.
 - [Layering over cinterop](0006-cinterop-layering.md): two modules, `raven-native` (public cinterop `raven.cinterop` + small `raven.native` helpers for callbacks, strings, thread check; no Compose) under `compose-raven-foundation` (everything Compose, depends on it with `implementation`, so no Raven type is public); `sample` depends on foundation only.
 - [Node model and Applier](0007-node-model-and-applier.md): one internal `RavenNode` per Raven widget, with a mirror child list; remove detaches and `onRelease` destroys; a fixed Overlay root; setters call cinterop directly; moves need a new `Rwidget_move_child` in the fork; single-child parents are handled in the Applier.
+- [Frame loop and threading](0008-frame-loop-and-threading.md): a blocking `ravenApplication(...) { }` owns the `Rwait_frame` loop; an internal `Rtask_post` dispatcher, a `BroadcastFrameClock` ticked from the frame callback compose-raven owns, and a global write observer wake it from any thread; a fixed shutdown order; errors quit, then rethrow; `exitApplication()` quits.
 
 ## Not yet specified
 
@@ -44,7 +45,8 @@ implementation. This map does not do the implementation.
 - **Theming and styles**: how Raven themes and styles show up in composables, if at all, beyond
   the defaults, and whether that becomes a Material-like module above foundation.
 - **Multiple windows, dialogs, popups**: whether a composition owns one window or many, and how
-  transient Raven windows map onto composables.
+  transient Raven windows map onto composables. v1's `ravenApplication` is one window; this is where it would grow
+  into `application { Window { } }`.
 - **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
   bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
 - **Windows (mingwX64)**: adding the third target after v1.
