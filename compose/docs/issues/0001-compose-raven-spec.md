@@ -50,6 +50,7 @@ implementation. This map does not do the implementation.
 - [Port the Raven samples to Compose](0014-port-raven-samples.md): ports in waves (`hello` in v1; wave 2 is notepad, components, themes, overlay and glass; later waves and fog-bound examples recorded), as a roadmap in the spec; wave-2 tickets don't block assembly; each port is its own module under `compose/samples/`, and `sample` becomes `samples/xml-translator`.
 - [Assemble the spec](0015-assemble-the-spec.md): [`spec.md`](../spec.md) written and accepted as v1 complete, in 14 sections stating the final state with links to the deciding tickets; one table of differences from Compose; the map stays open, and each remaining ticket updates the spec when it closes.
 - [Templates in the XML translator](0016-xml-translator-templates.md): `<Widget>` declarations become top-level composables (types from defaults, `<Children>` as slot lambdas, layout through `modifier`); the whole `{...}` language is translated except `{Instance}`; `If`/`Repeat`/`ForEach` become `if`/`repeat`/`forEachIndexed`; `Include` stays a TODO; parsing must not register tags globally.
+- [Kotlin highlighting in CodeEditor](0017-kotlin-highlighting.md): a built-in Kotlin language in Raven's `syntax.c` (fork change 3), with Prism.js's keyword list, a short list of standard-library types and nested comments; templates, labels and trailing-lambda calls are documented as not highlighted.
 
 ## Not yet specified
 

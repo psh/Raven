@@ -304,8 +304,8 @@ This sample translates Raven XML into compose-raven source.
 - **UI**: a `HorizontalSplitter`.
   - The left pane is `CodeEditor(xml, language = "XML")`, starting with the example from
     `docs/XML.md`.
-  - The right pane is `CodeEditor(code, readOnly = true, language = "Java")`. Raven has no Kotlin
-    highlighting yet.
+  - The right pane is `CodeEditor(code, readOnly = true, language = "Kotlin")`, using Raven's
+    built-in Kotlin language ([section 11](#11-required-raven-changes)).
   - A `Text` below shows the warnings.
   - Translation reruns on every change.
 - **Parsing**: Raven's own parser, through a cinterop private to the sample. `ravenxml.def` uses
@@ -389,9 +389,27 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
 2. **Repeated `Rinit`/`Rshutdown` in one process** (only if needed): Raven resets its global
    context, but none of its own tests starts it twice. The implementation verifies this first. If
    it fails, the fork fixes it.
+3. **A built-in Kotlin language** (required), next to Java in `src/widgets/syntax.c`:
+   - `name = "Kotlin"`, `extensions = "kt;kts"`.
+   - The keywords are Prism.js's Kotlin list: `abstract actual annotation as break by catch class
+     companion const constructor continue crossinline data do dynamic else enum expect external
+     final finally for fun get if import in infix init inline inner interface internal is lateinit
+     noinline object open operator out override package private protected public reified return
+     sealed set super suspend tailrec this throw to try typealias val var vararg when where
+     while`.
+   - `constants = "true false null"`.
+   - The types are `Int Long Short Byte Float Double Boolean Char String Unit Any Nothing Array
+     List MutableList Map MutableMap Set MutableSet Sequence Pair Triple`.
+   - Comments are `//` and `/* */`, and strings use `"` and `'`, `"""` for multiline, and `@`
+     for annotations.
+   - Flags: `R_LANGUAGE_NESTED_COMMENTS | R_LANGUAGE_CHAR_LITERALS`.
+   - Known limits: string templates aren't highlighted, labels look like annotations,
+     trailing-lambda calls aren't marked as functions, and a keyword right after a `.` may be
+     highlighted.
 
 Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
-[Testing strategy](issues/0012-testing-strategy.md).
+[Testing strategy](issues/0012-testing-strategy.md),
+[Kotlin highlighting in CodeEditor](issues/0017-kotlin-highlighting.md).
 
 ## 12. Differences from Compose
 
@@ -429,7 +447,6 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 - [Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md)
 - [Theming](issues/0021-theming.md)
 - [Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md)
-- [Kotlin highlighting in CodeEditor](issues/0017-kotlin-highlighting.md)
 
 **Not yet specified**: the "Not yet specified" section of the
 [map](issues/0001-compose-raven-spec.md#not-yet-specified) holds the rest:
