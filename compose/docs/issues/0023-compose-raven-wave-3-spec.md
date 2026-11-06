@@ -10,7 +10,7 @@ wayfinder: map
 `compose/docs/spec.md` extended past v1 and wave 2. Every area left as fog by
 [compose-raven spec](0001-compose-raven-spec.md) is either decided and written into the spec, or
 ruled out of scope, so that wave 3 of the sample ports (`editor`, `workspace`, `music`,
-`animations`) and the examples waiting on fog can be ported. This map does not do the
+`animations`, `glass`) and the examples waiting on fog can be ported. This map does not do the
 implementation.
 
 ## Notes

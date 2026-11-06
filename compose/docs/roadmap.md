@@ -13,8 +13,8 @@ updates this file when it closes.
 | [0. Verify first](#0-verify-first) | answers to four open facts about Raven | none |
 | [1. Raven fork changes](#1-raven-fork-changes) | the changes compose-raven needs in `psh/Raven` | none |
 | [2. v1](#2-v1) | the library, the host, the v1 vocabulary, tests and CI | `hello`, `xml-translator` |
-| [3. Wave 2](#3-wave-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay`, `glass` |
-| [4. Wave 3](#4-wave-3) | still being decided on the wave 3 map | `editor`, `workspace`, `music`, `animations` |
+| [3. Wave 2](#3-wave-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
+| [4. Wave 3](#4-wave-3) | still being decided on the wave 3 map | `editor`, `workspace`, `music`, `animations`, `glass` |
 | [Later](#later) | waits on fog | `effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser` |
 
 Not ported: `memory` (it demonstrates the C-level allocator), `languages` and `bevy_editor` (they
@@ -62,10 +62,10 @@ Each family is fully decided. The samples port when their families are done:
 | Family | Spec | Needed by |
 |---|---|---|
 | Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#wave-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` |
-| ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#wave-2-combobox-and-spinbox) | `notepad`, `themes`, `glass`, `overlay` |
+| ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#wave-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in wave 3) |
 | Surface, FlowRow, Expander; `Color`, `Shape`, `BorderStroke` | [8: Surface](spec.md#wave-2-surface-flowrow-and-expander) | `components` |
 | Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding`, `Text(color, fontSize)` | [8: theming](spec.md#wave-2-theming) | `themes` |
-| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#wave-2-glass-and-backgroundblur) | `overlay`, `glass` (glass also needs UniformGrid and TreeView from wave 3) |
+| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#wave-2-glass-and-backgroundblur) | `overlay` (and `glass` in wave 3) |
 
 ## 4. Wave 3
 
@@ -78,6 +78,7 @@ Each port waits on these open tickets:
 | `workspace` | [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), [Lists and trees](issues/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Toolbar](issues/0038-toolbar.md) |
 | `music` | [Lists and trees](issues/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Image and resources](issues/0035-image-and-resources.md) |
 | `animations` | [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md) |
+| `glass` | [Lists and trees](issues/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses wave 2's glass, ComboBox and SpinBox too |
 
 Open tickets that serve every app rather than one sample:
 
