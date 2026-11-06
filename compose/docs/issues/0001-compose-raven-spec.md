@@ -42,6 +42,7 @@ implementation. This map does not do the implementation.
 - [Frame loop and threading](0008-frame-loop-and-threading.md): a blocking `ravenApplication(...) { }` owns the `Rwait_frame` loop; an internal `Rtask_post` dispatcher, a `BroadcastFrameClock` ticked from the frame callback compose-raven owns, and a global write observer wake it from any thread; a fixed shutdown order; errors quit, then rethrow; `exitApplication()` quits.
 - [Layout and Modifiers](0009-layout-and-modifiers.md): an own `Modifier` and `Dp`; `Column`/`Row`/`Box` over VBox/HBox/Overlay with Compose's start/top defaults; padding, size, sizeIn, fillMax, weight and align map onto slots and size setters; Compose's `Arrangement` shape with only `spacedBy` in v1; no `Layout {}` or RTL yet.
 - [Events and state](0010-events-and-state.md): callbacks registered once per node with lambdas in fields; controlled inputs as in Compose, checked in the frame callback once the Recomposer settles; `TextField` takes a `String` with a documented caret jump on rewrite; exceptions caught at the C boundary; widget-specific events only in v1.
+- [v1 component vocabulary](0011-v1-component-vocabulary.md): sized by the XML translator sample; Compose-named `Text`, three Buttons, `Checkbox`/`Switch`/`RadioButton`, single-line `TextField`, `Slider`, progress, dividers, `Spacer`; `VerticalScroll`/`HorizontalScroll` containers; compose-raven's own `CodeEditor` and splitters.
 
 ## Not yet specified
 
@@ -54,6 +55,9 @@ implementation. This map does not do the implementation.
   into `application { Window { } }`.
 - **Generic input and focus**: `Modifier.clickable`, key and pointer modifiers over
   `RWidgetEventCallback`, and focus control (`FocusRequester`), beyond v1's widget-specific callbacks.
+- **Wider vocabulary**: lists and trees (virtual, callback-driven), ComboBox, SpinBox, Image,
+  TabView, Expander, Grid, menus and the header bar, docking, and the specialist widgets. Graduates
+  through [Port the Raven samples to Compose](0014-port-raven-samples.md).
 - **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
   bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
 - **Windows (mingwX64)**: adding the third target after v1.
