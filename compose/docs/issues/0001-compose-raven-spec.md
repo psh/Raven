@@ -54,6 +54,7 @@ implementation. This map does not do the implementation.
 - [Menus and the header bar](0018-menus-and-header-bar.md): Compose Desktop's `MenuBar`/`Menu`/`Item`/`CheckboxItem`/`Separator`, but `MenuBar` is placed in the layout; `KeyShortcut` over Raven keys with no automatic Ctrl-to-Cmd; `HeaderBar` plus `ravenApplication(customHeader = true)`; context menus go to the Generic input fog.
 - [ComboBox and SpinBox](0019-combobox-and-spinbox.md): `ComboBox` over strings and an index; `SpinBox` with `Double` and `Int` versions, using Raven's defaults; both controlled; `codeEditorLanguages()` lists the editor languages.
 - [Border, WrapBox and Expander](0020-border-wrapbox-expander.md): a `Surface` container over Border (padding through the content's Modifier), `FlowRow` with one spacing, a controlled `Expander`; single-child widgets get an internal Box or Row for their content (amends v1's buttons); own `Color`, rounded-rectangle `Shape` and `BorderStroke`.
+- [Theming](0021-theming.md): `RavenTheme(look, dark, theme)` with the look app-wide and themes per subtree; theme files loaded by name; `RavenTheme.colors` for the app theme; Material-style `XxxDefaults.colors()` defaulting to `Unspecified` (the Raven theme), plus `shape`/`contentPadding` as Raven metrics; `Text(color, fontSize)`; no style classes.
 
 ## Not yet specified
 
@@ -74,6 +75,8 @@ implementation. This map does not do the implementation.
 - **Accessibility**: semantics for compose-raven, meaning Compose's `Modifier.semantics` /
   `contentDescription` over Raven's `Rwidget_set_accessible_role`, `_name`, `_description`,
   `_hidden` and `_labelled_by`, and which roles composables set by default.
+- **Fonts and text styling**: `FontFamily`, `FontWeight` and `Text.style` over Raven's fonts
+  (`Rtheme_set_font`, `Rwidget_set_font`, font files), and possibly exposing Raven's style classes.
 - **App testing**: a public `compose-raven-test` module so apps can test their own UIs, once the
   internal harness has settled.
 - **Translator as a tool**: extracting the sample's XML parsing and translator into a shared
@@ -89,5 +92,7 @@ implementation. This map does not do the implementation.
 - **Source compatibility with Compose Foundation / Material**: names and shapes follow Compose,
   but code written against androidx foundation or material isn't guaranteed to compile.
 - **Mixing Raven XML documents with composables at run time**: composables build the whole tree for this pass. (Translating XML into Compose *source* is a separate question and in scope: [XML to Compose translator sample](0013-xml-to-compose-translator.md).)
+- **A Material-like module above foundation**: Raven's looks already imitate each platform, and a
+  Material layer would compete with them ([Theming](0021-theming.md)).
 - **Cross-compilation**: each target builds on its own host, since libraven's C build needs the
   host's toolchain and headers (see [Kotlin/Native targets and build](0005-kotlin-native-targets-and-build.md)).

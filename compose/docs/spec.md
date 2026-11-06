@@ -243,7 +243,7 @@ v1 covers what the translator sample and a basic settings form need. All composa
 | Composable | Raven widget | Notes |
 |---|---|---|
 | `Column`, `Row`, `Box` | VBox, HBox, Overlay | [section 6](#6-layout-and-modifiers) |
-| `Text(text, modifier, textAlign, softWrap)` | Label | `color` and `fontSize` wait for [Theming](issues/0021-theming.md) |
+| `Text(text, modifier, color: Color = Color.Unspecified, fontSize: TextUnit = TextUnit.Unspecified, textAlign, softWrap)` | Label | `color` uses `Rlabel_set_color`. `fontSize` (`14.sp`, 1.sp = one Raven text-size unit) uses `Rlabel_set_text_size` |
 | `Button(onClick, modifier, enabled) { content }` | Button, `R_BUTTON_PRIMARY` | the content goes in an internal Row (HBox, vertically centred), as Compose's `RowScope` does; never `Rbutton_set_text` |
 | `OutlinedButton(...) { }`, `TextButton(...) { }` | Button, `R_BUTTON_DEFAULT` / `R_BUTTON_FLAT` | as `Button` |
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
@@ -307,10 +307,51 @@ Graphics types live in `raven.compose.ui.graphics`:
   large radius that Raven clamps.
 - **`BorderStroke(width: Dp, color: Color)`** uses `Rborder_set_outline`.
 
+### Wave 2: theming
+
+Added for the `themes` port:
+
+- **`RavenTheme(look: Look? = null, dark: Boolean? = null, theme: String? = null) { }`**:
+  - `look` and `dark` become one `Rlook_set`. The look is app-wide, so only the outermost
+    `RavenTheme` may set it. A nested one that does logs an error.
+  - `theme` names a loaded theme. The outermost `RavenTheme` uses `Rtheme_use`. A nested one gives
+    its subtree its own theme through an internal Box and `Rwidget_set_theme`.
+  - `Look` is one of `Raven`, `Glass`, `HighContrast`, `Windows`, `Macos`, `Gnome`, `Native` or
+    `MacosGlass`.
+- **`loadTheme(path): String`** and **`loadThemeFromString(xml): String`** load theme files and
+  return the name for `theme =`. They are valid only while Raven runs.
+- **`RavenTheme.colors`** is a CompositionLocal with one `Color` per Raven colour role, read from
+  the app theme with `Rtheme_get_color`. It doesn't see subtree themes.
+- **Colour parameters** follow Material: `XxxDefaults.colors(...)` returns `XxxColors`, passed as
+  `colors =`. Every default is `Color.Unspecified`, meaning "keep the Raven theme's value", so
+  only the colours given call `Rwidget_set_color`.
+
+  | Composable | Parameter | Raven roles |
+  |---|---|---|
+  | `Button`, `OutlinedButton`, `TextButton` | `ButtonDefaults.buttonColors(containerColor, contentColor, disabledContentColor)` | `ACCENT` (`CONTROL` for Outlined/Text), `ACCENT_TEXT` (`TEXT`), `TEXT_DISABLED` |
+  | `Checkbox` | `CheckboxDefaults.colors(checkedColor, uncheckedColor, checkmarkColor)` | `ACCENT`, `CONTROL_BORDER`, `ACCENT_TEXT` |
+  | `RadioButton` | `RadioButtonDefaults.colors(selectedColor, unselectedColor)` | `ACCENT`, `CONTROL_BORDER` |
+  | `Switch` | `SwitchDefaults.colors(checkedTrackColor, uncheckedTrackColor, thumbColor)` | `SWITCH`, `TRACK`, `HANDLE` |
+  | `Slider` | `SliderDefaults.colors(thumbColor, activeTrackColor, inactiveTrackColor)` | `HANDLE`, `ACCENT`, `TRACK` |
+  | `TextField` | `TextFieldDefaults.colors(containerColor, textColor, placeholderColor, focusedIndicatorColor, selectionColor)` | `INPUT`, `TEXT`, `TEXT_PLACEHOLDER`, `FOCUS`, `SELECTION` |
+  | `LinearProgressIndicator` | `color`, `trackColor` | `ACCENT`, `TRACK` |
+  | `HorizontalDivider`, `VerticalDivider` | `color` | `SEPARATOR` |
+  | `Surface` | `contentColor` | `TEXT`, passed down to the children |
+
+  **Hover and pressed shades:** the implementation first checks whether Raven derives them from
+  the base colour. If it doesn't, compose-raven sets slightly lighter and darker shades.
+- **Shape and padding:** buttons take `shape` and `contentPadding: PaddingValues`, and `TextField`
+  takes `shape`.
+  - `shape` uses `R_METRIC_CORNER_RADIUS`, which is a single radius. A non-uniform shape uses
+    `topStart` and logs a warning.
+  - `contentPadding` uses `R_METRIC_PADDING_X`/`_Y` (start, top). Non-symmetric values log a
+    warning.
+
 Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md),
-[Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md).
+[Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md),
+[Theming](issues/0021-theming.md).
 
 ## 9. Testing
 
@@ -489,6 +530,10 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 | `Shape` is rounded rectangles only, and Start/End mean left/right | any `Shape`, RTL-aware | [8](#8-v1-component-vocabulary) |
 | `FlowRow` has one spacing for both items and lines, and no `verticalArrangement` | separate arrangements | [8](#8-v1-component-vocabulary) |
 | `Expander` | no counterpart | [8](#8-v1-component-vocabulary) |
+| Colour defaults are `Unspecified` (the Raven theme), and there is no `disabledContainerColor` | Material defaults read its theme | [8](#8-v1-component-vocabulary) |
+| `shape` is one corner radius, and `contentPadding` is symmetric | any shape and padding | [8](#8-v1-component-vocabulary) |
+| The look can only be set by the outermost `RavenTheme`, and `RavenTheme.colors` shows only the app theme | nested themes are fully independent | [8](#8-v1-component-vocabulary) |
+| No style classes; theme rules by class don't apply | no such concept | [8](#8-v1-component-vocabulary) |
 | No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
 | A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-v1-component-vocabulary) |
@@ -508,7 +553,6 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 
 **Open tickets**: when each closes, it updates this file.
 
-- [Theming](issues/0021-theming.md)
 - [Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md)
 
 **Not yet specified**: the "Not yet specified" section of the
@@ -519,6 +563,7 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 - generic input and focus
 - accessibility semantics
 - the wider vocabulary for wave 3, including a `Toolbar { }`
+- fonts and text styling
 - a public `compose-raven-test` for apps
 - the translator as a tool
 - packaging and publishing
@@ -532,4 +577,5 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
   compose-raven.
 - **Mixing Raven XML documents with composables at run time**: composables build the whole tree.
   Translating XML into Compose source is in scope ([section 10](#10-samples)).
+- **A Material-like module**: Raven's looks already imitate each platform.
 - **Cross-compilation**: each target builds on its own host.
