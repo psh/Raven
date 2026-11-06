@@ -43,6 +43,7 @@ implementation. This map does not do the implementation.
 - [Layout and Modifiers](0009-layout-and-modifiers.md): an own `Modifier` and `Dp`; `Column`/`Row`/`Box` over VBox/HBox/Overlay with Compose's start/top defaults; padding, size, sizeIn, fillMax, weight and align map onto slots and size setters; Compose's `Arrangement` shape with only `spacedBy` in v1; no `Layout {}` or RTL yet.
 - [Events and state](0010-events-and-state.md): callbacks registered once per node with lambdas in fields; controlled inputs as in Compose, checked in the frame callback once the Recomposer settles; `TextField` takes a `String` with a documented caret jump on rewrite; exceptions caught at the C boundary; widget-specific events only in v1.
 - [v1 component vocabulary](0011-v1-component-vocabulary.md): sized by the XML translator sample; Compose-named `Text`, three Buttons, `Checkbox`/`Switch`/`RadioButton`, single-line `TextField`, `Slider`, progress, dividers, `Spacer`; `VerticalScroll`/`HorizontalScroll` containers; compose-raven's own `CodeEditor` and splitters.
+- [Testing strategy](0012-testing-strategy.md): an internal `RavenHost` shared by `ravenApplication` and a headless test harness; Compose-style `runRavenTest` finders and actions over Raven input injection; memory and `StableRef` leak checks after each test; fresh Raven per test (verify first); CI on macOS and Linux.
 
 ## Not yet specified
 
@@ -58,12 +59,11 @@ implementation. This map does not do the implementation.
 - **Wider vocabulary**: lists and trees (virtual, callback-driven), ComboBox, SpinBox, Image,
   TabView, Expander, Grid, menus and the header bar, docking, and the specialist widgets. Graduates
   through [Port the Raven samples to Compose](0014-port-raven-samples.md).
+- **App testing**: a public `compose-raven-test` module so apps can test their own UIs, once the
+  internal harness has settled.
 - **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
   bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
 - **Windows (mingwX64)**: adding the third target after v1.
-- **Spec assembly**: the structure of `spec.md` itself, once enough decisions exist to fill it,
-  including a section listing the changes the spec requires in the `psh/Raven` fork (so far
-  `Rwidget_move_child`).
 
 ## Out of scope
 
