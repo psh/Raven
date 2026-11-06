@@ -41,6 +41,7 @@ implementation. This map does not do the implementation.
 - [Node model and Applier](0007-node-model-and-applier.md): one internal `RavenNode` per Raven widget, with a mirror child list; remove detaches and `onRelease` destroys; a fixed Overlay root; setters call cinterop directly; moves need a new `Rwidget_move_child` in the fork; single-child parents are handled in the Applier.
 - [Frame loop and threading](0008-frame-loop-and-threading.md): a blocking `ravenApplication(...) { }` owns the `Rwait_frame` loop; an internal `Rtask_post` dispatcher, a `BroadcastFrameClock` ticked from the frame callback compose-raven owns, and a global write observer wake it from any thread; a fixed shutdown order; errors quit, then rethrow; `exitApplication()` quits.
 - [Layout and Modifiers](0009-layout-and-modifiers.md): an own `Modifier` and `Dp`; `Column`/`Row`/`Box` over VBox/HBox/Overlay with Compose's start/top defaults; padding, size, sizeIn, fillMax, weight and align map onto slots and size setters; Compose's `Arrangement` shape with only `spacedBy` in v1; no `Layout {}` or RTL yet.
+- [Events and state](0010-events-and-state.md): callbacks registered once per node with lambdas in fields; controlled inputs as in Compose, checked in the frame callback once the Recomposer settles; `TextField` takes a `String` with a documented caret jump on rewrite; exceptions caught at the C boundary; widget-specific events only in v1.
 
 ## Not yet specified
 
@@ -51,6 +52,8 @@ implementation. This map does not do the implementation.
 - **Multiple windows, dialogs, popups**: whether a composition owns one window or many, and how
   transient Raven windows map onto composables. v1's `ravenApplication` is one window; this is where it would grow
   into `application { Window { } }`.
+- **Generic input and focus**: `Modifier.clickable`, key and pointer modifiers over
+  `RWidgetEventCallback`, and focus control (`FocusRequester`), beyond v1's widget-specific callbacks.
 - **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
   bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
 - **Windows (mingwX64)**: adding the third target after v1.
