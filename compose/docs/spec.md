@@ -1,8 +1,10 @@
 # compose-raven specification
 
-**Status: v1 and wave 2 complete.** Every decision on the map is settled and below. What remains
-is fog, listed in the [Roadmap](#13-roadmap). The wayfinder map is [compose-raven spec](issues/0001-compose-raven-spec.md), and the
-vocabulary is in [`compose/GLOSSARY.md`](../GLOSSARY.md).
+**Status: v1 and wave 2 complete.** Every decision below is settled. The first wayfinder map,
+[compose-raven spec](issues/0001-compose-raven-spec.md), is closed. The open work is on
+[compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md), and each of its tickets
+updates this file when it closes ([Roadmap](#13-roadmap)). The vocabulary is in
+[`compose/GLOSSARY.md`](../GLOSSARY.md).
 
 ## 1. Overview
 
@@ -578,21 +580,26 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
   `studio` and `browser` (specialist widgets).
 - **Not ported**: `memory` (C-level allocator), `languages` and `bevy_editor` (other bindings).
 
-**Open tickets**: none. Every ticket on the map is closed.
+**Open tickets**: on [compose-raven wave 3 spec](issues/0023-compose-raven-wave-3-spec.md).
 
-**Not yet specified**: the "Not yet specified" section of the
-[map](issues/0001-compose-raven-spec.md#not-yet-specified) holds the rest:
+- [Multiple windows, dialogs and popups](issues/0024-multiple-windows.md)
+- [Generic input and focus](issues/0025-generic-input-and-focus.md)
+- [Accessibility semantics](issues/0026-accessibility-semantics.md)
+- [Fonts and text styling](issues/0027-fonts-and-text-styling.md)
+- [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md)
+- [Public test module for apps](issues/0029-app-testing-module.md)
+- [XML translator as a tool](issues/0030-translator-as-a-tool.md)
+- [Packaging and publishing](issues/0031-packaging-and-publishing.md)
+- [Windows (mingwX64) target](issues/0032-windows-target.md)
+- [Lists and trees](issues/0033-lists-and-trees.md)
+- [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md)
+- [Image and resources](issues/0035-image-and-resources.md)
+- [Island and appear transitions](issues/0036-island-and-appear-transitions.md)
+- [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), after multiple windows
+- [Toolbar](issues/0038-toolbar.md), after accessibility
 
-- custom drawing and `Layout {}`
-- multiple windows, dialogs and popups
-- generic input and focus
-- accessibility semantics
-- the wider vocabulary for wave 3, including a `Toolbar { }`
-- fonts and text styling
-- a public `compose-raven-test` for apps
-- the translator as a tool
-- packaging and publishing
-- Windows (`mingwX64`)
+**Not yet specified**: the specialist widgets (Timeline, NodeGraph, ColorPicker, WebView,
+BlockEditor) for `studio` and `browser`.
 
 ## 14. Out of scope
 

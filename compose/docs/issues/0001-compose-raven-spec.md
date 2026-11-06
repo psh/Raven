@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 wayfinder: map
 ---
 
@@ -59,34 +59,8 @@ implementation. This map does not do the implementation.
 
 ## Not yet specified
 
-- **Custom drawing**: an escape hatch into Raven viewport draw callbacks for content Raven's
-  widgets can't express. Also custom `Layout {}`, which needs an arrange hook Raven doesn't have yet.
-- **Multiple windows, dialogs, popups**: whether a composition owns one window or many, and how
-  transient Raven windows map onto composables. v1's `ravenApplication` is one window; this is where it would grow
-  into `application { Window { } }`. This patch also covers window
-  background, wallpaper and clear colour (`Rwindow_set_background`, `Rwindow_set_clear_color`).
-- **Generic input and focus**: `Modifier.clickable`, key and pointer modifiers over
-  `RWidgetEventCallback`, focus control (`FocusRequester`), and context menus
-  (`ContextMenuArea` over `Rmenu_open`), beyond v1's widget-specific callbacks.
-- **Wider vocabulary**: lists and trees (virtual, callback-driven), Image, TabView, Grid,
-  UniformGrid, TreeView, ListView, Island, Appear transitions, docking, FileBrowser, a `Toolbar { }`
-  (a Row with toolbar spacing and padding and `R_ROLE_TOOLBAR`, for `editor`, `workspace` and
-  `studio`; until then, a Row of `TextButton`s works), and the specialist
-  widgets (Timeline, NodeGraph, WebView, ColorPicker): what wave 3 of [Port the Raven samples to
-  Compose](0014-port-raven-samples.md) needs.
-- **Accessibility**: semantics for compose-raven, meaning Compose's `Modifier.semantics` /
-  `contentDescription` over Raven's `Rwidget_set_accessible_role`, `_name`, `_description`,
-  `_hidden` and `_labelled_by`, and which roles composables set by default.
-- **Fonts and text styling**: `FontFamily`, `FontWeight` and `Text.style` over Raven's fonts
-  (`Rtheme_set_font`, `Rwidget_set_font`, font files), and possibly exposing Raven's style classes.
-- **App testing**: a public `compose-raven-test` module so apps can test their own UIs, once the
-  internal harness has settled.
-- **Translator as a tool**: extracting the sample's XML parsing and translator into a shared
-  module, a command-line tool or a Gradle task, once the sample proves it useful, including
-  following `<Include>` across files.
-- **Packaging and publishing**: how compose-raven and the native Raven library ship (klib plus
-  bundled static lib?), and whether MoltenVK is bundled with apps or left to the user to install.
-- **Windows (mingwX64)**: adding the third target after v1.
+None left here. Closed on 2026-11-06 with the destination reached for v1 and wave 2. The remaining
+fog moved, unchanged in scope, to the next map, [compose-raven wave 3 spec](0023-compose-raven-wave-3-spec.md).
 
 ## Out of scope
 
