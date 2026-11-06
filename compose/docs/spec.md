@@ -270,8 +270,22 @@ Added for the `notepad` port:
 `KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
 Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the named keys.
 
+### Wave 2: ComboBox and SpinBox
+
+Added for the `notepad`, `themes`, `glass` and `overlay` ports. All three are controlled.
+
+| Composable | Raven widget | Notes |
+|---|---|---|
+| `ComboBox(items: List<String>, selectedIndex: Int, onSelectedIndexChange: (Int) -> Unit, modifier, enabled = true)` | ComboBox | -1 means nothing selected. When `items` changes (by value), the node calls `clear_items` and `add_item` again |
+| `SpinBox(value: Double, onValueChange: (Double) -> Unit, modifier, valueRange = 0.0..100.0, step = 1.0, decimals = 2, enabled = true)` | SpinBox | Raven's `Double` and defaults |
+| `SpinBox(value: Int, onValueChange: (Int) -> Unit, modifier, valueRange: IntRange = 0..100, step = 1, enabled = true)` | SpinBox | `decimals = 0`, values rounded with `roundToInt()` |
+
+`codeEditorLanguages(): List<String>` lists Raven's editor languages (`Rlanguage_get_count`/`_name`).
+It is valid only inside the composition.
+
 Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
-[Menus and the header bar](issues/0018-menus-and-header-bar.md).
+[Menus and the header bar](issues/0018-menus-and-header-bar.md),
+[ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md).
 
 ## 9. Testing
 
@@ -443,7 +457,8 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
 | Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-v1-component-vocabulary) |
-| `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter` | no counterpart | [8](#8-v1-component-vocabulary) |
+| `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter`, `ComboBox`, `SpinBox` | no counterpart in Compose Foundation | [8](#8-v1-component-vocabulary) |
+| `SpinBox` shows 2 decimals unless told otherwise (Raven's default) | none | [8](#8-v1-component-vocabulary) |
 | No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
 | A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-v1-component-vocabulary) |
@@ -463,7 +478,6 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 
 **Open tickets**: when each closes, it updates this file.
 
-- [ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md)
 - [Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md)
 - [Theming](issues/0021-theming.md)
 - [Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md)
