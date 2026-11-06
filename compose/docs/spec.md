@@ -160,6 +160,10 @@ Decided in: [Frame loop and threading](issues/0008-frame-loop-and-threading.md),
 - **Moves** use `Rwidget_move_child(parent, from, to)` ([section 11](#11-required-raven-changes)).
   The Applier calls it once for each of Compose's `count` items, with `to - count` when
   `from < to`.
+- **Content of single-child widgets**: a composable over a single-child widget (Button, Border,
+  Expander, ...) emits two nodes: the widget, plus an internal content node holding the
+  composable's content. That node is a Row for buttons and a Box for the others. So content may
+  emit any number of children.
 - **Single-child parents** (Border, SizeBox, Button, Expander, BackgroundBlur) destroy their
   existing child when a second one is inserted. Before inserting into one, the Applier detaches
   the Raven child currently attached. That child stays alive in the mirror list. Removing a node
@@ -240,7 +244,7 @@ v1 covers what the translator sample and a basic settings form need. All composa
 |---|---|---|
 | `Column`, `Row`, `Box` | VBox, HBox, Overlay | [section 6](#6-layout-and-modifiers) |
 | `Text(text, modifier, textAlign, softWrap)` | Label | `color` and `fontSize` wait for [Theming](issues/0021-theming.md) |
-| `Button(onClick, modifier, enabled) { content }` | Button, `R_BUTTON_PRIMARY` | single child, content slot; never `Rbutton_set_text` |
+| `Button(onClick, modifier, enabled) { content }` | Button, `R_BUTTON_PRIMARY` | the content goes in an internal Row (HBox, vertically centred), as Compose's `RowScope` does; never `Rbutton_set_text` |
 | `OutlinedButton(...) { }`, `TextButton(...) { }` | Button, `R_BUTTON_DEFAULT` / `R_BUTTON_FLAT` | as `Button` |
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
 | `Switch(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_SWITCH` | as `Checkbox` |
@@ -283,9 +287,30 @@ Added for the `notepad`, `themes`, `glass` and `overlay` ports. All three are co
 `codeEditorLanguages(): List<String>` lists Raven's editor languages (`Rlanguage_get_count`/`_name`).
 It is valid only inside the composition.
 
+### Wave 2: Surface, FlowRow and Expander
+
+Added for the `components` port:
+
+| Composable | Raven widget | Notes |
+|---|---|---|
+| `Surface(modifier, shape: Shape = RectangleShape, color: Color = Color.Unspecified, border: BorderStroke? = null, shadowElevation: Dp = 0.dp) { }` | Border | `Unspecified` means the theme's panel colour. Inner padding is the content's own `Modifier.padding`. `shadowElevation` maps to blur = elevation and y offset = elevation / 2. The content goes in an internal Box |
+| `FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(x)) { }` | WrapBox | `x` is both the gap between items and the gap between lines |
+| `Expander(title: String, expanded: Boolean, onExpandedChange: (Boolean) -> Unit, modifier) { }` | Expander | controlled; the content goes in an internal Box |
+
+Graphics types live in `raven.compose.ui.graphics`:
+
+- **`Color`** is a value class: `Color(0xFF3B82F6)`, `Color(red, green, blue, alpha)`, and the
+  constants `Black`, `White`, `Gray`, `Red`, `Green`, `Blue`, `Yellow`, `Transparent` and
+  `Unspecified`.
+- **`Shape`** is sealed: `RectangleShape`, `RoundedCornerShape(all)`,
+  `RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)`, and `CircleShape`, which is a
+  large radius that Raven clamps.
+- **`BorderStroke(width: Dp, color: Color)`** uses `Rborder_set_outline`.
+
 Decided in: [v1 component vocabulary](issues/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/0018-menus-and-header-bar.md),
-[ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md).
+[ComboBox and SpinBox](issues/0019-combobox-and-spinbox.md),
+[Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md).
 
 ## 9. Testing
 
@@ -459,6 +484,11 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 | Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-v1-component-vocabulary) |
 | `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter`, `ComboBox`, `SpinBox` | no counterpart in Compose Foundation | [8](#8-v1-component-vocabulary) |
 | `SpinBox` shows 2 decimals unless told otherwise (Raven's default) | none | [8](#8-v1-component-vocabulary) |
+| `Surface` container for background, border, corners and shadow | `Modifier.background` / `.border` / `.clip` / `.shadow` | [8](#8-v1-component-vocabulary) |
+| `shadowElevation` maps to blur and offset as an approximation | Material elevation | [8](#8-v1-component-vocabulary) |
+| `Shape` is rounded rectangles only, and Start/End mean left/right | any `Shape`, RTL-aware | [8](#8-v1-component-vocabulary) |
+| `FlowRow` has one spacing for both items and lines, and no `verticalArrangement` | separate arrangements | [8](#8-v1-component-vocabulary) |
+| `Expander` | no counterpart | [8](#8-v1-component-vocabulary) |
 | No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
 | A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-v1-component-vocabulary) |
@@ -478,7 +508,6 @@ Decided in: [Node model and Applier](issues/0007-node-model-and-applier.md),
 
 **Open tickets**: when each closes, it updates this file.
 
-- [Border, WrapBox and Expander](issues/0020-border-wrapbox-expander.md)
 - [Theming](issues/0021-theming.md)
 - [Glass and BackgroundBlur](issues/0022-glass-and-background-blur.md)
 
