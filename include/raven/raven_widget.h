@@ -220,6 +220,18 @@ extern "C" {
 	/** @brief Detaches a child without deleting it. The caller owns it again. */
 	RAVEN_API void Rwidget_remove_child(Rid parent, Rid child);
 
+	/**
+	 * @brief Moves a child to another place among the children of its parent,
+	 * without taking it out of the tree: unlike removing and inserting it
+	 * again, it keeps the focus, the hover and the capture, and its appear
+	 * transition is not played again. Its slot settings stay with it.
+	 * @param from Index of the child to move.
+	 * @param to   Its index once moved, counted among the children without it
+	 *             (as Rwidget_insert_child counts the index of a moved child).
+	 *             Both must name a child; an index out of range is an error.
+	 */
+	RAVEN_API void Rwidget_move_child(Rid parent, int from, int to);
+
 	/** @brief Deletes every child of a panel. */
 	RAVEN_API void Rwidget_clear_children(Rid parent);
 

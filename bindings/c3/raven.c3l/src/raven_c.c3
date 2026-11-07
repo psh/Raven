@@ -2847,6 +2847,14 @@ extern fn Rid r_widget_insert_child(Rid parent, Rid child, CInt index) @cname("R
 <* Detaches a child without deleting it. The caller owns it again. *>
 extern fn void r_widget_remove_child(Rid parent, Rid child) @cname("Rwidget_remove_child");
 
+<*
+ Moves a child to another place among the children of its parent,
+ without taking it out of the tree: unlike removing and inserting it
+ again, it keeps the focus, the hover and the capture, and its appear
+ transition is not played again. Its slot settings stay with it.
+*>
+extern fn void r_widget_move_child(Rid parent, CInt from, CInt to) @cname("Rwidget_move_child");
+
 <* Deletes every child of a panel. *>
 extern fn void r_widget_clear_children(Rid parent) @cname("Rwidget_clear_children");
 

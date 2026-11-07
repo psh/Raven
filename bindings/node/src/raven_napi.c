@@ -252,6 +252,7 @@ static struct {
 	Rid (*Rwidget_add_child)(Rid, Rid);
 	Rid (*Rwidget_insert_child)(Rid, Rid, int);
 	void (*Rwidget_remove_child)(Rid, Rid);
+	void (*Rwidget_move_child)(Rid, int, int);
 	void (*Rwidget_clear_children)(Rid);
 	Rid (*Rwidget_get_parent)(Rid);
 	int (*Rwidget_get_child_count)(Rid);
@@ -1385,6 +1386,7 @@ static const struct {
 	{"Rwidget_add_child", offsetof(__typeof__(rn), Rwidget_add_child)},
 	{"Rwidget_insert_child", offsetof(__typeof__(rn), Rwidget_insert_child)},
 	{"Rwidget_remove_child", offsetof(__typeof__(rn), Rwidget_remove_child)},
+	{"Rwidget_move_child", offsetof(__typeof__(rn), Rwidget_move_child)},
 	{"Rwidget_clear_children", offsetof(__typeof__(rn), Rwidget_clear_children)},
 	{"Rwidget_get_parent", offsetof(__typeof__(rn), Rwidget_get_parent)},
 	{"Rwidget_get_child_count", offsetof(__typeof__(rn), Rwidget_get_child_count)},
@@ -7726,6 +7728,22 @@ static napi_value rn_w_Rwidget_remove_child(napi_env env, napi_callback_info inf
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	if (!rn_get_uint32(env, argv[1], &a1)) return NULL;
 	rn.Rwidget_remove_child((Rid)a0, (Rid)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rwidget_move_child(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rwidget_move_child((Rid)a0, (int)a1, (int)a2);
 	return result_;
 }
 
@@ -23063,6 +23081,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwidget_add_child", NULL, rn_w_Rwidget_add_child, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_insert_child", NULL, rn_w_Rwidget_insert_child, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_remove_child", NULL, rn_w_Rwidget_remove_child, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwidget_move_child", NULL, rn_w_Rwidget_move_child, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_clear_children", NULL, rn_w_Rwidget_clear_children, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_get_parent", NULL, rn_w_Rwidget_get_parent, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_get_child_count", NULL, rn_w_Rwidget_get_child_count, NULL, NULL, NULL, napi_enumerable, NULL},

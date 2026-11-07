@@ -376,6 +376,7 @@ const _symbols = {
 	Rwidget_add_child: { args: ["u32", "u32"], returns: "u32" },
 	Rwidget_insert_child: { args: ["u32", "u32", "i32"], returns: "u32" },
 	Rwidget_remove_child: { args: ["u32", "u32"], returns: "void" },
+	Rwidget_move_child: { args: ["u32", "i32", "i32"], returns: "void" },
 	Rwidget_clear_children: { args: ["u32"], returns: "void" },
 	Rwidget_get_parent: { args: ["u32"], returns: "u32" },
 	Rwidget_get_child_count: { args: ["u32"], returns: "i32" },
@@ -7830,6 +7831,20 @@ export function Rwidget_insert_child(parent: Rid, child: Rid, index: number): Ri
 /** Detaches a child without deleting it. The caller owns it again. */
 export function Rwidget_remove_child(parent: Rid, child: Rid): void {
 	_lib.Rwidget_remove_child(parent, child);
+}
+
+/**
+ * Moves a child to another place among the children of its parent,
+ * without taking it out of the tree: unlike removing and inserting it
+ * again, it keeps the focus, the hover and the capture, and its appear
+ * transition is not played again. Its slot settings stay with it.
+ * from Index of the child to move.
+ * to   Its index once moved, counted among the children without it
+ *             (as Rwidget_insert_child counts the index of a moved child).
+ *             Both must name a child; an index out of range is an error.
+ */
+export function Rwidget_move_child(parent: Rid, from: number, to: number): void {
+	_lib.Rwidget_move_child(parent, from, to);
 }
 
 /** Deletes every child of a panel. */

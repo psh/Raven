@@ -3069,6 +3069,7 @@ export const Rwidget_get_type = _lib.Rwidget_get_type;
 export const Rwidget_add_child = _lib.Rwidget_add_child;
 export const Rwidget_insert_child = _lib.Rwidget_insert_child;
 export const Rwidget_remove_child = _lib.Rwidget_remove_child;
+export const Rwidget_move_child = _lib.Rwidget_move_child;
 export const Rwidget_clear_children = _lib.Rwidget_clear_children;
 export const Rwidget_get_parent = _lib.Rwidget_get_parent;
 export const Rwidget_get_child_count = _lib.Rwidget_get_child_count;

@@ -2191,6 +2191,14 @@ fn Widget Widget.insert_child(self, Id child, CInt index) @inline => (Widget)c::
 <* Detaches a child without deleting it. The caller owns it again. *>
 fn void Widget.remove_child(self, Id child) @inline => c::r_widget_remove_child((c::Rid)self, (c::Rid)child);
 
+<*
+ Moves a child to another place among the children of its parent,
+ without taking it out of the tree: unlike removing and inserting it
+ again, it keeps the focus, the hover and the capture, and its appear
+ transition is not played again. Its slot settings stay with it.
+*>
+fn void Widget.move_child(self, CInt from, CInt to) @inline => c::r_widget_move_child((c::Rid)self, from, to);
+
 <* Deletes every child of a panel. *>
 fn void Widget.clear_children(self) @inline => c::r_widget_clear_children((c::Rid)self);
 

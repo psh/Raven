@@ -451,6 +451,28 @@ void Rwidget_remove_child(Rid parent_id, Rid child_id) {
 	rvn_widget_detach(child);
 }
 
+void Rwidget_move_child(Rid parent_id, int from, int to) {
+	rvn_widget_t* child;
+	RVN_WIDGET_VOID(parent, parent_id, 0);
+	if (from < 0 || from >= (int)parent->child_count || to < 0 || to >= (int)parent->child_count) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rwidget_move_child: index %d or %d out of range (%u children)",
+			from, to, parent->child_count);
+		return;
+	}
+	if (from == to) return;
+	/* in place: no detach, so the window keeps its focus, hover and capture, and no appear transition */
+	child = parent->children[from];
+	if (from < to) {
+		memmove(&parent->children[from], &parent->children[from + 1], sizeof(rvn_widget_t*) * (size_t)(to - from));
+	} else {
+		memmove(&parent->children[to + 1], &parent->children[to], sizeof(rvn_widget_t*) * (size_t)(from - to));
+	}
+	parent->children[to] = child;
+	rvn_a11y_structure_changed();
+	if (parent->cls->children_changed) parent->cls->children_changed(parent);
+	rvn_widget_invalidate_layout(parent);
+}
+
 void Rwidget_clear_children(Rid parent_id) {
 	RVN_WIDGET_VOID(parent, parent_id, 0);
 	while (parent->child_count > 0) rvn_widget_destroy(parent->children[parent->child_count - 1]);

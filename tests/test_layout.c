@@ -335,6 +335,59 @@ static void test_tree_api(void) {
 	EXPECT_ERRORS_END(5);
 }
 
+/* Rwidget_move_child reorders in place: the order changes, the focus and the slots stay. */
+static void test_move_child(void) {
+	Rid box = Rwidget_create(R_WIDGET_VBOX);
+	Rid a = Rwidget_add_child(box, block(10, 10));
+	Rid b = Rwidget_add_child(box, block(10, 20));
+	Rid input = Rwidget_add_child(box, Rwidget_create(R_WIDGET_TEXT_INPUT));
+	Rid c = Rwidget_add_child(box, block(10, 30));
+	float y_b, y_c;
+	Rslot_set_padding(c, 5, 5, 5, 5);
+	Rwindow_set_content(g_window, box);
+	Rdraw_frame();
+	Rwidget_focus(input);
+	Rdraw_frame();
+	CHECK(Rwindow_get_focused_widget(g_window) == input);
+
+	/* forward: a (0) to the end */
+	Rwidget_move_child(box, 0, 3);
+	CHECK(Rwidget_get_child(box, 0) == b);
+	CHECK(Rwidget_get_child(box, 1) == input);
+	CHECK(Rwidget_get_child(box, 2) == c);
+	CHECK(Rwidget_get_child(box, 3) == a);
+	/* backward: c (2) to the front */
+	Rwidget_move_child(box, 2, 0);
+	CHECK(Rwidget_get_child(box, 0) == c);
+	CHECK(Rwidget_get_child(box, 1) == b);
+	CHECK(Rwidget_get_child(box, 2) == input);
+	CHECK(Rwidget_get_child(box, 3) == a);
+	CHECK(Rwidget_get_child_count(box) == 4);
+	CHECK(Rwidget_get_parent(c) == box);
+
+	/* the layout follows the new order, the slot of c moved with it */
+	Rdraw_frame();
+	Rwidget_get_rect(c, NULL, &y_c, NULL, NULL);
+	Rwidget_get_rect(b, NULL, &y_b, NULL, NULL);
+	CHECK_NEAR(y_c, 5);
+	CHECK_NEAR(y_b, 40);
+	/* the moved input kept the focus: a move is not a detach */
+	Rwidget_move_child(box, 2, 0);
+	Rdraw_frame();
+	CHECK(Rwidget_get_child(box, 0) == input);
+	CHECK(Rwindow_get_focused_widget(g_window) == input);
+
+	/* moving to the same place does nothing; out of range is an error */
+	Rwidget_move_child(box, 1, 1);
+	CHECK(Rwidget_get_child(box, 1) == c);
+	EXPECT_ERRORS_BEGIN();
+	Rwidget_move_child(box, -1, 0);
+	Rwidget_move_child(box, 0, 4);
+	Rwidget_move_child(box, 4, 0);
+	EXPECT_ERRORS_END(3);
+	CHECK(Rwidget_get_child(box, 0) == input);
+}
+
 int main(void) {
 	if (!test_init(0)) {
 		printf("cannot initialize Raven\n");
@@ -354,6 +407,7 @@ int main(void) {
 	RUN(test_splitter_and_wrap);
 	RUN(test_window_resize_and_text);
 	RUN(test_tree_api);
+	RUN(test_move_child);
 
 	Rshutdown();
 	return test_report("test_layout");

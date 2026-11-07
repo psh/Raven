@@ -2201,6 +2201,15 @@ func WidgetRemoveChild(parent ID, child ID) {
 	C.Rwidget_remove_child(C.Rid(parent), C.Rid(child))
 }
 
+// WidgetMoveChild: Moves a child to another place among the children of its parent, without taking it out of
+// the tree: unlike removing and inserting it again, it keeps the focus, the hover and the capture, and its
+// appear transition is not played again. Its slot settings stay with it. from Index of the child to move. to
+// Its index once moved, counted among the children without it (as Rwidget_insert_child counts the index of a
+// moved child). Both must name a child; an index out of range is an error.
+func WidgetMoveChild(parent ID, from int, to int) {
+	C.Rwidget_move_child(C.Rid(parent), C.int(from), C.int(to))
+}
+
 // WidgetClearChildren: Deletes every child of a panel.
 func WidgetClearChildren(parent ID) {
 	C.Rwidget_clear_children(C.Rid(parent))

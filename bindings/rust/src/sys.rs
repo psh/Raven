@@ -2399,6 +2399,15 @@ extern "C" {
     pub fn Rwidget_insert_child(parent: Rid, child: Rid, index: c_int) -> Rid;
     /// Detaches a child without deleting it. The caller owns it again.
     pub fn Rwidget_remove_child(parent: Rid, child: Rid);
+    /// Moves a child to another place among the children of its parent,
+    /// without taking it out of the tree: unlike removing and inserting it
+    /// again, it keeps the focus, the hover and the capture, and its appear
+    /// transition is not played again. Its slot settings stay with it.
+    /// from Index of the child to move.
+    /// to   Its index once moved, counted among the children without it
+    ///             (as Rwidget_insert_child counts the index of a moved child).
+    ///             Both must name a child; an index out of range is an error.
+    pub fn Rwidget_move_child(parent: Rid, from: c_int, to: c_int);
     /// Deletes every child of a panel.
     pub fn Rwidget_clear_children(parent: Rid);
     pub fn Rwidget_get_parent(widget: Rid) -> Rid;

@@ -8890,6 +8890,28 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rwidget_move_child$;
+
+    /**
+     * Moves a child to another place among the children of its parent,
+     * without taking it out of the tree: unlike removing and inserting it
+     * again, it keeps the focus, the hover and the capture, and its appear
+     * transition is not played again. Its slot settings stay with it.
+     * from Index of the child to move.
+     * to   Its index once moved, counted among the children without it
+     *             (as Rwidget_insert_child counts the index of a moved child).
+     *             Both must name a child; an index out of range is an error.
+     */
+    public static void Rwidget_move_child(int parent, int from, int to_) {
+        MethodHandle $h = Rwidget_move_child$;
+        if ($h == null) Rwidget_move_child$ = $h = find("Rwidget_move_child", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(parent, from, to_);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rwidget_clear_children$;
 
     /**

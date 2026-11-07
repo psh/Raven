@@ -1323,6 +1323,7 @@ RWidgetType Rwidget_get_type(Rid widget);
 Rid Rwidget_add_child(Rid parent, Rid child);
 Rid Rwidget_insert_child(Rid parent, Rid child, int index);
 void Rwidget_remove_child(Rid parent, Rid child);
+void Rwidget_move_child(Rid parent, int from, int to);
 void Rwidget_clear_children(Rid parent);
 Rid Rwidget_get_parent(Rid widget);
 int Rwidget_get_child_count(Rid widget);

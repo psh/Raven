@@ -2384,6 +2384,15 @@ foreign lib {
 	Rwidget_insert_child :: proc(parent: Rid, child: Rid, index: i32) -> Rid ---
 	// Detaches a child without deleting it. The caller owns it again.
 	Rwidget_remove_child :: proc(parent: Rid, child: Rid) ---
+	// Moves a child to another place among the children of its parent,
+	// without taking it out of the tree: unlike removing and inserting it
+	// again, it keeps the focus, the hover and the capture, and its appear
+	// transition is not played again. Its slot settings stay with it.
+	// from Index of the child to move.
+	// to   Its index once moved, counted among the children without it
+	//             (as Rwidget_insert_child counts the index of a moved child).
+	//             Both must name a child; an index out of range is an error.
+	Rwidget_move_child :: proc(parent: Rid, from: i32, to: i32) ---
 	// Deletes every child of a panel.
 	Rwidget_clear_children :: proc(parent: Rid) ---
 	Rwidget_get_parent :: proc(widget: Rid) -> Rid ---
