@@ -36,7 +36,7 @@ a Windows host or a real window:
 | Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) | Waits for the host |
 | A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) | Waits for a Windows host |
 | Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) | **Passed** |
-| Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) | **Failed**, worked around: toggle the focusable flag |
+| Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) | **Failed**: fork change 5, `Rwindow_clear_focus` (the flag toggle works until then) |
 | A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) | Waits for a real window |
 | An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) | Waits for a real window |
 | `androidx.compose.animation:animation-core` resolves for our targets without Compose UI (phase 3) | compose-raven provides a small `animate*AsState` set | [8](spec.md#8-component-vocabulary) | **Failed**: compose-raven provides its own |
@@ -50,6 +50,7 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 2. ~~A fix for repeated `Rinit`/`Rshutdown`~~: not needed, milestone 0 found it works.
 3. A built-in Kotlin language in `src/widgets/syntax.c`: needed by the `xml-translator` sample.
 4. `Rdialog_set_dismiss_callback`, which can refuse a dismissal: needed by `Dialog` (phase 3).
+5. `Rwindow_clear_focus(window)`, which leaves no widget focused: needed by `clearFocus()` (phase 3).
 
 ## 2. Phase 1
 

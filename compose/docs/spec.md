@@ -326,9 +326,11 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
   - `Modifier.focusable()` uses `Rwidget_set_focusable`.
   - `FocusRequester` with `Modifier.focusRequester(r)` and `r.requestFocus()` uses `Rwidget_focus`.
   - `Modifier.onFocusChanged { it.isFocused }` comes from Raven's focus events.
-  - `LocalFocusManager.current.clearFocus()` turns the focused widget's focusable flag off and on
-    again, which makes Raven clear the focus. Focusing the root doesn't, because Raven ignores
-    focus requests on widgets that aren't focusable (verified, [spikes](../spikes/README.md)).
+  - `LocalFocusManager.current.clearFocus()` calls `Rwindow_clear_focus`
+    ([fork change 5](#11-required-raven-changes)). Focusing the root doesn't clear focus, because
+    Raven ignores focus requests on widgets that aren't focusable (verified,
+    [spikes](../spikes/README.md)). Until the fork change lands, turning the focused widget's
+    focusable flag off and on does the same.
   - Tab traversal is Raven's own.
 - **Context menus**: `ContextMenuArea(items = { listOf(ContextMenuItem(label) { ... }) }) { }`
   builds an unparented Raven Menu on a right-click and opens it with `Rmenu_open`. The content goes
@@ -907,10 +909,17 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
 4. **`Rdialog_set_dismiss_callback`** (required, phase 3): it is called when Escape or a click
    outside would dismiss a dialog, and it can refuse. `Dialog` then calls `onDismissRequest` and the
    app decides, instead of Raven deleting the content behind Compose's back.
+5. **`Rwindow_clear_focus(Rid window)`** (required, phase 3): leaves the window with no focused
+   widget, by calling the internal `rvn_window_set_focus(window, NULL)`, as Raven already does when
+   the focused widget is disabled or stops being focusable. It's used by
+   `LocalFocusManager.clearFocus()`. Until it lands, the flag toggle verified in the
+   [spikes](../spikes/README.md) does the same with public API only.
+
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
 [Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md),
-[Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md).
+[Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md),
+[Generic input and focus](issues/archive/0025-generic-input-and-focus.md), [verify-first spikes](../spikes/README.md).
 
 ## 12. Differences from Compose
 
