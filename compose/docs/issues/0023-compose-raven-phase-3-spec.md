@@ -51,6 +51,7 @@ implementation.
 - [Windows (mingwX64) target](archive/0032-windows-target.md): libraven built with Raven's `mingw` preset under MSYS2 (linking with Kotlin/Native's toolchain verified first); Windows linker options checked against CMake; WGL for the OpenGL module, `HWND` for native viewports; a third CI and publishing job; three targets from phase 3.
 - [Lists and trees](archive/0033-lists-and-trees.md): Compose's `LazyColumn`/`LazyRow` for composable rows (composing every item in phase 3, keyed); `ListView` and `TreeView` as data-driven composables over Raven's virtualised text widgets, with controlled selection; tree expansion stays Raven's; TileView goes to the fog.
 - [Tabs, Switcher and grids](archive/0034-tabs-switcher-and-grids.md): `TabView` with `Tab` pages, controlled selection and closing; no Switcher (Compose's `when`); `LazyVerticalGrid` with fixed columns over UniformGrid; a compose-raven `Grid` with `Auto`/`Fill` tracks and `Modifier.cell`.
+- [Image and resources](archive/0035-image-and-resources.md): relative paths resolve against a resource root next to the executable, and `registerResource` embeds files Raven finds first; Compose's `ImageBitmap` replaces `Texture`; `Image` with `painterResource`, `BitmapPainter`, `ContentScale` and tint; textures freed by a `Cleaner`; icons on menus, tabs, trees and windows; no vectors.
 
 ## Not yet specified
 
@@ -78,6 +79,10 @@ implementation.
   ScrollBox offset and measured row sizes.
 - **More list widgets**: TileView (tiles from a callback, multi-select), and controlled TreeView
   expansion, which needs a fork change adding an expand or collapse callback.
+- **Generated resources**: a Gradle task that embeds a resources folder in the binary and registers
+  it at start-up, and Compose's generated `Res.drawable.foo` accessors.
+- **Vector icons**: SVG or `ImageVector`, which Raven can't draw today (rasterise at build time, or
+  a Raven vector primitive).
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and

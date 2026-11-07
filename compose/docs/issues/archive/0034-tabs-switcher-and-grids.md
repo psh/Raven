@@ -20,7 +20,7 @@ Facts (`raven_layout.h`): **TabView** pages are its children, titled through the
   - Each `Tab` is a page with its content in an internal Box and its title through the slot.
   - Selection is controlled.
   - Closing is controlled like windows: Raven's close callback always keeps the tab and calls `onClose`, and the tab goes when the app removes it from the composition.
-  - Icons wait for [Image and resources](../0035-image-and-resources.md).
+  - Icons wait for [Image and resources](0035-image-and-resources.md).
 - **No Switcher composable**: Compose's `when (page) { ... }` (or `Crossfade`) is the idiom. Raven's keep-hidden-pages-alive is not needed by phase 3 samples, and `TabView` already keeps its pages (documented).
 - **`LazyVerticalGrid(columns = GridCells.Fixed(n), modifier, horizontalArrangement, verticalArrangement) { items(...) }`** uses Compose's DSL over UniformGrid (`columns = n`), composing every item in phase 3 like `LazyColumn`. Raven has one spacing for both directions, taken from the horizontal `spacedBy`. `GridCells.Adaptive` is left out for now (documented).
 - **`Grid(columns: List<GridTrack>, rows: List<GridTrack>, modifier, spacing: Dp = 0.dp) { }`** is a compose-raven name over Raven's Grid. `GridTrack` is `Auto` (content) or `Fill(weight)` (`Rgrid_set_column_fill`/`row_fill`). Children are placed with `GridScope`'s `Modifier.cell(column, row, columnSpan = 1, rowSpan = 1)` (`Rslot_set_grid`/`_span`), scoped like `weight` in `RowScope`.

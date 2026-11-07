@@ -490,7 +490,7 @@ Added for the `overlay` and `glass` ports:
   - The regular font is the family's Raven handle, and the others attach with `Rfont_set_variant`.
   - It is loaded on first use and cached until shutdown.
   - `FontFamily.Default` is Roboto and `FontFamily.Monospace` is Roboto Mono.
-  - Paths resolve as [Image and resources](issues/0035-image-and-resources.md) decides.
+  - Paths resolve as [Image and resources](issues/archive/0035-image-and-resources.md) decides.
 - **Weight and style**: `FontWeight` W100 to W500 mean Regular and W600 to W900 mean Bold.
   `FontStyle` is Normal or Italic. Raven synthesises the styles that have no file.
 - **`TextStyle(color, fontSize, fontFamily, fontWeight, fontStyle, textAlign)`** is read from
@@ -511,7 +511,7 @@ Added for the `overlay` and `glass` ports:
     `Path`.
   - `onDraw` is read-observed, and a change in state it read calls `Rwidget_invalidate`.
 - **Viewports**:
-  - `Viewport(texture: Texture, modifier, stretch, flipY)` shows a texture.
+  - `Viewport(image: ImageBitmap, modifier, stretch, flipY)` shows an `ImageBitmap`.
   - `NativeViewport(modifier, onCreated: (NativeWindowHandle) -> Unit, onResize)` uses a native
     child window. On macOS, that is an `NSView` with a `CAMetalLayer`, which is the route for Metal
     through `platform.Metal`. It sits above the UI and is not clipped.
@@ -519,14 +519,14 @@ Added for the `overlay` and `glass` ports:
   - `VulkanViewport(modifier, realtime = false, onDraw: (VulkanFrame) -> Unit)` uses Raven's draw
     callback. **`onDraw` runs on Raven's render thread**: it records Vulkan commands into
     `VulkanFrame.commandBuffer`, and must not write Compose state or call Raven's UI API.
-  - `Texture.fromVulkanImageView(imageView, sampler, width, height)` is zero copy.
+  - `ImageBitmap.fromVulkanImageView(imageView, sampler, width, height)` is zero copy.
   - `RavenVulkan.device` exposes Raven's Vulkan handles.
   - `application(vulkan = VulkanSetup.External(...))` shares the app's own device.
   - The app brings its own Vulkan bindings.
 - **`compose-raven-opengl`**:
   - `OpenGLViewport(modifier, realtime = false, onInit, onDraw, onDispose)` runs on the UI thread
     in a context the module creates on a native child window. It sits above the UI.
-  - `OpenGLTexture(width, height)` renders to an FBO read back into a `Texture`, for GL under the
+  - `OpenGLTexture(width, height)` renders to an FBO read back into an `ImageBitmap`, for GL under the
     UI.
   - The app brings its own GL bindings.
 - **Shader effects**:
@@ -562,6 +562,24 @@ Added for the `overlay` and `glass` ports:
   Grid. `GridTrack` is `Auto` or `Fill(weight)`, and children are placed with `GridScope`'s
   `Modifier.cell(column, row, columnSpan, rowSpan)`.
 
+### Images and resources (phase 3)
+
+- **Resource root**: relative paths resolve against `resources/` next to the executable, which
+  `application(resourceRoot = ...)` overrides. `registerResource(path, bytes)` embeds a file
+  (`Rfile_register_memory`), and Raven then finds it first everywhere.
+- **`ImageBitmap`** wraps a Raven texture: `ImageBitmap(width, height, rgba)` with `update(...)`,
+  `decodeToImageBitmap(bytes)`, and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
+  App-made ones are freed by a `Cleaner` or by `close()`.
+- **`Image(painter, contentDescription, modifier, contentScale = ContentScale.Fit, colorFilter)`**:
+  - `painterResource(path)` decodes asynchronously and is cached.
+  - `BitmapPainter(image, srcOffset, srcSize)` shows part of an image (a source region).
+  - `ContentScale` is `Fit`, `Crop`, `FillBounds` or `None`.
+  - `ColorFilter.tint(color)` tints it.
+  - `Modifier.clip(RoundedCornerShape(r))` rounds its corners.
+  - Formats are PNG, JPEG, BMP, TGA, GIF and PSD.
+- **Icons** (`Painter?`): `Item(icon)`, `Tab(icon)`, `TreeView(itemIcon)`, `Window(icon)`, and
+  `DrawScope.drawImage(...)`.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -571,7 +589,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md),
 [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
-[Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md).
+[Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
+[Image and resources](issues/archive/0035-image-and-resources.md).
 
 ## 9. Testing
 
@@ -819,6 +838,10 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `TabView` holds its pages | Material's `TabRow` is separate from the content | [8](#8-component-vocabulary) |
 | `LazyVerticalGrid` has `GridCells.Fixed` only and one spacing | `Adaptive` cells, separate arrangements | [8](#8-component-vocabulary) |
 | `Grid` with tracks and `Modifier.cell` | no explicit grid in Foundation | [8](#8-component-vocabulary) |
+| `ImageBitmap` lives on the GPU and can't be read back | a CPU bitmap with `readPixels` | [8](#8-component-vocabulary) |
+| No SVG, `ImageVector` or vector icons | `ImageVector`, `painterResource` for vectors | [8](#8-component-vocabulary) |
+| `ContentScale` has `Fit`, `Crop`, `FillBounds` and `None` only | also `Inside`, `FillWidth`, `FillHeight` | [8](#8-component-vocabulary) |
+| Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |

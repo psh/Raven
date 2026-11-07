@@ -25,5 +25,5 @@ Facts (`raven_controls.h`): **ListView** is virtualised and its rows are **text 
   - **Selection** is a controlled set of keys.
   - **Expansion is not controlled**, because Raven reports no expand or collapse. `initiallyExpanded` only sets new items. Controlled expansion would need a fork change (an expansion callback), which goes to the fog.
   - **`contextMenuItems`** opens a menu at the pointer through `Rmenu_open`, as [Generic input and focus](0025-generic-input-and-focus.md) decided.
-  - Icons wait for [Image and resources](../0035-image-and-resources.md), and item dragging for the Gestures fog.
+  - Icons wait for [Image and resources](0035-image-and-resources.md), and item dragging for the Gestures fog.
 - **TileView** goes to the fog, because no phase 3 sample needs it (FileBrowser draws its own tiles).

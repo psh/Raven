@@ -20,7 +20,7 @@ Facts (`raven_resources.h`, `raven_widget.h`): a font is an `Rid` loaded from a 
   - The regular font is the family's Raven handle, and the others attach with `Rfont_set_variant`.
   - It is loaded on first use and cached per family until shutdown.
   - `FontFamily.Default` is Roboto and `FontFamily.Monospace` is Roboto Mono.
-  - Relative paths resolve as [Image and resources](../0035-image-and-resources.md) decides. Until then they are passed to Raven as given.
+  - Relative paths resolve as [Image and resources](0035-image-and-resources.md) decides. Until then they are passed to Raven as given.
 - **Weight and style**: `FontWeight.W100` to `W500` mean Regular and `W600` to `W900` mean Bold, because Raven has only those two (documented). `FontStyle.Normal`/`Italic` pass through. Missing files get Raven's synthesised styles.
 - **Text**:
   - `Text(text, ..., fontFamily, fontWeight, fontStyle, style: TextStyle = LocalTextStyle.current)`. Explicit parameters override `style`, as in Compose. The node calls `Rlabel_set_font(Rfont_get_variant(family, style))` and `Rlabel_set_text_size`.
