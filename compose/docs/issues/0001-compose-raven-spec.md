@@ -1,0 +1,74 @@
+---
+status: closed
+wayfinder: map
+---
+
+# compose-raven spec
+
+## Destination
+
+An implementation-ready spec for compose-raven, at `compose/docs/spec.md`. compose-raven is a
+family of Kotlin/Native modules that drives Raven's retained widgets from the Compose runtime, through
+cinterop against `Raven.h`. Every design decision is locked and written down, ready to hand to
+implementation. This map does not do the implementation.
+
+## Notes
+
+- Domain: the Compose runtime (Applier, nodes, Recomposer, frame clock) over Raven's retained
+  widget tree. Vocabulary is in `compose/GLOSSARY.md`; keep it current as terms resolve.
+- Shape: like a native-widgets binding. Each composable node owns a Raven widget, Raven does
+  layout and painting, and Compose only manages the tree. Mosaic is the template / role model.
+- Platform: Kotlin/Native with cinterop. v1 targets are macosArm64 and linuxX64.
+- Required reading for Raven questions: `docs/ARCHITECTURE.md` (layers, handles, threads) and
+  `include/raven/`.
+- Skills: grilling tickets call `grilling` + `domain-modeling`; call `codebase-design` for the
+  layering and Applier/node-model tickets.
+- Standing preference: **keep it slim.** This is a first pass, so lean towards the smallest spec
+  that works and push extras to fog or out of scope.
+- Standing preference: **favour Compose conventions and ergonomics.** Names, parameter shapes,
+  defaults and behaviour follow Compose. Wherever Raven differs, compose-raven adapts to Compose
+  and the spec documents the difference clearly. Grilling recommendations default to this.
+- Closing a ticket from here on also updates `compose/docs/spec.md` (its section, the Roadmap, and
+  the Differences from Compose table where relevant).
+- Ticket conventions: `ISSUES-FORMAT.md` in this directory.
+
+## Decisions so far
+
+<!-- one line per closed ticket: [title](file): gist -->
+- [How Mosaic is built](archive/0003-how-mosaic-is-built.md): copy its thin bottom-up Applier, `ComposeNode`/`Updater` setters, Recomposer wiring and host-ticked frame clock; drop its layout/draw/input machinery (Raven owns those) and add a UI-thread dispatcher plus clock ticks from Raven's frame loop.
+- [Compose runtime on Kotlin/Native](archive/0002-compose-runtime-on-kotlin-native.md): depend on `androidx.compose.runtime:runtime:1.12.1` from Google Maven (the JetBrains coordinates are empty redirects to it), built with Kotlin 2.4.21 and `org.jetbrains.kotlin.plugin.compose`; no Compose UI needed. The host supplies the frame clock, a Raven-thread dispatcher and a snapshot apply pump.
+- [Raven widget tree API for an Applier](archive/0004-raven-widget-tree-api.md): create/insert-at-index/remove/destroy, per-child slots and `(Rid, ..., void*)` callbacks cover an Applier; calls are UI-thread-only, `Rtask_post` is the dispatcher and `Rset_frame_callback` + `Rwake_up` the frame clock. Gaps: no in-place move, single-child parents destroy on a second insert, one global frame callback, no custom arrange.
+- [Kotlin/Native targets and build](archive/0005-kotlin-native-targets-and-build.md): standalone Gradle build in `compose/` (`compose-raven` + `sample`); Gradle drives CMake for a Release `libraven.a` linked statically through one `raven.def` over `Raven.h`; each target on its own host; MoltenVK is run-time only.
+- [Layering over cinterop](archive/0006-cinterop-layering.md): two modules, `raven-native` (public cinterop `raven.cinterop` + small `raven.native` helpers for callbacks, strings, thread check; no Compose) under `compose-raven-foundation` (everything Compose, depends on it with `implementation`, so no Raven type is public); `sample` depends on foundation only.
+- [Node model and Applier](archive/0007-node-model-and-applier.md): one internal `RavenNode` per Raven widget, with a mirror child list; remove detaches and `onRelease` destroys; a fixed Overlay root; setters call cinterop directly; moves need a new `Rwidget_move_child` in the fork; single-child parents are handled in the Applier.
+- [Frame loop and threading](archive/0008-frame-loop-and-threading.md): a blocking `ravenApplication(...) { }` owns the `Rwait_frame` loop; an internal `Rtask_post` dispatcher, a `BroadcastFrameClock` ticked from the frame callback compose-raven owns, and a global write observer wake it from any thread; a fixed shutdown order; errors quit, then rethrow; `exitApplication()` quits.
+- [Layout and Modifiers](archive/0009-layout-and-modifiers.md): an own `Modifier` and `Dp`; `Column`/`Row`/`Box` over VBox/HBox/Overlay with Compose's start/top defaults; padding, size, sizeIn, fillMax, weight and align map onto slots and size setters; Compose's `Arrangement` shape with only `spacedBy` in v1; no `Layout {}` or RTL yet.
+- [Events and state](archive/0010-events-and-state.md): callbacks registered once per node with lambdas in fields; controlled inputs as in Compose, checked in the frame callback once the Recomposer settles; `TextField` takes a `String` with a documented caret jump on rewrite; exceptions caught at the C boundary; widget-specific events only in v1.
+- [v1 component vocabulary](archive/0011-v1-component-vocabulary.md): sized by the XML translator sample; Compose-named `Text`, three Buttons, `Checkbox`/`Switch`/`RadioButton`, single-line `TextField`, `Slider`, progress, dividers, `Spacer`; `VerticalScroll`/`HorizontalScroll` containers; compose-raven's own `CodeEditor` and splitters.
+- [Testing strategy](archive/0012-testing-strategy.md): an internal `RavenHost` shared by `ravenApplication` and a headless test harness; Compose-style `runRavenTest` finders and actions over Raven input injection; memory and `StableRef` leak checks after each test; fresh Raven per test (verify first); CI on macOS and Linux.
+- [XML to Compose translator sample](archive/0013-xml-to-compose-translator.md): the translator lives in `sample` and parses with Raven's parser through a private cinterop and one adapter into a Kotlin tree; it maps the v1 vocabulary faithfully (explicit `fillMax*`), hoists state, and leaves TODOs plus warnings for anything unsupported; the sample shows XML and generated code side by side, live.
+- [Port the Raven samples to Compose](archive/0014-port-raven-samples.md): ports in waves (`hello` in v1; wave 2 is notepad, components, themes, overlay and glass; later waves and fog-bound examples recorded), as a roadmap in the spec; wave-2 tickets don't block assembly; each port is its own module under `compose/samples/`, and `sample` becomes `samples/xml-translator`.
+- [Assemble the spec](archive/0015-assemble-the-spec.md): [`spec.md`](../spec.md) written and accepted as v1 complete, in 14 sections stating the final state with links to the deciding tickets; one table of differences from Compose; the map stays open, and each remaining ticket updates the spec when it closes.
+- [Templates in the XML translator](archive/0016-xml-translator-templates.md): `<Widget>` declarations become top-level composables (types from defaults, `<Children>` as slot lambdas, layout through `modifier`); the whole `{...}` language is translated except `{Instance}`; `If`/`Repeat`/`ForEach` become `if`/`repeat`/`forEachIndexed`; `Include` stays a TODO; parsing must not register tags globally.
+- [Kotlin highlighting in CodeEditor](archive/0017-kotlin-highlighting.md): a built-in Kotlin language in Raven's `syntax.c` (fork change 3), with Prism.js's keyword list, a short list of standard-library types and nested comments; templates, labels and trailing-lambda calls are documented as not highlighted.
+- [Menus and the header bar](archive/0018-menus-and-header-bar.md): Compose Desktop's `MenuBar`/`Menu`/`Item`/`CheckboxItem`/`Separator`, but `MenuBar` is placed in the layout; `KeyShortcut` over Raven keys with no automatic Ctrl-to-Cmd; `HeaderBar` plus `ravenApplication(customHeader = true)`; context menus go to the Generic input fog.
+- [ComboBox and SpinBox](archive/0019-combobox-and-spinbox.md): `ComboBox` over strings and an index; `SpinBox` with `Double` and `Int` versions, using Raven's defaults; both controlled; `codeEditorLanguages()` lists the editor languages.
+- [Border, WrapBox and Expander](archive/0020-border-wrapbox-expander.md): a `Surface` container over Border (padding through the content's Modifier), `FlowRow` with one spacing, a controlled `Expander`; single-child widgets get an internal Box or Row for their content (amends v1's buttons); own `Color`, rounded-rectangle `Shape` and `BorderStroke`.
+- [Theming](archive/0021-theming.md): `RavenTheme(look, dark, theme)` with the look app-wide and themes per subtree; theme files loaded by name; `RavenTheme.colors` for the app theme; Material-style `XxxDefaults.colors()` defaulting to `Unspecified` (the Raven theme), plus `shape`/`contentPadding` as Raven metrics; `Text(color, fontSize)`; no style classes.
+- [Glass and BackgroundBlur](archive/0022-glass-and-background-blur.md): `Modifier.material` on any widget (the glossary's Modifier now includes material); `RavenTheme(material)` app-wide; `BackgroundBlur` stays a container for full control and `Native`; `ravenApplication(transparent, undecorated)` plus a declarative `WindowBackdrop`.
+
+## Not yet specified
+
+None left here. Closed on 2026-11-06 with the destination reached for v1 and wave 2. The remaining
+fog moved, unchanged in scope, to the next map, [compose-raven phase 3 spec](0023-compose-raven-phase-3-spec.md).
+
+## Out of scope
+
+- **JVM / the `raven-gui` Java binding**: this effort is Kotlin/Native only.
+- **Source compatibility with Compose Foundation / Material**: names and shapes follow Compose,
+  but code written against androidx foundation or material isn't guaranteed to compile.
+- **Mixing Raven XML documents with composables at run time**: composables build the whole tree for this pass. (Translating XML into Compose *source* is a separate question and in scope: [XML to Compose translator sample](archive/0013-xml-to-compose-translator.md).)
+- **A Material-like module above foundation**: Raven's looks already imitate each platform, and a
+  Material layer would compete with them ([Theming](archive/0021-theming.md)).
+- **Cross-compilation**: each target builds on its own host, since libraven's C build needs the
+  host's toolchain and headers (see [Kotlin/Native targets and build](archive/0005-kotlin-native-targets-and-build.md)).
