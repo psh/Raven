@@ -44,6 +44,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 |---|---|---|
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
 | `compose-raven-foundation` | Everything Compose: packages `raven.compose.ui` (Applier, node, host, `Modifier`, `Dp`, window entry point) and `raven.compose.foundation` (composables) | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
+| `compose-raven-test` (phase 3) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
 | `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation` only |
@@ -524,8 +525,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 
 ## 9. Testing
 
-- **The harness** is internal, in `compose-raven-foundation`'s test source set, and tests
-  compose-raven itself. It is built on `RavenHost` ([section 4](#4-application-host)) and runs
+- **The harness** lives in `compose-raven-test` (see below) and tests compose-raven itself and
+  apps. It is built on `RavenHost` ([section 4](#4-application-host)) and runs
   headless: `Rinit_ex` with `R_BACKEND_NULL`, `headless = R_TRUE`, `worker_threads = -1`, and a
   fixed `Rset_animation_time_step`. `waitForIdle()` keeps calling `Rdraw_frame()` until no
   recomposition, snapshot apply or controlled check is pending.
@@ -553,7 +554,27 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 - **CI**: a compose job in `.github/workflows/build.yml` on a macOS and a Linux runner, running
   `./gradlew -p compose allTests`.
 
-Decided in: [Testing strategy](issues/archive/0012-testing-strategy.md).
+### Public test module (phase 3)
+
+The harness moves into `compose-raven-test`, which both apps and foundation's own tests use. What
+it needs from foundation is public behind `@InternalComposeRavenApi` (`@RequiresOptIn`).
+
+- **`runRavenTest(checkLeaks = true) { setContent { } }`** hosts a single window.
+- **Finders**: `onNodeWithText(text, substring)`, `onNodeWithTag`, `onNodeWithContentDescription`,
+  their `onAllNodesWith...` forms, and `onNode(matcher)`. The matchers (`hasText`, `hasTestTag`,
+  `hasContentDescription`, `isEnabled`, `isFocused`, `isToggleable`) combine with `and` and `or`.
+- **Actions**: `performClick`, `performTextInput`, `performTextReplacement`, `performKeyPress`
+  and `performScrollBy`, all through Raven's input injection.
+- **Assertions**: `assertExists`, `assertDoesNotExist`, `assertIsDisplayed`, `assertTextEquals`,
+  `assertIsChecked`/`NotChecked`, `assertIsEnabled`/`NotEnabled`, `assertIsFocused` and
+  `assertValueEquals`. They read typed node accessors, not Raven getters.
+- **`mainClock`**: `autoAdvance` (the default) or stepping with `advanceTimeBy(ms)` /
+  `advanceTimeByFrame()`, using Raven's fixed animation time step.
+- **Leak checks**: `checkLeaks = true` by default, and a failure lists the composables whose
+  widgets were not released.
+
+Decided in: [Testing strategy](issues/archive/0012-testing-strategy.md),
+[Public test module for apps](issues/archive/0029-app-testing-module.md).
 
 ## 10. Samples
 
@@ -720,6 +741,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
 | Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
 | `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
+| `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |

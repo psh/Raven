@@ -45,6 +45,7 @@ implementation.
 - [Accessibility semantics](archive/0026-accessibility-semantics.md): Raven describes widgets itself, so the only default is `NONE` on internal content nodes; `Modifier.semantics` with Compose's properties plus `accessibleRole`/`accessibleDescription`; an input in a `Row` is automatically labelled by the `Text` after it; `announceForAccessibility`; the host follows the system's settings; tests gain `onNodeWithContentDescription`.
 - [Fonts and text styling](archive/0027-fonts-and-text-styling.md): Compose's `FontFamily`/`Font` over Raven font handles and variants, cached per family; `FontWeight` maps to Raven's regular or bold; `TextStyle` with `LocalTextStyle`/`ProvideTextStyle`; `RavenTheme(fontFamily)`; `MarkdownText` over Raven's Markdown labels, with no `AnnotatedString`; style classes stay out; a fuller typography gets its own ticket.
 - [Custom drawing and custom layout](archive/0028-custom-drawing-and-layout.md): `Canvas`/`DrawScope` over custom widgets, repainting on state reads; texture `Viewport` and `NativeViewport`; opt-in `compose-raven-vulkan` (`VulkanViewport` on the render thread, Vulkan textures, device sharing) and `compose-raven-opengl` (managed EGL/NSOpenGL context, `OpenGLTexture`) modules; Metal through `NativeViewport` with no module; SPIR-V `ShaderEffect`s; custom `Layout` deferred with a fork plan.
+- [Public test module for apps](archive/0029-app-testing-module.md): `compose-raven-test` holds the one harness (foundation's internals behind `@InternalComposeRavenApi`); Compose-style finders, matchers, actions and assertions over Raven's real input; `mainClock`; leak checks on by default; one window, no screenshots.
 
 ## Not yet specified
 
@@ -61,6 +62,8 @@ implementation.
 - **Graphics extras**: a `MetalViewport` convenience for macOS, zero-copy GL textures through
   `GL_EXT_memory_object` on Linux, and possibly a Vulkan-headers cinterop shipped with
   `compose-raven-vulkan`.
+- **Multi-window tests**: `onWindow(title)`, `onDialog()` and tests of `application { }` with
+  several windows, beyond `runRavenTest`'s single window.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and

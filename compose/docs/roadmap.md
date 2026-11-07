@@ -98,12 +98,13 @@ Decided for phase 3 so far (in the spec):
   `TextStyle`/`LocalTextStyle`, `RavenTheme(fontFamily)`, `MarkdownText`
 - [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md): `Canvas`, `Viewport`,
   `NativeViewport`, the `compose-raven-vulkan` and `compose-raven-opengl` modules, shader effects
+- [Public test module for apps](issues/archive/0029-app-testing-module.md): `compose-raven-test` with the one
+  harness, Compose-style finders, actions and assertions, `mainClock`, leak checks
 
 Open tickets that serve every app rather than one sample:
 
 - [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
 - [Typography in RavenTheme](issues/0040-typography-in-raventheme.md)
-- [Public test module for apps](issues/0029-app-testing-module.md)
 - [XML translator as a tool](issues/0030-translator-as-a-tool.md)
 - [Packaging and publishing](issues/0031-packaging-and-publishing.md)
 - [Windows (mingwX64) target](issues/0032-windows-target.md)
