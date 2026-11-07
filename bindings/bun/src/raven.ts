@@ -266,6 +266,7 @@ const _symbols = {
 	Rwindow_get_native_handle: { args: ["u32", "ptr"], returns: "i32" },
 	Rwindow_capture: { args: ["u32", "ptr", "ptr"], returns: "ptr" },
 	Rwindow_get_focused_widget: { args: ["u32"], returns: "u32" },
+	Rwindow_clear_focus: { args: ["u32"], returns: "void" },
 	Rwindow_get_hovered_widget: { args: ["u32"], returns: "u32" },
 	Rwindow_get_mouse_position: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rwindow_inject_mouse_move: { args: ["u32", "f32", "f32"], returns: "void" },
@@ -7144,6 +7145,15 @@ export function Rwindow_capture(window: Rid): [result: Pointer | null, width: nu
 /** Widget that has the keyboard focus in the window, or R_INVALID_ID. */
 export function Rwindow_get_focused_widget(window: Rid): Rid {
 	return _lib.Rwindow_get_focused_widget(window);
+}
+
+/**
+ * Leaves the window with no focused widget, as a click on an empty
+ * place does: the widget that had the focus loses it (and is told), and
+ * keys go to the window until something takes the focus again.
+ */
+export function Rwindow_clear_focus(window: Rid): void {
+	_lib.Rwindow_clear_focus(window);
 }
 
 /** Deepest widget under the cursor, or R_INVALID_ID. */

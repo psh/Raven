@@ -142,6 +142,7 @@ static struct {
 	int (*Rwindow_get_native_handle)(Rid, RNativeWindow*);
 	uint8_t* (*Rwindow_capture)(Rid, int*, int*);
 	Rid (*Rwindow_get_focused_widget)(Rid);
+	void (*Rwindow_clear_focus)(Rid);
 	Rid (*Rwindow_get_hovered_widget)(Rid);
 	void (*Rwindow_get_mouse_position)(Rid, float*, float*);
 	void (*Rwindow_inject_mouse_move)(Rid, float, float);
@@ -1277,6 +1278,7 @@ static const struct {
 	{"Rwindow_get_native_handle", offsetof(__typeof__(rn), Rwindow_get_native_handle)},
 	{"Rwindow_capture", offsetof(__typeof__(rn), Rwindow_capture)},
 	{"Rwindow_get_focused_widget", offsetof(__typeof__(rn), Rwindow_get_focused_widget)},
+	{"Rwindow_clear_focus", offsetof(__typeof__(rn), Rwindow_clear_focus)},
 	{"Rwindow_get_hovered_widget", offsetof(__typeof__(rn), Rwindow_get_hovered_widget)},
 	{"Rwindow_get_mouse_position", offsetof(__typeof__(rn), Rwindow_get_mouse_position)},
 	{"Rwindow_inject_mouse_move", offsetof(__typeof__(rn), Rwindow_inject_mouse_move)},
@@ -6011,6 +6013,18 @@ static napi_value rn_w_Rwindow_get_focused_widget(napi_env env, napi_callback_in
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	Rid value_ = rn.Rwindow_get_focused_widget((Rid)a0);
 	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_clear_focus(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rwindow_clear_focus((Rid)a0);
 	return result_;
 }
 
@@ -23017,6 +23031,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_get_native_handle", NULL, rn_w_Rwindow_get_native_handle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_capture", NULL, rn_w_Rwindow_capture, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_focused_widget", NULL, rn_w_Rwindow_get_focused_widget, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_clear_focus", NULL, rn_w_Rwindow_clear_focus, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_hovered_widget", NULL, rn_w_Rwindow_get_hovered_widget, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_mouse_position", NULL, rn_w_Rwindow_get_mouse_position, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_inject_mouse_move", NULL, rn_w_Rwindow_inject_mouse_move, NULL, NULL, NULL, napi_enumerable, NULL},

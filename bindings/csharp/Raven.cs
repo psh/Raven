@@ -3802,6 +3802,14 @@ namespace Raven
         public static extern uint Rwindow_get_focused_widget(uint window);
 
         /// <summary>
+        /// Leaves the window with no focused widget, as a click on an empty
+        /// place does: the widget that had the focus loses it (and is told), and
+        /// keys go to the window until something takes the focus again.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rwindow_clear_focus(uint window);
+
+        /// <summary>
         /// Deepest widget under the cursor, or R_INVALID_ID.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]

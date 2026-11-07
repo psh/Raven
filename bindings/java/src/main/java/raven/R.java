@@ -7126,6 +7126,23 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rwindow_clear_focus$;
+
+    /**
+     * Leaves the window with no focused widget, as a click on an empty
+     * place does: the widget that had the focus loses it (and is told), and
+     * keys go to the window until something takes the focus again.
+     */
+    public static void Rwindow_clear_focus(int window) {
+        MethodHandle $h = Rwindow_clear_focus$;
+        if ($h == null) Rwindow_clear_focus$ = $h = find("Rwindow_clear_focus", FunctionDescriptor.ofVoid(JAVA_INT));
+        try {
+            $h.invokeExact(window);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rwindow_get_hovered_widget$;
 
     /**

@@ -270,6 +270,43 @@ static void test_text_input(void) {
 	CHECK_STR(Rtext_input_get_text(input), "abc");
 }
 
+static int g_focus_lost;
+
+static int on_focus_event(Rid widget, const REvent* event, void* user_data) {
+	(void)widget;
+	(void)user_data;
+	if (event->type == R_EVENT_FOCUS_LOST) g_focus_lost++;
+	return R_FALSE;
+}
+
+/* Rwindow_clear_focus: no widget keeps the focus; the one that had it is told. */
+static void test_clear_focus(void) {
+	Rid box = Rwidget_create(R_WIDGET_VBOX);
+	Rid input = Rwidget_add_child(box, Rwidget_create(R_WIDGET_TEXT_INPUT));
+	Rwindow_set_content(g_window, box);
+	Rdraw_frame();
+	Rwidget_set_event_callback(input, on_focus_event, NULL);
+	g_focus_lost = 0;
+
+	Rwidget_focus(input);
+	CHECK(Rwindow_get_focused_widget(g_window) == input);
+	Rwindow_clear_focus(g_window);
+	CHECK(Rwindow_get_focused_widget(g_window) == R_INVALID_ID);
+	CHECK(!Rwidget_is_focused(input));
+	CHECK(g_focus_lost == 1);
+	/* typing goes nowhere now */
+	Rwindow_inject_text(g_window, "x");
+	CHECK_STR(Rtext_input_get_text(input), "");
+	/* the input can take the focus again; clearing twice is harmless */
+	Rwidget_focus(input);
+	CHECK(Rwidget_is_focused(input));
+	Rwindow_clear_focus(g_window);
+	Rwindow_clear_focus(g_window);
+	CHECK(g_focus_lost == 2);
+	CHECK(Rwindow_get_focused_widget(g_window) == R_INVALID_ID);
+	Rwidget_set_event_callback(input, NULL, NULL);
+}
+
 static void test_combo_box(void) {
 	Rid box = column();
 	Rid combo = Rwidget_add_child(box, Rwidget_create(R_WIDGET_COMBO_BOX));
@@ -1037,6 +1074,7 @@ int main(void) {
 	RUN(test_checkbox_and_radio);
 	RUN(test_slider_and_spin_box);
 	RUN(test_text_input);
+	RUN(test_clear_focus);
 	RUN(test_selectable_label);
 	RUN(test_combo_box);
 	RUN(test_highlight_follows_pointer);

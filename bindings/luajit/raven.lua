@@ -1214,6 +1214,7 @@ void* Rwindow_get_user_handle(Rid window);
 int Rwindow_get_native_handle(Rid window, RNativeWindow* native);
 uint8_t* Rwindow_capture(Rid window, int* width, int* height);
 Rid Rwindow_get_focused_widget(Rid window);
+void Rwindow_clear_focus(Rid window);
 Rid Rwindow_get_hovered_widget(Rid window);
 void Rwindow_get_mouse_position(Rid window, float* x, float* y);
 void Rwindow_inject_mouse_move(Rid window, float x, float y);

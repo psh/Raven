@@ -1597,6 +1597,12 @@ func WindowGetFocusedWidget(window ID) ID {
 	return ID(C.Rwindow_get_focused_widget(C.Rid(window)))
 }
 
+// WindowClearFocus: Leaves the window with no focused widget, as a click on an empty place does: the widget
+// that had the focus loses it (and is told), and keys go to the window until something takes the focus again.
+func WindowClearFocus(window ID) {
+	C.Rwindow_clear_focus(C.Rid(window))
+}
+
 // WindowGetHoveredWidget: Deepest widget under the cursor, or R_INVALID_ID.
 func WindowGetHoveredWidget(window ID) ID {
 	return ID(C.Rwindow_get_hovered_widget(C.Rid(window)))

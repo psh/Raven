@@ -4987,6 +4987,13 @@ fn char* Window.capture(self, CInt* width, CInt* height) @inline => c::r_window_
 <* Widget that has the keyboard focus in the window, or R_INVALID_ID. *>
 fn Widget Window.get_focused_widget(self) @inline => (Widget)c::r_window_get_focused_widget((c::Rid)self);
 
+<*
+ Leaves the window with no focused widget, as a click on an empty
+ place does: the widget that had the focus loses it (and is told), and
+ keys go to the window until something takes the focus again.
+*>
+fn void Window.clear_focus(self) @inline => c::r_window_clear_focus((c::Rid)self);
+
 <* Deepest widget under the cursor, or R_INVALID_ID. *>
 fn Widget Window.get_hovered_widget(self) @inline => (Widget)c::r_window_get_hovered_widget((c::Rid)self);
 

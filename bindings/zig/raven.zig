@@ -2085,6 +2085,10 @@ pub extern fn Rwindow_get_native_handle(window: Rid, native: ?*RNativeWindow) c_
 pub extern fn Rwindow_capture(window: Rid, width: ?*c_int, height: ?*c_int) ?[*]u8;
 /// Widget that has the keyboard focus in the window, or R_INVALID_ID.
 pub extern fn Rwindow_get_focused_widget(window: Rid) Rid;
+/// Leaves the window with no focused widget, as a click on an empty
+/// place does: the widget that had the focus loses it (and is told), and
+/// keys go to the window until something takes the focus again.
+pub extern fn Rwindow_clear_focus(window: Rid) void;
 /// Deepest widget under the cursor, or R_INVALID_ID.
 pub extern fn Rwindow_get_hovered_widget(window: Rid) Rid;
 pub extern fn Rwindow_get_mouse_position(window: Rid, x: ?*f32, y: ?*f32) void;

@@ -3637,6 +3637,17 @@ def Rwindow_get_focused_widget(window):
     return _lib.Rwindow_get_focused_widget(window)
 
 
+_lib.Rwindow_clear_focus.argtypes = [ctypes.c_uint32]
+_lib.Rwindow_clear_focus.restype = None
+
+
+def Rwindow_clear_focus(window):
+    """Leaves the window with no focused widget, as a click on an empty
+    place does: the widget that had the focus loses it (and is told), and
+    keys go to the window until something takes the focus again."""
+    _lib.Rwindow_clear_focus(window)
+
+
 _lib.Rwindow_get_hovered_widget.argtypes = [ctypes.c_uint32]
 _lib.Rwindow_get_hovered_widget.restype = ctypes.c_uint32
 

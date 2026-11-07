@@ -534,6 +534,12 @@ extern "C" {
 
 	/** @brief Widget that has the keyboard focus in the window, or R_INVALID_ID. */
 	RAVEN_API Rid Rwindow_get_focused_widget(Rid window);
+	/**
+	 * @brief Leaves the window with no focused widget, as a click on an empty
+	 * place does: the widget that had the focus loses it (and is told), and
+	 * keys go to the window until something takes the focus again.
+	 */
+	RAVEN_API void Rwindow_clear_focus(Rid window);
 	/** @brief Deepest widget under the cursor, or R_INVALID_ID. */
 	RAVEN_API Rid Rwindow_get_hovered_widget(Rid window);
 	RAVEN_API void Rwindow_get_mouse_position(Rid window, float* x, float* y);

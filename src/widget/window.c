@@ -2610,6 +2610,11 @@ Rid Rwindow_get_focused_widget(Rid id) {
 	return window->focus ? window->focus->id : R_INVALID_ID;
 }
 
+void Rwindow_clear_focus(Rid id) {
+	RVN_WINDOW_VOID(window, id);
+	rvn_window_set_focus(window, NULL);
+}
+
 Rid Rwindow_get_hovered_widget(Rid id) {
 	RVN_WINDOW(window, id, R_INVALID_ID);
 	return window->hover ? window->hover->id : R_INVALID_ID;

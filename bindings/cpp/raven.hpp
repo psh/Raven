@@ -1881,6 +1881,11 @@ public:
 	/// Widget that has the keyboard focus in the window, or R_INVALID_ID.
 	Rid get_focused_widget() const { return Rwindow_get_focused_widget(id_); }
 
+	/// Leaves the window with no focused widget, as a click on an empty
+	/// place does: the widget that had the focus loses it (and is told), and
+	/// keys go to the window until something takes the focus again.
+	void clear_focus() const { Rwindow_clear_focus(id_); }
+
 	/// Deepest widget under the cursor, or R_INVALID_ID.
 	Rid get_hovered_widget() const { return Rwindow_get_hovered_widget(id_); }
 

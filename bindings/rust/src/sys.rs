@@ -2112,6 +2112,10 @@ extern "C" {
     pub fn Rwindow_capture(window: Rid, width: *mut c_int, height: *mut c_int) -> *mut u8;
     /// Widget that has the keyboard focus in the window, or R_INVALID_ID.
     pub fn Rwindow_get_focused_widget(window: Rid) -> Rid;
+    /// Leaves the window with no focused widget, as a click on an empty
+    /// place does: the widget that had the focus loses it (and is told), and
+    /// keys go to the window until something takes the focus again.
+    pub fn Rwindow_clear_focus(window: Rid);
     /// Deepest widget under the cursor, or R_INVALID_ID.
     pub fn Rwindow_get_hovered_widget(window: Rid) -> Rid;
     pub fn Rwindow_get_mouse_position(window: Rid, x: *mut f32, y: *mut f32);

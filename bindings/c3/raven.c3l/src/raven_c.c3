@@ -2399,6 +2399,13 @@ extern fn char* r_window_capture(Rid window, CInt* width, CInt* height) @cname("
 <* Widget that has the keyboard focus in the window, or R_INVALID_ID. *>
 extern fn Rid r_window_get_focused_widget(Rid window) @cname("Rwindow_get_focused_widget");
 
+<*
+ Leaves the window with no focused widget, as a click on an empty
+ place does: the widget that had the focus loses it (and is told), and
+ keys go to the window until something takes the focus again.
+*>
+extern fn void r_window_clear_focus(Rid window) @cname("Rwindow_clear_focus");
+
 <* Deepest widget under the cursor, or R_INVALID_ID. *>
 extern fn Rid r_window_get_hovered_widget(Rid window) @cname("Rwindow_get_hovered_widget");
 
