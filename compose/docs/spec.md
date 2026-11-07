@@ -158,9 +158,10 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   Raven sheet over its window.
   - Its content has its own composition, rooted in a panel given to `Rdialog_open`. When it leaves
     the composition, that composition is disposed, then `Rdialog_close` is called.
-  - Escape and clicks outside call `onDismissRequest`, through `Rdialog_set_dismiss_callback`
+  - Escape calls `onDismissRequest`, through `Rdialog_set_dismiss_callback`
     ([fork change 4](#11-required-raven-changes)), and the app decides.
-  - `DialogProperties` has `dismissOnBackPress` (Escape) and `dismissOnClickOutside`.
+  - `DialogProperties` has `dismissOnBackPress` (Escape). A Raven dialog is a modal sheet: a click
+    outside it does nothing, so there is no `dismissOnClickOutside`.
 - **Message boxes and file dialogs** are suspend functions: `messageBox(title, text, buttons):
   MessageResult`, `openFileDialog(filters, multiple): List<String>`, `saveFileDialog(...)` and
   `selectFolderDialog(...)`.
@@ -957,7 +958,8 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 
 ## 11. Required Raven changes
 
-These changes go into the `psh/Raven` fork and are offered upstream later.
+These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4 and 5
+are made, one commit each with a C test, on the fork's `fork/compose-raven` branch.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
    `to` is counted after the child has been taken out, as in `Rwidget_insert_child`. It keeps
@@ -983,8 +985,8 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
      trailing-lambda calls aren't marked as functions, and a keyword right after a `.` may be
      highlighted.
 
-4. **`Rdialog_set_dismiss_callback`** (required, phase 3): it is called when Escape or a click
-   outside would dismiss a dialog, and it can refuse. `Dialog` then calls `onDismissRequest` and the
+4. **`Rdialog_set_dismiss_callback`** (required, phase 3): it is called when Escape would
+   dismiss a dialog (a click outside never does, in Raven), and it can refuse. `Dialog` then calls `onDismissRequest` and the
    app decides, instead of Raven deleting the content behind Compose's back.
 5. **`Rwindow_clear_focus(Rid window)`** (required, phase 3): leaves the window with no focused
    widget, by calling the internal `rvn_window_set_focus(window, NULL)`, as Raven already does when
@@ -1064,7 +1066,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `BackgroundBlur` blurs what is behind it (backdrop blur) | `Modifier.blur` blurs the element itself | [8](#8-component-vocabulary) |
 | The backdrop is set with the `WindowBackdrop(...)` composable | no counterpart | [4](#4-application-host) |
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
-| `Dialog` is a sheet over its window | a separate window on desktop | [4](#4-application-host) |
+| `Dialog` is a sheet over its window, and a click outside it does nothing (no `dismissOnClickOutside`) | a separate window on desktop | [4](#4-application-host) |
 | No `Popup { }` | `Popup` | [4](#4-application-host) |
 | Message boxes and file dialogs are suspend functions, built on `Dialog` and `FileBrowser` unless `native = true` | no built-in equivalent | [4](#4-application-host) |
 
