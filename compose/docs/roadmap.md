@@ -23,30 +23,31 @@ show the other bindings and Bevy, not Raven UIs).
 
 ## 0. Verify first
 
-Facts the spec depends on that nobody has checked against Raven yet. Each needs a small spike, and
-its result can change the plan:
+Facts the spec depends on. The ones that need only Raven or Gradle are checked in
+[`../spikes/`](../spikes/README.md), and the spec follows their results. The rest wait for the host,
+a Windows host or a real window:
 
-| Fact to check | If it fails | Spec |
-|---|---|---|
-| `Rinit`/`Rshutdown` can be repeated in one process | fix it in the fork (fork change 2) | [11](spec.md#11-required-raven-changes), [9](spec.md#9-testing) |
-| `Rxml_document_parse` registers no `<Widget>` declarations globally | `parseRavenXml` unregisters them | [10](spec.md#10-samples) |
-| A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) |
-| Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) |
-| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) |
-| A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) |
-| Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) |
-| Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) |
-| A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) |
-| An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) |
-| `androidx.compose.animation:animation-core` resolves for our targets without Compose UI (phase 3) | compose-raven provides a small `animate*AsState` set | [8](spec.md#8-component-vocabulary) |
-| `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host and window owners, with the kotlinx-serialization plugin, and `navigationevent` resolves without Compose UI (phase 3) | windows call registered back handlers directly; any other gap is fixed in `compose-raven-navigation3` | [8](spec.md#8-component-vocabulary) |
+| Fact to check | If it fails | Spec | Result (2026-11-06) |
+|---|---|---|---|
+| `Rinit`/`Rshutdown` can be repeated in one process | fix it in the fork (fork change 2) | [11](spec.md#11-required-raven-changes), [9](spec.md#9-testing) | **Passed** |
+| `Rxml_document_parse` registers no `<Widget>` declarations globally | `parseRavenXml` unregisters them | [10](spec.md#10-samples) | **Passed** |
+| A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) | **Failed**, worked around: a MenuItem with `Separator = true` |
+| Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) | **Failed**: compose-raven sets them |
+| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) | Waits for the host |
+| A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) | Waits for a Windows host |
+| Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) | **Passed** |
+| Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) | **Failed**, worked around: toggle the focusable flag |
+| A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) | Waits for a real window |
+| An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) | Waits for a real window |
+| `androidx.compose.animation:animation-core` resolves for our targets without Compose UI (phase 3) | compose-raven provides a small `animate*AsState` set | [8](spec.md#8-component-vocabulary) | **Failed**: compose-raven provides its own |
+| `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host and window owners, with the kotlinx-serialization plugin, and `navigationevent` resolves without Compose UI (phase 3) | windows call registered back handlers directly; any other gap is fixed in `compose-raven-navigation3` | [8](spec.md#8-component-vocabulary) | `navigationevent` **passed**; the rest waits for the host |
 
 ## 1. Raven fork changes
 
 Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.md#11-required-raven-changes)):
 
 1. `Rwidget_move_child(parent, from, to)`: required by the Applier (milestone 2).
-2. A fix for repeated `Rinit`/`Rshutdown`: only if milestone 0 finds it necessary.
+2. ~~A fix for repeated `Rinit`/`Rshutdown`~~: not needed, milestone 0 found it works.
 3. A built-in Kotlin language in `src/widgets/syntax.c`: needed by the `xml-translator` sample.
 4. `Rdialog_set_dismiss_callback`, which can refuse a dismissal: needed by `Dialog` (phase 3).
 
