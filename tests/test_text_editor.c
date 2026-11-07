@@ -753,6 +753,32 @@ static void test_languages(void) {
 	CHECK(tok_of(3, "10_000") == R_TOKEN_NUMBER);
 	CHECK(tok_of(3, "true") != R_TOKEN_TEXT);
 
+	/* Kotlin */
+	Rtext_editor_set_language(g_editor, "Kotlin");
+	Rtext_editor_set_text(g_editor,
+		"@Composable fun Greeting(name: String) { /* a /* nested */ comment */\n"
+		"    val n: Int = 10_000; var c = 'x'\n"
+		"    val s = \"\"\"raw\n"
+		"text\"\"\"; if (n > 0 && name != null) println(name)\n"
+		"}");
+	CHECK(tok(0, 0) == R_TOKEN_DIRECTIVE);
+	CHECK(tok_of(0, "Composable") == R_TOKEN_DIRECTIVE);
+	CHECK(tok_of(0, "fun") == R_TOKEN_KEYWORD);
+	CHECK(tok_of(0, "Greeting") == R_TOKEN_FUNCTION);
+	CHECK(tok_of(0, "String") == R_TOKEN_TYPE);
+	CHECK(tok_of(0, "comment") == R_TOKEN_COMMENT); /* still a comment after the nested one closes */
+	CHECK(tok_of(1, "val") == R_TOKEN_KEYWORD);
+	CHECK(tok_of(1, "Int") == R_TOKEN_TYPE);
+	CHECK(tok_of(1, "10_000") == R_TOKEN_NUMBER);
+	CHECK(tok_of(1, "'x'") == R_TOKEN_STRING);
+	CHECK(tok_of(2, "raw") == R_TOKEN_STRING);
+	CHECK(tok_of(3, "text") == R_TOKEN_STRING);
+	CHECK(tok_of(3, "if") == R_TOKEN_KEYWORD);
+	CHECK(tok_of(3, "null") != R_TOKEN_TEXT);
+	CHECK(tok_of(3, "println") == R_TOKEN_FUNCTION);
+	CHECK_STR(Rlanguage_for_file("Main.kt"), "Kotlin");
+	CHECK_STR(Rlanguage_for_file("build.gradle.kts"), "Kotlin");
+
 	/* JavaScript */
 	Rtext_editor_set_language(g_editor, "JavaScript");
 	Rtext_editor_set_text(g_editor,

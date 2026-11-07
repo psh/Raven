@@ -1156,6 +1156,26 @@ static void rvn_languages_built_in(void) {
 	d.flags = R_LANGUAGE_CHAR_LITERALS;
 	rvn_language_add(&d);
 
+	/* the keywords of Prism.js; value, field and it stay names (Compose code is full of them) */
+	memset(&d, 0, sizeof(d));
+	d.name = "Kotlin";
+	d.extensions = "kt;kts";
+	d.keywords = "abstract actual annotation as break by catch class companion const constructor continue crossinline data do "
+		"dynamic else enum expect external final finally for fun get if import in infix init inline inner interface internal is "
+		"lateinit noinline object open operator out override package private protected public reified return sealed set super "
+		"suspend tailrec this throw to try typealias val var vararg when where while";
+	d.types = "Int Long Short Byte Float Double Boolean Char String Unit Any Nothing Array List MutableList Map MutableMap Set "
+		"MutableSet Sequence Pair Triple";
+	d.constants = "true false null";
+	d.line_comment = "//";
+	d.block_comment_start = "/*";
+	d.block_comment_end = "*/";
+	d.string_quotes = "\"'";
+	d.multiline_strings = "\"\"\"";
+	d.annotation = "@";
+	d.flags = R_LANGUAGE_NESTED_COMMENTS | R_LANGUAGE_CHAR_LITERALS;
+	rvn_language_add(&d);
+
 	memset(&d, 0, sizeof(d));
 	d.name = "JavaScript";
 	d.extensions = "js;mjs;cjs;jsx";

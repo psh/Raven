@@ -12,9 +12,10 @@
  * Given a language, the editor colors the text, proposes words while typing
  * (the words of the language and the names already written in the text),
  * shows which bracket closes which, indents after an opening bracket, closes
- * brackets and quotes, and comments lines out. C, C++, C#, Java, JavaScript,
- * TypeScript, Python, Rust, Zig, GLSL, JSON, CSS, XML and HTML are built in; any
- * of them can be changed, and others declared, with Rlanguage_register.
+ * brackets and quotes, and comments lines out. C, C++, C#, Java, Kotlin,
+ * JavaScript, TypeScript, Python, Rust, Zig, GLSL, JSON, CSS, XML and HTML are
+ * built in; any of them can be changed, and others declared, with
+ * Rlanguage_register.
  *
  * This is what the editor knows from the text alone. What needs to
  * understand a whole program (the type of an expression, the errors of a

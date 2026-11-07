@@ -790,7 +790,7 @@ which, closes brackets and quotes, indents, and comments lines out (`Ctrl+/`).
 Rtext_editor_set_language(editor, Rlanguage_for_file(path));     /* "main.rs" -> "Rust" */
 ```
 
-C, C++, C#, Java, JavaScript, TypeScript, Python, Rust, GLSL, JSON, CSS, XML
+C, C++, C#, Java, Kotlin, JavaScript, TypeScript, Python, Rust, GLSL, JSON, CSS, XML
 and HTML (with the JavaScript and the CSS inside it) are built in. Any of
 them can be changed and others declared with `Rlanguage_register`: a language
 is a description (its words, its comments, its quotes), not code.
