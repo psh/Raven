@@ -102,10 +102,12 @@ fun main() = application {                        // this: ApplicationScope
 fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600) { ... }
 ```
 
-- **`application { }`** blocks, and it must be called from `main()` on the main thread, which
+- **`application(followSystemAccessibility = true) { }`** blocks, and it must be called from `main()` on the main thread, which
   becomes the **UI thread** (AppKit requires this). It ends when its content has no `Window` left,
   or when `ApplicationScope.exitApplication()` is called. `singleWindowApplication(title, width,
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
+  At start, the host calls `Raccessibility_follow_system()` unless `followSystemAccessibility` is
+  false, so text scale, contrast and reduced motion follow the OS.
 - **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
@@ -236,6 +238,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `align(Alignment)` / `align(Alignment.Horizontal)` / `align(Alignment.Vertical)` | `BoxScope` / `ColumnScope` / `RowScope` | `Rslot_set_halign` / `_valign` |
 | `testTag(String)` | any | stored on the node only, with no Raven call ([section 9](#9-testing)) |
 | `tooltip(String)` | any | `Rwidget_set_tooltip`, text only |
+| `semantics { }` | any | Raven's accessible name, role, description and hidden flag ([section 7](#7-events-and-state)) |
 | `clickable`, `combinedClickable`, `onPointerEvent`, `pointerHoverIcon`, `onKeyEvent`, `focusable`, `focusRequester`, `onFocusChanged` | any | Raven's event callback, focus and cursor calls ([section 7](#7-events-and-state)) |
 | `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
 
@@ -246,8 +249,8 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   Phase 1's `Arrangement` offers only `Top`/`Start` and `spacedBy(dp)`, which uses `Rpanel_set_spacing`.
   The container's alignment sets each child's default cross-axis alignment, and `Modifier.align`
   overrides it.
-- `Alignment.Start` and `Alignment.End` map to `LEFT` and `RIGHT`. Phase 1 has no right-to-left
-  support.
+- `Alignment.Start` and `Alignment.End` map to `LEFT` and `RIGHT`. Raven supports right-to-left
+  layout, but compose-raven doesn't expose it yet (Right-to-left layout fog on the phase 3 map).
 
 Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
 
@@ -301,8 +304,30 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
   builds an unparented Raven Menu on a right-click and opens it with `Rmenu_open`. The content goes
   in an internal Box.
 
-Decided in: [Events and state](issues/archive/0010-events-and-state.md).,
-[Generic input and focus](issues/archive/0025-generic-input-and-focus.md).
+### Accessibility (phase 3)
+
+Raven exposes every window to the platform screen reader by itself. Widgets report their role,
+name, value and state, and a `Text` directly before an input names it.
+
+- **Internal content nodes** get `R_ROLE_NONE`, so the screen reader sees the app's tree.
+- **`Modifier.semantics { }`**:
+  - `contentDescription` sets the accessible name.
+  - `role = Role.Button | Checkbox | Switch | RadioButton | Tab | Image | DropdownList` sets the
+    role.
+  - `heading()` sets `R_ROLE_HEADING`.
+  - `hideFromAccessibility()` hides the widget and its subtree.
+  - compose-raven extensions: `accessibleRole = AccessibleRole.<any Raven role>` and
+    `accessibleDescription`.
+- **Automatic labels**: in a `Row` or `FlowRow`, an input (`Checkbox`, `Switch`, `RadioButton`,
+  `Slider`, `TextField`, `ComboBox`, `SpinBox`) that has no `contentDescription` and no `Text`
+  directly before it gets `Rwidget_set_accessible_labelled_by` with the `Text` directly after it.
+  - The Applier re-checks a parent after its children change.
+  - A `Text` below an input in a `Column` is never used as its label.
+- **`announceForAccessibility(text, assertive = false)`** uses `Raccessibility_announce`.
+
+Decided in: [Events and state](issues/archive/0010-events-and-state.md),
+[Generic input and focus](issues/archive/0025-generic-input-and-focus.md),
+[Accessibility semantics](issues/archive/0026-accessibility-semantics.md).
 
 ## 8. Component vocabulary
 
@@ -457,7 +482,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
       onNodeWithText("Count: 1").assertExists()
   }
   ```
-  - `onNodeWithText` and `onNodeWithTag` search compose-raven's node tree.
+  - `onNodeWithText`, `onNodeWithTag` and `onNodeWithContentDescription` search compose-raven's
+    node tree.
   - `performClick()` injects a mouse press and release at the centre of `Rwidget_get_rect`.
   - `performTextInput` clicks the field to focus it, then calls `Rwindow_inject_text`.
   - Assertions include `assertExists` and `assertIsChecked`, plus widget values read through
@@ -610,7 +636,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `fillMax*` has no fraction argument | `fillMaxWidth(0.5f)` | [6](#6-layout-and-modifiers) |
 | `Arrangement` offers only `Top`/`Start` and `spacedBy` | Center, End, SpaceBetween, ... | [6](#6-layout-and-modifiers) |
 | `padding` is always outside the widget (no drawing modifiers) | position in the chain decides | [6](#6-layout-and-modifiers) |
-| No `Layout {}`, no right-to-left (`Start`/`End` are left/right) | custom layouts, `LayoutDirection` | [6](#6-layout-and-modifiers) |
+| No `Layout {}`, and no right-to-left yet, although Raven supports it (`Start`/`End` are left/right) | custom layouts, `LayoutDirection` | [6](#6-layout-and-modifiers) |
 | `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-component-vocabulary) |
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
@@ -629,6 +655,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | No style classes; theme rules by class don't apply | no such concept | [8](#8-component-vocabulary) |
 | No coroutine `pointerInput`, drag gestures or long press | `pointerInput`, `draggable`, `combinedClickable(onLongClick)` | [7](#7-events-and-state) |
 | No `onPreviewKeyEvent`, because Raven doesn't tunnel events | preview handlers run root to leaf | [7](#7-events-and-state) |
+| No `clearAndSetSemantics` or `mergeDescendants` | merging and clearing semantics | [7](#7-events-and-state) |
+| An input in a `Row` is labelled automatically by the `Text` after it | the app merges semantics itself | [7](#7-events-and-state) |
+| `accessibleRole` and `accessibleDescription` reach Raven roles that Compose's `Role` lacks | `Role` has a fixed set | [7](#7-events-and-state) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |

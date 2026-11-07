@@ -90,11 +90,12 @@ Decided for phase 3 so far (in the spec):
   `singleWindowApplication`, `Dialog`, suspend message and file dialogs, `Modifier.tooltip`
 - [Generic input and focus](issues/archive/0025-generic-input-and-focus.md): `clickable`, `onPointerEvent`,
   `onKeyEvent`, `FocusRequester`, `pointerHoverIcon`, `ContextMenuArea`
+- [Accessibility semantics](issues/archive/0026-accessibility-semantics.md): `Modifier.semantics`, automatic
+  labels in rows, `announceForAccessibility`, following the system's settings
 
 Open tickets that serve every app rather than one sample:
 
 - [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
-- [Accessibility semantics](issues/0026-accessibility-semantics.md)
 - [Fonts and text styling](issues/0027-fonts-and-text-styling.md)
 - [Public test module for apps](issues/0029-app-testing-module.md)
 - [XML translator as a tool](issues/0030-translator-as-a-tool.md)

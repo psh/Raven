@@ -42,6 +42,7 @@ implementation.
 
 - [Multiple windows, dialogs and popups](archive/0024-multiple-windows.md): Compose Desktop's `application { Window { } }` with controlled closing, `WindowState` and per-window lifecycle and saved-state owners; `ravenApplication` is renamed `singleWindowApplication`; `Dialog` is a Raven sheet with a new dismiss callback in the fork (change 4); blocking message and file dialogs become suspend functions (verify nested frames first); `Modifier.tooltip`; `Popup` goes back to the fog; Navigation 3 scenes get their own ticket.
 - [Generic input and focus](archive/0025-generic-input-and-focus.md): one Raven event callback per node, dispatching to the input modifiers in chain order; `clickable`/`combinedClickable`, Compose Desktop's `onPointerEvent` and `pointerHoverIcon`; `onKeyEvent` and `Window(onKeyEvent)` with no preview handlers; `FocusRequester`/`focusable`/`onFocusChanged`; `ContextMenuArea` over `Rmenu_open`; gestures go to the fog.
+- [Accessibility semantics](archive/0026-accessibility-semantics.md): Raven describes widgets itself, so the only default is `NONE` on internal content nodes; `Modifier.semantics` with Compose's properties plus `accessibleRole`/`accessibleDescription`; an input in a `Row` is automatically labelled by the `Text` after it; `announceForAccessibility`; the host follows the system's settings; tests gain `onNodeWithContentDescription`.
 
 ## Not yet specified
 
@@ -49,6 +50,9 @@ implementation.
   and `browser`. Each is large and driven by callbacks, and they wait until the list, custom
   drawing and input tickets have settled the common patterns.
 
+- **Right-to-left layout**: Raven supports it (`Rset_layout_direction`, `Rwidget_set_direction`).
+  Expose Compose's `LayoutDirection` / `LocalLayoutDirection`, make `Alignment.Start`/`End` and
+  shapes direction-aware, and amend the spec's "no RTL" lines.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
