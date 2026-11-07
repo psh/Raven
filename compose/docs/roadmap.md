@@ -100,12 +100,13 @@ Decided for phase 3 so far (in the spec):
   `NativeViewport`, the `compose-raven-vulkan` and `compose-raven-opengl` modules, shader effects
 - [Public test module for apps](issues/archive/0029-app-testing-module.md): `compose-raven-test` with the one
   harness, Compose-style finders, actions and assertions, `mainClock`, leak checks
+- [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
+  the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
 
 Open tickets that serve every app rather than one sample:
 
 - [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
 - [Typography in RavenTheme](issues/0040-typography-in-raventheme.md)
-- [XML translator as a tool](issues/0030-translator-as-a-tool.md)
 - [Packaging and publishing](issues/0031-packaging-and-publishing.md)
 - [Windows (mingwX64) target](issues/0032-windows-target.md)
 
