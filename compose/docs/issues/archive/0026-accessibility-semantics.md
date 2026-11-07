@@ -32,5 +32,5 @@ Facts (`raven_accessibility.h`): every Raven window is exposed to the platform s
   - The rule is spelled out in the spec.
 - **Announcements**: `announceForAccessibility(text: String, assertive: Boolean = false)` uses `Raccessibility_announce`.
 - **System settings**: the host calls `Raccessibility_follow_system()` at start, so text scale, contrast and reduced motion follow the OS. `application(followSystemAccessibility = false)` opts out. A Kotlin view of the settings (`LocalAccessibilitySettings`) waits until a sample needs it.
-- **Tests**: the harness gains `onNodeWithContentDescription(...)`, which reads the semantics stored on each node. [Public test module for apps](../0029-app-testing-module.md) inherits it.
+- **Tests**: the harness gains `onNodeWithContentDescription(...)`, which reads the semantics stored on each node. [Public test module for apps](0029-app-testing-module.md) inherits it.
 - **Right-to-left**: a new Right-to-left layout fog patch on the map. This ticket only records that Raven supports it.
