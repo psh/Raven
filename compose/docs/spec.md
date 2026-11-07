@@ -59,22 +59,26 @@ The two packages already allow a later split into `compose-raven-ui` and
   `org.jetbrains.kotlin.plugin.compose`. The dependency is `androidx.compose.runtime:runtime:1.12.1`
   from Google Maven; the JetBrains coordinates only redirect to it. Neither Compose UI nor the
   `org.jetbrains.compose` plugin is used.
-- **Targets**: `macosArm64` and `linuxX64`. Each target builds and is tested on its own host, with
-  no cross-compilation.
+- **Targets**: `macosArm64` and `linuxX64`, plus `mingwX64` from phase 3. Each target builds and is
+  tested on its own host, with no cross-compilation. On Windows, libraven is built with Raven's
+  `mingw` CMake preset under MSYS2 MINGW64. The implementation first verifies that it links with
+  Kotlin/Native's `mingwX64` toolchain, and the fallback is Kotlin/Native's own clang.
 - **Building libraven**: a Gradle task runs CMake on the repo root into
   `compose/build/raven/<target>`. The build is always `Release`, with `RAVEN_BUILD_EXAMPLES`,
   `RAVEN_BUILD_TESTS`, `RAVEN_BUILD_TOOLS` and `RAVEN_BUILD_WEB` off. The cinterop task depends on
   it.
 - **Linking**: static. `raven.def` bundles `libraven.a` (`staticLibraries` + `libraryPaths`).
   `linkerOpts` adds `-framework AppKit -framework QuartzCore -framework Metal -framework
-  CoreFoundation` on macOS and `-lX11 -ldl -lpthread -lm` on Linux.
+  CoreFoundation` on macOS, `-lX11 -ldl -lpthread -lm` on Linux, and `-luser32 -lgdi32 -lshell32
+  -lcomdlg32 -lole32 -lwinhttp` on Windows. A build check fails if these drift from
+  `RAVEN_LIBRARIES` in `CMakeLists.txt`.
 - **MoltenVK** is needed at run time only. Raven loads Vulkan dynamically, so nothing is linked.
   On macOS, users install it with `brew install molten-vk` or the Vulkan SDK.
 - **Publishing** (phase 3): every library module is published to Maven Central under the group
   `io.github.psh`, at one shared version that follows its own semantic versioning (from 0.1.0).
   - Each target publishes from its own host: the macOS job publishes the root and metadata
-    modules plus `macosarm64`, and the Linux job publishes `linuxx64`. A `compose-vX.Y.Z` tag
-    triggers both, signed in CI.
+    modules plus `macosarm64`, the Linux job publishes `linuxx64`, and the Windows job (phase 3)
+    publishes `mingwx64`. A `compose-vX.Y.Z` tag triggers all of them, signed in CI.
   - Each release records the bundled Raven (fork commit and version, for example
     `0.2.1-psh.3`).
   - `raven-xml2compose` ships as per-host binaries on a GitHub release.
@@ -87,7 +91,8 @@ Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runti
 [Kotlin/Native targets and build](issues/archive/0005-kotlin-native-targets-and-build.md),
 [Layering over cinterop](issues/archive/0006-cinterop-layering.md),
 [Port the Raven samples to Compose](issues/archive/0014-port-raven-samples.md),
-[Packaging and publishing](issues/archive/0031-packaging-and-publishing.md).
+[Packaging and publishing](issues/archive/0031-packaging-and-publishing.md),
+[Windows (mingwX64) target](issues/archive/0032-windows-target.md).
 
 ## 3. raven-native
 
@@ -567,8 +572,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 - **Pure logic** gets plain Kotlin unit tests, with no Raven: Modifier folding, move-index
   adjustment and mirror-list bookkeeping. There are no screenshot tests, because the null renderer
   draws nothing.
-- **CI**: a compose job in `.github/workflows/build.yml` on a macOS and a Linux runner, running
-  `./gradlew -p compose allTests`.
+- **CI**: a compose job in `.github/workflows/build.yml` on a macOS, a Linux and (from phase 3) a
+  Windows runner with MSYS2, running `./gradlew -p compose allTests`.
 
 ### Public test module (phase 3)
 

@@ -48,6 +48,7 @@ implementation.
 - [Public test module for apps](archive/0029-app-testing-module.md): `compose-raven-test` holds the one harness (foundation's internals behind `@InternalComposeRavenApi`); Compose-style finders, matchers, actions and assertions over Raven's real input; `mainClock`; leak checks on by default; one window, no screenshots.
 - [XML translator as a tool](archive/0030-translator-as-a-tool.md): the `compose-raven-xml` library (parse adapter, private cinterop, `translate()`) and the `raven-xml2compose` command-line tool on headless Raven; one Kotlin file per XML file, `<Include>` becomes a call, cycles are errors; generated-file headers guard against overwriting; a Gradle task goes to the fog.
 - [Packaging and publishing](archive/0031-packaging-and-publishing.md): the library modules go to Maven Central under `io.github.psh` at one shared version with its own semantic versioning (recording the bundled Raven), with a `compose-raven-bom`; each target publishes from its own host, triggered by a tag in CI; the translator tool ships as release binaries; MoltenVK stays a documented requirement, and app bundling goes to the fog.
+- [Windows (mingwX64) target](archive/0032-windows-target.md): libraven built with Raven's `mingw` preset under MSYS2 (linking with Kotlin/Native's toolchain verified first); Windows linker options checked against CMake; WGL for the OpenGL module, `HWND` for native viewports; a third CI and publishing job; three targets from phase 3.
 
 ## Not yet specified
 
@@ -62,7 +63,7 @@ implementation.
   callback given the available size, an arrange callback, `Rwidget_measure_child` /
   `Rwidget_arrange_child`). It waits until a sample needs it.
 - **Graphics extras**: a `MetalViewport` convenience for macOS, zero-copy GL textures through
-  `GL_EXT_memory_object` on Linux, and possibly a Vulkan-headers cinterop shipped with
+  `GL_EXT_memory_object` on Linux (and `_win32` on Windows), and possibly a Vulkan-headers cinterop shipped with
   `compose-raven-vulkan`.
 - **Multi-window tests**: `onWindow(title)`, `onDialog()` and tests of `application { }` with
   several windows, beyond `runRavenTest`'s single window.
