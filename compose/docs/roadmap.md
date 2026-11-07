@@ -32,6 +32,7 @@ its result can change the plan:
 | A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) |
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) |
 | Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) |
+| Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) |
 | `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host (phase 3) | settled in [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md) | none yet |
 
 ## 1. Raven fork changes
@@ -87,11 +88,12 @@ Decided for phase 3 so far (in the spec):
 
 - [Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md): `application { Window { } }`,
   `singleWindowApplication`, `Dialog`, suspend message and file dialogs, `Modifier.tooltip`
+- [Generic input and focus](issues/archive/0025-generic-input-and-focus.md): `clickable`, `onPointerEvent`,
+  `onKeyEvent`, `FocusRequester`, `pointerHoverIcon`, `ContextMenuArea`
 
 Open tickets that serve every app rather than one sample:
 
 - [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
-- [Generic input and focus](issues/0025-generic-input-and-focus.md)
 - [Accessibility semantics](issues/0026-accessibility-semantics.md)
 - [Fonts and text styling](issues/0027-fonts-and-text-styling.md)
 - [Public test module for apps](issues/0029-app-testing-module.md)

@@ -106,7 +106,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   becomes the **UI thread** (AppKit requires this). It ends when its content has no `Window` left,
   or when `ApplicationScope.exitApplication()` is called. `singleWindowApplication(title, width,
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
-- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified) { }`**:
+- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
   - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
@@ -236,6 +236,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `align(Alignment)` / `align(Alignment.Horizontal)` / `align(Alignment.Vertical)` | `BoxScope` / `ColumnScope` / `RowScope` | `Rslot_set_halign` / `_valign` |
 | `testTag(String)` | any | stored on the node only, with no Raven call ([section 9](#9-testing)) |
 | `tooltip(String)` | any | `Rwidget_set_tooltip`, text only |
+| `clickable`, `combinedClickable`, `onPointerEvent`, `pointerHoverIcon`, `onKeyEvent`, `focusable`, `focusRequester`, `onFocusChanged` | any | Raven's event callback, focus and cursor calls ([section 7](#7-events-and-state)) |
 | `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
@@ -273,7 +274,35 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
 - **Phase 1 events** are only the callbacks that belong to each widget, listed in
   [section 8](#8-component-vocabulary).
 
-Decided in: [Events and state](issues/archive/0010-events-and-state.md).
+### Generic input and focus (phase 3)
+
+- **Plumbing**: a node registers Raven's single event callback once its Modifier chain has an
+  input element. The callback dispatches each event to the handlers in chain order, and the first
+  one that consumes it returns true to Raven.
+- **Pointer**:
+  - `Modifier.clickable(enabled, onClick)` fires on a left press then release, and consumes both.
+  - `Modifier.combinedClickable(onClick, onDoubleClick)` uses Raven's click count.
+  - `Modifier.onPointerEvent(PointerEventType) { event -> }` handles Press, Release, Move, Enter,
+    Exit and Scroll. `PointerEvent` has `position`, `button` (Primary, Secondary, Tertiary, Back,
+    Forward), the modifiers and `scrollDelta`. It isn't consumed unless the handler calls
+    `consume()`.
+  - `Modifier.pointerHoverIcon(PointerIcon)` uses `Rwidget_set_cursor`.
+- **Keys**: `Modifier.onKeyEvent { event -> Boolean }` handles keys that go to the focused widget
+  and bubble up. `KeyEvent` has `key`, `type`, `isCtrlPressed`, `isShiftPressed`, `isAltPressed`,
+  `isMetaPressed` and `isRepeat`. `Window(onKeyEvent)` sees what nothing below consumed.
+- **Focus**:
+  - `Modifier.focusable()` uses `Rwidget_set_focusable`.
+  - `FocusRequester` with `Modifier.focusRequester(r)` and `r.requestFocus()` uses `Rwidget_focus`.
+  - `Modifier.onFocusChanged { it.isFocused }` comes from Raven's focus events.
+  - `LocalFocusManager.current.clearFocus()` focuses the root. The implementation first verifies
+    that this clears focus.
+  - Tab traversal is Raven's own.
+- **Context menus**: `ContextMenuArea(items = { listOf(ContextMenuItem(label) { ... }) }) { }`
+  builds an unparented Raven Menu on a right-click and opens it with `Rmenu_open`. The content goes
+  in an internal Box.
+
+Decided in: [Events and state](issues/archive/0010-events-and-state.md).,
+[Generic input and focus](issues/archive/0025-generic-input-and-focus.md).
 
 ## 8. Component vocabulary
 
@@ -598,7 +627,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `shape` is one corner radius, and `contentPadding` is symmetric | any shape and padding | [8](#8-component-vocabulary) |
 | The look can only be set by the outermost `RavenTheme`, and `RavenTheme.colors` shows only the app theme | nested themes are fully independent | [8](#8-component-vocabulary) |
 | No style classes; theme rules by class don't apply | no such concept | [8](#8-component-vocabulary) |
-| No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
+| No coroutine `pointerInput`, drag gestures or long press | `pointerInput`, `draggable`, `combinedClickable(onLongClick)` | [7](#7-events-and-state) |
+| No `onPreviewKeyEvent`, because Raven doesn't tunnel events | preview handlers run root to leaf | [7](#7-events-and-state) |
+| Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |
 | `customHeader = true` keeps the OS's resizing and window behaviour; `undecorated = true` removes all decoration, as in Compose Desktop | only `undecorated` | [4](#4-application-host) |

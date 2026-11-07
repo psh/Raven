@@ -30,7 +30,7 @@ The one thread that starts Raven and runs its event loop; every change to Raven 
 _Avoid_: main thread (it is the main thread on macOS, but the term names the role, not the OS thread)
 
 **Modifier**:
-How a composable states its place in its parent (padding around it, its size, how it aligns, what share of free space it takes) and the decoration any widget can have (its material, its tooltip). What one kind of widget is or shows, including its own colours, belongs to its parameters, not its Modifier.
+How a composable states its place in its parent (padding around it, its size, how it aligns, what share of free space it takes) the decoration any widget can have (its material, its tooltip), and the input any widget can receive (clicks, pointer and key events, focus). What one kind of widget is or shows, including its own colours, belongs to its parameters, not its Modifier.
 _Avoid_: slot (Raven's word for the same settings, as seen from the parent), layout params
 
 **Controlled input**:
