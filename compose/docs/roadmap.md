@@ -10,7 +10,7 @@ updates this file when it closes.
 
 | Milestone | Delivers | Samples |
 |---|---|---|
-| [0. Verify first](#0-verify-first) | answers to four open facts about Raven | none |
+| [0. Verify first](#0-verify-first) | answers to the open facts the spec depends on | none |
 | [1. Raven fork changes](#1-raven-fork-changes) | the changes compose-raven needs in `psh/Raven` | none |
 | [2. Phase 1](#2-phase-1) | the library, the host, the phase 1 vocabulary, tests and CI | `hello`, `xml-translator` |
 | [3. Phase 2](#3-phase-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
@@ -31,6 +31,8 @@ its result can change the plan:
 | `Rxml_document_parse` registers no `<Widget>` declarations globally | `parseRavenXml` unregisters them | [10](spec.md#10-samples) |
 | A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) |
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) |
+| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) |
+| `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host (phase 3) | settled in [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md) | none yet |
 
 ## 1. Raven fork changes
 
@@ -39,6 +41,7 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 1. `Rwidget_move_child(parent, from, to)`: required by the Applier (milestone 2).
 2. A fix for repeated `Rinit`/`Rshutdown`: only if milestone 0 finds it necessary.
 3. A built-in Kotlin language in `src/widgets/syntax.c`: needed by the `xml-translator` sample.
+4. `Rdialog_set_dismiss_callback`, which can refuse a dismissal: needed by `Dialog` (phase 3).
 
 ## 2. Phase 1
 
@@ -46,7 +49,7 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 |---|---|
 | Gradle build: `raven-native`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) |
 | `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) |
-| `RavenHost` and `ravenApplication`: dispatcher, frame clock, snapshot pump, shutdown, errors | [4](spec.md#4-application-host) |
+| `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, shutdown, errors | [4](spec.md#4-application-host) |
 | `RavenNode` and `RavenApplier`, including the internal content node for single-child widgets | [5](spec.md#5-node-model-and-applier) |
 | `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) |
 | Callbacks and controlled inputs | [7](spec.md#7-events-and-state) |
@@ -80,9 +83,14 @@ Each port waits on these open tickets:
 | `animations` | [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md) |
 | `glass` | [Lists and trees](issues/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
 
+Decided for phase 3 so far (in the spec):
+
+- [Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md): `application { Window { } }`,
+  `singleWindowApplication`, `Dialog`, suspend message and file dialogs, `Modifier.tooltip`
+
 Open tickets that serve every app rather than one sample:
 
-- [Multiple windows, dialogs and popups](issues/0024-multiple-windows.md)
+- [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
 - [Generic input and focus](issues/0025-generic-input-and-focus.md)
 - [Accessibility semantics](issues/0026-accessibility-semantics.md)
 - [Fonts and text styling](issues/0027-fonts-and-text-styling.md)

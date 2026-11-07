@@ -25,7 +25,7 @@ Two standing preferences shape every section:
 An app looks like this:
 
 ```kotlin
-fun main() = ravenApplication(title = "Hello", width = 800, height = 600) {
+fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600) {
     var count by remember { mutableStateOf(0) }
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Clicked $count times")
@@ -92,18 +92,50 @@ Decided in: [Layering over cinterop](issues/archive/0006-cinterop-layering.md).
 
 ## 4. Application host
 
-`fun ravenApplication(title: String, width: Int, height: Int, customHeader: Boolean = false, transparent: Boolean = false, undecorated: Boolean = false, content: @Composable RavenApplicationScope.() -> Unit)`
-is in `raven.compose.ui`. It blocks, and it must be called from `main()` on the main thread, which
-becomes the **UI thread** (AppKit requires this). It returns when the window closes. Phase 1 has one
-window. `customHeader = true` creates it with `R_WINDOW_CUSTOM_HEADER`, for a `HeaderBar`
-([section 8](#8-component-vocabulary)).
-`transparent` uses `R_WINDOW_TRANSPARENT` and `undecorated` uses `R_WINDOW_BORDERLESS`. Inside
-the content, `WindowBackdrop(backdrop: Backdrop)` declaratively calls `Rwindow_set_backdrop`.
-`Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning is logged when
-the window isn't transparent or the system refuses. Growing it into `application { Window { } }` waits for the multi-window fog.
+Entry points follow Compose Desktop, in `raven.compose.ui`:
+
+```kotlin
+fun main() = application {                        // this: ApplicationScope
+    Window(onCloseRequest = ::exitApplication, title = "Notes") { ... }
+    if (showPrefs) Window(onCloseRequest = { showPrefs = false }, title = "Preferences") { ... }
+}
+fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600) { ... }
+```
+
+- **`application { }`** blocks, and it must be called from `main()` on the main thread, which
+  becomes the **UI thread** (AppKit requires this). It ends when its content has no `Window` left,
+  or when `ApplicationScope.exitApplication()` is called. `singleWindowApplication(title, width,
+  height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
+- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified) { }`**:
+  - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
+    and the window is destroyed when the app removes `Window` from the composition.
+  - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
+    [section 8](#8-component-vocabulary)), `transparent` uses `R_WINDOW_TRANSPARENT`, and
+    `undecorated` uses `R_WINDOW_BORDERLESS`. `background` uses `Rwindow_set_clear_color`.
+  - **`WindowState`** holds `size`, `position`, `placement` (Floating or Maximized) and
+    `isMinimized`. Writes call Raven's setters, and Raven's resize and move callbacks write back.
+  - **Composition**: a window emits no node into its parent. It has its own composition, with its
+    own Overlay root and Applier, under the one Recomposer, linked with
+    `rememberCompositionContext()`.
+  - **Owners**: each window provides a `LifecycleOwner` and a `SavedStateRegistryOwner`. They
+    persist nothing yet, but they are enough for Navigation 3 and lifecycle-aware libraries.
+  - **`WindowBackdrop(backdrop: Backdrop)`** inside a window calls `Rwindow_set_backdrop` for that
+    window. `Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning is
+    logged when the window isn't transparent or the system refuses.
+- **`Dialog(onDismissRequest, properties: DialogProperties = DialogProperties()) { }`** is a
+  Raven sheet over its window.
+  - Its content has its own composition, rooted in a panel given to `Rdialog_open`. When it leaves
+    the composition, that composition is disposed, then `Rdialog_close` is called.
+  - Escape and clicks outside call `onDismissRequest`, through `Rdialog_set_dismiss_callback`
+    ([fork change 4](#11-required-raven-changes)), and the app decides.
+  - `DialogProperties` has `dismissOnBackPress` (Escape) and `dismissOnClickOutside`.
+- **Blocking dialogs** are suspend functions run as a task on `RavenDispatcher`: `messageBox(title,
+  text, buttons): MessageResult`, `openFileDialog(filters, multiple): List<String>`,
+  `saveFileDialog(...)` and `selectFolderDialog(...)`. Raven runs frames while they wait. The
+  implementation first verifies that recomposing inside those nested frames is safe.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
-`close()`. `ravenApplication` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is
+`close()`. `application` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is
 `RavenHost` plus frames it drives itself ([section 9](#9-testing)).
 
 - **Start**: `Rinit`, then create the window and the fixed root ([section 5](#5-node-model-and-applier)),
@@ -129,12 +161,13 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
      dispatch.
 - **Errors**: a `CoroutineExceptionHandler` on the scope, together with the C-boundary catch in
   [section 7](#7-events-and-state), records the first throwable and calls `Rquit()`. After the
-  normal shutdown, `ravenApplication` rethrows it.
-- **Exit**: `RavenApplicationScope.exitApplication()` calls `Rquit()`, which is thread-safe.
-  Closing the window also ends the loop.
+  normal shutdown, `application` rethrows it.
+- **Exit**: `ApplicationScope.exitApplication()` calls `Rquit()`, which is thread-safe. The loop
+  also ends when no `Window` is left.
 
 Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-threading.md),
-[Testing strategy](issues/archive/0012-testing-strategy.md).
+[Testing strategy](issues/archive/0012-testing-strategy.md),
+[Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md).
 
 ## 5. Node model and Applier
 
@@ -202,6 +235,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `weight(Float)` | `RowScope`, `ColumnScope` | `Rslot_set_fill` |
 | `align(Alignment)` / `align(Alignment.Horizontal)` / `align(Alignment.Vertical)` | `BoxScope` / `ColumnScope` / `RowScope` | `Rslot_set_halign` / `_valign` |
 | `testTag(String)` | any | stored on the node only, with no Raven call ([section 9](#9-testing)) |
+| `tooltip(String)` | any | `Rwidget_set_tooltip`, text only |
 | `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
@@ -275,7 +309,7 @@ Added for the `notepad` port:
 | `Item(text, onClick, shortcut: KeyShortcut? = null, enabled = true)` | MenuItem | no children |
 | `CheckboxItem(text, checked, onCheckedChange, shortcut, enabled)` | MenuItem, checkable | controlled |
 | `Separator()` (in `MenuScope`) | Separator | to verify first: Raven treats an inserted separator as a menu separator |
-| `HeaderBar(modifier, title: String? = null, buttons: Set<WindowButton> = WindowButton.all()) { }` | HeaderBar | needs `ravenApplication(customHeader = true)`, otherwise a warning is logged; in `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right |
+| `HeaderBar(modifier, title: String? = null, buttons: Set<WindowButton> = WindowButton.all()) { }` | HeaderBar | needs `Window(customHeader = true)`, otherwise a warning is logged; in `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right |
 
 `KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
 Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the named keys.
@@ -445,7 +479,7 @@ This sample translates Raven XML into compose-raven source.
 
   | XML | Compose |
   |---|---|
-  | `Window` | `fun main() = ravenApplication(...)` |
+  | `Window` | `fun main() = singleWindowApplication(...)` |
   | `VBox`, `HBox`, `Overlay` | `Column`, `Row`, `Box` |
   | `ScrollBox` | `VerticalScroll` / `HorizontalScroll` |
   | `Splitter` | `HorizontalSplitter` / `VerticalSplitter` |
@@ -531,9 +565,13 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
      trailing-lambda calls aren't marked as functions, and a keyword right after a `.` may be
      highlighted.
 
+4. **`Rdialog_set_dismiss_callback`** (required, phase 3): it is called when Escape or a click
+   outside would dismiss a dialog, and it can refuse. `Dialog` then calls `onDismissRequest` and the
+   app decides, instead of Raven deleting the content behind Compose's back.
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
-[Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md).
+[Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md),
+[Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md).
 
 ## 12. Differences from Compose
 
@@ -561,13 +599,16 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | The look can only be set by the outermost `RavenTheme`, and `RavenTheme.colors` shows only the app theme | nested themes are fully independent | [8](#8-component-vocabulary) |
 | No style classes; theme rules by class don't apply | no such concept | [8](#8-component-vocabulary) |
 | No generic input (`Modifier.clickable`, key and pointer) and no focus control | available | [7](#7-events-and-state) |
-| A single window through `ravenApplication` | `application { Window { } }` | [4](#4-application-host) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |
 | `customHeader = true` keeps the OS's resizing and window behaviour; `undecorated = true` removes all decoration, as in Compose Desktop | only `undecorated` | [4](#4-application-host) |
 | `Modifier.material(...)` gives any widget a glass or solid surface | no counterpart | [6](#6-layout-and-modifiers) |
 | `BackgroundBlur` blurs what is behind it (backdrop blur) | `Modifier.blur` blurs the element itself | [8](#8-component-vocabulary) |
 | The backdrop is set with the `WindowBackdrop(...)` composable | no counterpart | [4](#4-application-host) |
+| `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
+| `Dialog` is a sheet over its window | a separate window on desktop | [4](#4-application-host) |
+| No `Popup { }` | `Popup` | [4](#4-application-host) |
+| Message boxes and file dialogs are suspend functions over Raven's own | no built-in equivalent | [4](#4-application-host) |
 
 ## 13. Roadmap
 

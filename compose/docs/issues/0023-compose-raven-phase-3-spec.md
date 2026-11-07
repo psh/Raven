@@ -40,11 +40,16 @@ implementation.
 
 <!-- one line per closed ticket: [title](file): gist -->
 
+- [Multiple windows, dialogs and popups](archive/0024-multiple-windows.md): Compose Desktop's `application { Window { } }` with controlled closing, `WindowState` and per-window lifecycle and saved-state owners; `ravenApplication` is renamed `singleWindowApplication`; `Dialog` is a Raven sheet with a new dismiss callback in the fork (change 4); blocking message and file dialogs become suspend functions (verify nested frames first); `Modifier.tooltip`; `Popup` goes back to the fog; Navigation 3 scenes get their own ticket.
+
 ## Not yet specified
 
 - **Specialist widgets**: Timeline, NodeGraph, ColorPicker, WebView and BlockEditor, for `studio`
   and `browser`. Each is large and driven by callbacks, and they wait until the list, custom
   drawing and input tickets have settled the common patterns.
+
+- **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
+  tooltip popups today.
 
 ## Out of scope
 
