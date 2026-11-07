@@ -49,6 +49,7 @@ implementation.
 - [XML translator as a tool](archive/0030-translator-as-a-tool.md): the `compose-raven-xml` library (parse adapter, private cinterop, `translate()`) and the `raven-xml2compose` command-line tool on headless Raven; one Kotlin file per XML file, `<Include>` becomes a call, cycles are errors; generated-file headers guard against overwriting; a Gradle task goes to the fog.
 - [Packaging and publishing](archive/0031-packaging-and-publishing.md): the library modules go to Maven Central under `io.github.psh` at one shared version with its own semantic versioning (recording the bundled Raven), with a `compose-raven-bom`; each target publishes from its own host, triggered by a tag in CI; the translator tool ships as release binaries; MoltenVK stays a documented requirement, and app bundling goes to the fog.
 - [Windows (mingwX64) target](archive/0032-windows-target.md): libraven built with Raven's `mingw` preset under MSYS2 (linking with Kotlin/Native's toolchain verified first); Windows linker options checked against CMake; WGL for the OpenGL module, `HWND` for native viewports; a third CI and publishing job; three targets from phase 3.
+- [Lists and trees](archive/0033-lists-and-trees.md): Compose's `LazyColumn`/`LazyRow` for composable rows (composing every item in phase 3, keyed); `ListView` and `TreeView` as data-driven composables over Raven's virtualised text widgets, with controlled selection; tree expansion stays Raven's; TileView goes to the fog.
 
 ## Not yet specified
 
@@ -72,6 +73,10 @@ implementation.
 - **App bundling**: shipping apps: a macOS `.app` with MoltenVK in `Contents/Frameworks` (likely
   needing a fork change so Raven also tries `@executable_path/../Frameworks/libMoltenVK.dylib`), and
   Linux packages, like Compose Desktop's packaging tasks.
+- **Lazy virtualisation**: make `LazyColumn`/`LazyRow` compose only the items in view, from the
+  ScrollBox offset and measured row sizes.
+- **More list widgets**: TileView (tiles from a callback, multi-select), and controlled TreeView
+  expansion, which needs a fork change adding an expand or collapse callback.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and

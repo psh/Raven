@@ -535,6 +535,21 @@ Added for the `overlay` and `glass` ports:
   - `Surface(effect, effectStyle)` uses `Rborder_set_effect`, and `DrawScope.drawShader(...)` uses
     `Rdraw_shader`.
 
+### Lists and trees (phase 3)
+
+- **`LazyColumn { }` / `LazyRow { }`** use Compose's DSL (`items(list, key = { ... }) { item -> }`)
+  over `VerticalScroll`/`HorizontalScroll`. In phase 3 they compose every item, with no
+  virtualisation. `key` keeps rows stable through `Rwidget_move_child`.
+- **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, onActivate)`** uses
+  Raven's virtualised ListView in virtual mode, for text rows. Selection is controlled.
+- **`TreeView(roots, children, itemText, key, selection, onSelectionChange, multiSelect,
+  initiallyExpanded, onActivate, contextMenuItems, modifier)`** uses Raven's virtualised TreeView,
+  diffed by key onto Raven item handles.
+  - Selection is a controlled set of keys.
+  - Expansion stays Raven's, because Raven reports no expansion. `initiallyExpanded` applies to
+    new items only.
+  - `contextMenuItems` opens a menu at the pointer.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -542,7 +557,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Theming](issues/archive/0021-theming.md),
 [Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md),
 [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md),
-[Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md).
+[Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
+[Lists and trees](issues/archive/0033-lists-and-trees.md).
 
 ## 9. Testing
 
@@ -784,6 +800,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
 | Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
 | `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
+| `LazyColumn`/`LazyRow` compose every item in phase 3 (not lazy yet) | only visible items are composed | [8](#8-component-vocabulary) |
+| `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
+| `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
