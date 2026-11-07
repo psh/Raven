@@ -2964,6 +2964,14 @@ namespace Raven
     public delegate void RDialogClosedCallback(uint content, int result, IntPtr user_data);
 
     /// <summary>
+    /// Called when the user asks to dismiss a dialog (the Escape key), before
+    /// it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+    /// the application decides, and may close it later with Rdialog_close.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate int RDialogDismissCallback(uint content, IntPtr user_data);
+
+    /// <summary>
     /// Called when the user chooses: a double click or Enter on a file,
     /// the Open / Save button. `path` is the first chosen path; with several
     /// files, read them with Rfile_browser_get_selection. The action of the
@@ -8183,6 +8191,15 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rdialog_close(uint widget, int result);
+
+        /// <summary>
+        /// Asks the application before the user dismisses a dialog. `content`
+        /// is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+        /// back to closing at once (the default). It is an error when `content` is
+        /// not the content of an open dialog.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rdialog_set_dismiss_callback(uint content, RDialogDismissCallback callback, IntPtr user_data);
 
         /// <summary>
         /// Shows a dialog and waits until it closes. Returns its result.

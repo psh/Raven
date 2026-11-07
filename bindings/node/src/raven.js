@@ -3796,6 +3796,7 @@ export const Rblock_editor_get_view = _lib.Rblock_editor_get_view;
 export const Rblock_editor_set_view = _lib.Rblock_editor_set_view;
 export const Rdialog_open = _lib.Rdialog_open;
 export const Rdialog_close = _lib.Rdialog_close;
+export const Rdialog_set_dismiss_callback = _lib.Rdialog_set_dismiss_callback;
 export const Rdialog_run = _lib.Rdialog_run;
 export const Rpopup_open = _lib.Rpopup_open;
 export const Rpopup_close = _lib.Rpopup_close;

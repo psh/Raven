@@ -236,6 +236,85 @@ static void test_dialog(void) {
 	CHECK(!Rwidget_is_valid(box));
 }
 
+static int g_dismiss_asked;
+static int g_dismiss_allow;
+
+static int on_dismiss(Rid content, void* user_data) {
+	(void)user_data;
+	CHECK(Rwidget_is_valid(content));
+	g_dismiss_asked++;
+	return g_dismiss_allow;
+}
+
+static int close_on_dismiss(Rid content, void* user_data) {
+	(void)user_data;
+	g_dismiss_asked++;
+	Rdialog_close(content, 5);
+	return R_FALSE;
+}
+
+/* Rdialog_set_dismiss_callback: Escape asks the application, which decides. */
+static void test_dialog_dismiss(void) {
+	Rid window = window_from("<Window Width=\"600\" Height=\"400\"><VBox/></Window>");
+	Rid box = Rlabel_create("Keep me");
+	g_closed = 0;
+	g_dismiss_asked = 0;
+	Rdialog_open(window, box, on_closed, NULL);
+	Rdialog_set_dismiss_callback(box, on_dismiss, NULL);
+
+	/* refused: the dialog stays */
+	g_dismiss_allow = R_FALSE;
+	test_key(window, R_KEY_ESCAPE, 0);
+	CHECK(g_dismiss_asked == 1);
+	CHECK(g_closed == 0);
+	CHECK(Rwindow_has_dialog(window));
+	CHECK(Rwidget_is_valid(box));
+	/* allowed: it closes with 0, as without a callback */
+	g_dismiss_allow = R_TRUE;
+	test_key(window, R_KEY_ESCAPE, 0);
+	CHECK(g_dismiss_asked == 2);
+	CHECK(g_closed == 1 && g_closed_result == 0);
+	CHECK(!Rwindow_has_dialog(window));
+	CHECK(!Rwidget_is_valid(box));
+
+	/* the callback may close the dialog itself, with its own result */
+	box = Rlabel_create("Close me");
+	Rdialog_open(window, box, on_closed, NULL);
+	Rdialog_set_dismiss_callback(box, close_on_dismiss, NULL);
+	test_key(window, R_KEY_ESCAPE, 0);
+	CHECK(g_dismiss_asked == 3);
+	CHECK(g_closed == 2 && g_closed_result == 5);
+	CHECK(!Rwindow_has_dialog(window));
+
+	/* only the dialog on top is asked; NULL goes back to closing at once */
+	box = Rlabel_create("Under");
+	Rdialog_open(window, box, on_closed, NULL);
+	Rdialog_set_dismiss_callback(box, on_dismiss, NULL);
+	{
+		Rid top = Rlabel_create("Top");
+		Rdialog_open(window, top, on_closed, NULL);
+		g_dismiss_allow = R_FALSE;
+		test_key(window, R_KEY_ESCAPE, 0);
+		CHECK(g_dismiss_asked == 3);
+		CHECK(!Rwidget_is_valid(top));
+	}
+	test_key(window, R_KEY_ESCAPE, 0);
+	CHECK(g_dismiss_asked == 4);
+	CHECK(Rwidget_is_valid(box));
+	Rdialog_set_dismiss_callback(box, NULL, NULL);
+	test_key(window, R_KEY_ESCAPE, 0);
+	CHECK(g_dismiss_asked == 4);
+	CHECK(!Rwidget_is_valid(box));
+
+	/* a widget that is not the content of an open dialog is an error */
+	box = Rlabel_create("Alone");
+	EXPECT_ERRORS_BEGIN();
+	Rdialog_set_dismiss_callback(box, on_dismiss, NULL);
+	EXPECT_ERRORS_END(1);
+	Rwidget_destroy(box);
+	Rwindow_destroy(window);
+}
+
 static void close_later(Rid timer, void* user_data) {
 	(void)timer;
 	Rdialog_close((Rid)(uintptr_t)user_data, 5);
@@ -768,6 +847,7 @@ int main(void) {
 	make_tree();
 	RUN(test_files);
 	RUN(test_dialog);
+	RUN(test_dialog_dismiss);
 	RUN(test_dialog_run);
 	RUN(test_dialog_animated);
 	RUN(test_file_browser);

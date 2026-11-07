@@ -1260,6 +1260,10 @@ pub type RBlockEditorCallback = Option<unsafe extern "C" fn(editor: Rid, block: 
 pub type RBlockEditorContextCallback = Option<unsafe extern "C" fn(editor: Rid, block: c_int, x: f32, y: f32, user_data: *mut c_void)>;
 /// Called when a dialog closes. `result` is the value given to Rdialog_close, 0 when dismissed.
 pub type RDialogClosedCallback = Option<unsafe extern "C" fn(content: Rid, result: c_int, user_data: *mut c_void)>;
+/// Called when the user asks to dismiss a dialog (the Escape key), before
+/// it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+/// the application decides, and may close it later with Rdialog_close.
+pub type RDialogDismissCallback = Option<unsafe extern "C" fn(content: Rid, user_data: *mut c_void) -> c_int>;
 /// Called when the user chooses: a double click or Enter on a file,
 /// the Open / Save button. `path` is the first chosen path; with several
 /// files, read them with Rfile_browser_get_selection. The action of the
@@ -3805,6 +3809,11 @@ extern "C" {
     /// anything inside it: the button that was clicked).
     /// result Passed to the closed callback and returned by Rdialog_run.
     pub fn Rdialog_close(widget: Rid, result: c_int);
+    /// Asks the application before the user dismisses a dialog. `content`
+    /// is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+    /// back to closing at once (the default). It is an error when `content` is
+    /// not the content of an open dialog.
+    pub fn Rdialog_set_dismiss_callback(content: Rid, callback: RDialogDismissCallback, user_data: *mut c_void);
     /// Shows a dialog and waits until it closes. Returns its result.
     pub fn Rdialog_run(window: Rid, content: Rid) -> c_int;
     /// Shows a widget as a popup over the window, its top-left corner at

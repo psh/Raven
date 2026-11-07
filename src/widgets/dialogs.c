@@ -180,6 +180,20 @@ int Rpopup_is_open(Rid id) {
 	return (widget->flags & RVN_WF_POPUP) != 0;
 }
 
+void Rdialog_set_dismiss_callback(Rid id, RDialogDismissCallback callback, void* user_data) {
+	rvn_window_t* window;
+	int index;
+	RVN_WIDGET_VOID(content, id, 0);
+	window = content->window;
+	index = window ? rvn_window_popup_index(window, content) : -1;
+	if (index < 0 || window->popups[index].placement != RVN_POPUP_DIALOG) {
+		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_ERROR, "Rdialog_set_dismiss_callback: the widget is not the content of an open dialog");
+		return;
+	}
+	window->popups[index].dismiss = callback;
+	window->popups[index].dismiss_user = user_data;
+}
+
 int Rdialog_run(Rid window_id, Rid content_id) {
 	rvn_window_t* window;
 	rvn_widget_t* content;

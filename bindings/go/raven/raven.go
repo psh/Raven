@@ -6694,13 +6694,14 @@ func HostInjectClose(window ID) {
 // Rnode_graph_set_context_callback, Rnode_graph_set_canvas_activated_callback
 // Rnode_graph_set_wire_dropped_callback, Rnode_graph_set_pin_clicked_callback
 // Rblock_editor_set_changed_callback, Rblock_editor_set_clicked_callback, Rblock_editor_set_context_callback
-// Rdialog_open, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save, Rfile_dialog_select_folder, Rfile_read
-// Rfile_browser_set_filters, Rfile_browser_set_accepted_callback, Rfile_browser_set_cancelled_callback
-// Rfile_browser_set_selection_changed_callback, Rnotification_set_fallback
-// Rnotification_set_clicked_callback, Rviewport_set_draw_callback, Rviewport_get_native_handle
-// Rviewport_set_resize_callback, Rcustom_set_paint_callback, Rcustom_set_measure_callback, Rdraw_rect
-// Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_curve, Rdraw_triangle, Rdraw_image, Rdraw_text
-// Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set, Rdraw_push_clip_rect, Rdraw_pop_clip_rect
-// Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults, Rdraw_shader, Rborder_set_effect
-// Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse, Rxml_get_attribute_info
-// Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings, Rhost_platform_register
+// Rdialog_open, Rdialog_set_dismiss_callback, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save
+// Rfile_dialog_select_folder, Rfile_read, Rfile_browser_set_filters, Rfile_browser_set_accepted_callback
+// Rfile_browser_set_cancelled_callback, Rfile_browser_set_selection_changed_callback
+// Rnotification_set_fallback, Rnotification_set_clicked_callback, Rviewport_set_draw_callback
+// Rviewport_get_native_handle, Rviewport_set_resize_callback, Rcustom_set_paint_callback
+// Rcustom_set_measure_callback, Rdraw_rect, Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_curve
+// Rdraw_triangle, Rdraw_image, Rdraw_text, Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set
+// Rdraw_push_clip_rect, Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults
+// Rdraw_shader, Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse
+// Rxml_get_attribute_info, Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings
+// Rhost_platform_register

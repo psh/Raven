@@ -967,6 +967,7 @@ static struct {
 	void (*Rblock_editor_set_view)(Rid, float, float, float);
 	void (*Rdialog_open)(Rid, Rid, RDialogClosedCallback, void*);
 	void (*Rdialog_close)(Rid, int);
+	void (*Rdialog_set_dismiss_callback)(Rid, RDialogDismissCallback, void*);
 	int (*Rdialog_run)(Rid, Rid);
 	void (*Rpopup_open)(Rid, Rid, float, float, RDialogClosedCallback, void*);
 	void (*Rpopup_close)(Rid, int);
@@ -2101,6 +2102,7 @@ static const struct {
 	{"Rblock_editor_set_view", offsetof(__typeof__(rn), Rblock_editor_set_view)},
 	{"Rdialog_open", offsetof(__typeof__(rn), Rdialog_open)},
 	{"Rdialog_close", offsetof(__typeof__(rn), Rdialog_close)},
+	{"Rdialog_set_dismiss_callback", offsetof(__typeof__(rn), Rdialog_set_dismiss_callback)},
 	{"Rdialog_run", offsetof(__typeof__(rn), Rdialog_run)},
 	{"Rpopup_open", offsetof(__typeof__(rn), Rpopup_open)},
 	{"Rpopup_close", offsetof(__typeof__(rn), Rpopup_close)},
@@ -3197,6 +3199,7 @@ static void rn_t_RNodeGraphPointCallback(Rid, int, float, float, void*);
 static void rn_t_RBlockEditorCallback(Rid, int, void*);
 static void rn_t_RBlockEditorContextCallback(Rid, int, float, float, void*);
 static void rn_t_RDialogClosedCallback(Rid, int, void*);
+static int rn_t_RDialogDismissCallback(Rid, void*);
 static void rn_t_RFileBrowserCallback(Rid, const char*, void*);
 static void rn_t_RNotificationFallback(const char*, const char*, RNotificationUrgency, void*);
 static void rn_t_RNotificationClickedCallback(void*);
@@ -4185,6 +4188,24 @@ static void rn_t_RDialogClosedCallback(Rid a0, int a1, void* a2) {
 	rn_call(cb, 0, 3, argv);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
+}
+
+static int rn_t_RDialogDismissCallback(Rid a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_value result;
+	int value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 2, argv);
+	value = rn_result_int(env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
 }
 
 static void rn_t_RFileBrowserCallback(Rid a0, const char* a1, void* a2) {
@@ -19672,6 +19693,31 @@ static napi_value rn_w_Rdialog_close(napi_env env, napi_callback_info info) {
 	return result_;
 }
 
+static napi_value rn_w_Rdialog_set_dismiss_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rdialog_set_dismiss_callback((Rid)a0, cb_ ? (RDialogDismissCallback)rn_t_RDialogDismissCallback : (RDialogDismissCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 83, NULL, cb_);
+	return result_;
+}
+
 static napi_value rn_w_Rdialog_run(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -19714,7 +19760,7 @@ static napi_value rn_w_Rpopup_open(napi_env env, napi_callback_info info) {
 		if (!cb_) return NULL;
 	}
 	rn.Rpopup_open((Rid)a0, (Rid)a1, (float)a2, (float)a3, cb_ ? (RDialogClosedCallback)rn_t_RDialogClosedCallback : (RDialogClosedCallback)n0_, cb_ ? (void*)cb_ : a5);
-	rn_bind(a0, RN_OWNER_WIDGET, 83, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 84, NULL, cb_);
 	return result_;
 }
 
@@ -20177,7 +20223,7 @@ static napi_value rn_w_Rfile_browser_set_accepted_callback(napi_env env, napi_ca
 		if (!cb_) return NULL;
 	}
 	rn.Rfile_browser_set_accepted_callback((Rid)a0, cb_ ? (RFileBrowserCallback)rn_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 84, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 85, NULL, cb_);
 	return result_;
 }
 
@@ -20202,7 +20248,7 @@ static napi_value rn_w_Rfile_browser_set_cancelled_callback(napi_env env, napi_c
 		if (!cb_) return NULL;
 	}
 	rn.Rfile_browser_set_cancelled_callback((Rid)a0, cb_ ? (RFileBrowserCallback)rn_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 85, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 86, NULL, cb_);
 	return result_;
 }
 
@@ -20227,7 +20273,7 @@ static napi_value rn_w_Rfile_browser_set_selection_changed_callback(napi_env env
 		if (!cb_) return NULL;
 	}
 	rn.Rfile_browser_set_selection_changed_callback((Rid)a0, cb_ ? (RFileBrowserCallback)rn_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 86, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 87, NULL, cb_);
 	return result_;
 }
 
@@ -20281,7 +20327,7 @@ static napi_value rn_w_Rnotification_set_fallback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rnotification_set_fallback(cb_ ? (RNotificationFallback)rn_t_RNotificationFallback : (RNotificationFallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 87, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 88, NULL, cb_);
 	return result_;
 }
 
@@ -20304,7 +20350,7 @@ static napi_value rn_w_Rnotification_set_clicked_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rnotification_set_clicked_callback(cb_ ? (RNotificationClickedCallback)rn_t_RNotificationClickedCallback : (RNotificationClickedCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 88, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 89, NULL, cb_);
 	return result_;
 }
 
@@ -20441,7 +20487,7 @@ static napi_value rn_w_Rviewport_set_resize_callback(napi_env env, napi_callback
 		if (!cb_) return NULL;
 	}
 	rn.Rviewport_set_resize_callback((Rid)a0, cb_ ? (RViewportResizeCallback)rn_t_RViewportResizeCallback : (RViewportResizeCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 89, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 90, NULL, cb_);
 	return result_;
 }
 
@@ -20480,7 +20526,7 @@ static napi_value rn_w_Rcustom_set_paint_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rcustom_set_paint_callback((Rid)a0, cb_ ? (RPaintCallback)rn_t_RPaintCallback : (RPaintCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 90, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 91, NULL, cb_);
 	return result_;
 }
 
@@ -20505,7 +20551,7 @@ static napi_value rn_w_Rcustom_set_measure_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rcustom_set_measure_callback((Rid)a0, cb_ ? (RMeasureCallback)rn_t_RMeasureCallback : (RMeasureCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 91, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 92, NULL, cb_);
 	return result_;
 }
 
@@ -21215,7 +21261,7 @@ static napi_value rn_w_Rxml_set_reload_callback(napi_env env, napi_callback_info
 		if (!cb_) return NULL;
 	}
 	rn.Rxml_set_reload_callback(cb_ ? (RXmlReloadCallback)rn_t_RXmlReloadCallback : (RXmlReloadCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 92, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 93, NULL, cb_);
 	return result_;
 }
 
@@ -21350,7 +21396,7 @@ static napi_value rn_w_Rxml_register_tag(napi_env env, napi_callback_info info) 
 		rn_cb_release(cb_);
 		cb_ = NULL;
 	}
-	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 93, a0.p, cb_);
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 94, a0.p, cb_);
 	napi_create_int32(env, (int32_t)value_, &result_);
 done:
 	free(a0.heap);
@@ -21367,7 +21413,7 @@ static napi_value rn_w_Rxml_unregister_tag(napi_env env, napi_callback_info info
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &a0)) goto done;
 	rn.Rxml_unregister_tag(a0.p);
-	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 93, a0.p, NULL);
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 94, a0.p, NULL);
 done:
 	free(a0.heap);
 	return result_;
@@ -22200,7 +22246,7 @@ static napi_value rn_w_Rlocale_set_changed_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rlocale_set_changed_callback(cb_ ? (RLocaleChangedCallback)rn_t_RLocaleChangedCallback : (RLocaleChangedCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 94, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 95, NULL, cb_);
 	return result_;
 }
 
@@ -23796,6 +23842,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rblock_editor_set_view", NULL, rn_w_Rblock_editor_set_view, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdialog_open", NULL, rn_w_Rdialog_open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdialog_close", NULL, rn_w_Rdialog_close, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdialog_set_dismiss_callback", NULL, rn_w_Rdialog_set_dismiss_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdialog_run", NULL, rn_w_Rdialog_run, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rpopup_open", NULL, rn_w_Rpopup_open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rpopup_close", NULL, rn_w_Rpopup_close, NULL, NULL, NULL, napi_enumerable, NULL},

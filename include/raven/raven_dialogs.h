@@ -102,6 +102,13 @@ typedef enum RMessageResult{
 /** @brief Called when a dialog closes. `result` is the value given to Rdialog_close, 0 when dismissed. */
 typedef void (*RDialogClosedCallback)(Rid content, int result, void* user_data);
 
+/**
+ * @brief Called when the user asks to dismiss a dialog (the Escape key), before
+ * it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+ * the application decides, and may close it later with Rdialog_close.
+ */
+typedef int (*RDialogDismissCallback)(Rid content, void* user_data);
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,6 +132,14 @@ extern "C" {
 	 * @param result Passed to the closed callback and returned by Rdialog_run.
 	 */
 	RAVEN_API void Rdialog_close(Rid widget, int result);
+
+	/**
+	 * @brief Asks the application before the user dismisses a dialog. `content`
+	 * is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+	 * back to closing at once (the default). It is an error when `content` is
+	 * not the content of an open dialog.
+	 */
+	RAVEN_API void Rdialog_set_dismiss_callback(Rid content, RDialogDismissCallback callback, void* user_data);
 
 	/** @brief Shows a dialog and waits until it closes. Returns its result. */
 	RAVEN_API int Rdialog_run(Rid window, Rid content);

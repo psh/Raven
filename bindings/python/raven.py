@@ -2424,6 +2424,14 @@ def _adapt_RDialogClosedCallback(function):
         function(content, result, user_data)
     return call
 
+RDialogDismissCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_void_p)
+
+
+def _adapt_RDialogDismissCallback(function):
+    def call(content, user_data):
+        return function(content, user_data) or 0
+    return call
+
 RFileBrowserCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_void_p)
 
 
@@ -11237,6 +11245,18 @@ def Rdialog_close(widget, result):
     anything inside it: the button that was clicked).
     result Passed to the closed callback and returned by Rdialog_run."""
     _lib.Rdialog_close(widget, result)
+
+
+_lib.Rdialog_set_dismiss_callback.argtypes = [ctypes.c_uint32, RDialogDismissCallback, ctypes.c_void_p]
+_lib.Rdialog_set_dismiss_callback.restype = None
+
+
+def Rdialog_set_dismiss_callback(content, callback, user_data=None):
+    """Asks the application before the user dismisses a dialog. `content`
+    is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+    back to closing at once (the default). It is an error when `content` is
+    not the content of an open dialog."""
+    _lib.Rdialog_set_dismiss_callback(content, _callback(RDialogDismissCallback, _adapt_RDialogDismissCallback, callback), user_data)
 
 
 _lib.Rdialog_run.argtypes = [ctypes.c_uint32, ctypes.c_uint32]

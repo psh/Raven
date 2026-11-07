@@ -508,6 +508,26 @@ void rvn_window_open_dialog(rvn_window_t* window, rvn_widget_t* root, RDialogClo
 	rvn_window_refresh_hover(window);
 }
 
+/* The user asks to dismiss the dialog on top (Escape): its dismiss callback may keep it open. */
+static void rvn_window_dismiss_dialog(rvn_window_t* window) {
+	rvn_widget_t* root = rvn_window_top_dialog(window);
+	int index;
+	if (!root) return;
+	index = rvn_window_popup_index(window, root);
+	if (index >= 0 && window->popups[index].dismiss) {
+		RDialogDismissCallback dismiss = window->popups[index].dismiss;
+		void* user = window->popups[index].dismiss_user;
+		Rid id = root->id;
+		int allow;
+		rvn_dispatch_begin();
+		allow = dismiss(id, user);
+		rvn_dispatch_end();
+		/* the callback may have closed or deleted the dialog, or the window */
+		if (!allow || window->dead || !rvn_widget_get(id) || rvn_window_top_dialog(window) != root) return;
+	}
+	rvn_window_close_dialog(root, 0);
+}
+
 int rvn_window_close_dialog(rvn_widget_t* inside, int result) {
 	rvn_window_t* window = inside->window;
 	uint32_t i;
@@ -1655,7 +1675,7 @@ static void rvn_window_key(rvn_window_t* window, RKey key, int pressed, uint32_t
 	if (rvn_window_top_dialog(window)) {
 		/* Escape dismisses the dialog; the shortcuts of the window wait */
 		if (key == R_KEY_TAB && !(modifiers & (R_MOD_CTRL | R_MOD_ALT))) rvn_window_focus_next(window, (modifiers & R_MOD_SHIFT) ? -1 : 1);
-		else if (key == R_KEY_ESCAPE) rvn_window_close_dialog(rvn_window_top_dialog(window), 0);
+		else if (key == R_KEY_ESCAPE) rvn_window_dismiss_dialog(window);
 		return;
 	}
 

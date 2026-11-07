@@ -2869,6 +2869,13 @@ export type RBlockEditorContextCallback = (editor: Rid, block: number, x: number
 export type RDialogClosedCallback = (content: Rid, result: number, user_data: Pointer | null) => void;
 
 /**
+ * Called when the user asks to dismiss a dialog (the Escape key), before
+ * it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+ * the application decides, and may close it later with Rdialog_close.
+ */
+export type RDialogDismissCallback = (content: Rid, user_data: Pointer | null) => number | boolean;
+
+/**
  * Called when the user chooses: a double click or Enter on a file,
  * the Open / Save button. `path` is the first chosen path; with several
  * files, read them with Rfile_browser_get_selection. The action of the
@@ -6220,6 +6227,14 @@ export function Rdialog_open(window: Rid, content: Rid, closed: RDialogClosedCal
  * result Passed to the closed callback and returned by Rdialog_run.
  */
 export function Rdialog_close(widget: Rid, result: number): void;
+
+/**
+ * Asks the application before the user dismisses a dialog. `content`
+ * is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+ * back to closing at once (the default). It is an error when `content` is
+ * not the content of an open dialog.
+ */
+export function Rdialog_set_dismiss_callback(content: Rid, callback: RDialogDismissCallback | Pointer | null, user_data?: RPointer): void;
 
 /** Shows a dialog and waits until it closes. Returns its result. */
 export function Rdialog_run(window: Rid, content: Rid): number;

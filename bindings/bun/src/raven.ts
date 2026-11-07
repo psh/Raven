@@ -1091,6 +1091,7 @@ const _symbols = {
 	Rblock_editor_set_view: { args: ["u32", "f32", "f32", "f32"], returns: "void" },
 	Rdialog_open: { args: ["u32", "u32", "ptr", "ptr"], returns: "void" },
 	Rdialog_close: { args: ["u32", "i32"], returns: "void" },
+	Rdialog_set_dismiss_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rdialog_run: { args: ["u32", "u32"], returns: "i32" },
 	Rpopup_open: { args: ["u32", "u32", "f32", "f32", "ptr", "ptr"], returns: "void" },
 	Rpopup_close: { args: ["u32", "i32"], returns: "void" },
@@ -6183,6 +6184,27 @@ function _adapt_RDialogClosedCallback(function_: RDialogClosedCallback | Pointer
 			_report(error as Error);
 		}
 	}, { args: ["u32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/**
+ * Called when the user asks to dismiss a dialog (the Escape key), before
+ * it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+ * the application decides, and may close it later with Rdialog_close.
+ */
+export type RDialogDismissCallback = (content: Rid, user_data: Pointer | null) => number | boolean;
+
+function _adapt_RDialogDismissCallback(function_: RDialogDismissCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((content: number, user_data: Pointer | null): number => {
+		try {
+			return Number(function_(content, user_data) ?? 0);
+		} catch (error) {
+			_report(error as Error);
+			return 0;
+		}
+	}, { args: ["u32", "ptr"], returns: "i32", threadsafe }));
 }
 
 /**
@@ -11695,6 +11717,16 @@ export function Rdialog_open(window: Rid, content: Rid, closed: RDialogClosedCal
  */
 export function Rdialog_close(widget: Rid, result: number): void {
 	_lib.Rdialog_close(widget, result);
+}
+
+/**
+ * Asks the application before the user dismisses a dialog. `content`
+ * is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+ * back to closing at once (the default). It is an error when `content` is
+ * not the content of an open dialog.
+ */
+export function Rdialog_set_dismiss_callback(content: Rid, callback: RDialogDismissCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rdialog_set_dismiss_callback(content, _adapt_RDialogDismissCallback(callback), user_data);
 }
 
 /** Shows a dialog and waits until it closes. Returns its result. */

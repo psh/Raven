@@ -1608,6 +1608,12 @@ alias BlockEditorContextCallback = fn void(Id editor, CInt block, float x, float
 <* Called when a dialog closes. `result` is the value given to Rdialog_close, 0 when dismissed. *>
 alias DialogClosedCallback = fn void(Id content, CInt result, void* user_data);
 <*
+ Called when the user asks to dismiss a dialog (the Escape key), before
+ it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+ the application decides, and may close it later with Rdialog_close.
+*>
+alias DialogDismissCallback = fn CInt(Id content, void* user_data);
+<*
  Called when the user chooses: a double click or Enter on a file,
  the Open / Save button. `path` is the first chosen path; with several
  files, read them with Rfile_browser_get_selection. The action of the
@@ -6177,6 +6183,14 @@ fn void dialog_open(Id window, Id content, DialogClosedCallback closed, void* us
  anything inside it: the button that was clicked).
 *>
 fn void dialog_close(Id widget, CInt result) @inline => c::r_dialog_close((c::Rid)widget, result);
+
+<*
+ Asks the application before the user dismisses a dialog. `content`
+ is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+ back to closing at once (the default). It is an error when `content` is
+ not the content of an open dialog.
+*>
+fn void dialog_set_dismiss_callback(Id content, DialogDismissCallback callback, void* user_data) @inline => c::r_dialog_set_dismiss_callback((c::Rid)content, (c::RDialogDismissCallback)callback, user_data);
 
 <* Shows a dialog and waits until it closes. Returns its result. *>
 fn CInt dialog_run(Id window, Id content) @inline => c::r_dialog_run((c::Rid)window, (c::Rid)content);

@@ -708,6 +708,9 @@ typedef struct rvn_popup_t {
 	void* closed_user;
 	/** Dialogs: the widget that had the keyboard before, which gets it back. */
 	Rid focus_back;
+	/** Dialogs: asked before the user dismisses it (Escape); NULL closes at once. */
+	RDialogDismissCallback dismiss;
+	void* dismiss_user;
 } rvn_popup_t;
 
 /**

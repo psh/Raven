@@ -843,6 +843,7 @@ typedef void (*RNodeGraphPointCallback)(Rid graph, int item, float x, float y, v
 typedef void (*RBlockEditorCallback)(Rid editor, int block, void* user_data);
 typedef void (*RBlockEditorContextCallback)(Rid editor, int block, float x, float y, void* user_data);
 typedef void (*RDialogClosedCallback)(Rid content, int result, void* user_data);
+typedef int (*RDialogDismissCallback)(Rid content, void* user_data);
 typedef void (*RFileBrowserCallback)(Rid browser, const char* path, void* user_data);
 typedef void (*RNotificationFallback)(const char* title, const char* body, RNotificationUrgency urgency, void* user_data);
 typedef void (*RNotificationClickedCallback)(void* user_data);
@@ -2038,6 +2039,7 @@ void Rblock_editor_get_view(Rid editor, float* x, float* y, float* zoom);
 void Rblock_editor_set_view(Rid editor, float x, float y, float zoom);
 void Rdialog_open(Rid window, Rid content, RDialogClosedCallback closed, void* user_data);
 void Rdialog_close(Rid widget, int result);
+void Rdialog_set_dismiss_callback(Rid content, RDialogDismissCallback callback, void* user_data);
 int Rdialog_run(Rid window, Rid content);
 void Rpopup_open(Rid window, Rid content, float x, float y, RDialogClosedCallback closed, void* user_data);
 void Rpopup_close(Rid widget, int result);

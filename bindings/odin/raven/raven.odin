@@ -1290,6 +1290,10 @@ RBlockEditorCallback :: #type proc "c" (editor: Rid, block: i32, user_data: rawp
 RBlockEditorContextCallback :: #type proc "c" (editor: Rid, block: i32, x: f32, y: f32, user_data: rawptr)
 // Called when a dialog closes. `result` is the value given to Rdialog_close, 0 when dismissed.
 RDialogClosedCallback :: #type proc "c" (content: Rid, result: i32, user_data: rawptr)
+// Called when the user asks to dismiss a dialog (the Escape key), before
+// it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+// the application decides, and may close it later with Rdialog_close.
+RDialogDismissCallback :: #type proc "c" (content: Rid, user_data: rawptr) -> i32
 // Called when the user chooses: a double click or Enter on a file,
 // the Open / Save button. `path` is the first chosen path; with several
 // files, read them with Rfile_browser_get_selection. The action of the
@@ -3790,6 +3794,11 @@ foreign lib {
 	// anything inside it: the button that was clicked).
 	// result Passed to the closed callback and returned by Rdialog_run.
 	Rdialog_close :: proc(widget: Rid, result: i32) ---
+	// Asks the application before the user dismisses a dialog. `content`
+	// is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+	// back to closing at once (the default). It is an error when `content` is
+	// not the content of an open dialog.
+	Rdialog_set_dismiss_callback :: proc(content: Rid, callback: RDialogDismissCallback, user_data: rawptr) ---
 	// Shows a dialog and waits until it closes. Returns its result.
 	Rdialog_run :: proc(window: Rid, content: Rid) -> i32 ---
 	// Shows a widget as a popup over the window, its top-left corner at

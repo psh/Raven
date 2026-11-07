@@ -1280,6 +1280,10 @@ pub const RBlockEditorCallback = ?*const fn (editor: Rid, block: c_int, user_dat
 pub const RBlockEditorContextCallback = ?*const fn (editor: Rid, block: c_int, x: f32, y: f32, user_data: ?*anyopaque) callconv(.c) void;
 /// Called when a dialog closes. `result` is the value given to Rdialog_close, 0 when dismissed.
 pub const RDialogClosedCallback = ?*const fn (content: Rid, result: c_int, user_data: ?*anyopaque) callconv(.c) void;
+/// Called when the user asks to dismiss a dialog (the Escape key), before
+/// it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+/// the application decides, and may close it later with Rdialog_close.
+pub const RDialogDismissCallback = ?*const fn (content: Rid, user_data: ?*anyopaque) callconv(.c) c_int;
 /// Called when the user chooses: a double click or Enter on a file,
 /// the Open / Save button. `path` is the first chosen path; with several
 /// files, read them with Rfile_browser_get_selection. The action of the
@@ -3778,6 +3782,11 @@ pub extern fn Rdialog_open(window: Rid, content: Rid, closed: RDialogClosedCallb
 /// anything inside it: the button that was clicked).
 /// result Passed to the closed callback and returned by Rdialog_run.
 pub extern fn Rdialog_close(widget: Rid, result: c_int) void;
+/// Asks the application before the user dismisses a dialog. `content`
+/// is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+/// back to closing at once (the default). It is an error when `content` is
+/// not the content of an open dialog.
+pub extern fn Rdialog_set_dismiss_callback(content: Rid, callback: RDialogDismissCallback, user_data: ?*anyopaque) void;
 /// Shows a dialog and waits until it closes. Returns its result.
 pub extern fn Rdialog_run(window: Rid, content: Rid) c_int;
 /// Shows a widget as a popup over the window, its top-left corner at

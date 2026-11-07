@@ -5031,6 +5031,30 @@ public final class R {
     }
 
     /**
+     * Called when the user asks to dismiss a dialog (the Escape key), before
+     * it closes. Return R_TRUE to let it close (result 0), R_FALSE to keep it open:
+     * the application decides, and may close it later with Rdialog_close.
+     */
+    @FunctionalInterface
+    public interface RDialogDismissCallback {
+        int invoke(int content, MemorySegment user_data);
+    }
+
+    private static int RDialogDismissCallback$raw(RDialogDismissCallback f, int content, MemorySegment user_data) {
+        try {
+            return f.invoke(content, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+            return 0;
+        }
+    }
+
+    private static MemorySegment upcall(RDialogDismissCallback f) {
+        return stub(f, RDialogDismissCallback.class, "RDialogDismissCallback$raw", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
      * Called when the user chooses: a double click or Enter on a file,
      * the Open / Save button. `path` is the first chosen path; with several
      * files, read them with Rfile_browser_get_selection. The action of the
@@ -19829,6 +19853,34 @@ public final class R {
         } catch (Throwable $t) {
             throw fail($t);
         }
+    }
+
+    private static MethodHandle Rdialog_set_dismiss_callback$;
+
+    /**
+     * Asks the application before the user dismisses a dialog. `content`
+     * is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+     * back to closing at once (the default). It is an error when `content` is
+     * not the content of an open dialog.
+     */
+    public static void Rdialog_set_dismiss_callback(int content, RDialogDismissCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rdialog_set_dismiss_callback$;
+        if ($h == null) Rdialog_set_dismiss_callback$ = $h = find("Rdialog_set_dismiss_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(content, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Asks the application before the user dismisses a dialog. `content`
+     * is the widget given to Rdialog_open, while its dialog is shown. NULL goes
+     * back to closing at once (the default). It is an error when `content` is
+     * not the content of an open dialog.
+     */
+    public static void Rdialog_set_dismiss_callback(int content, RDialogDismissCallback callback) {
+        Rdialog_set_dismiss_callback(content, callback, (MemorySegment) null);
     }
 
     private static MethodHandle Rdialog_run$;
