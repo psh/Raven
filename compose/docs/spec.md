@@ -326,8 +326,11 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
   - `Modifier.focusable()` uses `Rwidget_set_focusable`.
   - `FocusRequester` with `Modifier.focusRequester(r)` and `r.requestFocus()` uses `Rwidget_focus`.
   - `Modifier.onFocusChanged { it.isFocused }` comes from Raven's focus events.
-  - `LocalFocusManager.current.clearFocus()` focuses the root. The implementation first verifies
-    that this clears focus.
+  - `LocalFocusManager.current.clearFocus()` calls `Rwindow_clear_focus`
+    ([fork change 5](#11-required-raven-changes)). Focusing the root doesn't clear focus, because
+    Raven ignores focus requests on widgets that aren't focusable (verified,
+    [spikes](../spikes/README.md)). Until the fork change lands, turning the focused widget's
+    focusable flag off and on does the same.
   - Tab traversal is Raven's own.
 - **Context menus**: `ContextMenuArea(items = { listOf(ContextMenuItem(label) { ... }) }) { }`
   builds an unparented Raven Menu on a right-click and opens it with `Rmenu_open`. The content goes
@@ -391,7 +394,7 @@ Added for the `notepad` port:
 | `Menu(text) { }` | Menu | `MenuScope` allows `Item`, `CheckboxItem`, `Separator` and sub-`Menu` |
 | `Item(text, onClick, shortcut: KeyShortcut? = null, enabled = true)` | MenuItem | no children |
 | `CheckboxItem(text, checked, onCheckedChange, shortcut, enabled)` | MenuItem, checkable | controlled |
-| `Separator()` (in `MenuScope`) | Separator | to verify first: Raven treats an inserted separator as a menu separator |
+| `Separator()` (in `MenuScope`) | MenuItem with `Separator = true` | a plain Separator widget is not a menu separator in Raven, but a MenuItem with the `Separator` attribute (`Rwidget_set_attribute`) is, and can be inserted at an index (verified, [spikes](../spikes/README.md)) |
 | `HeaderBar(modifier, title: String? = null, buttons: Set<WindowButton> = WindowButton.all()) { }` | HeaderBar | needs `Window(customHeader = true)`, otherwise a warning is logged; in `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right |
 
 `KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
@@ -461,8 +464,10 @@ Added for the `themes` port:
   | `HorizontalDivider`, `VerticalDivider` | `color` | `SEPARATOR` |
   | `Surface` | `contentColor` | `TEXT`, passed down to the children |
 
-  **Hover and pressed shades:** the implementation first checks whether Raven derives them from
-  the base colour. If it doesn't, compose-raven sets slightly lighter and darker shades.
+  **Hover and pressed shades:** Raven derives them only for a theme's accent (`Rtheme_set_accent`),
+  not for `Rwidget_set_color` ([verified](../spikes/README.md)). So when a `colors` parameter sets
+  `ACCENT` or `CONTROL`, compose-raven also sets the hovered and pressed roles, following the
+  per-look rules of Raven's `rvn_theme_set_accent`.
 - **Shape and padding:** buttons take `shape` and `contentPadding: PaddingValues`, and `TextField`
   takes `shape`.
   - `shape` uses `R_METRIC_CORNER_RADIUS`, which is a single radius. A non-uniform shape uses
@@ -595,9 +600,10 @@ Added for the `overlay` and `glass` ports:
     Zoom, and `slideIn*` are the Fly transitions. Animation specs are ignored.
   - Exit supports `fadeOut()` only, animated with `Rwidget_set_opacity`. Other exits fall back
     to it.
-- **`animate*AsState`, `Animatable` and `updateTransition`** come from Compose's
-  `animation-core`, once it is verified to resolve without Compose UI. Otherwise compose-raven
-  provides a small set of its own.
+- **`animate*AsState` and `Animatable`** are compose-raven's own small set, on its frame clock.
+  Compose's `animation-core` can't be used: it has no macOS or Windows variant, and on Linux it is
+  a stub that needs Compose UI (verified, [spikes](../spikes/README.md)). `updateTransition` is
+  left out for now.
 - **`Island(expanded, onExpandedChange, modifier, expandOnHover, expandOnClick, attached, notch,
   folded, unfolded)`** is controlled. `Window(island = { Island(...) })` floats it at the top of
   the window (`Rwindow_set_island`), in its own composition.
@@ -729,8 +735,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
     `raven-native` getters.
 - **Leak checks after every test**: after `close()`/`Rshutdown`, `Rmemory_get_stats` must report
   zero blocks held, and the `raven.native` registry must report zero live `StableRef`s.
-- **Isolation**: Raven starts fresh for every test. The implementation first verifies that
-  `Rinit`/`Rshutdown` can be repeated in one process ([section 11](#11-required-raven-changes)).
+- **Isolation**: Raven starts fresh for every test. `Rinit`/`Rshutdown` can be repeated in one
+  process with no memory left held ([verified](../spikes/README.md)).
 - **Pure logic** gets plain Kotlin unit tests, with no Raven: Modifier folding, move-index
   adjustment and mirror-list bookkeeping. There are no screenshot tests, because the null renderer
   draws nothing.
@@ -835,8 +841,8 @@ This sample translates Raven XML into compose-raven source.
   - `If`/`<If>` becomes `if`, `<Repeat>` becomes `repeat(n) { i -> }`, and `<ForEach>` becomes
     `listOf(...).forEachIndexed { n, x -> }`.
   - `<Include>` stays a TODO plus a warning.
-  - The implementation first verifies that `Rxml_document_parse` registers no declarations
-    globally. If it does, `parseRavenXml` unregisters each one with `Rxml_unregister_widget`.
+  - `Rxml_document_parse` registers no declarations globally and leaves `<Widget>` unexpanded
+    ([verified](../spikes/README.md)), so `parseRavenXml` needs no clean-up.
 - **Unsupported input** is never refused:
   - An element with no composable, `<Include>`, or an expression that fails to parse becomes
     `// TODO(raven-xml): ...` in its place, plus a warning with its line and column.
@@ -880,9 +886,8 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
    `to` is counted after the child has been taken out, as in `Rwidget_insert_child`. It keeps
    focus, hover and capture, doesn't replay the appear transition, invalidates layout, and treats
    an index out of range as an error.
-2. **Repeated `Rinit`/`Rshutdown` in one process** (only if needed): Raven resets its global
-   context, but none of its own tests starts it twice. The implementation verifies this first. If
-   it fails, the fork fixes it.
+2. ~~**Repeated `Rinit`/`Rshutdown` in one process**~~: **not needed**. Repeating them works
+   and leaves no memory held ([verified](../spikes/README.md)).
 3. **A built-in Kotlin language** (required), next to Java in `src/widgets/syntax.c`:
    - `name = "Kotlin"`, `extensions = "kt;kts"`.
    - The keywords are Prism.js's Kotlin list: `abstract actual annotation as break by catch class
@@ -904,10 +909,17 @@ These changes go into the `psh/Raven` fork and are offered upstream later.
 4. **`Rdialog_set_dismiss_callback`** (required, phase 3): it is called when Escape or a click
    outside would dismiss a dialog, and it can refuse. `Dialog` then calls `onDismissRequest` and the
    app decides, instead of Raven deleting the content behind Compose's back.
+5. **`Rwindow_clear_focus(Rid window)`** (required, phase 3): leaves the window with no focused
+   widget, by calling the internal `rvn_window_set_focus(window, NULL)`, as Raven already does when
+   the focused widget is disabled or stops being focusable. It's used by
+   `LocalFocusManager.clearFocus()`. Until it lands, the flag toggle verified in the
+   [spikes](../spikes/README.md) does the same with public API only.
+
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
 [Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md),
-[Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md).
+[Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md),
+[Generic input and focus](issues/archive/0025-generic-input-and-focus.md), [verify-first spikes](../spikes/README.md).
 
 ## 12. Differences from Compose
 
