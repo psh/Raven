@@ -44,6 +44,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 |---|---|---|
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
 | `compose-raven-foundation` | Everything Compose: packages `raven.compose.ui` (Applier, node, host, `Modifier`, `Dp`, window entry point) and `raven.compose.foundation` (composables) | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
+| `compose-raven-bom` (phase 3) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-xml` (phase 3) | The XML translator as a library: the parse adapter, the private `ravenxml.def` cinterop and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
 | `tools/raven-xml2compose` (phase 3) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
 | `compose-raven-test` (phase 3) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
@@ -77,6 +78,10 @@ The two packages already allow a later split into `compose-raven-ui` and
   - Each release records the bundled Raven (fork commit and version, for example
     `0.2.1-psh.3`).
   - `raven-xml2compose` ships as per-host binaries on a GitHub release.
+  - `compose-raven-bom` (`java-platform`) pins every module at the release version, plus
+    `androidx.compose.runtime`. Apps use
+    `implementation(project.dependencies.platform("io.github.psh:compose-raven-bom:X.Y.Z"))` and
+    leave versions off the modules. It publishes from the macOS job.
 
 Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runtime-on-kotlin-native.md),
 [Kotlin/Native targets and build](issues/archive/0005-kotlin-native-targets-and-build.md),

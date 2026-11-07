@@ -103,7 +103,8 @@ Decided for phase 3 so far (in the spec):
 - [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
   the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
 - [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md): Maven Central under `io.github.psh`,
-  one shared version with its own semantic versioning, each target published from its own host by CI
+  one shared version with its own semantic versioning, a `compose-raven-bom`, each target published from its
+  own host by CI
 
 Open tickets that serve every app rather than one sample:
 
