@@ -81,11 +81,11 @@ Each port waits on these open tickets:
 
 | Sample | Open tickets it needs |
 |---|---|
-| `editor` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/0038-toolbar.md) |
+| `editor` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/0038-toolbar.md) |
 | `workspace` | [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Toolbar](issues/0038-toolbar.md) |
 | `music` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Image and resources](issues/0035-image-and-resources.md) |
 | `animations` | [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) |
-| `glass` | [Lists and trees](issues/archive/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
+| `glass` | [Lists and trees](issues/archive/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
 
 Decided for phase 3 so far (in the spec):
 
@@ -110,6 +110,8 @@ Decided for phase 3 so far (in the spec):
   Windows linker options kept in sync with CMake, WGL in the OpenGL module, a third CI and publishing job
 - [Lists and trees](issues/archive/0033-lists-and-trees.md): `LazyColumn`/`LazyRow` (composing every item for
   now), `ListView` and `TreeView` over Raven's virtualised widgets
+- [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md): controlled `TabView` with `Tab`
+  pages, no Switcher, `LazyVerticalGrid` over UniformGrid, `Grid` with tracks and `Modifier.cell`
 
 Open tickets that serve every app rather than one sample:
 

@@ -550,6 +550,18 @@ Added for the `overlay` and `glass` ports:
     new items only.
   - `contextMenuItems` opens a menu at the pointer.
 
+### Tabs and grids (phase 3)
+
+- **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
+  closable, onClose) { page } }`** puts each `Tab` page in an internal Box, titled through its slot.
+  Selection and closing are controlled: Raven's close callback keeps the tab and calls `onClose`.
+- **No Switcher**: use `when (page) { }`.
+- **`LazyVerticalGrid(columns = GridCells.Fixed(n), ...) { items(...) }`** uses UniformGrid, and
+  composes every item in phase 3. It has one spacing for both directions.
+- **`Grid(columns: List<GridTrack>, rows: List<GridTrack>, modifier, spacing) { }`** uses Raven's
+  Grid. `GridTrack` is `Auto` or `Fill(weight)`, and children are placed with `GridScope`'s
+  `Modifier.cell(column, row, columnSpan, rowSpan)`.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -558,7 +570,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md),
 [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md),
 [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
-[Lists and trees](issues/archive/0033-lists-and-trees.md).
+[Lists and trees](issues/archive/0033-lists-and-trees.md),
+[Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md).
 
 ## 9. Testing
 
@@ -803,6 +816,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `LazyColumn`/`LazyRow` compose every item in phase 3 (not lazy yet) | only visible items are composed | [8](#8-component-vocabulary) |
 | `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
 | `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
+| `TabView` holds its pages | Material's `TabRow` is separate from the content | [8](#8-component-vocabulary) |
+| `LazyVerticalGrid` has `GridCells.Fixed` only and one spacing | `Adaptive` cells, separate arrangements | [8](#8-component-vocabulary) |
+| `Grid` with tracks and `Modifier.cell` | no explicit grid in Foundation | [8](#8-component-vocabulary) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |

@@ -50,6 +50,7 @@ implementation.
 - [Packaging and publishing](archive/0031-packaging-and-publishing.md): the library modules go to Maven Central under `io.github.psh` at one shared version with its own semantic versioning (recording the bundled Raven), with a `compose-raven-bom`; each target publishes from its own host, triggered by a tag in CI; the translator tool ships as release binaries; MoltenVK stays a documented requirement, and app bundling goes to the fog.
 - [Windows (mingwX64) target](archive/0032-windows-target.md): libraven built with Raven's `mingw` preset under MSYS2 (linking with Kotlin/Native's toolchain verified first); Windows linker options checked against CMake; WGL for the OpenGL module, `HWND` for native viewports; a third CI and publishing job; three targets from phase 3.
 - [Lists and trees](archive/0033-lists-and-trees.md): Compose's `LazyColumn`/`LazyRow` for composable rows (composing every item in phase 3, keyed); `ListView` and `TreeView` as data-driven composables over Raven's virtualised text widgets, with controlled selection; tree expansion stays Raven's; TileView goes to the fog.
+- [Tabs, Switcher and grids](archive/0034-tabs-switcher-and-grids.md): `TabView` with `Tab` pages, controlled selection and closing; no Switcher (Compose's `when`); `LazyVerticalGrid` with fixed columns over UniformGrid; a compose-raven `Grid` with `Auto`/`Fill` tracks and `Modifier.cell`.
 
 ## Not yet specified
 
