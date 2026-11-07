@@ -337,7 +337,7 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | Composable | Raven widget | Notes |
 |---|---|---|
 | `Column`, `Row`, `Box` | VBox, HBox, Overlay | [section 6](#6-layout-and-modifiers) |
-| `Text(text, modifier, color: Color = Color.Unspecified, fontSize: TextUnit = TextUnit.Unspecified, textAlign, softWrap)` | Label | `color` uses `Rlabel_set_color`. `fontSize` (`14.sp`, 1.sp = one Raven text-size unit) uses `Rlabel_set_text_size` |
+| `Text(text, modifier, color: Color = Color.Unspecified, fontSize: TextUnit = TextUnit.Unspecified, fontFamily, fontWeight, fontStyle, textAlign, softWrap, style: TextStyle = LocalTextStyle.current)` | Label | explicit parameters override `style`. `color` uses `Rlabel_set_color`, `fontSize` (`14.sp`) uses `Rlabel_set_text_size`, and the font uses `Rlabel_set_font` with the variant for the weight and style |
 | `Button(onClick, modifier, enabled) { content }` | Button, `R_BUTTON_PRIMARY` | the content goes in an internal Row (HBox, vertically centred), as Compose's `RowScope` does; never `Rbutton_set_text` |
 | `OutlinedButton(...) { }`, `TextButton(...) { }` | Button, `R_BUTTON_DEFAULT` / `R_BUTTON_FLAT` | as `Button` |
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
@@ -460,12 +460,31 @@ Added for the `overlay` and `glass` ports:
     `Native`, `Plain`, or control over the blur.
 - The theme's glass metrics (frost, refraction, rim, ...) are set in theme files only.
 
+### Fonts and text styling (phase 3)
+
+- **`FontFamily(vararg fonts: Font)`**, with `Font(path: String or bytes: ByteArray, weight, style)`:
+  - The regular font is the family's Raven handle, and the others attach with `Rfont_set_variant`.
+  - It is loaded on first use and cached until shutdown.
+  - `FontFamily.Default` is Roboto and `FontFamily.Monospace` is Roboto Mono.
+  - Paths resolve as [Image and resources](issues/0035-image-and-resources.md) decides.
+- **Weight and style**: `FontWeight` W100 to W500 mean Regular and W600 to W900 mean Bold.
+  `FontStyle` is Normal or Italic. Raven synthesises the styles that have no file.
+- **`TextStyle(color, fontSize, fontFamily, fontWeight, fontStyle, textAlign)`** is read from
+  `LocalTextStyle` and changed for a subtree with `ProvideTextStyle(style) { }`. `TextField` and
+  `CodeEditor` take a `textStyle`.
+- **`RavenTheme(fontFamily: FontFamily? = null)`**: the outermost sets `Rtheme_set_font`, and a
+  nested one uses `Rwidget_set_font` on its subtree. The starting `LocalTextStyle` comes from the
+  theme's font size metric.
+- **`MarkdownText(markdown, modifier, style, onLinkClick = null)`** uses `Rlabel_set_markdown` and
+  `Rlabel_set_link_callback`.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
 [Border, WrapBox and Expander](issues/archive/0020-border-wrapbox-expander.md),
 [Theming](issues/archive/0021-theming.md),
-[Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md).
+[Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md),
+[Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md).
 
 ## 9. Testing
 
@@ -658,6 +677,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | No `clearAndSetSemantics` or `mergeDescendants` | merging and clearing semantics | [7](#7-events-and-state) |
 | An input in a `Row` is labelled automatically by the `Text` after it | the app merges semantics itself | [7](#7-events-and-state) |
 | `accessibleRole` and `accessibleDescription` reach Raven roles that Compose's `Role` lacks | `Role` has a fixed set | [7](#7-events-and-state) |
+| `FontWeight` has two steps (W100 to W500 regular, W600 to W900 bold) | any weight the font file has | [8](#8-component-vocabulary) |
+| No `AnnotatedString` or spans; `MarkdownText` for formatted text | `AnnotatedString`, `SpanStyle` | [8](#8-component-vocabulary) |
+| No typography scale yet; `RavenTheme` takes one `fontFamily` | Material's `Typography` | [8](#8-component-vocabulary) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |

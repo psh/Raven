@@ -92,11 +92,13 @@ Decided for phase 3 so far (in the spec):
   `onKeyEvent`, `FocusRequester`, `pointerHoverIcon`, `ContextMenuArea`
 - [Accessibility semantics](issues/archive/0026-accessibility-semantics.md): `Modifier.semantics`, automatic
   labels in rows, `announceForAccessibility`, following the system's settings
+- [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md): `FontFamily`, two-step `FontWeight`,
+  `TextStyle`/`LocalTextStyle`, `RavenTheme(fontFamily)`, `MarkdownText`
 
 Open tickets that serve every app rather than one sample:
 
 - [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
-- [Fonts and text styling](issues/0027-fonts-and-text-styling.md)
+- [Typography in RavenTheme](issues/0040-typography-in-raventheme.md)
 - [Public test module for apps](issues/0029-app-testing-module.md)
 - [XML translator as a tool](issues/0030-translator-as-a-tool.md)
 - [Packaging and publishing](issues/0031-packaging-and-publishing.md)
