@@ -102,12 +102,13 @@ Decided for phase 3 so far (in the spec):
   harness, Compose-style finders, actions and assertions, `mainClock`, leak checks
 - [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
   the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
+- [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md): Maven Central under `io.github.psh`,
+  one shared version with its own semantic versioning, each target published from its own host by CI
 
 Open tickets that serve every app rather than one sample:
 
 - [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
 - [Typography in RavenTheme](issues/0040-typography-in-raventheme.md)
-- [Packaging and publishing](issues/0031-packaging-and-publishing.md)
 - [Windows (mingwX64) target](issues/0032-windows-target.md)
 
 ## Later

@@ -47,6 +47,7 @@ implementation.
 - [Custom drawing and custom layout](archive/0028-custom-drawing-and-layout.md): `Canvas`/`DrawScope` over custom widgets, repainting on state reads; texture `Viewport` and `NativeViewport`; opt-in `compose-raven-vulkan` (`VulkanViewport` on the render thread, Vulkan textures, device sharing) and `compose-raven-opengl` (managed EGL/NSOpenGL context, `OpenGLTexture`) modules; Metal through `NativeViewport` with no module; SPIR-V `ShaderEffect`s; custom `Layout` deferred with a fork plan.
 - [Public test module for apps](archive/0029-app-testing-module.md): `compose-raven-test` holds the one harness (foundation's internals behind `@InternalComposeRavenApi`); Compose-style finders, matchers, actions and assertions over Raven's real input; `mainClock`; leak checks on by default; one window, no screenshots.
 - [XML translator as a tool](archive/0030-translator-as-a-tool.md): the `compose-raven-xml` library (parse adapter, private cinterop, `translate()`) and the `raven-xml2compose` command-line tool on headless Raven; one Kotlin file per XML file, `<Include>` becomes a call, cycles are errors; generated-file headers guard against overwriting; a Gradle task goes to the fog.
+- [Packaging and publishing](archive/0031-packaging-and-publishing.md): the library modules go to Maven Central under `io.github.psh` at one shared version with its own semantic versioning (recording the bundled Raven); each target publishes from its own host, triggered by a tag in CI; the translator tool ships as release binaries; MoltenVK stays a documented requirement, and app bundling goes to the fog.
 
 ## Not yet specified
 
@@ -67,6 +68,9 @@ implementation.
   several windows, beyond `runRavenTest`'s single window.
 - **Build-time XML translation**: a Gradle task that runs `raven-xml2compose` for an app's XML
   during the build (Gradle's JVM can't load the native library directly).
+- **App bundling**: shipping apps: a macOS `.app` with MoltenVK in `Contents/Frameworks` (likely
+  needing a fork change so Raven also tries `@executable_path/../Frameworks/libMoltenVK.dylib`), and
+  Linux packages, like Compose Desktop's packaging tasks.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and

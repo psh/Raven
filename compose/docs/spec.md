@@ -69,11 +69,20 @@ The two packages already allow a later split into `compose-raven-ui` and
   CoreFoundation` on macOS and `-lX11 -ldl -lpthread -lm` on Linux.
 - **MoltenVK** is needed at run time only. Raven loads Vulkan dynamically, so nothing is linked.
   On macOS, users install it with `brew install molten-vk` or the Vulkan SDK.
+- **Publishing** (phase 3): every library module is published to Maven Central under the group
+  `io.github.psh`, at one shared version that follows its own semantic versioning (from 0.1.0).
+  - Each target publishes from its own host: the macOS job publishes the root and metadata
+    modules plus `macosarm64`, and the Linux job publishes `linuxx64`. A `compose-vX.Y.Z` tag
+    triggers both, signed in CI.
+  - Each release records the bundled Raven (fork commit and version, for example
+    `0.2.1-psh.3`).
+  - `raven-xml2compose` ships as per-host binaries on a GitHub release.
 
 Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runtime-on-kotlin-native.md),
 [Kotlin/Native targets and build](issues/archive/0005-kotlin-native-targets-and-build.md),
 [Layering over cinterop](issues/archive/0006-cinterop-layering.md),
-[Port the Raven samples to Compose](issues/archive/0014-port-raven-samples.md).
+[Port the Raven samples to Compose](issues/archive/0014-port-raven-samples.md),
+[Packaging and publishing](issues/archive/0031-packaging-and-publishing.md).
 
 ## 3. raven-native
 
