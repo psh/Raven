@@ -132,7 +132,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
   At start, the host calls `Raccessibility_follow_system()` unless `followSystemAccessibility` is
   false, so text scale, contrast and reduced motion follow the OS.
-- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }) { }`**:
+- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
   - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
@@ -264,6 +264,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `tooltip(String)` | any | `Rwidget_set_tooltip`, text only |
 | `semantics { }` | any | Raven's accessible name, role, description and hidden flag ([section 7](#7-events-and-state)) |
 | `clickable`, `combinedClickable`, `onPointerEvent`, `pointerHoverIcon`, `onKeyEvent`, `focusable`, `focusRequester`, `onFocusChanged` | any | Raven's event callback, focus and cursor calls ([section 7](#7-events-and-state)) |
+| `appearTransition(AppearTransition, delay)` | any | `Rwidget_set_transition`: plays each time the widget appears |
 | `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
@@ -580,6 +581,23 @@ Added for the `overlay` and `glass` ports:
 - **Icons** (`Painter?`): `Item(icon)`, `Tab(icon)`, `TreeView(itemIcon)`, `Window(icon)`, and
   `DrawScope.drawImage(...)`.
 
+### Transitions and Island (phase 3)
+
+- **`Modifier.appearTransition(AppearTransition.Fade | Pop | Zoom | FlyUp | FlyDown | FlyLeft |
+  FlyRight | Drop | SlideLeft | SlideRight, delay)`** plays Raven's transition each time the
+  widget appears.
+- **`AnimatedVisibility(visible, enter, exit) { }`**:
+  - Enter specs map to the nearest Raven transition: `fadeIn` is Fade, `scaleIn` is Pop or
+    Zoom, and `slideIn*` are the Fly transitions. Animation specs are ignored.
+  - Exit supports `fadeOut()` only, animated with `Rwidget_set_opacity`. Other exits fall back
+    to it.
+- **`animate*AsState`, `Animatable` and `updateTransition`** come from Compose's
+  `animation-core`, once it is verified to resolve without Compose UI. Otherwise compose-raven
+  provides a small set of its own.
+- **`Island(expanded, onExpandedChange, modifier, expandOnHover, expandOnClick, attached, notch,
+  folded, unfolded)`** is controlled. `Window(island = { Island(...) })` floats it at the top of
+  the window (`Rwindow_set_island`), in its own composition.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -590,7 +608,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
-[Image and resources](issues/archive/0035-image-and-resources.md).
+[Image and resources](issues/archive/0035-image-and-resources.md),
+[Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md).
 
 ## 9. Testing
 
@@ -842,6 +861,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | No SVG, `ImageVector` or vector icons | `ImageVector`, `painterResource` for vectors | [8](#8-component-vocabulary) |
 | `ContentScale` has `Fit`, `Crop`, `FillBounds` and `None` only | also `Inside`, `FillWidth`, `FillHeight` | [8](#8-component-vocabulary) |
 | Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
+| `AnimatedVisibility` enter specs map to Raven's spring transitions and ignore `animationSpec`; exit is `fadeOut` only | any enter and exit spec, timed by the spec | [8](#8-component-vocabulary) |
+| `Modifier.appearTransition` replays on every appearance | no counterpart | [6](#6-layout-and-modifiers) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |

@@ -52,6 +52,7 @@ implementation.
 - [Lists and trees](archive/0033-lists-and-trees.md): Compose's `LazyColumn`/`LazyRow` for composable rows (composing every item in phase 3, keyed); `ListView` and `TreeView` as data-driven composables over Raven's virtualised text widgets, with controlled selection; tree expansion stays Raven's; TileView goes to the fog.
 - [Tabs, Switcher and grids](archive/0034-tabs-switcher-and-grids.md): `TabView` with `Tab` pages, controlled selection and closing; no Switcher (Compose's `when`); `LazyVerticalGrid` with fixed columns over UniformGrid; a compose-raven `Grid` with `Auto`/`Fill` tracks and `Modifier.cell`.
 - [Image and resources](archive/0035-image-and-resources.md): relative paths resolve against a resource root next to the executable, and `registerResource` embeds files Raven finds first; Compose's `ImageBitmap` replaces `Texture`; `Image` with `painterResource`, `BitmapPainter`, `ContentScale` and tint; textures freed by a `Cleaner`; icons on menus, tabs, trees and windows; no vectors.
+- [Island and appear transitions](archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition` over Raven's enter transitions; `AnimatedVisibility` maps enter specs onto them and supports only `fadeOut` exits (opacity); `animation-core` used if it resolves without Compose UI; a controlled `Island`, with `Window(island = ...)` for the floating one.
 
 ## Not yet specified
 
@@ -83,6 +84,8 @@ implementation.
   it at start-up, and Compose's generated `Res.drawable.foo` accessors.
 - **Vector icons**: SVG or `ImageVector`, which Raven can't draw today (rasterise at build time, or
   a Raven vector primitive).
+- **Exit transitions**: Raven exit animations (fly, scale, slide out) for `AnimatedVisibility`,
+  which need a fork change.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
