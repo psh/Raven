@@ -616,6 +616,29 @@ Added for the `overlay` and `glass` ports:
   fileName, defaultExtension, onAccept, onCancel, onSelectionChange)`**: the directory is
   Raven's, and `FileFilter` is shared with the file dialogs.
 
+### Toolbar (phase 3)
+
+- **`Toolbar(modifier, contentPadding = PaddingValues(6.dp, 4.dp), horizontalArrangement =
+  Arrangement.spacedBy(4.dp)) { }`** is an HBox with `R_ROLE_TOOLBAR`. Its children are centred
+  vertically, and `ToolbarScope` adds `ToolbarSeparator()`.
+- **Arrangements**:
+
+  ```kotlin
+  Column {                                   // like Raven's editor
+      MenuBar { /* ... */ }
+      Toolbar {
+          Button(onClick = ::play) { Text("Pause") }
+          TextButton(onClick = ::add) { Text("Add object") }
+          ToolbarSeparator()
+          Spacer(Modifier.weight(1f))
+          TextField(query, { query = it }, placeholder = "Search")
+      }
+      HorizontalDivider()
+  }
+  HeaderBar { Toolbar { /* in the title bar */ } }
+  Surface(Modifier.material(Material.TintedGlass), shape = CircleShape) { Toolbar { /* floating */ } }
+  ```
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -628,7 +651,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
 [Image and resources](issues/archive/0035-image-and-resources.md),
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
-[DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md).
+[DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
+[Toolbar](issues/archive/0038-toolbar.md).
 
 ## 9. Testing
 

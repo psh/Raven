@@ -54,6 +54,7 @@ implementation.
 - [Image and resources](archive/0035-image-and-resources.md): relative paths resolve against a resource root next to the executable, and `registerResource` embeds files Raven finds first; Compose's `ImageBitmap` replaces `Texture`; `Image` with `painterResource`, `BitmapPainter`, `ContentScale` and tint; textures freed by a `Cleaner`; icons on menus, tabs, trees and windows; no vectors.
 - [Island and appear transitions](archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition` over Raven's enter transitions; `AnimatedVisibility` maps enter specs onto them and supports only `fadeOut` exits (opacity); `animation-core` used if it resolves without Compose UI; a controlled `Island`, with `Window(island = ...)` for the floating one.
 - [DockArea and FileBrowser](archive/0037-docking-and-file-browser.md): `DockArea` with named `Panel`s; Raven owns the arrangement (`initialDock`, saved layouts) and the Applier never indexes its children; open and close are controlled; torn-off panels stay in their window's composition inside Raven's floating windows; `FileBrowser` with Raven's own navigation.
+- [Toolbar](archive/0038-toolbar.md): a compose-raven `Toolbar` over an HBox with `R_ROLE_TOOLBAR`, Raven editor's padding and spacing, vertically centred children and `ToolbarSeparator`; combined with menus, header bars and glass surfaces by plain layout.
 
 ## Not yet specified
 
