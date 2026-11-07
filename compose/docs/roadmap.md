@@ -33,6 +33,7 @@ its result can change the plan:
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) |
 | Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) |
 | A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) |
+| Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) |
 | Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) |
 | A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) |
 | An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) |
@@ -123,10 +124,11 @@ Decided for phase 3 so far (in the spec):
   `ToolbarSeparator`
 - [Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md): `compose-raven-navigation3` with the
   Scene layer adapted from AndroidX, `NavDisplay`, dialog destinations, desktop back keys
+- [Typography in RavenTheme](issues/archive/0040-typography-in-raventheme.md): eight roles sized by Raven's
+  Markdown factors, `RavenTheme.typography`, component defaults, custom typographies
 
 Open tickets that serve every app rather than one sample:
 
-- [Typography in RavenTheme](issues/0040-typography-in-raventheme.md)
 
 ## Later
 

@@ -56,6 +56,7 @@ implementation.
 - [DockArea and FileBrowser](archive/0037-docking-and-file-browser.md): `DockArea` with named `Panel`s; Raven owns the arrangement (`initialDock`, saved layouts) and the Applier never indexes its children; open and close are controlled; torn-off panels stay in their window's composition inside Raven's floating windows; `FileBrowser` with Raven's own navigation.
 - [Toolbar](archive/0038-toolbar.md): a compose-raven `Toolbar` over an HBox with `R_ROLE_TOOLBAR`, Raven editor's padding and spacing, vertically centred children and `ToolbarSeparator`; combined with menus, header bars and glass surfaces by plain layout.
 - [Navigation 3 and scenes](archive/0039-navigation3-and-scenes.md): an opt-in `compose-raven-navigation3` over `navigation3-runtime`, with the Scene layer adapted from AndroidX 1.2.1 (Apache-2.0) under its names; `NavDisplay` with Raven appear transitions; dialog destinations render as `Dialog` and dismiss through `onBack`; back from the mouse Back button and Cmd+[ / Alt+Left; `WindowSceneStrategy` and ViewModels go to the fog.
+- [Typography in RavenTheme](archive/0040-typography-in-raventheme.md): eight compose-raven roles (`display` to `code`) sized from Raven's base size by its Markdown heading factors; `RavenTheme(typography)` and `RavenTheme.typography`; `body`/`label`/`code` leave sizes to Raven; `Text`, buttons, `TextField` and `CodeEditor` pick their roles; Raven-drawn text and Markdown headings keep Raven's own.
 
 ## Not yet specified
 

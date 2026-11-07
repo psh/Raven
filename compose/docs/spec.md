@@ -665,6 +665,30 @@ NavDisplay(
 - **Back** comes from each window's `NavigationEventDispatcher`, fed by the mouse Back button and
   Cmd+[ or Alt+Left (`Window(backKeys)`). Escape only closes dialogs.
 
+### Typography (phase 3)
+
+`RavenTheme(typography = Typography.fromTheme())` provides `RavenTheme.typography`, with roles
+sized from Raven's base font size *B* using Raven's own Markdown heading factors:
+
+| Role | Size | Default for |
+|---|---|---|
+| `display` | 1.9 B | |
+| `headline` | 1.52 B | |
+| `title` | 1.26 B | |
+| `subtitle` | 1.1 B | |
+| `body` | B (Raven's own size) | `Text` (`LocalTextStyle`), `TextField` |
+| `label` | B (Raven's own size) | content of `Button`, `OutlinedButton`, `TextButton` |
+| `caption` | 0.92 B | |
+| `code` | B, monospace | `CodeEditor` |
+
+- **Raven's own sizes**: `body`, `label` and `code` leave the size to Raven, so theme files still
+  set them. The scaled roles are recalculated when the theme or look changes.
+- **Custom typography**: `Typography.fromTheme().copy(...)`. A nested `RavenTheme(typography)`
+  changes it for a subtree.
+- **Raven-drawn text** (menus, tabs, list and tree rows, header and dock titles) keeps Raven's
+  theme font.
+- **`MarkdownText` headings** use Raven's factors.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -679,7 +703,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
 [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
 [Toolbar](issues/archive/0038-toolbar.md),
-[Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md).
+[Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md),
+[Typography in RavenTheme](issues/archive/0040-typography-in-raventheme.md).
 
 ## 9. Testing
 
@@ -916,7 +941,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `accessibleRole` and `accessibleDescription` reach Raven roles that Compose's `Role` lacks | `Role` has a fixed set | [7](#7-events-and-state) |
 | `FontWeight` has two steps (W100 to W500 regular, W600 to W900 bold) | any weight the font file has | [8](#8-component-vocabulary) |
 | No `AnnotatedString` or spans; `MarkdownText` for formatted text | `AnnotatedString`, `SpanStyle` | [8](#8-component-vocabulary) |
-| No typography scale yet; `RavenTheme` takes one `fontFamily` | Material's `Typography` | [8](#8-component-vocabulary) |
+| `Typography` has eight compose-raven roles (`display` ... `code`), sized by Raven's Markdown factors; Raven-drawn text and Markdown headings don't follow a custom typography | Material's fifteen roles, applied to every component | [8](#8-component-vocabulary) |
 | `Canvas` has no `Path`, but has Raven's cubic curves, triangles, glass and shaders | `Path`, `DrawScope` on Skia | [8](#8-component-vocabulary) |
 | Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
 | Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
