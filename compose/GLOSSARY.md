@@ -40,3 +40,11 @@ _Avoid_: bound field, two-way binding
 **Phase**:
 A numbered stage of compose-raven's roadmap (phase 1, phase 2, ...): a set of capabilities built together, and the sample ports they unlock.
 _Avoid_: v1, wave, release (a phase is a stage of planning, not a published version)
+
+**Content node**:
+The hidden container compose-raven puts inside a widget that takes only one child (a button, a surface, an expander), so that its content may hold any number of children. Modifiers, semantics and tests never see it.
+_Avoid_: wrapper, inner box
+
+**Host epoch**:
+Which run of Raven an object belongs to. Raven starts and stops more than once in a process (every test does), and an object from an earlier run must never touch the current one.
+_Avoid_: session, generation (Raven's own word for its handle counters)

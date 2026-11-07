@@ -43,7 +43,8 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | Module | Contents | Depends on |
 |---|---|---|
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
-| `compose-raven-foundation` | Everything Compose: packages `raven.compose.ui` (Applier, node, host, `Modifier`, `Dp`, window entry point) and `raven.compose.foundation` (composables) | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
+| `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
+| `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `raven-native` with `implementation` |
 | `compose-raven-bom` (phase 3) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
 | `compose-raven-xml` (phase 3) | The XML translator as a library: the parse adapter, the private `ravenxml.def` cinterop and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
@@ -51,10 +52,11 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `compose-raven-test` (phase 3) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
-| `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation` only |
+| `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 3 |
 
-The two packages already allow a later split into `compose-raven-ui` and
-`compose-raven-foundation` without breaking any import.
+The core and the composables are separate modules from the start: almost all of the complexity is
+in `compose-raven-ui`, and the composables stay thin declarations over its binding layer. Apps
+depend on `compose-raven-foundation`, which brings `compose-raven-ui` with it.
 
 - **Toolchain**: Kotlin 2.4.21 with `kotlin("multiplatform")` and
   `org.jetbrains.kotlin.plugin.compose`. The dependency is `androidx.compose.runtime:runtime:1.12.1`
@@ -109,7 +111,7 @@ Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runti
   - **UI-thread check**.
 - There are no handle value classes and no wrappers per widget. Nodes call `raven.cinterop`
   directly for everything else.
-- No Raven type appears in `compose-raven-foundation`'s public API. Raven enums get Kotlin
+- No Raven type appears in the public API of `compose-raven-ui` or `compose-raven-foundation`. Raven enums get Kotlin
   counterparts (such as `TextAlign`) only where a composable needs them, and they are mapped
   internally.
 
@@ -145,7 +147,10 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     own Overlay root and Applier, under the one Recomposer, linked with
     `rememberCompositionContext()`.
   - **Owners**: each window provides a `LifecycleOwner` and a `SavedStateRegistryOwner`. They
-    persist nothing yet, but they are enough for Navigation 3 and lifecycle-aware libraries.
+    persist nothing yet, but they are enough for Navigation 3 and lifecycle-aware libraries. The
+    lifecycle follows Compose Desktop: **RESUMED** while the window is shown and active (focused),
+    **STARTED** while shown but not active, **CREATED** while minimised or hidden, and
+    **DESTROYED** when the window leaves the composition.
   - **`WindowBackdrop(backdrop: Backdrop)`** inside a window calls `Rwindow_set_backdrop` for that
     window. `Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning is
     logged when the window isn't transparent or the system refuses.
@@ -156,17 +161,22 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   - Escape and clicks outside call `onDismissRequest`, through `Rdialog_set_dismiss_callback`
     ([fork change 4](#11-required-raven-changes)), and the app decides.
   - `DialogProperties` has `dismissOnBackPress` (Escape) and `dismissOnClickOutside`.
-- **Blocking dialogs** are suspend functions run as a task on `RavenDispatcher`: `messageBox(title,
-  text, buttons): MessageResult`, `openFileDialog(filters, multiple): List<String>`,
-  `saveFileDialog(...)` and `selectFolderDialog(...)`. Raven runs frames while they wait. The
-  implementation first verifies that recomposing inside those nested frames is safe.
+- **Message boxes and file dialogs** are suspend functions: `messageBox(title, text, buttons):
+  MessageResult`, `openFileDialog(filters, multiple): List<String>`, `saveFileDialog(...)` and
+  `selectFolderDialog(...)`.
+  - By default they are built on `Dialog` and `FileBrowser`, so they never block, run no nested
+    frames, and work headless in tests.
+  - `native = true` uses the OS dialog through Raven's blocking calls (`Rmessage_box`,
+    `Rfile_dialog_*`) as a task on `RavenDispatcher`. Raven runs frames while those wait, so this
+    option needs the nested-frames check of the roadmap first.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
 `close()`. `application` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is
 `RavenHost` plus frames it drives itself ([section 9](#9-testing)).
 
-- **Start**: `Rinit`, then create the window and the fixed root ([section 5](#5-node-model-and-applier)),
-  then start the composition.
+- **Start**: `Rinit`, then start the application composition. It emits no nodes. Each `Window`
+  in it creates a Raven window, its fixed root ([section 5](#5-node-model-and-applier)) and its
+  own composition.
 - **Dispatcher**: an internal `RavenDispatcher : CoroutineDispatcher`. `dispatch` calls
   `Rtask_post` with a `StableRef` to the block, and `isDispatchNeeded` is always `true`, so
   Applier work never runs re-entrantly inside a Raven callback. It isn't public and isn't
@@ -179,16 +189,39 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
 - **Snapshot apply pump**: `Snapshot.registerGlobalWriteObserver` sets a flag. If the flag wasn't
   already set, it dispatches one `Snapshot.sendApplyNotifications()`. `Rtask_post` is thread-safe
   and wakes `Rwait_frame`, so a state write from any thread wakes the loop.
+- **When the loop ends**: windows refuse Raven's close, so Raven never ends `Rwait_frame` by
+  itself. `application` calls `Rquit()` when its content has no `Window` left, and
+  `exitApplication()` calls it directly.
+- **Ownership rule**: some Raven containers take ownership of widgets and delete them
+  (`Rwindow_set_content`, `Rdialog_open`, `Rwindow_set_island`, a window and everything in it). A
+  composition is always **disposed before its Raven owner is destroyed**, so no node ever holds a
+  widget that Raven deleted behind it:
+  - **Removing a `Window`**: dispose its island, dialog and content compositions (innermost
+    first), then `Rwindow_destroy`.
+  - **Closing a `Dialog`**: dispose its composition, then `Rdialog_close`.
+  - **Removing a window-level `Island`**: dispose its composition, then `Rwindow_set_island(window,
+    R_INVALID_ID)`.
 - **Shutdown**, when `Rwait_frame` returns false:
-  1. `composition.dispose()`. Each node's `onRelease` destroys its widget, and the destroy
-     callbacks dispose the `StableRef`s.
+  1. Remove every remaining window as above, then dispose the application composition.
   2. Cancel the Recomposer, then its scope.
   3. Unregister the write observer.
-  4. `Rshutdown()`. Its last run of the task queue disposes any `StableRef` still in a pending
+  4. Clear every Raven-handle cache of the host and advance the host epoch (see below).
+  5. `Rshutdown()`. Its last run of the task queue disposes any `StableRef` still in a pending
      dispatch.
+- **Handles and Raven instances**: Raven's handles carry only an 8-bit generation, and `Rinit`
+  resets every pool. So after `Rshutdown` and a new `Rinit` (every test does this), an old `Rid`
+  can name a **different, valid** object. Two invariants prevent that:
+  - **Caches belong to the host.** Fonts, `painterResource` images, `ShaderEffect`s, theme colours
+    and typography sizes are cached in the `RavenHost`, never in process-wide objects, and are
+    cleared at shutdown.
+  - **Every `Rid` kept outside a node carries the host epoch.** A counter advances with every
+    `Rinit`. `ImageBitmap`, cached fonts and effects keep the epoch they were made in. Using one
+    from an older epoch throws, and a `Cleaner` or `close()` from an older epoch does nothing.
 - **Errors**: a `CoroutineExceptionHandler` on the scope, together with the C-boundary catch in
-  [section 7](#7-events-and-state), records the first throwable and calls `Rquit()`. After the
-  normal shutdown, `application` rethrows it.
+  [section 7](#7-events-and-state), records the first throwable and calls `Rquit()`. Callbacks
+  that run on Raven's render thread (`VulkanViewport.onDraw`) catch too, record the throwable
+  under a lock, and call `Rquit()`, which is thread-safe. After the normal shutdown, `application`
+  rethrows the first throwable.
 - **Exit**: `ApplicationScope.exitApplication()` calls `Rquit()`, which is thread-safe. The loop
   also ends when no `Window` is left.
 
@@ -229,13 +262,33 @@ Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-thread
   windows), so the Applier makes no index-based Raven calls on a DockArea's children. Insert uses
   `Rdock_area_add_panel`, removal destroys the panel, and moves only reorder the mirror list.
 - **Content of single-child widgets**: a composable over a single-child widget (Button, Border,
-  Expander, ...) emits two nodes: the widget, plus an internal content node holding the
+  Expander, ...) emits two nodes: the widget, plus an internal **content node** holding the
   composable's content. That node is a Row for buttons and a Box for the others. So content may
-  emit any number of children.
+  emit any number of children. The content node is invisible plumbing: it has `R_ROLE_NONE`, takes
+  no Modifier, and is never found by test finders.
 - **Single-child parents** (Border, SizeBox, Button, Expander, BackgroundBlur) destroy their
   existing child when a second one is inserted. Before inserting into one, the Applier detaches
   the Raven child currently attached. That child stays alive in the mirror list. Removing a node
   that is no longer attached skips the Raven call.
+
+### The binding layer
+
+Most composables are the same few protocols over different Raven widgets, so those protocols are
+one internal module in `compose-raven-ui`, written before any composable, and each composable is a
+thin declaration over it:
+
+- **Widget descriptor**: the Raven widget type, the kind of children (none, single, many), whether
+  it has a content node and of which kind, and the default accessible role.
+- **Property binding**: a typed setter per property, called by `Updater.set` only when the value
+  changes.
+- **Event binding**: the callback kinds a widget has, registered once per node, dispatching to the
+  lambdas in the node's fields, with the C-boundary catch built in. Raven's single generic event
+  callback is shared by all input modifiers of the node.
+- **`ControlledValue<T>(read, write, equals)`**: the controlled-input protocol of
+  [section 7](#7-events-and-state) (remember the composed value, mark on a user change, check after
+  the next applied frame, write back on difference). `Checkbox`, `Slider`, `TextField`,
+  `ComboBox`, `SpinBox`, `CodeEditor`, `Expander`, `TabView`, `Island`, `ListView`, `TreeView`
+  and `CheckboxItem` all use it.
 
 Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 [Raven widget tree API for an Applier](issues/archive/0004-raven-widget-tree-api.md),
@@ -273,6 +326,10 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
   because phase 1 has no drawing modifiers.
+- **Which widget a Modifier acts on**: always the composable's **outer** widget, never its content
+  node ([section 5](#5-node-model-and-applier)). A modifier that a composable can't honour (for
+  example `clip` outside `Image`, `weight` outside a Row or Column, `cell` outside a `Grid`) is
+  ignored with a one-time warning naming the composable, never silently.
 - **Arrangement and container alignment** keep Compose's parameter shape, for example
   `Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.Start)`.
   Phase 1's `Arrangement` offers only `Top`/`Start` and `spacedBy(dp)`, which uses `Rpanel_set_spacing`.
@@ -292,11 +349,15 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
   recomposed later through `RavenDispatcher`.
 - **Controlled inputs**, as in Compose: a composable shows the value the app composed. Raven
   changes a widget's own value before it calls back, so each input node remembers the value it
-  last composed, and a user change marks the node as needing a check. In the frame callback, after
-  the clock ticks, compose-raven checks the marked nodes, but only when `recomposer.hasPendingWork`
-  is false. Each marked node sets its widget back to the composed value if the two differ:
+  last composed, and a user change marks the node with the current **apply generation** (a counter
+  the host advances each time a frame's changes are applied). A marked node is checked in the
+  Applier's `onEndChanges` of the **first frame applied after that generation**, so the app's
+  response to the change has been composed by then. Each marked node sets its widget back to the
+  composed value if the two differ:
   - An accepted change already matches, so nothing happens and nothing flickers.
-  - A rejected change reverts once the composition has settled.
+  - A rejected change reverts on that frame.
+  - Running animations or effects never delay the check: it doesn't wait for the Recomposer to be
+    idle.
 
   Raven's setters don't fire change callbacks, so nothing loops.
 - **Text**: `TextField(value: String, onValueChange)`. Text is written back only when it differs
@@ -402,7 +463,7 @@ Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the 
 
 ### Phase 2: ComboBox and SpinBox
 
-Added for the `notepad`, `themes`, `glass` and `overlay` ports. All three are controlled.
+Added for the `notepad`, `themes` and `overlay` ports (and `glass` in phase 3). All three are controlled.
 
 | Composable | Raven widget | Notes |
 |---|---|---|
@@ -437,11 +498,18 @@ Graphics types live in `raven.compose.ui.graphics`:
 
 Added for the `themes` port:
 
-- **`RavenTheme(look: Look? = null, dark: Boolean? = null, theme: String? = null) { }`**:
-  - `look` and `dark` become one `Rlook_set`. The look is app-wide, so only the outermost
-    `RavenTheme` may set it. A nested one that does logs an error.
-  - `theme` names a loaded theme. The outermost `RavenTheme` uses `Rtheme_use`. A nested one gives
-    its subtree its own theme through an internal Box and `Rwidget_set_theme`.
+- **`RavenTheme(look: Look? = null, dark: Boolean? = null, theme: String? = null) { }`**, in two
+  places:
+  - **App-wide, at `application` level**: `application { RavenTheme(look = ..., theme = ...) {
+    Window(...) { } } }`. There it emits no node. `look` and `dark` become one `Rlook_set`, `theme`
+    uses `Rtheme_use`, and its CompositionLocals reach every window's composition through
+    `rememberCompositionContext`. Only this placement may set app-wide settings (`look`, `dark`,
+    `material`, an app-wide `theme` or `fontFamily`), so two windows can never disagree about
+    them. In `singleWindowApplication`, the `RavenTheme` at the top of its content counts as
+    application level.
+  - **Inside a window**: a subtree setting. `theme` gives the subtree its own theme through an
+    internal Box and `Rwidget_set_theme`, `fontFamily` uses `Rwidget_set_font`, and `typography`
+    is a CompositionLocal. Setting an app-wide setting here logs an error.
   - `Look` is one of `Raven`, `Glass`, `HighContrast`, `Windows`, `Macos`, `Gnome`, `Native` or
     `MacosGlass`.
 - **`loadTheme(path): String`** and **`loadThemeFromString(xml): String`** load theme files and
@@ -483,7 +551,7 @@ Added for the `overlay` and `glass` ports:
   `Glass`, `FrostedGlass` or `TintedGlass`. On `Surface`, `color` then tints the glass:
   `Surface(Modifier.material(Material.FrostedGlass), color = tint)`.
 - **`RavenTheme(..., material: Material? = null)`** sets the material app-wide with
-  `Rtheme_set_material`. Only the outermost `RavenTheme` may set it. Controls get glass from the
+  `Rtheme_set_material`. Only an application-level `RavenTheme` may set it. Controls get glass from the
   Glass and macOS Glass looks.
 - **`BackgroundBlur(modifier, style: BlurStyle = BlurStyle.Frosted, shape: Shape = RectangleShape, tint: Color = Color.Unspecified, radius: Dp = Dp.Unspecified, saturation: Float? = null, grain: Float? = null, shadowElevation: Dp = 0.dp) { }`**:
   - It is a container over BackgroundBlur, and its content goes in an internal Box.
@@ -498,7 +566,7 @@ Added for the `overlay` and `glass` ports:
 
 - **`FontFamily(vararg fonts: Font)`**, with `Font(path: String or bytes: ByteArray, weight, style)`:
   - The regular font is the family's Raven handle, and the others attach with `Rfont_set_variant`.
-  - It is loaded on first use and cached until shutdown.
+  - It is loaded on first use and cached in the `RavenHost` until shutdown ([section 4](#4-application-host)).
   - `FontFamily.Default` is Roboto and `FontFamily.Monospace` is Roboto Mono.
   - Paths resolve as [Image and resources](issues/archive/0035-image-and-resources.md) decides.
 - **Weight and style**: `FontWeight` W100 to W500 mean Regular and W600 to W900 mean Bold.
@@ -506,8 +574,8 @@ Added for the `overlay` and `glass` ports:
 - **`TextStyle(color, fontSize, fontFamily, fontWeight, fontStyle, textAlign)`** is read from
   `LocalTextStyle` and changed for a subtree with `ProvideTextStyle(style) { }`. `TextField` and
   `CodeEditor` take a `textStyle`.
-- **`RavenTheme(fontFamily: FontFamily? = null)`**: the outermost sets `Rtheme_set_font`, and a
-  nested one uses `Rwidget_set_font` on its subtree. The starting `LocalTextStyle` comes from the
+- **`RavenTheme(fontFamily: FontFamily? = null)`**: at application level it sets `Rtheme_set_font`,
+  and inside a window it uses `Rwidget_set_font` on its subtree. The starting `LocalTextStyle` comes from the
   theme's font size metric.
 - **`MarkdownText(markdown, modifier, style, onLinkClick = null)`** uses `Rlabel_set_markdown` and
   `Rlabel_set_link_callback`.
@@ -528,7 +596,8 @@ Added for the `overlay` and `glass` ports:
 - **`compose-raven-vulkan`**:
   - `VulkanViewport(modifier, realtime = false, onDraw: (VulkanFrame) -> Unit)` uses Raven's draw
     callback. **`onDraw` runs on Raven's render thread**: it records Vulkan commands into
-    `VulkanFrame.commandBuffer`, and must not write Compose state or call Raven's UI API.
+    `VulkanFrame.commandBuffer`, and must not write Compose state or call Raven's UI API. An
+    exception it throws is caught on that thread and ends the app through the host's error path.
   - `ImageBitmap.fromVulkanImageView(imageView, sampler, width, height)` is zero copy.
   - `RavenVulkan.device` exposes Raven's Vulkan handles.
   - `application(vulkan = VulkanSetup.External(...))` shares the app's own device.
@@ -541,7 +610,7 @@ Added for the `overlay` and `glass` ports:
   - The app brings its own GL bindings.
 - **Shader effects**:
   - `ShaderEffect.builtin(Effect.Aurora | ...)`, `fromFile(spirv path)` and `fromBytes(...)`,
-    cached.
+    cached in the `RavenHost`.
   - `Surface(effect, effectStyle)` uses `Rborder_set_effect`, and `DrawScope.drawShader(...)` uses
     `Rdraw_shader`.
 
@@ -579,9 +648,10 @@ Added for the `overlay` and `glass` ports:
   (`Rfile_register_memory`), and Raven then finds it first everywhere.
 - **`ImageBitmap`** wraps a Raven texture: `ImageBitmap(width, height, rgba)` with `update(...)`,
   `decodeToImageBitmap(bytes)`, and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
-  App-made ones are freed by a `Cleaner` or by `close()`.
+  App-made ones are freed by a `Cleaner` or by `close()`, both of which do nothing once the
+  Raven instance that made it has shut down (the host epoch, [section 4](#4-application-host)).
 - **`Image(painter, contentDescription, modifier, contentScale = ContentScale.Fit, colorFilter)`**:
-  - `painterResource(path)` decodes asynchronously and is cached.
+  - `painterResource(path)` decodes asynchronously and is cached in the `RavenHost`.
   - `BitmapPainter(image, srcOffset, srcSize)` shows part of an image (a source region).
   - `ContentScale` is `Fit`, `Crop`, `FillBounds` or `None`.
   - `ColorFilter.tint(color)` tints it.
@@ -718,7 +788,9 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   apps. It is built on `RavenHost` ([section 4](#4-application-host)) and runs
   headless: `Rinit_ex` with `R_BACKEND_NULL`, `headless = R_TRUE`, `worker_threads = -1`, and a
   fixed `Rset_animation_time_step`. `waitForIdle()` keeps calling `Rdraw_frame()` until no
-  recomposition, snapshot apply or controlled check is pending.
+  invalidation, snapshot apply or controlled check is pending. Frame awaiters (running animations,
+  `withFrameNanos` loops) don't count, so an infinite animation never stalls a test: time for them
+  advances through `mainClock`.
 - **API**, a small part of `ComposeUiTest`:
   ```kotlin
   runRavenTest {
@@ -742,6 +814,9 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   draws nothing.
 - **CI**: a compose job in `.github/workflows/build.yml` on a macOS, a Linux and (from phase 3) a
   Windows runner with MSYS2, running `./gradlew -p compose allTests`.
+- **What headless tests can't cover** gets a short manual checklist, run before each release on a
+  real display: native, OpenGL and Metal viewports, `VulkanViewport`, dock panel tearing, the
+  island notch, `native = true` dialogs, window transparency and backdrops, and IME input.
 
 ### Public test module (phase 3)
 
@@ -851,7 +926,9 @@ This sample translates Raven XML into compose-raven source.
   `@Composable fun TranslatedUi()` with the hoisted state at the top, then `main()` when the root
   is `<Window>`.
 - **Tests**: most tests build `XmlElement` trees and check the generated code, as plain unit
-  tests. A few headless smoke tests cover `parseRavenXml`.
+  tests. A few headless smoke tests cover `parseRavenXml`. A CI test translates the `.xml` files of
+  Raven's `examples/` and **compiles** the output against the current `compose-raven-foundation`,
+  so the translator can't drift from the API.
 
 ### `compose-raven-xml` and `raven-xml2compose` (phase 3)
 
@@ -977,6 +1054,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `NavDisplay` transitions are Raven appear transitions (`NavTransition`) | `transitionSpec` / `popTransitionSpec` with `ContentTransform` | [8](#8-component-vocabulary) |
 | Back comes from the mouse Back button and Cmd+[ / Alt+Left, not Escape | the system back gesture | [8](#8-component-vocabulary) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
+| App-wide theme settings (`look`, `dark`, `material`, app-wide `theme`/`fontFamily`) only at `application` level | any `MaterialTheme` can set anything | [8](#8-component-vocabulary) |
+| A modifier a composable can't honour is ignored with a warning | modifiers always apply | [6](#6-layout-and-modifiers) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |
@@ -987,7 +1066,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
 | `Dialog` is a sheet over its window | a separate window on desktop | [4](#4-application-host) |
 | No `Popup { }` | `Popup` | [4](#4-application-host) |
-| Message boxes and file dialogs are suspend functions over Raven's own | no built-in equivalent | [4](#4-application-host) |
+| Message boxes and file dialogs are suspend functions, built on `Dialog` and `FileBrowser` unless `native = true` | no built-in equivalent | [4](#4-application-host) |
 
 ## 13. Roadmap
 
@@ -995,7 +1074,7 @@ What gets built and in what order is in [`roadmap.md`](roadmap.md):
 - verification spikes
 - the fork changes
 - the phase 1 and phase 2 milestones
-- the phase-3 samples and the open tickets each one waits on
+- the phase 3 samples and the decisions each one needs
 - what waits on fog
 
 ## 14. Out of scope
