@@ -13,7 +13,7 @@ for a phase 4 map.
 |---|---|---|
 | [0. Verify first](#0-verify-first) | answers to the open facts the spec depends on | none |
 | [1. Raven fork changes](#1-raven-fork-changes) | the changes compose-raven needs in `psh/Raven` | none |
-| [2. Phase 1](#2-phase-1) | the library, the host, the phase 1 vocabulary, tests and CI | `hello`, `xml-translator` |
+| [2. Phase 1](#2-phase-1) | the library (`compose-raven-ui` with the binding layer, then `compose-raven-foundation`), the host, the phase 1 vocabulary, tests and CI | `hello`, `xml-translator` |
 | [3. Phase 2](#3-phase-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
 | [4. Phase 3](#4-phase-3) | windows, input, accessibility, fonts, drawing and graphics modules, lists, tabs and grids, images, transitions, docking, toolbar, test module, translator tool, publishing, Windows | `editor`, `workspace`, `music`, `animations`, `glass` |
 | [Later](#later) | waits on fog | `effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser` |
@@ -33,9 +33,10 @@ a Windows host or a real window:
 | `Rxml_document_parse` registers no `<Widget>` declarations globally | `parseRavenXml` unregisters them | [10](spec.md#10-samples) | **Passed** |
 | A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) | **Failed**, worked around: a MenuItem with `Separator = true` |
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) | **Failed**: compose-raven sets them |
-| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) | Waits for the host |
+| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | `native = true` dialogs are dropped (the default ones are already built on `Dialog` and FileBrowser) | [4](spec.md#4-application-host) | Waits for the host |
 | A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) | Waits for a Windows host |
 | Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) | **Passed** |
+| Writing text back to a TextInput during IME composition (preedit) doesn't cancel the composition, and what Raven reports as the text during preedit (phase 1) | `TextField` defers write-backs while a composition is active, if Raven exposes that, or a fork change adds it | [7](spec.md#7-events-and-state) | Waits for a real window and an IME |
 | Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) | **Failed**: fork change 5, `Rwindow_clear_focus` (the flag toggle works until then) |
 | A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) | Waits for a real window |
 | An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) | Waits for a real window |
@@ -52,13 +53,18 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 4. `Rdialog_set_dismiss_callback`, which can refuse a dismissal: needed by `Dialog` (phase 3).
 5. `Rwindow_clear_focus(window)`, which leaves no widget focused: needed by `clearFocus()` (phase 3).
 
+Each change is **one isolated commit** in the fork, with a C test in Raven's own `tests/`, and is
+offered upstream as its own pull request, so the fork rebases on upstream cheaply and drops each
+change once upstream has it.
+
 ## 2. Phase 1
 
 | Part | Spec |
 |---|---|
 | Gradle build: `raven-native`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) |
 | `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) |
-| `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, shutdown, errors | [4](spec.md#4-application-host) |
+| `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, host epoch and per-host caches, ownership and shutdown order, errors | [4](spec.md#4-application-host) |
+| The binding layer in `compose-raven-ui`, **before any composable**: widget descriptors, property and event binding, `ControlledValue<T>` | [5](spec.md#the-binding-layer) |
 | `RavenNode` and `RavenApplier`, including the internal content node for single-child widgets | [5](spec.md#5-node-model-and-applier) |
 | `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) |
 | Callbacks and controlled inputs | [7](spec.md#7-events-and-state) |
