@@ -83,7 +83,7 @@ Each port waits on these open tickets:
 | Sample | Open tickets it needs |
 |---|---|
 | `editor` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/0038-toolbar.md) |
-| `workspace` | [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Toolbar](issues/0038-toolbar.md) |
+| `workspace` | [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md), [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Toolbar](issues/0038-toolbar.md) |
 | `music` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Image and resources](issues/archive/0035-image-and-resources.md) |
 | `animations` | [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) |
 | `glass` | [Lists and trees](issues/archive/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
@@ -117,6 +117,8 @@ Decided for phase 3 so far (in the spec):
   `ImageBitmap` (renamed from `Texture`), `Image` with `painterResource`/`BitmapPainter`, icons everywhere
 - [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition`,
   `AnimatedVisibility` over Raven's transitions (fade-out exits only), `animation-core` if it resolves, `Island`
+- [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md): `DockArea` with `Panel`s, Raven's
+  arrangement with saved layouts, controlled open and close, torn-off panels in Raven windows; `FileBrowser`
 
 Open tickets that serve every app rather than one sample:
 

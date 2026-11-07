@@ -224,6 +224,9 @@ Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-thread
 - **Moves** use `Rwidget_move_child(parent, from, to)` ([section 11](#11-required-raven-changes)).
   The Applier calls it once for each of Compose's `count` items, with `to - count` when
   `from < to`.
+- **DockArea children**: Raven moves dock panels by itself (docking, tearing into floating
+  windows), so the Applier makes no index-based Raven calls on a DockArea's children. Insert uses
+  `Rdock_area_add_panel`, removal destroys the panel, and moves only reorder the mirror list.
 - **Content of single-child widgets**: a composable over a single-child widget (Button, Border,
   Expander, ...) emits two nodes: the widget, plus an internal content node holding the
   composable's content. That node is a Row for buttons and a Box for the others. So content may
@@ -598,6 +601,21 @@ Added for the `overlay` and `glass` ports:
   folded, unfolded)`** is controlled. `Window(island = { Island(...) })` floats it at the top of
   the window (`Rwindow_set_island`), in its own composition.
 
+### Docking and the file browser (phase 3)
+
+- **`DockArea(state = rememberDockAreaState(), modifier, movable, tearable) { Panel(name, title,
+  initialDock, closable, icon, open, onClose) { } }`**:
+  - The arrangement is Raven's. `initialDock` (`Dock.Left/Right/Top/Bottom(size)`,
+    `Dock.Tab(of)`) applies when a panel is first added.
+  - `state.saveLayout()` and `loadLayout(text)` persist the arrangement, and panels need a
+    `name` for that.
+  - `open` and `onClose` are controlled, and closing hides the panel.
+  - Torn-off panels live in Raven's floating windows but stay in their window's composition, so
+    window-level settings still refer to the original window.
+- **`FileBrowser(modifier, mode, initialDirectory, filters, multiple, showHidden, controls, places,
+  fileName, defaultExtension, onAccept, onCancel, onSelectionChange)`**: the directory is
+  Raven's, and `FileFilter` is shared with the file dialogs.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -609,7 +627,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
 [Image and resources](issues/archive/0035-image-and-resources.md),
-[Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md).
+[Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
+[DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md).
 
 ## 9. Testing
 
@@ -863,6 +882,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
 | `AnimatedVisibility` enter specs map to Raven's spring transitions and ignore `animationSpec`; exit is `fadeOut` only | any enter and exit spec, timed by the spec | [8](#8-component-vocabulary) |
 | `Modifier.appearTransition` replays on every appearance | no counterpart | [6](#6-layout-and-modifiers) |
+| `DockArea`'s arrangement is Raven's (only `initialDock`, plus saved layouts) | no docking in Compose | [8](#8-component-vocabulary) |
+| Torn-off dock panels are Raven windows, not `Window`s | n/a | [8](#8-component-vocabulary) |
+| `FileBrowser`'s directory isn't controlled | no file browser in Compose | [8](#8-component-vocabulary) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |

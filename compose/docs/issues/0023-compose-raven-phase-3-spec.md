@@ -53,6 +53,7 @@ implementation.
 - [Tabs, Switcher and grids](archive/0034-tabs-switcher-and-grids.md): `TabView` with `Tab` pages, controlled selection and closing; no Switcher (Compose's `when`); `LazyVerticalGrid` with fixed columns over UniformGrid; a compose-raven `Grid` with `Auto`/`Fill` tracks and `Modifier.cell`.
 - [Image and resources](archive/0035-image-and-resources.md): relative paths resolve against a resource root next to the executable, and `registerResource` embeds files Raven finds first; Compose's `ImageBitmap` replaces `Texture`; `Image` with `painterResource`, `BitmapPainter`, `ContentScale` and tint; textures freed by a `Cleaner`; icons on menus, tabs, trees and windows; no vectors.
 - [Island and appear transitions](archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition` over Raven's enter transitions; `AnimatedVisibility` maps enter specs onto them and supports only `fadeOut` exits (opacity); `animation-core` used if it resolves without Compose UI; a controlled `Island`, with `Window(island = ...)` for the floating one.
+- [DockArea and FileBrowser](archive/0037-docking-and-file-browser.md): `DockArea` with named `Panel`s; Raven owns the arrangement (`initialDock`, saved layouts) and the Applier never indexes its children; open and close are controlled; torn-off panels stay in their window's composition inside Raven's floating windows; `FileBrowser` with Raven's own navigation.
 
 ## Not yet specified
 
@@ -86,6 +87,8 @@ implementation.
   a Raven vector primitive).
 - **Exit transitions**: Raven exit animations (fly, scale, slide out) for `AnimatedVisibility`,
   which need a fork change.
+- **Torn-off panels as Windows**: making DockArea's floating windows real compose-raven `Window`s,
+  with their own window-level settings.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
