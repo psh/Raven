@@ -37,7 +37,7 @@ its result can change the plan:
 | A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) |
 | An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) |
 | `androidx.compose.animation:animation-core` resolves for our targets without Compose UI (phase 3) | compose-raven provides a small `animate*AsState` set | [8](spec.md#8-component-vocabulary) |
-| `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host (phase 3) | settled in [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md) | none yet |
+| `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host and window owners, with the kotlinx-serialization plugin, and `navigationevent` resolves without Compose UI (phase 3) | windows call registered back handlers directly; any other gap is fixed in `compose-raven-navigation3` | [8](spec.md#8-component-vocabulary) |
 
 ## 1. Raven fork changes
 
@@ -121,10 +121,11 @@ Decided for phase 3 so far (in the spec):
   arrangement with saved layouts, controlled open and close, torn-off panels in Raven windows; `FileBrowser`
 - [Toolbar](issues/archive/0038-toolbar.md): `Toolbar` with the toolbar role, centred children and
   `ToolbarSeparator`
+- [Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md): `compose-raven-navigation3` with the
+  Scene layer adapted from AndroidX, `NavDisplay`, dialog destinations, desktop back keys
 
 Open tickets that serve every app rather than one sample:
 
-- [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md)
 - [Typography in RavenTheme](issues/0040-typography-in-raventheme.md)
 
 ## Later

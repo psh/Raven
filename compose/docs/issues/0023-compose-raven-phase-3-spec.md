@@ -55,6 +55,7 @@ implementation.
 - [Island and appear transitions](archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition` over Raven's enter transitions; `AnimatedVisibility` maps enter specs onto them and supports only `fadeOut` exits (opacity); `animation-core` used if it resolves without Compose UI; a controlled `Island`, with `Window(island = ...)` for the floating one.
 - [DockArea and FileBrowser](archive/0037-docking-and-file-browser.md): `DockArea` with named `Panel`s; Raven owns the arrangement (`initialDock`, saved layouts) and the Applier never indexes its children; open and close are controlled; torn-off panels stay in their window's composition inside Raven's floating windows; `FileBrowser` with Raven's own navigation.
 - [Toolbar](archive/0038-toolbar.md): a compose-raven `Toolbar` over an HBox with `R_ROLE_TOOLBAR`, Raven editor's padding and spacing, vertically centred children and `ToolbarSeparator`; combined with menus, header bars and glass surfaces by plain layout.
+- [Navigation 3 and scenes](archive/0039-navigation3-and-scenes.md): an opt-in `compose-raven-navigation3` over `navigation3-runtime`, with the Scene layer adapted from AndroidX 1.2.1 (Apache-2.0) under its names; `NavDisplay` with Raven appear transitions; dialog destinations render as `Dialog` and dismiss through `onBack`; back from the mouse Back button and Cmd+[ / Alt+Left; `WindowSceneStrategy` and ViewModels go to the fog.
 
 ## Not yet specified
 
@@ -90,6 +91,9 @@ implementation.
   which need a fork change.
 - **Torn-off panels as Windows**: making DockArea's floating windows real compose-raven `Window`s,
   with their own window-level settings.
+- **More navigation**: a `WindowSceneStrategy` that opens entries as separate `Window`s (closing
+  calls `onBack`), list-detail scenes, and the ViewModel entry decorator
+  (`lifecycle-viewmodel-navigation3`).
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and

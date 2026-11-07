@@ -45,6 +45,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
 | `compose-raven-foundation` | Everything Compose: packages `raven.compose.ui` (Applier, node, host, `Modifier`, `Dp`, window entry point) and `raven.compose.foundation` (composables) | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
 | `compose-raven-bom` (phase 3) | Version constraints for every module and `androidx.compose.runtime` | none |
+| `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
 | `compose-raven-xml` (phase 3) | The XML translator as a library: the parse adapter, the private `ravenxml.def` cinterop and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
 | `tools/raven-xml2compose` (phase 3) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
 | `compose-raven-test` (phase 3) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
@@ -132,7 +133,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
   At start, the host calls `Raccessibility_follow_system()` unless `followSystemAccessibility` is
   false, so text scale, contrast and reduced motion follow the OS.
-- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null) { }`**:
+- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
   - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
@@ -639,6 +640,31 @@ Added for the `overlay` and `glass` ports:
   Surface(Modifier.material(Material.TintedGlass), shape = CircleShape) { Toolbar { /* floating */ } }
   ```
 
+### Navigation 3 (phase 3, `compose-raven-navigation3`)
+
+Apps use `navigation3-runtime` as on Android (`NavKey`, `entryProvider`, `rememberNavBackStack`)
+and apply `org.jetbrains.kotlin.plugin.serialization`, because `NavKey`s are `@Serializable`.
+
+```kotlin
+NavDisplay(
+    backStack = backStack, onBack = { backStack.removeLastOrNull() },
+    sceneStrategy = DialogSceneStrategy<NavKey>() then SinglePaneSceneStrategy(),
+    transition = NavTransition(push = AppearTransition.SlideLeft, pop = AppearTransition.SlideRight),
+    entryProvider = entryProvider {
+        entry<Home> { HomeScreen() }
+        entry<ConfirmDelete>(metadata = DialogSceneStrategy.dialog()) { ConfirmDeleteDialog() }
+    },
+)
+```
+
+- **The Scene layer** (`Scene`, `SceneStrategy`, `OverlayScene`, `SinglePaneScene`,
+  `DialogScene`, `SceneDecoratorStrategy`, `SceneState`) keeps Navigation 3's names and
+  behaviour, adapted from AndroidX 1.2.1 without Compose UI.
+- **Dialog destinations** render with `Dialog`, and their dismissal calls `onBack`. They stack.
+- **Transitions** are Raven appear transitions, chosen by push or pop. There are none by default.
+- **Back** comes from each window's `NavigationEventDispatcher`, fed by the mouse Back button and
+  Cmd+[ or Alt+Left (`Window(backKeys)`). Escape only closes dialogs.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
@@ -652,7 +678,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Image and resources](issues/archive/0035-image-and-resources.md),
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
 [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
-[Toolbar](issues/archive/0038-toolbar.md).
+[Toolbar](issues/archive/0038-toolbar.md),
+[Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md).
 
 ## 9. Testing
 
@@ -909,6 +936,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `DockArea`'s arrangement is Raven's (only `initialDock`, plus saved layouts) | no docking in Compose | [8](#8-component-vocabulary) |
 | Torn-off dock panels are Raven windows, not `Window`s | n/a | [8](#8-component-vocabulary) |
 | `FileBrowser`'s directory isn't controlled | no file browser in Compose | [8](#8-component-vocabulary) |
+| Navigation 3's Scene layer and `NavDisplay` come from `compose-raven-navigation3`, in compose-raven packages | `androidx.navigation3.ui` / `.scene` | [8](#8-component-vocabulary) |
+| `NavDisplay` transitions are Raven appear transitions (`NavTransition`) | `transitionSpec` / `popTransitionSpec` with `ContentTransform` | [8](#8-component-vocabulary) |
+| Back comes from the mouse Back button and Cmd+[ / Alt+Left, not Escape | the system back gesture | [8](#8-component-vocabulary) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
