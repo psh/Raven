@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 wayfinder: map
 ---
 
@@ -59,6 +59,11 @@ implementation.
 - [Typography in RavenTheme](archive/0040-typography-in-raventheme.md): eight compose-raven roles (`display` to `code`) sized from Raven's base size by its Markdown heading factors; `RavenTheme(typography)` and `RavenTheme.typography`; `body`/`label`/`code` leave sizes to Raven; `Text`, buttons, `TextField` and `CodeEditor` pick their roles; Raven-drawn text and Markdown headings keep Raven's own.
 
 ## Not yet specified
+
+Closed on 2026-11-06 with the destination reached: every area left as fog by
+[compose-raven spec](0001-compose-raven-spec.md) is decided, and every ticket is archived. The
+patches below are the fog that remains. They seed a future phase 4 map, and move there when one is
+charted.
 
 - **Specialist widgets**: Timeline, NodeGraph, ColorPicker, WebView and BlockEditor, for `studio`
   and `browser`. Each is large and driven by callbacks, and they wait until the list, custom

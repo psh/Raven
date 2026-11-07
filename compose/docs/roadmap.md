@@ -2,9 +2,10 @@
 
 The source of truth for **what gets built, in what order**. [`spec.md`](spec.md) says *what*
 compose-raven is, and this file says *when*. Implementation planning starts here: each milestone
-links to the spec sections that define it. The open design work is on the wayfinder map
-[compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), and each of its tickets
-updates this file when it closes.
+links to the spec sections that define it. Phases 1 to 3 are fully designed. Both wayfinder maps
+are closed, and the remaining fog, listed on
+[compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
+for a phase 4 map.
 
 ## Milestones at a glance
 
@@ -131,6 +132,11 @@ Open tickets that serve every app rather than one sample:
 
 
 ## Later
+
+**Phase 4 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
+`Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
+virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,
+multi-window tests, build-time XML translation, app bundling, gestures and popups.
 
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
   (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after
