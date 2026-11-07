@@ -44,6 +44,7 @@ implementation.
 - [Generic input and focus](archive/0025-generic-input-and-focus.md): one Raven event callback per node, dispatching to the input modifiers in chain order; `clickable`/`combinedClickable`, Compose Desktop's `onPointerEvent` and `pointerHoverIcon`; `onKeyEvent` and `Window(onKeyEvent)` with no preview handlers; `FocusRequester`/`focusable`/`onFocusChanged`; `ContextMenuArea` over `Rmenu_open`; gestures go to the fog.
 - [Accessibility semantics](archive/0026-accessibility-semantics.md): Raven describes widgets itself, so the only default is `NONE` on internal content nodes; `Modifier.semantics` with Compose's properties plus `accessibleRole`/`accessibleDescription`; an input in a `Row` is automatically labelled by the `Text` after it; `announceForAccessibility`; the host follows the system's settings; tests gain `onNodeWithContentDescription`.
 - [Fonts and text styling](archive/0027-fonts-and-text-styling.md): Compose's `FontFamily`/`Font` over Raven font handles and variants, cached per family; `FontWeight` maps to Raven's regular or bold; `TextStyle` with `LocalTextStyle`/`ProvideTextStyle`; `RavenTheme(fontFamily)`; `MarkdownText` over Raven's Markdown labels, with no `AnnotatedString`; style classes stay out; a fuller typography gets its own ticket.
+- [Custom drawing and custom layout](archive/0028-custom-drawing-and-layout.md): `Canvas`/`DrawScope` over custom widgets, repainting on state reads; texture `Viewport` and `NativeViewport`; opt-in `compose-raven-vulkan` (`VulkanViewport` on the render thread, Vulkan textures, device sharing) and `compose-raven-opengl` (managed EGL/NSOpenGL context, `OpenGLTexture`) modules; Metal through `NativeViewport` with no module; SPIR-V `ShaderEffect`s; custom `Layout` deferred with a fork plan.
 
 ## Not yet specified
 
@@ -54,6 +55,12 @@ implementation.
 - **Right-to-left layout**: Raven supports it (`Rset_layout_direction`, `Rwidget_set_direction`).
   Expose Compose's `LayoutDirection` / `LocalLayoutDirection`, make `Alignment.Start`/`End` and
   shapes direction-aware, and amend the spec's "no RTL" lines.
+- **Custom `Layout { }`**: needs a fork change (custom widgets that take children, a measure
+  callback given the available size, an arrange callback, `Rwidget_measure_child` /
+  `Rwidget_arrange_child`). It waits until a sample needs it.
+- **Graphics extras**: a `MetalViewport` convenience for macOS, zero-copy GL textures through
+  `GL_EXT_memory_object` on Linux, and possibly a Vulkan-headers cinterop shipped with
+  `compose-raven-vulkan`.
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
@@ -61,6 +68,8 @@ implementation.
 
 ## Out of scope
 
+- **A Metal backend for Raven**: Raven renders through Vulkan (MoltenVK on macOS), and Metal
+  content goes through `NativeViewport` ([Custom drawing and custom layout](archive/0028-custom-drawing-and-layout.md)).
 - **JVM / the `raven-gui` Java binding**: this effort is Kotlin/Native only.
 - **Source compatibility with Compose Foundation / Material**: names and shapes follow Compose,
   but code written against androidx foundation or material isn't guaranteed to compile.

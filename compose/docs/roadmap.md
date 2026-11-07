@@ -33,6 +33,8 @@ its result can change the plan:
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) |
 | Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | message and file dialogs are rebuilt on `Dialog` and FileBrowser | [4](spec.md#4-application-host) |
 | Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) |
+| A GL context (`NSOpenGLContext`) works on Raven's macOS child view, which carries a Metal layer (phase 3) | macOS gets `OpenGLTexture` only | [8](spec.md#8-component-vocabulary) |
+| An app can render Metal into the child view's `CAMetalLayer` while Raven uses MoltenVK in the parent (phase 3) | Metal content goes through a texture | [8](spec.md#8-component-vocabulary) |
 | `rememberNavBackStack` and the saved-state decorator of `navigation3-runtime` work under compose-raven's host (phase 3) | settled in [Navigation 3 and scenes](issues/0039-navigation3-and-scenes.md) | none yet |
 
 ## 1. Raven fork changes
@@ -78,10 +80,10 @@ Each port waits on these open tickets:
 
 | Sample | Open tickets it needs |
 |---|---|
-| `editor` | [Lists and trees](issues/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/0038-toolbar.md) |
+| `editor` | [Lists and trees](issues/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/0038-toolbar.md) |
 | `workspace` | [DockArea and FileBrowser](issues/0037-docking-and-file-browser.md), [Lists and trees](issues/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Toolbar](issues/0038-toolbar.md) |
 | `music` | [Lists and trees](issues/0033-lists-and-trees.md), [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Image and resources](issues/0035-image-and-resources.md) |
-| `animations` | [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md) |
+| `animations` | [Island and appear transitions](issues/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) |
 | `glass` | [Lists and trees](issues/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
 
 Decided for phase 3 so far (in the spec):
@@ -94,6 +96,8 @@ Decided for phase 3 so far (in the spec):
   labels in rows, `announceForAccessibility`, following the system's settings
 - [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md): `FontFamily`, two-step `FontWeight`,
   `TextStyle`/`LocalTextStyle`, `RavenTheme(fontFamily)`, `MarkdownText`
+- [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md): `Canvas`, `Viewport`,
+  `NativeViewport`, the `compose-raven-vulkan` and `compose-raven-opengl` modules, shader effects
 
 Open tickets that serve every app rather than one sample:
 
@@ -106,6 +110,8 @@ Open tickets that serve every app rather than one sample:
 
 ## Later
 
-- `effects`, `viewport_opengl`, `viewport_vulkan`: after [Custom drawing and custom layout](issues/0028-custom-drawing-and-layout.md).
+- `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
+  (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after
+  phase 3, once the modules exist.
 - `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, ColorPicker, WebView,
   BlockEditor), which are still fog on the phase 3 map.

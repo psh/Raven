@@ -44,6 +44,8 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 |---|---|---|
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
 | `compose-raven-foundation` | Everything Compose: packages `raven.compose.ui` (Applier, node, host, `Modifier`, `Dp`, window entry point) and `raven.compose.foundation` (composables) | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
+| `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
+| `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
 | `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation` only |
 
 The two packages already allow a later split into `compose-raven-ui` and
@@ -478,13 +480,47 @@ Added for the `overlay` and `glass` ports:
 - **`MarkdownText(markdown, modifier, style, onLinkClick = null)`** uses `Rlabel_set_markdown` and
   `Rlabel_set_link_callback`.
 
+### Custom drawing, viewports and effects (phase 3)
+
+- **`Canvas(modifier) { }`** is a custom widget, sized by its Modifier.
+  - `DrawScope` has `drawRect`, `drawRoundRect`, `drawCircle` and `drawLine`, with `style = Fill
+    | Stroke(width)`, plus `clipRect { }` and `drawText`.
+  - Raven extensions: `drawCubic`, `drawTriangle`, `drawGlass` and `drawShader`. There is no
+    `Path`.
+  - `onDraw` is read-observed, and a change in state it read calls `Rwidget_invalidate`.
+- **Viewports**:
+  - `Viewport(texture: Texture, modifier, stretch, flipY)` shows a texture.
+  - `NativeViewport(modifier, onCreated: (NativeWindowHandle) -> Unit, onResize)` uses a native
+    child window. On macOS, that is an `NSView` with a `CAMetalLayer`, which is the route for Metal
+    through `platform.Metal`. It sits above the UI and is not clipped.
+- **`compose-raven-vulkan`**:
+  - `VulkanViewport(modifier, realtime = false, onDraw: (VulkanFrame) -> Unit)` uses Raven's draw
+    callback. **`onDraw` runs on Raven's render thread**: it records Vulkan commands into
+    `VulkanFrame.commandBuffer`, and must not write Compose state or call Raven's UI API.
+  - `Texture.fromVulkanImageView(imageView, sampler, width, height)` is zero copy.
+  - `RavenVulkan.device` exposes Raven's Vulkan handles.
+  - `application(vulkan = VulkanSetup.External(...))` shares the app's own device.
+  - The app brings its own Vulkan bindings.
+- **`compose-raven-opengl`**:
+  - `OpenGLViewport(modifier, realtime = false, onInit, onDraw, onDispose)` runs on the UI thread
+    in a context the module creates on a native child window. It sits above the UI.
+  - `OpenGLTexture(width, height)` renders to an FBO read back into a `Texture`, for GL under the
+    UI.
+  - The app brings its own GL bindings.
+- **Shader effects**:
+  - `ShaderEffect.builtin(Effect.Aurora | ...)`, `fromFile(spirv path)` and `fromBytes(...)`,
+    cached.
+  - `Surface(effect, effectStyle)` uses `Rborder_set_effect`, and `DrawScope.drawShader(...)` uses
+    `Rdraw_shader`.
+
 Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabulary.md),
 [Menus and the header bar](issues/archive/0018-menus-and-header-bar.md),
 [ComboBox and SpinBox](issues/archive/0019-combobox-and-spinbox.md),
 [Border, WrapBox and Expander](issues/archive/0020-border-wrapbox-expander.md),
 [Theming](issues/archive/0021-theming.md),
 [Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md),
-[Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md).
+[Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md),
+[Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md).
 
 ## 9. Testing
 
@@ -680,6 +716,10 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `FontWeight` has two steps (W100 to W500 regular, W600 to W900 bold) | any weight the font file has | [8](#8-component-vocabulary) |
 | No `AnnotatedString` or spans; `MarkdownText` for formatted text | `AnnotatedString`, `SpanStyle` | [8](#8-component-vocabulary) |
 | No typography scale yet; `RavenTheme` takes one `fontFamily` | Material's `Typography` | [8](#8-component-vocabulary) |
+| `Canvas` has no `Path`, but has Raven's cubic curves, triangles, glass and shaders | `Path`, `DrawScope` on Skia | [8](#8-component-vocabulary) |
+| Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
+| Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
+| `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
 | `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |
@@ -710,4 +750,6 @@ What gets built and in what order is in [`roadmap.md`](roadmap.md):
 - **Mixing Raven XML documents with composables at run time**: composables build the whole tree.
   Translating XML into Compose source is in scope ([section 10](#10-samples)).
 - **A Material-like module**: Raven's looks already imitate each platform.
+- **A Metal backend for Raven**: Raven renders through Vulkan (MoltenVK on macOS). Metal content goes
+  through `NativeViewport`.
 - **Cross-compilation**: each target builds on its own host.
