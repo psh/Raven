@@ -14,7 +14,7 @@ updates this file when it closes.
 | [1. Raven fork changes](#1-raven-fork-changes) | the changes compose-raven needs in `psh/Raven` | none |
 | [2. Phase 1](#2-phase-1) | the library, the host, the phase 1 vocabulary, tests and CI | `hello`, `xml-translator` |
 | [3. Phase 2](#3-phase-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
-| [4. Phase 3](#4-phase-3) | still being decided on the phase 3 map | `editor`, `workspace`, `music`, `animations`, `glass` |
+| [4. Phase 3](#4-phase-3) | windows, input, accessibility, fonts, drawing and graphics modules, lists, tabs and grids, images, transitions, docking, toolbar, test module, translator tool, publishing, Windows | `editor`, `workspace`, `music`, `animations`, `glass` |
 | [Later](#later) | waits on fog | `effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser` |
 
 Not ported: `memory` (it demonstrates the C-level allocator), `languages` and `bevy_editor` (they
@@ -77,10 +77,10 @@ Each family is fully decided. The samples port when their families are done:
 
 ## 4. Phase 3
 
-Still being designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md).
-Each port waits on these open tickets:
+Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md). Every decision these
+ports need is now made:
 
-| Sample | Open tickets it needs |
+| Sample | Decisions it needs |
 |---|---|
 | `editor` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/archive/0038-toolbar.md) |
 | `workspace` | [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md), [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Toolbar](issues/archive/0038-toolbar.md) |
