@@ -64,7 +64,7 @@ Broken into tickets, in dependency order. Each ticket's **Depends on** line name
 
 | Part | Spec | Ticket |
 |---|---|---|
-| Gradle build: `raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/0041-gradle-build-and-libraven.md) |
+| Gradle build: `raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/archive/0041-gradle-build-and-libraven.md) (macOS), [Linux build and libraven](issues/0058-linux-build-and-libraven.md) |
 | `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) | [raven.native helpers](issues/0042-raven-native-helpers.md) |
 | `RavenNode` and `RavenApplier` | [5](spec.md#5-node-model-and-applier) | [RavenNode and RavenApplier](issues/0043-ravennode-and-ravenapplier.md) |
 | `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, host epoch and per-host caches, ownership and shutdown order, errors; the harness core | [4](spec.md#4-application-host), [9](spec.md#9-testing) | [RavenHost and singleWindowApplication](issues/0044-ravenhost-and-singlewindowapplication.md) |

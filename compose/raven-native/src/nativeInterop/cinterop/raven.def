@@ -1,0 +1,20 @@
+# Raven's C API for Kotlin/Native. The include path and the directory of libraven.a are passed by
+# raven-native/build.gradle.kts, which builds libraven first.
+headers = Raven.h
+package = raven.cinterop
+
+# Raven's own headers, without the backend and Vulkan ones.
+headerFilter = Raven.h raven/raven_core.h raven/raven_window.h raven/raven_touch.h \
+    raven/raven_style.h raven/raven_resources.h raven/raven_widget.h raven/raven_layout.h \
+    raven/raven_controls.h raven/raven_text_editor.h raven/raven_shell.h raven/raven_tools.h \
+    raven/raven_dialogs.h raven/raven_viewport.h raven/raven_draw.h raven/raven_shader.h \
+    raven/raven_xml.h raven/raven_locale.h raven/raven_accessibility.h raven/raven_host.h
+
+staticLibraries = libraven.a
+
+# Keep these in step with RAVEN_LIBRARIES in CMakeLists.txt: :raven-native:checkRavenLinkerOpts
+# fails the build when they drift.
+linkerOpts.osx = -framework AppKit -framework QuartzCore -framework Metal -framework CoreFoundation
+# Kotlin/Native links against its own sysroot, so the system's library directories are added for
+# libX11.
+linkerOpts.linux = -L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -lX11 -ldl -lpthread -lm

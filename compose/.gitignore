@@ -1,0 +1,7 @@
+.gradle/
+.kotlin/
+# The root .gitignore drops build-*/ directories
+!build-logic/
+build-logic/build/
+build-logic/.gradle/
+build-logic/.kotlin/

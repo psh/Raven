@@ -15,3 +15,5 @@ so there are headless tests worth running.
 - [ ] A job matrix of `macos-latest` (arm64) and `ubuntu-latest`, each building only its own target.
 - [ ] Gradle and Kotlin/Native caches, and the CMake build directory cached by Raven's sources.
 - [ ] The job fails on a leak check, a linker-option drift or a failing test.
+- [ ] The Linux job can close [Linux build and libraven](0058-linux-build-and-libraven.md), if that
+      ticket is still open when this one runs.
