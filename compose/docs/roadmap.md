@@ -60,19 +60,21 @@ change once upstream has it.
 
 ## 2. Phase 1
 
-| Part | Spec |
-|---|---|
-| Gradle build: `raven-native`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) |
-| `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) |
-| `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, host epoch and per-host caches, ownership and shutdown order, errors | [4](spec.md#4-application-host) |
-| The binding layer in `compose-raven-ui`, **before any composable**: widget descriptors, property and event binding, `ControlledValue<T>` | [5](spec.md#the-binding-layer) |
-| `RavenNode` and `RavenApplier`, including the internal content node for single-child widgets | [5](spec.md#5-node-model-and-applier) |
-| `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) |
-| Callbacks and controlled inputs | [7](spec.md#7-events-and-state) |
-| The phase 1 vocabulary table | [8](spec.md#8-component-vocabulary) |
-| Test harness, leak checks, unit tests, CI on macOS and Linux | [9](spec.md#9-testing) |
-| `samples/hello` | [10](spec.md#10-samples) |
-| `samples/xml-translator`, including templates and its private cinterop (needs fork change 3) | [10](spec.md#10-samples) |
+Broken into tickets, in dependency order. Each ticket's **Depends on** line names its blockers.
+
+| Part | Spec | Ticket |
+|---|---|---|
+| Gradle build: `raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/0041-gradle-build-and-libraven.md) |
+| `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) | [raven.native helpers](issues/0042-raven-native-helpers.md) |
+| `RavenNode` and `RavenApplier` | [5](spec.md#5-node-model-and-applier) | [RavenNode and RavenApplier](issues/0043-ravennode-and-ravenapplier.md) |
+| `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, host epoch and per-host caches, ownership and shutdown order, errors; the harness core | [4](spec.md#4-application-host), [9](spec.md#9-testing) | [RavenHost and singleWindowApplication](issues/0044-ravenhost-and-singlewindowapplication.md) |
+| The binding layer in `compose-raven-ui`, **before any composable**: widget descriptors, property and event binding, the content node, `ControlledValue<T>` | [5](spec.md#the-binding-layer), [7](spec.md#7-events-and-state) | [The binding layer](issues/0045-binding-layer.md) |
+| `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) | [Modifier, Dp and the layout containers](issues/0046-modifier-dp-and-layout-containers.md) |
+| The phase 1 vocabulary table, with the harness's finders, actions and assertions | [8](spec.md#8-component-vocabulary), [9](spec.md#9-testing) | [Text, buttons and the first finders](issues/0047-text-buttons-and-first-finders.md), [Checkbox, Switch and RadioButton](issues/0048-checkbox-switch-and-radiobutton.md), [TextField and Slider](issues/0049-textfield-and-slider.md) (with the IME check), [Scroll containers, splitters and CodeEditor](issues/0050-scroll-containers-splitters-and-codeeditor.md) |
+| CI on macOS and Linux | [9](spec.md#9-testing) | [CI job for compose](issues/0052-ci-job-for-compose.md) |
+| `samples/hello` | [10](spec.md#10-samples) | [samples/hello](issues/0051-samples-hello.md) |
+| `samples/xml-translator`, including templates and its private cinterop (needs fork change 3) | [10](spec.md#10-samples) | [parsing](issues/0054-xml-translator-parsing.md), [mapping the phase 1 vocabulary](issues/0055-xml-translator-mapping.md), [templates and expressions](issues/0056-xml-translator-templates-and-expressions.md), [the sample UI and the examples check](issues/0057-xml-translator-sample-ui-and-examples-check.md) |
+| Verify first: recomposition inside nested frames, now that the host exists | [4](spec.md#4-application-host) | [Verify recomposition inside nested frames](issues/0053-verify-recomposition-in-nested-frames.md) |
 
 ## 3. Phase 2
 
@@ -136,9 +138,6 @@ Decided for phase 3 so far (in the spec):
   Scene layer adapted from AndroidX, `NavDisplay`, dialog destinations, desktop back keys
 - [Typography in RavenTheme](issues/archive/0040-typography-in-raventheme.md): eight roles sized by Raven's
   Markdown factors, `RavenTheme.typography`, component defaults, custom typographies
-
-Open tickets that serve every app rather than one sample:
-
 
 ## Later
 
