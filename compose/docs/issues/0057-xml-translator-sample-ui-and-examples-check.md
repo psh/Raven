@@ -9,7 +9,7 @@ test that translates Raven's `examples/*.xml` and compiles the output against th
 `compose-raven-foundation`. With this, phase 1 is done. Spec:
 [`samples/xml-translator`](../spec.md#samplesxml-translator) (UI, Tests).
 
-**Depends on:** [XML translator: templates and expressions](0056-xml-translator-templates-and-expressions.md),
+**Depends on:** [XML translator: templates and expressions](archive/0056-xml-translator-templates-and-expressions.md),
 [Checkbox, Switch and RadioButton](archive/0048-checkbox-switch-and-radiobutton.md),
 [TextField and Slider](archive/0049-textfield-and-slider.md),
 [Scroll containers, splitters and CodeEditor](archive/0050-scroll-containers-splitters-and-codeeditor.md),

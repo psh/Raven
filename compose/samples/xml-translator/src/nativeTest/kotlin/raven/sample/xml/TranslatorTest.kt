@@ -127,12 +127,12 @@ class TranslatorTest {
                 OutlinedButton(onClick = {}, modifier = Modifier.align(Alignment.Top)) { Text("b") }
                 Button(onClick = {}, modifier = Modifier.align(Alignment.Top)) { Text("c") }
                 TextButton(onClick = {}, modifier = Modifier.align(Alignment.Top), enabled = false) { Text("d") }
-                OutlinedButton(onClick = {}, modifier = Modifier.align(Alignment.Top)) { Text("e") }
+                OutlinedButton(onClick = {}, modifier = Modifier.align(Alignment.Top)) { Text("e") } // raven-xml: Style="Fancy": not one of default, primary, flat left out
             }
             """.trimIndent(),
             body(translation),
         )
-        assertEquals(listOf("line 6: Style=\"Fancy\" is not a button style; Default is used"), translation.warnings.map { it.toString() })
+        assertEquals(listOf("line 6: Style=\"Fancy\": not one of default, primary, flat"), translation.warnings.map { it.toString() })
     }
 
     @Test
@@ -366,6 +366,7 @@ class TranslatorTest {
 
     @Test
     fun whatHasNoEquivalentIsKeptAsATodoOrAComment() {
+        // (outside a <Widget> or a loop, braces are ordinary characters, as in Raven)
         val translation = translate(
             el(
                 "VBox", line = 1,
@@ -383,8 +384,8 @@ class TranslatorTest {
             Column {
                 // TODO(raven-xml): <ListView> has no composable yet
                 Text("a", modifier = Modifier.fillMaxWidth()) // raven-xml: Wrap="true"; Color="#F00" left out
-                Text("", modifier = Modifier.fillMaxWidth()) // raven-xml: Text="{Title}": expressions are not translated yet left out
-                // TODO(raven-xml): <Include> has no composable yet
+                Text("{Title}", modifier = Modifier.fillMaxWidth())
+                // TODO(raven-xml): <Include Source="part.xml"> isn't translated: the file isn't read
                 // TODO(raven-xml): <Box> has no composable yet
             }
             """.trimIndent(),
@@ -395,8 +396,7 @@ class TranslatorTest {
                 "line 2: <ListView> has no composable yet",
                 "line 4: Wrap=\"true\" has no equivalent on Text",
                 "line 4: Color=\"#F00\" has no equivalent on Text",
-                "line 5: Text=\"{Title}\": expressions are not translated yet",
-                "line 6: <Include> has no composable yet",
+                "line 6: <Include Source=\"part.xml\"> isn't translated: the file isn't read",
                 "line 7: <Box> has no composable yet",
             ),
             translation.warnings.map { it.toString() },

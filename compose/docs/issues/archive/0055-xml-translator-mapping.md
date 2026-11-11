@@ -55,7 +55,8 @@ by hand; 0057's examples check makes that permanent.
 - **Unsupported input** is never refused: an element with no composable becomes
   `// TODO(raven-xml): <Tag> has no composable yet` plus a warning with its line; an attribute
   with no equivalent, an invalid value or a `{...}` expression becomes a warning plus one trailing
-  comment on the element. Comments in the XML are kept as `//` lines.
+  comment on the element. (Braces outside a template are text, as [templates and
+  expressions](0056-xml-translator-templates-and-expressions.md) corrected.) Comments in the XML are kept as `//` lines.
 - **Output**: sorted imports of only what is used, `@Composable fun TranslatedUi()` with the
   state first, and `main()` through `singleWindowApplication(title, width, height)` for a
   `<Window>`. Calls longer than 100 columns put one argument per line, with trailing commas.

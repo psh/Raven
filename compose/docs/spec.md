@@ -974,7 +974,6 @@ This sample translates Raven XML into compose-raven source.
   - A Slider's `Step` becomes `steps`, the count of values between the ends, when it divides the
     range; otherwise a warning. A TextInput's action fires on Enter, which `TextField` doesn't
     report, so it is a warning.
-  - Until the templates (`{...}` expressions, `<Widget>`, `<If>`...), they are warnings and TODOs.
 - **Templates**:
   - Each `<Widget Name="Card" Title="Untitled" Wide="false">` becomes a top-level composable,
     `@Composable fun Card(modifier: Modifier = Modifier, title: String = "Untitled", wide: Boolean = false, content: @Composable () -> Unit = {})`,
@@ -984,16 +983,49 @@ This sample translates Raven XML into compose-raven source.
       `String`.
     - Inputs get `remember` state inside the function.
     - A `<Widgets>` root produces only the functions.
+    - Declarations are collected in document order, wherever they are. A name Raven refuses (one
+      of its tags, `Children`, `Repeat`...) or a `<Widget>` with no element is a warning, and a
+      use of a widget inside its own body is a TODO, as in Raven. A function named like a
+      composable it would hide (`Column`) gets `Widget` appended.
   - `<Children/>` becomes the trailing `content` slot, and `<Children Name="x"/>` becomes a slot
     `x: @Composable () -> Unit = {}`. At the use site, children with `Into="x"` go to `x = { }`.
+    - A slot takes the scope of the panel its `<Children/>` sits in (`content: @Composable
+      RowScope.() -> Unit = {}` in an HBox), so the children given to it are placed as there.
+    - `content` goes last, for a trailing lambda. The default content written inside
+      `<Children>` is left out with a warning.
   - Layout attributes at the use site become the call's `modifier`, which the function passes to
     its root. Any other attribute that would pass through becomes a warning.
+    - The call places the root: the root's written-out `Slot.*`, size and tooltip attributes,
+      overridden by the use's, are resolved against the use's parent, including the implicit
+      fills.
+    - Inside the function, the root keeps only what is computed from parameters, then the call's
+      modifier: `Modifier.width((if (wide) 200 else 100).dp).then(modifier)`, so the call wins on
+      each axis, as the use's attributes do in Raven.
+    - The text inside the use goes to a `Text` parameter.
   - The whole `{...}` expression language is translated into Kotlin, with the type taken from the
     target attribute: `Width="{Wide ? 452 : 220}"` becomes
     `Modifier.width((if (wide) 452 else 220).dp)`. Interpolated text becomes string templates.
     `{Instance}` becomes a comment.
+    - As in Raven, `{...}` is computed only inside a `<Widget>`, `<Repeat>` or `<ForEach>`;
+      elsewhere braces are ordinary characters. `{{` and `}}` are braces.
+    - Each expression gets a static type (`Boolean`, `Int`, `Float`, `String`), and Raven's
+      conversions are written out: `+` joins texts unless both sides are numbers, `/` is always a
+      `Float` division, a comparison is numeric between numbers and textual otherwise, and a
+      truth is a number that isn't 0 or a text that isn't empty. `round` is `floor(x + 0.5f)`.
+    - Where Raven reads a text as a number (`'12' * 2`), the output does too, with
+      `toFloatOrNull() ?: 0f`. Two cases differ: a `Float` prints as `1.0` where Raven prints `1`,
+      and a text "0" or "false" counts as true.
+    - An attribute that chooses a composable or an alignment (`Style`, `Orientation`,
+      `Slot.HAlign`...) can't be an expression: the default is used, with a warning.
   - `If`/`<If>` becomes `if`, `<Repeat>` becomes `repeat(n) { i -> }`, and `<ForEach>` becomes
     `listOf(...).forEachIndexed { n, x -> }`.
+    - A condition written out is decided by the translator, as Raven would: an element left out
+      becomes a comment.
+    - The default variable names are Raven's (`Index`; `Item` and `Index`). `ForEach` splits a
+      written-out list as Raven does (an empty last item is no item), and a computed one with
+      `split`.
+    - Inputs inside a loop declare their state at the top of the loop's body, one per
+      iteration.
   - `<Include>` stays a TODO plus a warning.
   - `Rxml_document_parse` registers no declarations globally and leaves `<Widget>` unexpanded
     ([verified](../spikes/README.md)), so `parseRavenXml` needs no clean-up.
