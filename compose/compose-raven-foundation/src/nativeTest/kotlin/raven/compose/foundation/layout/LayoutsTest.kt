@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 class LayoutsTest {
     /** The laid-out bounds of the widget tagged [tag], as x, y, width, height. */
     private fun RavenTestScope.rect(tag: String): List<Float> = memScoped {
-        val widget = checkNotNull(host.widgetWithTag(tag)) { "no widget tagged $tag" }
+        val widget = onNodeWithTag(tag).fetchWidget()
         val values = List(4) { alloc<FloatVar>() }
         Rwidget_get_rect(widget, values[0].ptr, values[1].ptr, values[2].ptr, values[3].ptr)
         values.map { it.value }

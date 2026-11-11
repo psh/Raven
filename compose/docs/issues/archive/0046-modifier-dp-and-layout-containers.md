@@ -54,7 +54,7 @@ Done on macOS. 40 tests pass in `compose-raven-ui`, and 10 in foundation.
 - **The binding layer is now public behind `@InternalComposeRavenApi`**, because foundation's
   composables are written on it. Foundation and both modules' tests opt in module-wide in Gradle.
 - **Test lookup**: `RavenHost.widgetWithTag(tag)` walks each open window's node tree. The
-  finders in [Text, buttons and the first finders](../0047-text-buttons-and-first-finders.md) can
+  finders in [Text, buttons and the first finders](0047-text-buttons-and-first-finders.md) can
   build on it.
 - **Tests**:
   - Pure, in `LayoutTest`: chain equality, padding sums, last size and alignment wins, resolution

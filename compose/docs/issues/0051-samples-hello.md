@@ -8,7 +8,7 @@ Port Raven's `examples/hello` to idiomatic compose-raven: a label, buttons and a
 with its timer as a `LaunchedEffect`. The first app a person can run. Spec:
 [`samples/hello`](../spec.md#sampleshello).
 
-**Depends on:** [Text, buttons and the first finders](0047-text-buttons-and-first-finders.md).
+**Depends on:** [Text, buttons and the first finders](archive/0047-text-buttons-and-first-finders.md).
 
 ## Deliverables
 

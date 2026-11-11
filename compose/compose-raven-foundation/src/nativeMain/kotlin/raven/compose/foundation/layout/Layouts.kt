@@ -43,7 +43,7 @@ public interface BoxScope {
 }
 
 private object ColumnScopeInstance : ColumnScope
-private object RowScopeInstance : RowScope
+internal object RowScopeInstance : RowScope
 private object BoxScopeInstance : BoxScope
 
 private val ColumnWidget = WidgetDescriptor("Column", R_WIDGET_VBOX, ChildKind.Many)

@@ -8,7 +8,7 @@ The last of the phase 1 vocabulary, needed by the `xml-translator` sample: `Vert
 `HorizontalScroll`, `HorizontalSplitter`, `VerticalSplitter` and a controlled `CodeEditor`. Spec:
 [8. Component vocabulary](../spec.md#8-component-vocabulary).
 
-**Depends on:** [Text, buttons and the first finders](0047-text-buttons-and-first-finders.md).
+**Depends on:** [Text, buttons and the first finders](archive/0047-text-buttons-and-first-finders.md).
 
 ## Deliverables
 

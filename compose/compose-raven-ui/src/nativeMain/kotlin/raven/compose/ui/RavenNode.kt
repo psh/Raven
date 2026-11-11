@@ -33,10 +33,10 @@ public enum class ChildKind {
  */
 @InternalComposeRavenApi
 public class RavenNode internal constructor(
-    internal val widget: Rid,
+    public val widget: Rid,
     internal val childKind: ChildKind,
     internal val host: RavenHost? = null,
-    internal val isContentNode: Boolean = false,
+    public val isContentNode: Boolean = false,
     /** The composable's name, for warnings. */
     internal val name: String = "a widget",
 ) : ComposeNodeLifecycleCallback {
@@ -60,7 +60,7 @@ public class RavenNode internal constructor(
     private var appliedLayout = SlotLayout.RavenDefault
 
     /** The tag of `Modifier.testTag`, for test finders. */
-    internal val testTag: String? get() = modifier.testTag
+    public val testTag: String? get() = modifier.testTag
 
     internal fun setModifier(value: Modifier) {
         modifier = fold(value)
@@ -84,7 +84,7 @@ public class RavenNode internal constructor(
      * The node's children as Compose sees them. For a [ChildKind.Many] widget this is exactly its
      * Raven children; a [ChildKind.Single] widget has at most one of them attached in Raven.
      */
-    internal val children: MutableList<RavenNode> = mutableListOf()
+    public val children: MutableList<RavenNode> = mutableListOf()
 
     // The lambdas of the node's events, by event kind.
     private val handlers = HashMap<Event<*>, Any>()

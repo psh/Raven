@@ -330,8 +330,9 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   in a Row, and a child without an alignment takes its container's. So the Applier records each
   node's parent when it inserts it, and the node resolves its folded Modifier against the
   parent's panel layout (axis and default alignments). A container whose layout changes places
-  its children again. A content node keeps Raven's fill defaults, so it fills the widget holding
-  it.
+  its children again. A content node never applies a Modifier: a Box content node keeps Raven's
+  fill defaults and fills its widget, and a Row content node (a button's) is centred in its
+  widget, with its children centred vertically, as a Compose Button's content is.
 - **Containers**: `Column` uses VBox, `Row` uses HBox and `Box` uses Overlay.
 - **Defaults are Compose's**: each node sets its slot to start/top alignment when it is created,
   overriding Raven's `FILL`. Stretching is opt-in.
@@ -836,7 +837,11 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   }
   ```
   - `onNodeWithText`, `onNodeWithTag` and `onNodeWithContentDescription` search compose-raven's
-    node tree.
+    node tree, leaving out content nodes. Each use waits for idle and expects exactly one match.
+  - In phase 1, `onNodeWithText` matches a `Text` by its label's text: it finds the `Text` inside
+    a button, not the button, and clicking it clicks the button. `onNodeWithContentDescription`
+    matches the accessible name Raven gives a widget other than a `Text`, which Raven derives from
+    the text inside when nothing sets it, so a button is found by its label.
   - `performClick()` injects a mouse press and release at the centre of `Rwidget_get_rect`.
   - `performTextInput` clicks the field to focus it, then calls `Rwindow_inject_text`.
   - Assertions include `assertExists` and `assertIsChecked`, plus widget values read through

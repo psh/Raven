@@ -11,6 +11,10 @@ import kotlinx.cinterop.staticCFunction
 import raven.cinterop.RAccessibleRole
 import raven.cinterop.RWidgetType
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_HALIGN_CENTER
+import raven.cinterop.R_VALIGN_CENTER
+import raven.cinterop.Rslot_set_halign
+import raven.cinterop.Rslot_set_valign
 import raven.cinterop.R_ROLE_NONE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_HBOX
@@ -29,9 +33,12 @@ import raven.native.callbackTarget
 
 /** The panel that holds a single-child widget's content: a Row for buttons, a Box for the others. */
 @InternalComposeRavenApi
-public enum class ContentKind(internal val type: RWidgetType, internal val layout: PanelLayout) {
-    Row(R_WIDGET_HBOX, PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.CenterVertically)),
-    Box(R_WIDGET_OVERLAY, PanelLayout.Box),
+public enum class ContentKind(internal val type: RWidgetType, internal val layout: PanelLayout, internal val centred: Boolean) {
+    /** Centred in its widget, its children centred vertically, as a Compose Button's content is. */
+    Row(R_WIDGET_HBOX, PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.CenterVertically), centred = true),
+
+    /** Filling its widget. */
+    Box(R_WIDGET_OVERLAY, PanelLayout.Box, centred = false),
 }
 
 /**
@@ -174,6 +181,11 @@ public fun RavenWidget(
 private fun createContentNode(kind: ContentKind, host: RavenHost): RavenNode {
     val widget = Rwidget_create(kind.type)
     Rwidget_set_accessible_role(widget, R_ROLE_NONE)
+    // Set once: the node never applies a Modifier, so the slot keeps these.
+    if (kind.centred) {
+        Rslot_set_halign(widget, R_HALIGN_CENTER)
+        Rslot_set_valign(widget, R_VALIGN_CENTER)
+    }
     return RavenNode(widget, ChildKind.Many, host, isContentNode = true).also { it.panelLayout = kind.layout }
 }
 

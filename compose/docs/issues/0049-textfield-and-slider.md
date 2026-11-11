@@ -9,7 +9,7 @@ controlled, plus `performTextInput`. Spec:
 [8. Component vocabulary](../spec.md#8-component-vocabulary),
 [7. Events and state](../spec.md#7-events-and-state).
 
-**Depends on:** [Text, buttons and the first finders](0047-text-buttons-and-first-finders.md).
+**Depends on:** [Text, buttons and the first finders](archive/0047-text-buttons-and-first-finders.md).
 
 ## Deliverables
 
