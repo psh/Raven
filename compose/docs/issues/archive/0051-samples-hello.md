@@ -52,11 +52,14 @@ sample's.
   Vulkan backend". `raven.def`'s `linkerOpts.osx` now adds `-rpath /opt/homebrew/lib`. dyld searches
   the rpath for a bare name, so every compose-raven app finds Homebrew's MoltenVK with no
   `DYLD_*` variable. Verified by running the release executable.
-- **Raven bug found** (not fixed here): Raven's Cocoa `flagsChanged:` calls
+- **Raven bug found**, fixed separately as
+  [fork change 6](../../spec.md#11-required-raven-changes): Raven's Cocoa `flagsChanged:` called
   `[event charactersIgnoringModifiers]`, which AppKit rejects for a modifier-key event. Pressing
-  Cmd, Shift, Ctrl or Option while a Raven window has focus ends the app with
-  `NSInternalInconsistencyException`; one run of the debug build did. Raven's C examples have it
-  too. Passing `nil` for the characters fixes it, since modifier keys are mapped by key code.
+  Cmd, Shift, Ctrl or Option while a Raven window had focus ended the app with
+  `NSInternalInconsistencyException`; one run of the debug build did. Raven's C examples had it
+  too. It now passes `nil` for the characters, since modifier keys are mapped by key code.
+  Verifying the fix also showed that `raven-native`'s cinterop didn't re-run when libraven was
+  rebuilt, so apps kept the old library. It now declares `libraven.a` as an input.
 - **Checked by eye** on macOS: a capture of the window shows the centred title, counter text and
   the two buttons, as the C example lays them out.
 - **README**: how to run the samples, and the Vulkan driver each platform needs.

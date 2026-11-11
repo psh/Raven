@@ -46,13 +46,15 @@ a Windows host or a real window:
 ## 1. Raven fork changes
 
 Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.md#11-required-raven-changes)).
-**Done** for 1, 3, 4 and 5, one commit each on `fork/compose-raven`:
+**Done** for 1, 3, 4, 5 and 6, one commit each on `fork/compose-raven`:
 
 1. `Rwidget_move_child(parent, from, to)`: required by the Applier (milestone 2).
 2. ~~A fix for repeated `Rinit`/`Rshutdown`~~: not needed, milestone 0 found it works.
 3. A built-in Kotlin language in `src/widgets/syntax.c`: needed by the `xml-translator` sample.
 4. `Rdialog_set_dismiss_callback`, which can refuse a dismissal by Escape: needed by `Dialog` (phase 3).
 5. `Rwindow_clear_focus(window)`, which leaves no widget focused: needed by `clearFocus()` (phase 3).
+6. A macOS bug fix: a modifier key no longer ends the app (Cocoa `flagsChanged:`). Found by
+   `samples/hello`; it has no C test, because only a real window reaches it.
 
 Each change is **one isolated commit** in the fork, with a C test in Raven's own `tests/`, and is
 offered upstream as its own pull request, so the fork rebases on upstream cheaply and drops each

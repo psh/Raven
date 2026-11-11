@@ -1007,8 +1007,9 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 
 ## 11. Required Raven changes
 
-These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4 and 5
-are made, one commit each with a C test, on the fork's `fork/compose-raven` branch.
+These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5
+and 6 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
+for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
    `to` is counted after the child has been taken out, as in `Rwidget_insert_child`. It keeps
@@ -1042,6 +1043,12 @@ are made, one commit each with a C test, on the fork's `fork/compose-raven` bran
    the focused widget is disabled or stops being focusable. It's used by
    `LocalFocusManager.clearFocus()`. Until it lands, the flag toggle verified in the
    [spikes](../spikes/README.md) does the same with public API only.
+6. **Modifier keys on macOS** (required, a bug fix): Raven's Cocoa `flagsChanged:` asked the event
+   for `charactersIgnoringModifiers`, which AppKit refuses for a modifier key with
+   `NSInternalInconsistencyException`, so pressing Cmd, Shift, Ctrl or Option in any Raven window
+   ended the app. Modifier keys are mapped by key code, so it now passes no characters. Found
+   with [samples/hello](issues/archive/0051-samples-hello.md), and checked there by posting Cmd
+   presses to the running app.
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
