@@ -194,6 +194,10 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
     blocks queued while it runs. Raven runs only the batch of tasks it took at the start of the
     frame, so with one task per block, a snapshot apply that resumes the Recomposer would only
     recompose a frame later.
+  - A block can wait in nested frames (a `native = true` dialog) while the drain task still counts
+    as posted, so what is dispatched meanwhile posts no task. Each drain that runs a block arms a
+    guard, a one-shot Raven timer due at once: it keeps the nested loop from sleeping, and drains
+    when it fires. A drain whose blocks all return destroys it unfired, so it costs no wake-up.
   - After shutdown it drops dispatches instead of calling Raven. The drain task still posted runs
     in `Rshutdown`'s last run of the task queue and finds nothing.
 - **Frame clock**: a `BroadcastFrameClock`. Its `onNewAwaiters` calls `Rwake_up()`.

@@ -48,6 +48,7 @@ section 4 now says what `native = true` shows and how calls that wait together r
   Recomposer is suspended there, not on the stack, so a nested `drain` and `sendFrame` start from
   a clean state.
 - **Caveats** (in the README): the first nested frame comes at once only because opening a dialog
-  needs a layout, which resets the dispatcher's posted flag; most "native" dialogs are Raven's own
+  needs a layout, which resets the dispatcher's posted flag (since removed by
+  [RavenDispatcher wakes for work queued behind a blocked block](0059-ravendispatcher-wakes-for-work-behind-a-blocked-block.md)); most "native" dialogs are Raven's own
   (always for message boxes, and for file dialogs on macOS); Windows' own `IFileDialog` modal loop
   waits for a Windows host.

@@ -31,13 +31,12 @@ macOS (arm64) against Raven 0.2.1 at `8b1e7d4`, unless a row gives its own date.
 - **Calls that wait together return in reverse order.** A second blocking call runs inside the
   first one's frames, so closing the first dialog doesn't resume its coroutine until the second
   has closed too (`stackedDialogsReturnInReverseOrder`).
-- **The first nested frame comes at once only because a dialog needs a layout.** While the blocked
-  block runs, `RavenDispatcher` still counts its drain task as posted, so a dispatch queued behind
-  it neither posts a task nor wakes Raven. Opening a dialog attaches its content, so
-  `rvn_window_frame_in` returns 0 and Raven frames without sleeping; that frame's drain empties the
-  queue and clears the flag. If a blocking call ever waited without a layout first, that work would
-  wait for the next event. Posting a new drain task when a block starts with others still queued
-  would remove the dependency: [RavenDispatcher wakes for work queued behind a blocked block](../docs/issues/0059-ravendispatcher-wakes-for-work-behind-a-blocked-block.md).
+- **No longer applies (2026-11-11): the first nested frame came at once only because a dialog needs
+  a layout.** While the blocked block ran, `RavenDispatcher` still counted its drain task as
+  posted, so a dispatch queued behind it neither posted a task nor woke Raven, and only the layout
+  of the dialog's content made Raven frame without sleeping. Each drain now arms a guard timer due
+  at once, so the nested loop wakes with or without a layout:
+  [RavenDispatcher wakes for work queued behind a blocked block](../docs/issues/archive/0059-ravendispatcher-wakes-for-work-behind-a-blocked-block.md).
 - **Most "native" dialogs are Raven's.** `Rmessage_box` is always Raven's own sheet. `Rfile_dialog_*`
   uses the OS only on Windows (`IFileDialog`, inside Windows' own modal loop, not checked) and on
   Linux with zenity or kdialog (waited for with nested frames every 30 ms). On macOS, `native = true`
