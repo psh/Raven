@@ -37,7 +37,7 @@ macOS (arm64) against Raven 0.2.1 at `8b1e7d4`, unless a row gives its own date.
   `rvn_window_frame_in` returns 0 and Raven frames without sleeping; that frame's drain empties the
   queue and clears the flag. If a blocking call ever waited without a layout first, that work would
   wait for the next event. Posting a new drain task when a block starts with others still queued
-  would remove the dependency.
+  would remove the dependency: [RavenDispatcher wakes for work queued behind a blocked block](../docs/issues/0059-ravendispatcher-wakes-for-work-behind-a-blocked-block.md).
 - **Most "native" dialogs are Raven's.** `Rmessage_box` is always Raven's own sheet. `Rfile_dialog_*`
   uses the OS only on Windows (`IFileDialog`, inside Windows' own modal loop, not checked) and on
   Linux with zenity or kdialog (waited for with nested frames every 30 ms). On macOS, `native = true`
