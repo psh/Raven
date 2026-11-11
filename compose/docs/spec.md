@@ -465,7 +465,7 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | `OutlinedButton(...) { }`, `TextButton(...) { }` | Button, `R_BUTTON_DEFAULT` / `R_BUTTON_FLAT` | as `Button` |
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
 | `Switch(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_SWITCH` | as `Checkbox` |
-| `RadioButton(selected, onClick)` | Checkbox, `R_CHECKBOX_RADIO` | the controlled check makes the app's state override Raven's sibling unchecking |
+| `RadioButton(selected, onClick)` | Checkbox, `R_CHECKBOX_RADIO` | the controlled check makes the app's state override Raven's sibling unchecking: Raven reports each sibling it unchecks, so each is marked, and only the radio that became checked calls `onClick` |
 | `TextField(value, onValueChange, modifier, placeholder: String, singleLine = true)` | TextInput | single line only |
 | `Slider(value, onValueChange, valueRange, steps)` | Slider | controlled |
 | `LinearProgressIndicator(progress)` | ProgressBar | |

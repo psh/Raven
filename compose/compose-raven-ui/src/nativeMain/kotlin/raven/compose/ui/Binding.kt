@@ -207,6 +207,19 @@ public val CheckboxChanged: Event<(Boolean) -> Unit> = Event(marks = CheckboxChe
     Rcheckbox_set_changed_callback(widget, onCheckboxChanged, userData)
 }
 
+/**
+ * A radio button's click. Raven reports a radio unchecked by checking a sibling too: that change
+ * is marked, so the app's state wins, but only the radio that became checked calls back.
+ */
+@InternalComposeRavenApi
+public val RadioClicked: Event<() -> Unit> = Event(marks = CheckboxChecked) { widget, userData ->
+    Rcheckbox_set_changed_callback(widget, onRadioChanged, userData)
+}
+
+private val onRadioChanged = staticCFunction { _: Rid, checked: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, RadioClicked) { if (checked == R_TRUE) it() }
+}
+
 private val onButtonClicked = staticCFunction { _: Rid, userData: COpaquePointer? ->
     dispatchEvent(userData, ButtonClicked) { it() }
 }

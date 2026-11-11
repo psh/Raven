@@ -18,7 +18,9 @@ import raven.cinterop.R_MOUSE_LEFT
 import raven.cinterop.R_SEVERITY_FATAL
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_WIDGET_CHECKBOX
 import raven.cinterop.R_WIDGET_LABEL
+import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rid
 import raven.cinterop.Rlabel_get_text
 import raven.cinterop.Rwidget_get_accessible_name
@@ -144,6 +146,17 @@ internal class NodeInteraction(
         scope.waitForIdle()
         val found = scope.findNodes(matches)
         if (found.isNotEmpty()) fail("${found.size} nodes with $selector, expected none")
+    }
+
+    fun assertIsChecked(): NodeInteraction = apply { assertChecked(true) }
+
+    fun assertIsNotChecked(): NodeInteraction = apply { assertChecked(false) }
+
+    private fun assertChecked(expected: Boolean) {
+        val widget = fetchWidget()
+        if (Rwidget_get_type(widget) != R_WIDGET_CHECKBOX) fail("the node with $selector can't be checked")
+        val checked = Rcheckbox_is_checked(widget) == R_TRUE
+        if (checked != expected) fail("the node with $selector is ${if (checked) "checked" else "not checked"}")
     }
 
     /** Presses and releases the left button at the centre of the node's widget, as the user would. */
