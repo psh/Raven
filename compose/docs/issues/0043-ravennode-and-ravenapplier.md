@@ -9,7 +9,7 @@ mirror child list, bottom-up inserts, detaching removes, `onRelease` destruction
 `Rwidget_move_child`, and the single-child parent handling. Spec:
 [5. Node model and Applier](../spec.md#5-node-model-and-applier).
 
-**Depends on:** [raven.native helpers](0042-raven-native-helpers.md).
+**Depends on:** [raven.native helpers](archive/0042-raven-native-helpers.md).
 
 ## Deliverables
 

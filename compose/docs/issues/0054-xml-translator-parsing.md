@@ -8,7 +8,7 @@ Give `samples/xml-translator` its private `ravenxml.def` cinterop and the one ad
 `parseRavenXml(text)`, which copies Raven's parsed document into a Kotlin `XmlElement` tree. Spec:
 [`samples/xml-translator`](../spec.md#samplesxml-translator) (Parsing).
 
-**Depends on:** [raven.native helpers](0042-raven-native-helpers.md).
+**Depends on:** [raven.native helpers](archive/0042-raven-native-helpers.md).
 
 ## Deliverables
 

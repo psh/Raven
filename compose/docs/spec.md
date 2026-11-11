@@ -105,8 +105,9 @@ Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runti
 - **`raven.native`** is a small public layer that holds only what node code needs again and again:
   - **Callback registry**: one `StableRef` per widget, passed as the `user_data` of every callback
     and disposed from `Rwidget_set_destroy_callback`. The `Rid` the destroy callback receives is
-    already dead. The registry can report how many references are live, for the tests in
-    [section 9](#9-testing).
+    already dead. The reference is also the widget's Raven user handle, so a widget leads back to
+    its node, and a widget can't be registered twice. The registry can report how many references
+    are live, for the tests in [section 9](#9-testing).
   - **String conversion** at the C boundary.
   - **UI-thread check**.
 - There are no handle value classes and no wrappers per widget. Nodes call `raven.cinterop`
