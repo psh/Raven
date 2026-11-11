@@ -12,7 +12,7 @@ test that translates Raven's `examples/*.xml` and compiles the output against th
 **Depends on:** [XML translator: templates and expressions](0056-xml-translator-templates-and-expressions.md),
 [Checkbox, Switch and RadioButton](archive/0048-checkbox-switch-and-radiobutton.md),
 [TextField and Slider](archive/0049-textfield-and-slider.md),
-[Scroll containers, splitters and CodeEditor](0050-scroll-containers-splitters-and-codeeditor.md),
+[Scroll containers, splitters and CodeEditor](archive/0050-scroll-containers-splitters-and-codeeditor.md),
 [CI job for compose](0052-ci-job-for-compose.md).
 
 ## Deliverables

@@ -175,16 +175,21 @@ internal class NodeInteraction(
     }
 
     private fun click(widget: Rid) {
-        val (x, y) = memScoped {
-            val values = List(4) { alloc<FloatVar>() }
-            Rwidget_get_rect(widget, values[0].ptr, values[1].ptr, values[2].ptr, values[3].ptr)
-            (values[0].value + values[2].value / 2) to (values[1].value + values[3].value / 2)
-        }
+        val rect = widgetRect(widget)
         val window = Rwidget_get_window(widget)
-        Rwindow_inject_mouse_move(window, x, y)
+        Rwindow_inject_mouse_move(window, rect.x + rect.width / 2, rect.y + rect.height / 2)
         Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_TRUE)
         Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_FALSE)
     }
+}
+
+/** Where a widget is in its window, from `Rwidget_get_rect`. */
+internal data class WidgetRect(val x: Float, val y: Float, val width: Float, val height: Float)
+
+internal fun widgetRect(widget: Rid): WidgetRect = memScoped {
+    val values = List(4) { alloc<FloatVar>() }
+    Rwidget_get_rect(widget, values[0].ptr, values[1].ptr, values[2].ptr, values[3].ptr)
+    WidgetRect(values[0].value, values[1].value, values[2].value, values[3].value)
 }
 
 /** One frame at 60 Hz. */

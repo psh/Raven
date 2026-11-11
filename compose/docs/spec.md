@@ -344,7 +344,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `size`, `width`, `height` | any | `Rwidget_set_size` |
 | `sizeIn`, `widthIn`, `heightIn` | any | `Rwidget_set_min_size` / `Rwidget_set_max_size` |
 | `fillMaxWidth()`, `fillMaxHeight()`, `fillMaxSize()` (no fraction) | any | Cross axis, and both axes in `Box`: `FILL` alignment. Main axis of Row or Column: like `weight(1f)` |
-| `weight(Float)` | `RowScope`, `ColumnScope` | `Rslot_set_fill` |
+| `weight(Float)` | `RowScope`, `ColumnScope`, `SplitterScope` | `Rslot_set_fill`. In a splitter it is the pane's relative size, 1 by default, and panes fill across. In a scroll container each child keeps its own size, so it is ignored with a warning |
 | `align(Alignment)` / `align(Alignment.Horizontal)` / `align(Alignment.Vertical)` | `BoxScope` / `ColumnScope` / `RowScope` | `Rslot_set_halign` / `_valign` |
 | `testTag(String)` | any | stored on the node only, with no Raven call ([section 9](#9-testing)) |
 | `tooltip(String)` | any | `Rwidget_set_tooltip`, text only |
@@ -473,9 +473,9 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | `LinearProgressIndicator(progress)` | ProgressBar | |
 | `HorizontalDivider()`, `VerticalDivider()` | Separator | |
 | `Spacer(modifier)` | Spacer | no children |
-| `VerticalScroll { }`, `HorizontalScroll { }` | ScrollBox | a scrolling Column or Row |
-| `CodeEditor(value, onValueChange, modifier, language: String?, readOnly, lineNumbers)` | TextEditor | controlled. Its change callback carries no text, so the node reads `Rtext_editor_get_text`. `language` is a name for `Rtext_editor_set_language` |
-| `HorizontalSplitter { }`, `VerticalSplitter { }` | Splitter | a child's `Modifier.weight` is its relative pane size |
+| `VerticalScroll(modifier, verticalArrangement, horizontalAlignment) { }`, `HorizontalScroll(modifier, horizontalArrangement, verticalAlignment) { }` | ScrollBox | a scrolling Column or Row, with `ColumnScope`/`RowScope`. The ScrollBox stacks the children itself, each at its own size |
+| `CodeEditor(value, onValueChange = {}, modifier, language: String? = null, readOnly = false, lineNumbers = true)` | TextEditor | controlled. Its change callback carries no text, so the node reads `Rtext_editor_get_text`. `language` is a name for `Rtext_editor_set_language`; an unknown one shows plain text (Raven warns). Text the app rewrites also clears Raven's undo history |
+| `HorizontalSplitter(modifier) { }`, `VerticalSplitter(modifier) { }` | Splitter | each child is a pane it fills. In `SplitterScope`, `Modifier.weight` is its relative pane size, 1 by default. Dragging a handle keeps the new sizes until a weight changes |
 
 ### Phase 2: menus and the header bar
 

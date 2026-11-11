@@ -13,6 +13,8 @@ class LayoutTest {
     private val column = PanelLayout(LayoutAxis.Vertical, Alignment.CenterHorizontally)
     private val row = PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.Bottom)
     private val box = PanelLayout(LayoutAxis.None, Alignment.End, Alignment.CenterVertically)
+    private val verticalScroll = PanelLayout(LayoutAxis.Vertical, Alignment.CenterHorizontally, mainAxis = MainAxis.Scrolling)
+    private val horizontalSplitter = PanelLayout(LayoutAxis.Horizontal, mainAxis = MainAxis.Panes)
 
     private fun padding(all: Dp) = PaddingElement(all, all, all, all)
     private val fillMaxWidth = FillElement(horizontal = true, vertical = false)
@@ -106,6 +108,29 @@ class LayoutTest {
         assertEquals(1, inRow.warnings.size)
 
         assertTrue(resolve(fold(Modifier then fillMaxHeight then WeightElement(1f)), column).warnings.isEmpty())
+    }
+
+    @Test
+    fun aScrollChildKeepsItsSizeAlongTheAxis() {
+        val slot = resolve(fold(Modifier then fillMaxHeight), verticalScroll).slot
+        assertNull(slot.fill)
+        assertEquals(VAlign.Top, slot.valign)
+        assertEquals(HAlign.Center, slot.halign)
+
+        val weighted = resolve(fold(Modifier then WeightElement(1f)), verticalScroll)
+        assertNull(weighted.slot.fill)
+        assertEquals(listOf("Modifier.weight has no space to share in a scroll container"), weighted.warnings)
+    }
+
+    @Test
+    fun aSplitterPaneFillsItsPaneWithAWeightOfOneByDefault() {
+        val slot = resolve(fold(Modifier), horizontalSplitter).slot
+        assertEquals(1f, slot.fill)
+        assertEquals(HAlign.Fill to VAlign.Fill, slot.halign to slot.valign)
+        assertEquals(3f, resolve(fold(Modifier then WeightElement(3f)), horizontalSplitter).slot.fill)
+        val inVertical = resolve(fold(Modifier then WeightElement(2f)), horizontalSplitter.copy(axis = LayoutAxis.Vertical)).slot
+        assertEquals(2f, inVertical.fill)
+        assertEquals(HAlign.Fill to VAlign.Fill, inVertical.halign to inVertical.valign)
     }
 
     @Test

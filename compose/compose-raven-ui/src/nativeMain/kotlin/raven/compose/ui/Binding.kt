@@ -29,6 +29,9 @@ import raven.cinterop.Rid
 import raven.cinterop.Rslider_get_value
 import raven.cinterop.Rslider_set_changed_callback
 import raven.cinterop.Rslider_set_value
+import raven.cinterop.Rtext_editor_get_text
+import raven.cinterop.Rtext_editor_set_changed_callback
+import raven.cinterop.Rtext_editor_set_text
 import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rtext_input_set_changed_callback
 import raven.cinterop.Rtext_input_set_text
@@ -216,6 +219,16 @@ public val TextInputText: ControlledValue<String> = ControlledValue(
     write = { widget, text -> Rtext_input_set_text(widget, text) },
 )
 
+/**
+ * A text editor's text. As with [TextInputText], it is written only when it differs, which also
+ * matters because Raven clears the editor's undo history when the text is written.
+ */
+@InternalComposeRavenApi
+public val TextEditorText: ControlledValue<String> = ControlledValue(
+    read = { Rtext_editor_get_text(it).toRavenString() },
+    write = { widget, text -> Rtext_editor_set_text(widget, text) },
+)
+
 /** A slider's value. Raven snaps what is written to the slider's range and step. */
 @InternalComposeRavenApi
 public val SliderValue: ControlledValue<Float> = ControlledValue(
@@ -247,6 +260,12 @@ public val TextChanged: Event<(String) -> Unit> = Event(marks = TextInputText) {
     Rtext_input_set_changed_callback(widget, onTextChanged, userData)
 }
 
+/** A text editor's edit. Raven's callback carries no text, so the editor's whole text is read. */
+@InternalComposeRavenApi
+public val TextEditorChanged: Event<(String) -> Unit> = Event(marks = TextEditorText) { widget, userData ->
+    Rtext_editor_set_changed_callback(widget, onTextEditorChanged, userData)
+}
+
 @InternalComposeRavenApi
 public val SliderChanged: Event<(Float) -> Unit> = Event(marks = SliderValue) { widget, userData ->
     Rslider_set_changed_callback(widget, onSliderChanged, userData)
@@ -266,6 +285,10 @@ private val onCheckboxChanged = staticCFunction { _: Rid, checked: Int, userData
 
 private val onTextChanged = staticCFunction { _: Rid, text: CPointer<ByteVar>?, userData: COpaquePointer? ->
     dispatchEvent(userData, TextChanged) { it(text.toRavenString()) }
+}
+
+private val onTextEditorChanged = staticCFunction { editor: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TextEditorChanged) { it(Rtext_editor_get_text(editor).toRavenString()) }
 }
 
 private val onSliderChanged = staticCFunction { _: Rid, value: Float, userData: COpaquePointer? ->

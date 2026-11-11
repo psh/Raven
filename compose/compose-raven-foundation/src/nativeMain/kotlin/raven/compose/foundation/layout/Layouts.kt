@@ -42,7 +42,7 @@ public interface BoxScope {
     public fun Modifier.align(alignment: Alignment): Modifier = this then AlignElement(alignment.horizontal, alignment.vertical)
 }
 
-private object ColumnScopeInstance : ColumnScope
+internal object ColumnScopeInstance : ColumnScope
 internal object RowScopeInstance : RowScope
 private object BoxScopeInstance : BoxScope
 
@@ -50,7 +50,7 @@ private val ColumnWidget = WidgetDescriptor("Column", R_WIDGET_VBOX, ChildKind.M
 private val RowWidget = WidgetDescriptor("Row", R_WIDGET_HBOX, ChildKind.Many)
 private val BoxWidget = WidgetDescriptor("Box", R_WIDGET_OVERLAY, ChildKind.Many)
 
-private val PanelSpacing = Property<Dp> { widget, spacing -> Rpanel_set_spacing(widget, spacing.value) }
+internal val PanelSpacing = Property<Dp> { widget, spacing -> Rpanel_set_spacing(widget, spacing.value) }
 
 /**
  * Places its children top to bottom, [verticalArrangement] apart, each aligned across it by

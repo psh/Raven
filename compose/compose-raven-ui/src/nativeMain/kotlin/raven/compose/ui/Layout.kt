@@ -26,15 +26,30 @@ import raven.compose.ui.unit.isSpecified
 @InternalComposeRavenApi
 public enum class LayoutAxis { Horizontal, Vertical, None }
 
+/** How a panel sizes its children along its [LayoutAxis]. */
+@InternalComposeRavenApi
+public enum class MainAxis {
+    /** A Row or Column: a weight, or `fillMax*`, shares out the space left. */
+    Weighted,
+
+    /** A scroll container: each child keeps its own size, so a weight means nothing. */
+    Scrolling,
+
+    /** A splitter: each child fills a pane, whose relative size is its weight, 1 by default. */
+    Panes,
+}
+
 /**
- * How a panel places its children: its [axis], and the alignment each child gets on the axes it
- * doesn't lay out along, unless the child's Modifier says otherwise.
+ * How a panel places its children: its [axis], how it sizes them along it ([mainAxis]), and the
+ * alignment each child gets on the axes it doesn't lay out along, unless the child's Modifier says
+ * otherwise. Splitter panes fill across instead.
  */
 @InternalComposeRavenApi
 public data class PanelLayout(
     val axis: LayoutAxis,
     val horizontal: Alignment.Horizontal = Alignment.Start,
     val vertical: Alignment.Vertical = Alignment.Top,
+    val mainAxis: MainAxis = MainAxis.Weighted,
 ) {
     public companion object {
         /** A Box with its content at the top start: the window root, and any other parent. */
@@ -130,22 +145,23 @@ internal class ResolvedLayout(val slot: SlotLayout, val warnings: List<String>)
  */
 internal fun resolve(modifier: FoldedModifier, parent: PanelLayout): ResolvedLayout {
     val warnings = mutableListOf<String>()
-    var halign = modifier.horizontal ?: parent.horizontal.align
-    var valign = modifier.vertical ?: parent.vertical.align
+    val panes = parent.mainAxis == MainAxis.Panes
+    var halign = modifier.horizontal ?: if (panes) HAlign.Fill else parent.horizontal.align
+    var valign = modifier.vertical ?: if (panes) VAlign.Fill else parent.vertical.align
     var fill: Float? = null
     when (parent.axis) {
         LayoutAxis.Vertical -> {
             if (modifier.vertical != null && modifier.vertical != VAlign.Fill) {
                 warnings += "Modifier.align(Alignment.Vertical) works only in a Row"
             }
-            fill = modifier.weight ?: if (modifier.vertical == VAlign.Fill) 1f else null
+            fill = mainAxisFill(modifier.weight, modifier.vertical == VAlign.Fill, parent.mainAxis, warnings)
             valign = if (fill != null) VAlign.Fill else VAlign.Top
         }
         LayoutAxis.Horizontal -> {
             if (modifier.horizontal != null && modifier.horizontal != HAlign.Fill) {
                 warnings += "Modifier.align(Alignment.Horizontal) works only in a Column"
             }
-            fill = modifier.weight ?: if (modifier.horizontal == HAlign.Fill) 1f else null
+            fill = mainAxisFill(modifier.weight, modifier.horizontal == HAlign.Fill, parent.mainAxis, warnings)
             halign = if (fill != null) HAlign.Fill else HAlign.Start
         }
         LayoutAxis.None -> if (modifier.weight != null) warnings += "Modifier.weight works only in a Row or Column"
@@ -167,6 +183,17 @@ internal fun resolve(modifier: FoldedModifier, parent: PanelLayout): ResolvedLay
     )
     return ResolvedLayout(slot, warnings)
 }
+
+/** The fill coefficient of a child's slot along its parent's axis, or null for an auto slot. */
+private fun mainAxisFill(weight: Float?, fillMax: Boolean, mainAxis: MainAxis, warnings: MutableList<String>): Float? =
+    when (mainAxis) {
+        MainAxis.Weighted -> weight ?: if (fillMax) 1f else null
+        MainAxis.Scrolling -> {
+            if (weight != null) warnings += "Modifier.weight has no space to share in a scroll container"
+            null
+        }
+        MainAxis.Panes -> weight ?: 1f
+    }
 
 private fun Dp.orNone(): Float = if (isSpecified) value else -1f
 
