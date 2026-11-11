@@ -38,3 +38,9 @@ internal data class TestTagElement(val tag: String) : Modifier.Element
 
 /** Tags the composable for tests to find with `onNodeWithTag`. */
 public fun Modifier.testTag(tag: String): Modifier = this then TestTagElement(tag)
+
+/** A tooltip. The last one in the chain wins. */
+internal data class TooltipElement(val text: String) : Modifier.Element
+
+/** Shows [text] when the pointer rests on the widget. Text only: there is no composable tooltip. */
+public fun Modifier.tooltip(text: String): Modifier = this then TooltipElement(text)

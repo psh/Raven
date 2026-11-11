@@ -89,4 +89,4 @@ in `compose-raven-ui`, and 3 in foundation.
 
   Every test also checks for no Raven errors, zero blocks held and zero live widget references.
 - `singleWindowApplication` itself still needs a display, so it is checked by the sample in
-  [samples/hello](../0051-samples-hello.md).
+  [samples/hello](0051-samples-hello.md).

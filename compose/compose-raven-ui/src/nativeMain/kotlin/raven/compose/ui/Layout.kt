@@ -75,6 +75,7 @@ internal data class FoldedModifier(
     val vertical: VAlign? = null,
     val weight: Float? = null,
     val testTag: String? = null,
+    val tooltip: String? = null,
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -105,6 +106,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
             vertical = element.vertical?.align ?: folded.vertical,
         )
         is TestTagElement -> folded.copy(testTag = element.tag)
+        is TooltipElement -> folded.copy(tooltip = element.text)
         else -> folded
     }
 }

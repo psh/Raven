@@ -14,7 +14,10 @@ staticLibraries = libraven.a
 
 # Keep these in step with RAVEN_LIBRARIES in CMakeLists.txt: :raven-native:checkRavenLinkerOpts
 # fails the build when they drift.
-linkerOpts.osx = -framework AppKit -framework QuartzCore -framework Metal -framework CoreFoundation
+# Raven dlopens libvulkan/libMoltenVK by name, and dyld looks for a bare name in the rpath:
+# /opt/homebrew/lib is where Homebrew installs MoltenVK on Apple silicon (/usr/local/lib, where the
+# Vulkan SDK installs it, is searched anyway).
+linkerOpts.osx = -framework AppKit -framework QuartzCore -framework Metal -framework CoreFoundation -rpath /opt/homebrew/lib
 # Kotlin/Native links against its own sysroot, so the system's library directories are added for
 # libX11.
 linkerOpts.linux = -L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -lX11 -ldl -lpthread -lm

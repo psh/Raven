@@ -1,3 +1,5 @@
+@file:OptIn(InternalComposeRavenApi::class)
+
 package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ import raven.cinterop.Rwindow_inject_text
 import raven.cinterop.Rwidget_is_focused
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rmemory_get_stats
+import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.RavenNode
 import raven.compose.ui.Window

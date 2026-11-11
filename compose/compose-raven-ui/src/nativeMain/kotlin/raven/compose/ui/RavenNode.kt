@@ -7,6 +7,7 @@ import raven.cinterop.Rid
 import raven.cinterop.Rwidget_destroy
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_is_valid
+import raven.cinterop.Rwidget_set_tooltip
 import raven.native.CallbackRegistry
 
 /** What kind of children a widget takes. Raven keeps this in private flags, so each composable states it. */
@@ -63,7 +64,9 @@ public class RavenNode internal constructor(
     public val testTag: String? get() = modifier.testTag
 
     internal fun setModifier(value: Modifier) {
+        val previous = modifier
         modifier = fold(value)
+        if (modifier.tooltip != previous.tooltip) Rwidget_set_tooltip(widget, modifier.tooltip)
         applyLayout()
     }
 

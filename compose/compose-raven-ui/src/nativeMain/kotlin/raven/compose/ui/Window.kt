@@ -1,3 +1,5 @@
+@file:OptIn(InternalComposeRavenApi::class)
+
 package raven.compose.ui
 
 import androidx.compose.runtime.Composable
@@ -22,12 +24,12 @@ import raven.cinterop.Rwindow_set_close_callback
 import raven.cinterop.Rwindow_set_content
 
 /**
- * A Raven window with [content] in its own composition. It emits no node into its parent.
+ * A window of the [application], [width] by [height] logical units, with [content] in its own
+ * composition. It emits no node into its parent.
  *
- * Closing is controlled: Raven's close always refuses and calls [onCloseRequest], and the window
- * is destroyed when it leaves the composition.
+ * Closing is controlled: the close button calls [onCloseRequest] and leaves the window open, and
+ * the window closes when it leaves the composition.
  */
-@InternalComposeRavenApi
 @Composable
 public fun Window(
     onCloseRequest: () -> Unit,
@@ -48,7 +50,6 @@ public fun Window(
 }
 
 /** A Raven window, its fixed Overlay root, and the composition that fills it. */
-@OptIn(InternalComposeRavenApi::class)
 internal class RavenWindow(
     private val host: RavenHost,
     parent: CompositionContext,

@@ -136,6 +136,10 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
   At start, the host calls `Raccessibility_follow_system()` unless `followSystemAccessibility` is
   false, so text scale, contrast and reduced motion follow the OS.
+  - **In phase 1**, `application`, `ApplicationScope.exitApplication()` and `Window(onCloseRequest,
+    title, width, height) { }` are already public, so `samples/hello`'s Quit button can end the app.
+    The rest of `Window`'s parameters, `WindowState` and windows that come and go arrive with
+    phase 3.
 - **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
@@ -826,7 +830,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   - `RavenHost.isIdle()` checks for no queued dispatch, no pending snapshot apply, and no
     `Recomposer.hasPendingWork` while the composition frame clock is paused for the check, since
     pausing hides its awaiters.
-  - Until phase 3, the harness is internal to foundation's test source set. `RavenHost` and the
+  - Until phase 3, the harness is internal test code: it lives in foundation's
+    `src/testHarness/kotlin`, which foundation's tests and the samples' tests both compile. `RavenHost` and the
     single-window `Window` it hosts, and the binding layer foundation's composables are written
     on, are public in `compose-raven-ui` behind `@InternalComposeRavenApi`. Foundation opts in
     module-wide.
@@ -890,8 +895,10 @@ hand-written Compose with the same look and behaviour as the C example it ports.
 
 ### `samples/hello`
 
-A port of Raven's `examples/hello`: a label, buttons, and a click counter. Its timer becomes a
-`LaunchedEffect`.
+A port of Raven's `examples/hello`: a 24 sp title, a click counter, and Click me (with a tooltip)
+and Quit buttons, centred in a 420 by 220 window. The C example has no timer, so the port has no
+`LaunchedEffect`. For it, phase 1 also has `Text(fontSize)` with `TextUnit`/`.sp`,
+`Modifier.tooltip` and `application { }` ([section 4](#4-application-host)).
 
 ### `samples/xml-translator`
 

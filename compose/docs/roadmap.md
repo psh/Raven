@@ -72,7 +72,7 @@ Broken into tickets, in dependency order. Each ticket's **Depends on** line name
 | `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) | [Modifier, Dp and the layout containers](issues/archive/0046-modifier-dp-and-layout-containers.md) |
 | The phase 1 vocabulary table, with the harness's finders, actions and assertions | [8](spec.md#8-component-vocabulary), [9](spec.md#9-testing) | [Text, buttons and the first finders](issues/archive/0047-text-buttons-and-first-finders.md), [Checkbox, Switch and RadioButton](issues/archive/0048-checkbox-switch-and-radiobutton.md), [TextField and Slider](issues/archive/0049-textfield-and-slider.md) (with the IME check), [Scroll containers, splitters and CodeEditor](issues/archive/0050-scroll-containers-splitters-and-codeeditor.md) |
 | CI on macOS and Linux | [9](spec.md#9-testing) | [CI job for compose](issues/0052-ci-job-for-compose.md) |
-| `samples/hello` | [10](spec.md#10-samples) | [samples/hello](issues/0051-samples-hello.md) |
+| `samples/hello` | [10](spec.md#10-samples) | [samples/hello](issues/archive/0051-samples-hello.md) |
 | `samples/xml-translator`, including templates and its private cinterop (needs fork change 3) | [10](spec.md#10-samples) | [parsing](issues/0054-xml-translator-parsing.md), [mapping the phase 1 vocabulary](issues/0055-xml-translator-mapping.md), [templates and expressions](issues/0056-xml-translator-templates-and-expressions.md), [the sample UI and the examples check](issues/0057-xml-translator-sample-ui-and-examples-check.md) |
 | Verify first: recomposition inside nested frames, now that the host exists | [4](spec.md#4-application-host) | [Verify recomposition inside nested frames](issues/0053-verify-recomposition-in-nested-frames.md) |
 
@@ -105,6 +105,8 @@ Decided for phase 3 so far (in the spec):
 
 - [Multiple windows, dialogs and popups](issues/archive/0024-multiple-windows.md): `application { Window { } }`,
   `singleWindowApplication`, `Dialog`, suspend message and file dialogs, `Modifier.tooltip`
+  (`application`, a phase 1 `Window` and `Modifier.tooltip` arrived early, with
+  [samples/hello](issues/archive/0051-samples-hello.md))
 - [Generic input and focus](issues/archive/0025-generic-input-and-focus.md): `clickable`, `onPointerEvent`,
   `onKeyEvent`, `FocusRequester`, `pointerHoverIcon`, `ContextMenuArea`
 - [Accessibility semantics](issues/archive/0026-accessibility-semantics.md): `Modifier.semantics`, automatic
