@@ -14,6 +14,7 @@
 #   themes           looks (Raven, Windows 11), theme files, styles of parts and states, Markdown
 #   overlay          a window that is seen through, and the four ways to blur what is behind
 #   effects          the effects (shaders) of Raven, and two written by the application
+#   plot             curves of X / Y data: XML, streaming data, logarithmic axes, drag lines, a million points
 #   browser          web pages in the interface, with the optional library raven_web
 #   music            a music player (no sound): an interface in several XML files,
 #                    tags made by the application, themes, the accent of the cover, an island
@@ -25,7 +26,29 @@ function(raven_add_example name)
 	target_link_libraries(raven_${name} PRIVATE raven::raven)
 	set_target_properties(raven_${name} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON FOLDER "examples")
 	# where the example finds its data files when started from any folder
-	target_compile_definitions(raven_${name} PRIVATE RAVEN_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/${name}")
+	if(EMSCRIPTEN)
+		target_compile_definitions(raven_${name} PRIVATE
+			RAVEN_EXAMPLE_DIR="/examples/${name}")
+		set_target_properties(raven_${name} PROPERTIES SUFFIX ".html")
+		target_link_options(raven_${name} PRIVATE
+			"--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html")
+		set_property(TARGET raven_${name} APPEND PROPERTY LINK_DEPENDS
+			"${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html")
+		# Bundle runtime assets with their original relative directory structure.
+		file(GLOB_RECURSE assets CONFIGURE_DEPENDS
+			"${name}/*.xml" "${name}/*.svg" "${name}/*.md"
+			"${name}/*.frag" "${name}/*.png" "${name}/*.jpg"
+			"${name}/*.jpeg" "${name}/*.webp")
+		foreach(asset IN LISTS assets)
+			file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}" "${asset}")
+			target_link_options(raven_${name} PRIVATE
+				"SHELL:--preload-file \"${asset}@/examples/${relative}\"")
+			set_property(TARGET raven_${name} APPEND PROPERTY LINK_DEPENDS "${asset}")
+		endforeach()
+	else()
+		target_compile_definitions(raven_${name} PRIVATE
+			RAVEN_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/${name}")
+	endif()
 	if(MSVC)
 		target_compile_definitions(raven_${name} PRIVATE _CRT_SECURE_NO_WARNINGS)
 	else()
@@ -41,10 +64,11 @@ raven_add_example(animations animations/main.c animations/animations.xml)
 raven_add_example(workspace workspace/main.c workspace/workspace.xml)
 raven_add_example(components components/main.c components/components.xml components/widgets.xml)
 raven_add_example(memory memory/main.c)
-raven_add_example(studio studio/main.c studio/studio.xml)
+raven_add_example(studio studio/main.c studio/studio.xml studio/clock.svg)
 raven_add_example(themes themes/main.c themes/themes.xml themes/ocean.xml themes/paper.xml themes/tweaks.xml themes/notes.md)
 raven_add_example(overlay overlay/main.c overlay/overlay.xml)
 raven_add_example(effects effects/main.c effects/effects.xml effects/wave.frag effects/liquid.frag)
+raven_add_example(plot plot/main.c plot/plot.xml)
 raven_add_example(music music/main.c music/library.c music/tags.c music/music.h
 	music/ui/main.xml music/ui/widgets.xml music/ui/header.xml music/ui/sidebar.xml music/ui/home.xml
 	music/ui/collection.xml music/ui/search.xml music/ui/library.xml music/ui/settings.xml
@@ -52,14 +76,14 @@ raven_add_example(music music/main.c music/library.c music/tags.c music/music.h
 	music/themes/nocturne.xml music/themes/aurora.xml music/themes/daylight.xml music/themes/styles.xml)
 
 # Web pages in the interface: needs the optional library (RAVEN_BUILD_WEB).
-if(TARGET raven_web)
+if(NOT EMSCRIPTEN AND TARGET raven_web)
 	raven_add_example(browser browser/main.c browser/browser.xml browser/pages/welcome.html browser/pages/second.html)
 	target_link_libraries(raven_browser PRIVATE raven::web)
 endif()
 
 # The Vulkan example calls Vulkan itself, so it needs the Vulkan library
 # (the Vulkan SDK on Windows, libvulkan-dev on Linux). Raven does not.
-if(RAVEN_BACKEND_VULKAN)
+if(NOT EMSCRIPTEN AND RAVEN_BACKEND_VULKAN)
 	find_package(Vulkan QUIET)
 	if(Vulkan_FOUND)
 		raven_add_example(viewport_vulkan viewport_vulkan/main.c viewport_vulkan/shaders_spv.h)
@@ -75,8 +99,10 @@ endif()
 
 # The OpenGL example creates its context on the native child window of a viewport.
 set(OpenGL_GL_PREFERENCE LEGACY)
-find_package(OpenGL QUIET)
-if(OpenGL_FOUND AND (WIN32 OR RAVEN_PLATFORM_SELECTED STREQUAL "x11"))
+if(NOT EMSCRIPTEN)
+	find_package(OpenGL QUIET)
+endif()
+if(NOT EMSCRIPTEN AND OpenGL_FOUND AND (WIN32 OR RAVEN_PLATFORM_SELECTED STREQUAL "x11"))
 	raven_add_example(viewport_opengl viewport_opengl/main.c)
 	target_link_libraries(raven_viewport_opengl PRIVATE OpenGL::GL)
 	if(WIN32)
@@ -87,4 +113,14 @@ if(OpenGL_FOUND AND (WIN32 OR RAVEN_PLATFORM_SELECTED STREQUAL "x11"))
 	endif()
 else()
 	message(STATUS "Raven: example viewport_opengl skipped (OpenGL not found)")
+endif()
+
+if(EMSCRIPTEN)
+	if(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+		set(RAVEN_GALLERY_OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+	else()
+		set(RAVEN_GALLERY_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}")
+	endif()
+	configure_file(web/index.html "${RAVEN_GALLERY_OUTPUT}/index.html" COPYONLY)
+	message(STATUS "Raven: browser gallery includes 14 portable examples; native Chromium embedding, Vulkan and native-child OpenGL examples are unavailable")
 endif()

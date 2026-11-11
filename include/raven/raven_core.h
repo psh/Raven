@@ -22,7 +22,7 @@
 
 #define RAVEN_VERSION_MAJOR 0
 #define RAVEN_VERSION_MINOR 2
-#define RAVEN_VERSION_PATCH 1
+#define RAVEN_VERSION_PATCH 3
 #define RAVEN_API_VERSION "0.2"
 
 #ifdef __cplusplus
@@ -72,7 +72,9 @@ typedef enum RBackend{
 	/** Renders nothing. Used for headless runs and unit tests. */
 	R_BACKEND_NULL,
 	/** Backend supplied with Rbackend_register (see raven_backend.h). */
-	R_BACKEND_CUSTOM
+	R_BACKEND_CUSTOM,
+    /** Browser renderer (Emscripten, WebGL 2). */
+    R_BACKEND_WEBGL
 }RBackend;
 
 typedef enum RError{
@@ -103,7 +105,7 @@ typedef enum RSeverity{
  * default for every field, so new fields can be added without breaking code.
  */
 typedef struct RInitDesc {
-	/** Rendering backend. 0 selects R_BACKEND_VULKAN. */
+	/** Rendering backend. 0 selects WebGL in browser builds, Vulkan otherwise. */
 	RBackend backend;
 	/** Application name reported to the graphics driver. May be NULL. */
 	const char* app_name;
@@ -443,6 +445,7 @@ extern "C" {
 	 *   app.quit                          quits (Rquit(0))
 	 *   window.close, window.minimize,    the window of the widget
 	 *   window.maximize, window.restore   (maximize goes back when it already is)
+	 *   window.picture_in_picture         in and out of picture in picture
 	 *   island.expand, island.fold,       the island of that window
 	 *   island.toggle
 	 *   theme.dark, theme.light,          the look of Raven, dark or light
@@ -481,6 +484,15 @@ extern "C" {
 	RAVEN_API int Ropen_url(const char* url);
 
 	RAVEN_API void Rclipboard_set_text(const char* text);
+
+	/**
+	 * @brief Copies one content in two formats: `html` for the programs that
+	 * paste formatting (word processors, chat, mail) and `text` for the
+	 * others (editors, terminals). Each program takes the format it prefers.
+	 * Where the window system has no clipboard formats (Win32 and macOS for
+	 * now), or `html` is NULL, it is Rclipboard_set_text(text).
+	 */
+	RAVEN_API void Rclipboard_set_html(const char* text, const char* html);
 
 	/** @return The clipboard text, or "" when empty. Valid until the next call. */
 	RAVEN_API const char* Rclipboard_get_text(void);

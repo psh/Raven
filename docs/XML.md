@@ -40,9 +40,11 @@ attribute can be set at run time with `Rwidget_set_attribute(widget, "Text", "He
   so `Selected="1"` or `ActiveTab="2"` can refer to children.
 - An unknown tag or attribute, or an invalid value, raises a warning through
   the error callback (with line and column) and loading continues.
-- Paths (`Source`, `Font`) are relative to the XML file, or to
-  `Rxml_set_base_path` when loading from memory. A file is loaded once and
-  shared by every widget that names it.
+- Paths (`Source`, `Font`, `<Include>`, `<Strings>`...) are looked for next
+  to the XML file and in its subfolders, then in `Rxml_set_base_path`, the
+  current folder and the folders of `PATH` (see
+  [Where files are looked for](#where-files-are-looked-for)). A file is
+  loaded once and shared by every widget that names it.
 
 ## Value types
 
@@ -69,6 +71,7 @@ number of `<Shortcut>` and `<Widget>` declarations.
 | `MinWidth`, `MinHeight` | smallest size the user can give the window |
 | `Resizable` | boolean (default true) |
 | `Borderless`, `Maximized`, `Hidden` | boolean |
+| `IsSplashScreen` | boolean: a splash screen (`R_WINDOW_SPLASH_SCREEN`). No frame and a fixed size, centered on the screen before it shows (and again when its size changes), above the other windows, out of the taskbar and of Alt+Tab (Windows), of the Window menu (macOS), typed as a splash for the window manager (X11). On Wayland, a window without frame |
 | `ClearColor` | color behind the content (default: the theme color `Window`) |
 | `Background` | path of an image drawn behind the content, scaled to cover the window. With a glass theme it replaces the wallpaper of the theme |
 | `CustomHeader` | boolean: no title bar from the system; a `HeaderBar` in the content replaces it (see below). The window keeps its shadow, its resizing edges and its snapping |
@@ -271,7 +274,7 @@ panel uses the attributes that make sense for it.
 | `TreeView` | nested `<Item Text="..." Expanded="true">` children |
 | `Image` | `Source` (path of an image), `Tint`, `Stretch` (`Fill Fit Cover None`), `Region` (`u0,v0,u1,v1`), `CornerRadius` |
 | `Separator` | `Orientation` (`Horizontal` line by default) |
-| `MenuBar` | `<Menu>` children |
+| `MenuBar` | `<Menu>` children; `Native` (`false`: drawn in the window on macOS too, instead of the menu bar of the system) |
 | `Menu` | `Text`; children `<MenuItem>`, `<Separator/>` and nested `<Menu>` |
 | `MenuItem` | `Text`, `Shortcut`, `Checkable`, `Checked` |
 | `Viewport` | `Source` (image shown until the application sets a texture), `Stretch`, `FlipY`, `Realtime` |
@@ -287,16 +290,24 @@ looks for it in its menus when the keys are pressed.
 | Tag | Attributes and elements |
 |---|---|
 | `ColorPicker` | `Color`, `Previous` (the color shown beside it, to compare), `Alpha` (`false`: no opacity), `Popup` (`true`: a swatch that opens the picker), `Compact` (`true`: no code, no numbers), `Numbers` (`RGB` or `HSV`), `Swatches` (`"#FF453A, #0A84FF, white"`), `OnChanged` |
-| `Timeline` | `Duration` (seconds), `Time`, `FrameRate` (0: none), `Snapping`, `ViewStart`, `ViewEnd`, `Loop`, `Playing`, `HeaderWidth` (0: fits the names), `TrackHeight` (0: follows the theme), `RulerHeight` (0: follows the theme), `OnChanged`. Contains `<Track>` and `<Marker>` elements |
-| `<Track>` | `Name`, `Color`, `Height`, `Locked`, `Muted`. Contains `<Clip>` and `<Key>` elements |
-| `<Clip>` | `Start`, `Length` or `End`, `Label` (or the text of the element), `Color`, `Selected` |
-| `<Key>` | `Time`, `Label`, `Color` |
-| `<Marker>` | `Time`, `Label`, `Color`: a flag on the ruler |
-| `NodeGraph` | `Zoom`, `CenterX`, `CenterY`, `Grid` (`false`: no dots), `Flow` (`Auto`: the pulses along the links run while the pointer is over the graph; `true`: always; `false`: never), `ReadOnly`, `FrameAll` (`true`: starts with every node in view), `OnChanged`. Contains `<Node>`, `<Link>` and `<Type>` elements |
-| `<Node>` | `Name` (for the links and `Rnode_graph_find_node`), `Title`, `X`, `Y`, `Color` (of its header), `Selected`. Contains `<Input>` and `<Output>` elements, and any widgets: they are shown inside the node (several are stacked) |
-| `<Input>`, `<Output>` | `Name`, `Label`, `Type` (free text; pins of different types do not link, a pin without a type links to any) |
+| `Timeline` | `Duration` (seconds), `Time`, `FrameRate` (0: none), `Snapping`, `ViewStart`, `ViewEnd`, `Loop`, `Playing`, `HeaderWidth` (0: fits the names), `TrackHeight` (0: follows the theme), `RulerHeight` (0: follows the theme), `OnChanged`; its look (below): `Preset`, `ClipStyle`, `ClipRadius`, `KeyShape`, `KeySize`, `GridStyle`, `PlayheadColor`, `PlayheadWidth`, and any part with a dot (`Clip.Glow`, `Ruler.Background`). Contains `<Track>` and `<Marker>` elements |
+| `<Track>` | `Name`, `Color`, `Height`, `Locked`, `Muted`; `ClipStyle`, `KeyShape`, `KeySize`, `Background` (its lane), `Clip.X`, `Key.X`. Contains `<Clip>` and `<Key>` elements |
+| `<Clip>` | `Start`, `Length` or `End`, `Label` (or the text of the element), `Color`, `Selected`; `Style` (`Solid`, `Gradient`, `Tint`, `Outline`) and the properties of the part `Clip` (`Glow`, `BorderColor`, `CornerRadius`, `Foreground`...) |
+| `<Key>` | `Time`, `Label`, `Color`; `Shape` and the properties of the part `Key` |
+| `<Marker>` | `Time`, `Label`, `Color`: a flag on the ruler; the properties of the part `Marker` |
+| `NodeGraph` | `Zoom`, `CenterX`, `CenterY`, `Grid` (`false`: no dots), `Flow` (`Auto`: the pulses along the links run while the pointer is over the graph; `true`: always; `false`: never), `ReadOnly`, `FrameAll` (`true`: starts with every node in view), `OnChanged`; its look (below): `Preset`, `LinkShape`, `LinkWidth`, `LinkGlow`, `PinShape`, `PinSize`, `GridStyle`, `GridSize`, `NodeRadius`, `HeaderStyle`, `HeaderHeight`, and any part with a dot (`Link.Glow`, `Node.ShadowSize`, `Header.Gradient`). Contains `<Node>`, `<Link>` and `<Type>` elements |
+| `<Node>` | `Name` (for the links and `Rnode_graph_find_node`), `Title`, `X`, `Y`, `Color` (of its header), `Selected`; `HeaderStyle`, `HeaderColor`, `HeaderGradient`, `TitleColor`, `Icon` (an image before the title), `Background`, `BorderColor`, `BorderWidth`, `CornerRadius`, `Glow`. Contains `<Input>` and `<Output>` elements, and any widgets: they are shown inside the node (several are stacked) |
+| `<Input>`, `<Output>` | `Name`, `Label`, `Type` (free text; pins of different types do not link, a pin without a type links to any); `Shape`, `Size`, `Color`, `Glow`, `LinkShape`, `LinkWidth`, `LinkColor` |
 | `<Link>` | `From="node.output"`, `To="node.input"`, after the nodes it links |
-| `<Type>` | `Name`, `Color`: the color of the pins of a type and of their links (without it, Raven picks one from the name) |
+| `<Type>` | `Name`, `Color`: the color of the pins of a type and of their links (without it, Raven picks one from the name); `Shape`, `Size`, `Glow`, `LinkShape`, `LinkWidth`, `LinkGlow` |
+
+**Looks.** `Preset` is the look the graph or the timeline starts from:
+`Auto` (the theme of the window and its platform), `Modern`, `Blueprint`,
+`Blender`, `Neon`. The styles of the theme are laid over it
+(`<Style Widget="NodeGraph" Part="Link" Shape="Step"/>`, see
+[THEMES.md](THEMES.md#parts-and-states)), then the attributes of the widget,
+then those of an item. `Part.Property` names any part and any property:
+`Grid.Shape="Lines"`, `Pin.Glow="0.8"`, `Clip.Gradient="#102030"`.
 
 ```xml
 <NodeGraph Name="graph">
@@ -340,6 +351,49 @@ unless the application gives real ones (`Rfont_set_variant`).
 On a `TextEditor`, the same flag keeps the text as typed and styles it where
 it stands (headings larger in color, strong and emphasis in bold and italic,
 code and links in their colors).
+
+## Where files are looked for
+
+A relative path written in a document is looked for, in this order:
+
+1. the folder of the XML file, then its subfolders, the closest first
+   (8 levels at most; hidden folders and `node_modules` are skipped);
+2. the base path, `Rxml_set_base_path` (the first place for a document given
+   from memory);
+3. the current folder;
+4. the folders of the `PATH` environment variable, in their order.
+
+The first place that holds the file wins; a file held in memory
+(`Rfile_register_memory`) counts. An absolute path or a URL is used as it is.
+
+The same places give what a document needs without any register call
+(auto-loading, on by default):
+
+- **translation tables**: the `*.csv` files whose first column is `key`, as
+  `Rlocale_load_csv` would load them;
+- **declared tags**: the `*.xml` files whose root is `<Widgets>` or
+  `<Widget>`, as `Rxml_register_widgets_from_file` would read them.
+
+Those of `PATH`, of the current folder and of the base path are loaded before
+the first document; those of the folder of a file and of its subfolders before
+the file is built (and again when it is reloaded, for the files added since).
+Each file is loaded once, from the farthest place to the closest, so that the
+closest wins when two give the same key or the same tag. Finally, a tag that
+still names nothing, `<Card/>`, is looked for as the file `Card.xml`.
+
+```
+app/
+  main.xml            <VBox><Card Title="@greeting"/></VBox>
+  strings.csv         key,en,fr / greeting,Hello,Bonjour
+  widgets/cards.xml   <Widgets><Widget Name="Card" ...>...</Widgets>
+  icons/logo.png      <Image Source="logo.png"/> finds it here
+```
+
+`Rwindow_create_from_xml_file("app/main.xml")` is enough: no
+`Rlocale_load_csv`, no `Rxml_register_widgets_from_file`. Those functions
+keep working, for files kept anywhere else. `Rxml_set_auto_load(R_FALSE)`, or
+the environment variable `RAVEN_AUTO_LOAD=0`, turns auto-loading off; the
+places where paths are looked for stay the same.
 
 ## Files that are loaded again when they change
 

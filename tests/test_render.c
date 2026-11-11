@@ -587,8 +587,8 @@ static void test_node_graph(void) {
 		"<Window Width=\"520\" Height=\"220\" ClearColor=\"#000000\">"
 		"  <NodeGraph Name=\"g\" Grid=\"false\" Flow=\"false\" Color.Input=\"#000000\">"
 		"    <Type Name=\"signal\" Color=\"#00FF00\"/>"
-		"    <Node Name=\"a\" Title=\"A\" X=\"30\" Y=\"40\" Color=\"#FF0000\"><Output Name=\"o\" Label=\"Out\" Type=\"signal\"/></Node>"
-		"    <Node Name=\"b\" Title=\"B\" X=\"330\" Y=\"40\" Color=\"#0000FF\"><Input Name=\"i\" Label=\"In\" Type=\"signal\"/></Node>"
+		"    <Node Name=\"a\" Title=\"A\" X=\"30\" Y=\"40\" Color=\"#FF0000\" HeaderStyle=\"Solid\"><Output Name=\"o\" Label=\"Out\" Type=\"signal\"/></Node>"
+		"    <Node Name=\"b\" Title=\"B\" X=\"330\" Y=\"40\" Color=\"#0000FF\" HeaderStyle=\"Solid\"><Input Name=\"i\" Label=\"In\" Type=\"signal\"/></Node>"
 		"    <Link From=\"a.o\" To=\"b.i\"/>"
 		"  </NodeGraph>"
 		"</Window>");
@@ -599,7 +599,7 @@ static void test_node_graph(void) {
 
 	capture(window);
 	Rnode_graph_get_node_size(graph, Rnode_graph_find_node(graph, "a"), &w, &h);
-	/* the headers wear the colors of their nodes */
+	/* the headers wear the colors of their nodes (filled with it: HeaderStyle="Solid") */
 	p = pixel_at(30.0f + w - 20.0f, 40.0f + 15.0f);
 	CHECK(p[0] > 150 && p[1] < 90 && p[2] < 90);
 	p = pixel_at(330.0f + w - 20.0f, 40.0f + 15.0f);
@@ -938,6 +938,59 @@ static void test_windows_look(void) {
 	Rtheme_apply(R_THEME_DARK);
 }
 
+/* The pixels of a label that are mostly red, and those mostly green. */
+static void count_label_colors(Rid window, const char* name, int* red, int* green) {
+	float x, y, w, h, lx, ly;
+	*red = *green = 0;
+	Rwidget_get_rect(Rwidget_find(window, name), &x, &y, &w, &h);
+	for (ly = y; ly < y + h; ly += 1.0f) {
+		for (lx = x; lx < x + w; lx += 1.0f) {
+			const uint8_t* p = pixel_at(lx, ly);
+			if (p[0] > 160 && p[1] < 80) (*red)++;
+			if (p[1] > 160 && p[0] < 80) (*green)++;
+		}
+	}
+}
+
+static void test_label_foreground(void) {
+	/* the Foreground of a style colors a label, but a color given to the label itself comes first, as with Text */
+	static const char theme[] =
+		"<Theme Name=\"label-foreground\" Base=\"Dark\">"
+		"  <Style Widget=\"Label\" Class=\"fg\" Foreground=\"#FF0000\"/>"
+		"  <Style Widget=\"Label\" Class=\"text\" Text=\"#FF0000\"/>"
+		"</Theme>";
+	const char* name = Rtheme_load_from_memory(theme, strlen(theme));
+	Rid window;
+	int red, green;
+
+	CHECK(name != NULL);
+	Rtheme_use(name);
+	window = window_from(
+		"<Window Width=\"300\" Height=\"240\" ClearColor=\"#000000\">"
+		"  <VBox>"
+		"    <Label Name=\"styled\" Class=\"fg\" TextSize=\"40\">Raven</Label>"
+		"    <Label Name=\"own\" Class=\"fg\" Color=\"#00FF00\" TextSize=\"40\">Raven</Label>"
+		"    <Label Name=\"text\" Class=\"text\" Color=\"#00FF00\" TextSize=\"40\">Raven</Label>"
+		"  </VBox>"
+		"</Window>");
+	capture(window);
+	count_label_colors(window, "styled", &red, &green);
+	CHECK(red > 300 && green == 0);
+	count_label_colors(window, "own", &red, &green);
+	CHECK(green > 300 && red == 0);
+	count_label_colors(window, "text", &red, &green);
+	CHECK(green > 300 && red == 0);
+
+	/* given in code, after the window is made */
+	Rlabel_set_color(Rwidget_find(window, "styled"), 0.0f, 1.0f, 0.0f, 1.0f);
+	capture(window);
+	count_label_colors(window, "styled", &red, &green);
+	CHECK(green > 300 && red == 0);
+
+	Rwindow_destroy(window);
+	Rtheme_apply(R_THEME_DARK);
+}
+
 int main(void) {
 	/* failures to start are expected on machines without Vulkan: stay quiet */
 	/* RAVEN_TEST_WINDOWED=1 forces a real window, to test the window system path too */
@@ -960,6 +1013,7 @@ int main(void) {
 	RUN(test_textures);
 	RUN(test_mipmaps);
 	RUN(test_text);
+	RUN(test_label_foreground);
 	RUN(test_custom_drawing);
 	RUN(test_glass);
 	RUN(test_windows_look);

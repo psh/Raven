@@ -73,6 +73,14 @@ function _b(bytes: NodeJS.TypedArray | null): NodeJS.TypedArray | null {
 	return bytes !== null && bytes.byteLength > 0 ? bytes : null;
 }
 
+/** Numbers for the library: a typed array as it is, a list copied into one; nothing for no numbers. */
+function _n<T extends Float64Array | Float32Array | Int32Array | Uint32Array>(values: T | readonly number[] | null, make: (list: readonly number[]) => T): T | null {
+	if (values === null || values.length === 0) {
+		return null;
+	}
+	return ArrayBuffer.isView(values) ? (values as T) : make(values as readonly number[]);
+}
+
 /** Several texts for the library: one block, its addresses first and then the texts, alive as one argument. */
 function _strings(texts: readonly string[] | null): Uint8Array | null {
 	if (texts === null || texts.length === 0) {
@@ -195,6 +203,7 @@ const _symbols = {
 	Raction_is_builtin: { args: ["ptr"], returns: "i32" },
 	Ropen_url: { args: ["ptr"], returns: "i32" },
 	Rclipboard_set_text: { args: ["ptr"], returns: "void" },
+	Rclipboard_set_html: { args: ["ptr", "ptr"], returns: "void" },
 	Rclipboard_get_text: { args: [], returns: "cstring" },
 	Rerror_get_last: { args: ["ptr", "ptr"], returns: "i32" },
 	Rerror_to_string: { args: ["i32"], returns: "cstring" },
@@ -238,7 +247,14 @@ const _symbols = {
 	Rwindow_set_opacity: { args: ["u32", "f32"], returns: "i32" },
 	Rwindow_get_opacity: { args: ["u32"], returns: "f32" },
 	Rwindow_set_topmost: { args: ["u32", "i32"], returns: "i32" },
+	Rwindow_set_picture_in_picture: { args: ["u32", "i32"], returns: "i32" },
+	Rwindow_is_picture_in_picture: { args: ["u32"], returns: "i32" },
+	Rwindow_set_picture_in_picture_layout: { args: ["u32", "i32", "i32", "i32"], returns: "void" },
 	Rwindow_center: { args: ["u32"], returns: "void" },
+	Rwindow_set_inspector: { args: ["u32", "i32"], returns: "void" },
+	Rwindow_is_inspector_shown: { args: ["u32"], returns: "i32" },
+	Rwindow_get_inspector: { args: ["u32"], returns: "u32" },
+	Rwindow_is_splash_screen: { args: ["u32"], returns: "i32" },
 	Rwindow_request_redraw: { args: ["u32"], returns: "void" },
 	Rwindow_set_continuous_redraw: { args: ["u32", "i32"], returns: "void" },
 	Rwindow_set_close_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
@@ -338,6 +354,8 @@ const _symbols = {
 	Rfont_measure_text: { args: ["u32", "f32", "ptr", "ptr", "ptr"], returns: "void" },
 	Rtexture_create: { args: ["ptr", "usize"], returns: "u32" },
 	Rtexture_create_async: { args: ["ptr", "usize"], returns: "u32" },
+	Rtexture_create_from_svg: { args: ["ptr", "usize", "f32"], returns: "u32" },
+	Rtexture_get_density: { args: ["u32"], returns: "f32" },
 	Rtexture_create_from_file: { args: ["ptr"], returns: "u32" },
 	Rtexture_create_from_file_async: { args: ["ptr"], returns: "u32" },
 	Rtexture_create_from_pixels: { args: ["ptr", "i32", "i32"], returns: "u32" },
@@ -599,6 +617,8 @@ const _symbols = {
 	Rtree_view_set_drag_type: { args: ["u32", "ptr"], returns: "void" },
 	Rtree_view_get_item_at: { args: ["u32", "f32", "f32"], returns: "u32" },
 	Rtree_view_set_drop_highlight: { args: ["u32", "u32", "i32"], returns: "void" },
+	Rmenu_bar_set_native: { args: ["u32", "i32"], returns: "void" },
+	Rmenu_bar_is_native: { args: ["u32"], returns: "i32" },
 	Rmenu_add_menu: { args: ["u32", "ptr"], returns: "u32" },
 	Rmenu_set_title: { args: ["u32", "ptr"], returns: "void" },
 	Rmenu_add_item: { args: ["u32", "ptr"], returns: "u32" },
@@ -633,6 +653,137 @@ const _symbols = {
 	Rtile_view_set_selection_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rtile_view_set_activated_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rtile_view_set_context_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtable_add_column: { args: ["u32", "ptr", "f32"], returns: "i32" },
+	Rtable_get_column_count: { args: ["u32"], returns: "i32" },
+	Rtable_clear_columns: { args: ["u32"], returns: "void" },
+	Rtable_set_column_header: { args: ["u32", "i32", "ptr"], returns: "void" },
+	Rtable_get_column_header: { args: ["u32", "i32"], returns: "cstring" },
+	Rtable_set_column_width: { args: ["u32", "i32", "f32"], returns: "void" },
+	Rtable_get_column_width: { args: ["u32", "i32"], returns: "f32" },
+	Rtable_set_column_fill: { args: ["u32", "i32", "f32"], returns: "void" },
+	Rtable_set_column_sortable: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rtable_set_column_align: { args: ["u32", "i32", "f32"], returns: "void" },
+	Rtable_add_row: { args: ["u32", "ptr"], returns: "i32" },
+	Rtable_set_cell: { args: ["u32", "i32", "i32", "ptr"], returns: "void" },
+	Rtable_get_cell: { args: ["u32", "i32", "i32"], returns: "cstring" },
+	Rtable_remove_row: { args: ["u32", "i32"], returns: "void" },
+	Rtable_clear_rows: { args: ["u32"], returns: "void" },
+	Rtable_get_row_count: { args: ["u32"], returns: "i32" },
+	Rtable_set_virtual_rows: { args: ["u32", "i32", "ptr", "ptr"], returns: "void" },
+	Rtable_set_selected: { args: ["u32", "i32"], returns: "void" },
+	Rtable_get_selected: { args: ["u32"], returns: "i32" },
+	Rtable_scroll_to_row: { args: ["u32", "i32"], returns: "void" },
+	Rtable_sort: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rtable_get_sort_column: { args: ["u32"], returns: "i32" },
+	Rtable_is_sort_descending: { args: ["u32"], returns: "i32" },
+	Rtable_set_header_visible: { args: ["u32", "i32"], returns: "void" },
+	Rtable_set_grid_lines: { args: ["u32", "i32"], returns: "void" },
+	Rtable_set_striped: { args: ["u32", "i32"], returns: "void" },
+	Rtable_set_selection_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtable_set_activated_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtable_set_sort_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rdate_picker_set_date: { args: ["u32", "i32", "i32", "i32"], returns: "void" },
+	Rdate_picker_get_date: { args: ["u32", "ptr", "ptr", "ptr"], returns: "void" },
+	Rdate_picker_set_range: { args: ["u32", "i32", "i32", "i32", "i32", "i32", "i32"], returns: "void" },
+	Rdate_picker_set_first_day_of_week: { args: ["u32", "i32"], returns: "void" },
+	Rdate_picker_set_format: { args: ["u32", "ptr"], returns: "void" },
+	Rdate_picker_get_text: { args: ["u32"], returns: "cstring" },
+	Rdate_picker_set_open: { args: ["u32", "i32"], returns: "void" },
+	Rdate_picker_is_open: { args: ["u32"], returns: "i32" },
+	Rdate_picker_set_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtime_picker_set_time: { args: ["u32", "i32", "i32", "i32"], returns: "void" },
+	Rtime_picker_get_time: { args: ["u32", "ptr", "ptr", "ptr"], returns: "void" },
+	Rtime_picker_set_seconds_visible: { args: ["u32", "i32"], returns: "void" },
+	Rtime_picker_set_minute_step: { args: ["u32", "i32"], returns: "void" },
+	Rtime_picker_set_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtoast_show: { args: ["u32", "ptr", "f64"], returns: "void" },
+	Rtoast_show_kind: { args: ["u32", "ptr", "i32", "f64"], returns: "void" },
+	Rtoast_hide: { args: ["u32"], returns: "void" },
+	Rtoast_clear: { args: ["u32"], returns: "void" },
+	Rtoast_is_shown: { args: ["u32"], returns: "i32" },
+	Rtoast_get_count: { args: ["u32"], returns: "i32" },
+	Rtoast_get_text: { args: ["u32"], returns: "cstring" },
+	Rtoast_set_queue: { args: ["u32", "i32"], returns: "void" },
+	Rtoast_get_queue: { args: ["u32"], returns: "i32" },
+	Rtoast_set_max_visible: { args: ["u32", "i32"], returns: "void" },
+	Rtoast_set_kind: { args: ["u32", "i32"], returns: "void" },
+	Rtoast_set_action_text: { args: ["u32", "ptr"], returns: "void" },
+	Rtoast_set_action_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rbreadcrumb_set_items: { args: ["u32", "ptr"], returns: "void" },
+	Rbreadcrumb_add_item: { args: ["u32", "ptr"], returns: "i32" },
+	Rbreadcrumb_truncate: { args: ["u32", "i32"], returns: "void" },
+	Rbreadcrumb_get_item_count: { args: ["u32"], returns: "i32" },
+	Rbreadcrumb_get_item_text: { args: ["u32", "i32"], returns: "cstring" },
+	Rbreadcrumb_set_clicked_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rrating_set_value: { args: ["u32", "f32"], returns: "void" },
+	Rrating_get_value: { args: ["u32"], returns: "f32" },
+	Rrating_set_max: { args: ["u32", "i32"], returns: "void" },
+	Rrating_get_max: { args: ["u32"], returns: "i32" },
+	Rrating_set_allow_half: { args: ["u32", "i32"], returns: "void" },
+	Rrating_set_read_only: { args: ["u32", "i32"], returns: "void" },
+	Rrating_set_star_size: { args: ["u32", "f32"], returns: "void" },
+	Rrating_set_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rpagination_set_page_count: { args: ["u32", "i32"], returns: "void" },
+	Rpagination_get_page_count: { args: ["u32"], returns: "i32" },
+	Rpagination_set_page: { args: ["u32", "i32"], returns: "void" },
+	Rpagination_get_page: { args: ["u32"], returns: "i32" },
+	Rpagination_set_siblings: { args: ["u32", "i32"], returns: "void" },
+	Rpagination_set_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rplot_set_title: { args: ["u32", "ptr"], returns: "void" },
+	Rplot_get_title: { args: ["u32"], returns: "cstring" },
+	Rplot_add_series: { args: ["u32", "ptr"], returns: "i32" },
+	Rplot_remove_series: { args: ["u32", "i32"], returns: "void" },
+	Rplot_clear: { args: ["u32"], returns: "void" },
+	Rplot_get_series_count: { args: ["u32"], returns: "i32" },
+	Rplot_set_series_name: { args: ["u32", "i32", "ptr"], returns: "void" },
+	Rplot_get_series_name: { args: ["u32", "i32"], returns: "cstring" },
+	Rplot_set_series_data: { args: ["u32", "i32", "ptr", "ptr", "i32"], returns: "void" },
+	Rplot_append_series_data: { args: ["u32", "i32", "ptr", "ptr", "i32"], returns: "void" },
+	Rplot_add_point: { args: ["u32", "i32", "f64", "f64"], returns: "void" },
+	Rplot_clear_series_data: { args: ["u32", "i32"], returns: "void" },
+	Rplot_get_point_count: { args: ["u32", "i32"], returns: "i32" },
+	Rplot_get_point: { args: ["u32", "i32", "i32", "ptr", "ptr"], returns: "i32" },
+	Rplot_set_series_max_points: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_set_series_color: { args: ["u32", "i32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rplot_set_series_line: { args: ["u32", "i32", "i32", "f32"], returns: "void" },
+	Rplot_set_series_marker: { args: ["u32", "i32", "i32", "f32"], returns: "void" },
+	Rplot_set_series_marker_filled: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_set_series_step: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_set_series_fill: { args: ["u32", "i32", "f32"], returns: "void" },
+	Rplot_set_series_axes: { args: ["u32", "i32", "i32", "i32"], returns: "void" },
+	Rplot_set_series_visible: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_is_series_visible: { args: ["u32", "i32"], returns: "i32" },
+	Rplot_set_axis_label: { args: ["u32", "i32", "ptr"], returns: "void" },
+	Rplot_get_axis_label: { args: ["u32", "i32"], returns: "cstring" },
+	Rplot_set_axis_scale: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_get_axis_scale: { args: ["u32", "i32"], returns: "i32" },
+	Rplot_set_axis_linear_threshold: { args: ["u32", "i32", "f64"], returns: "void" },
+	Rplot_set_axis_range: { args: ["u32", "i32", "f64", "f64"], returns: "void" },
+	Rplot_get_axis_range: { args: ["u32", "i32", "ptr", "ptr"], returns: "void" },
+	Rplot_set_axis_auto_fit: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_is_axis_auto_fit: { args: ["u32", "i32"], returns: "i32" },
+	Rplot_set_axis_format: { args: ["u32", "i32", "ptr"], returns: "void" },
+	Rplot_set_axis_visible: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_set_axis_grid: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_set_axis_inverted: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_set_axis_locked: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rplot_fit: { args: ["u32"], returns: "void" },
+	Rplot_set_legend: { args: ["u32", "i32"], returns: "void" },
+	Rplot_set_crosshair: { args: ["u32", "i32"], returns: "void" },
+	Rplot_set_mouse_text: { args: ["u32", "i32"], returns: "void" },
+	Rplot_set_tooltips: { args: ["u32", "i32"], returns: "void" },
+	Rplot_get_mouse_position: { args: ["u32", "ptr", "ptr"], returns: "i32" },
+	Rplot_data_to_point: { args: ["u32", "f64", "f64", "ptr", "ptr"], returns: "void" },
+	Rplot_point_to_data: { args: ["u32", "f32", "f32", "ptr", "ptr"], returns: "void" },
+	Rplot_add_drag_line: { args: ["u32", "i32", "f64", "ptr"], returns: "i32" },
+	Rplot_remove_drag_line: { args: ["u32", "i32"], returns: "void" },
+	Rplot_get_drag_line_count: { args: ["u32"], returns: "i32" },
+	Rplot_set_drag_line_value: { args: ["u32", "i32", "f64"], returns: "void" },
+	Rplot_get_drag_line_value: { args: ["u32", "i32"], returns: "f64" },
+	Rplot_set_drag_line_color: { args: ["u32", "i32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rplot_set_view_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rplot_set_drag_line_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rplot_set_series_toggled_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rtext_editor_create: { args: ["ptr"], returns: "u32" },
 	Rtext_editor_set_text: { args: ["u32", "ptr"], returns: "void" },
 	Rtext_editor_get_text: { args: ["u32"], returns: "cstring" },
@@ -729,6 +880,19 @@ const _symbols = {
 	Risland_set_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rwindow_set_island: { args: ["u32", "u32"], returns: "void" },
 	Rwindow_get_island: { args: ["u32"], returns: "u32" },
+	Rwindow_set_taskbar_progress: { args: ["u32", "i32", "f32"], returns: "i32" },
+	Rwindow_request_attention: { args: ["u32", "i32"], returns: "i32" },
+	Rtaskbar_set_badge: { args: ["ptr"], returns: "i32" },
+	Rtaskbar_set_menu: { args: ["u32"], returns: "i32" },
+	Rtaskbar_set_jump_list: { args: ["ptr", "i32"], returns: "i32" },
+	Rtray_is_supported: { args: [], returns: "i32" },
+	Rtray_create: { args: [], returns: "u32" },
+	Rtray_destroy: { args: ["u32"], returns: "void" },
+	Rtray_is_valid: { args: ["u32"], returns: "i32" },
+	Rtray_set_icon: { args: ["u32", "ptr", "i32", "i32"], returns: "void" },
+	Rtray_set_tooltip: { args: ["u32", "ptr"], returns: "void" },
+	Rtray_set_menu: { args: ["u32", "u32"], returns: "void" },
+	Rtray_set_clicked_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rcolor_picker_create: { args: [], returns: "u32" },
 	Rcolor_picker_set_color: { args: ["u32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rcolor_picker_get_color: { args: ["u32", "ptr", "ptr", "ptr", "ptr"], returns: "void" },
@@ -775,6 +939,7 @@ const _symbols = {
 	Rtimeline_set_track_height: { args: ["u32", "i32", "f32"], returns: "void" },
 	Rtimeline_set_track_locked: { args: ["u32", "i32", "i32"], returns: "void" },
 	Rtimeline_set_track_muted: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rtimeline_set_track_style: { args: ["u32", "i32", "ptr", "ptr"], returns: "i32" },
 	Rtimeline_is_track_muted: { args: ["u32", "i32"], returns: "i32" },
 	Rtimeline_add_clip: { args: ["u32", "i32", "f64", "f64", "ptr"], returns: "i32" },
 	Rtimeline_add_key: { args: ["u32", "i32", "f64"], returns: "i32" },
@@ -789,6 +954,9 @@ const _symbols = {
 	Rtimeline_set_item_label: { args: ["u32", "i32", "ptr"], returns: "void" },
 	Rtimeline_get_item_label: { args: ["u32", "i32"], returns: "cstring" },
 	Rtimeline_set_item_color: { args: ["u32", "i32", "f32", "f32", "f32"], returns: "void" },
+	Rtimeline_set_item_style: { args: ["u32", "i32", "ptr", "ptr"], returns: "i32" },
+	Rtimeline_set_preset: { args: ["u32", "i32"], returns: "void" },
+	Rtimeline_get_preset: { args: ["u32"], returns: "i32" },
 	Rtimeline_get_item_count: { args: ["u32"], returns: "i32" },
 	Rtimeline_get_item: { args: ["u32", "i32"], returns: "i32" },
 	Rtimeline_select: { args: ["u32", "i32", "i32"], returns: "void" },
@@ -813,6 +981,7 @@ const _symbols = {
 	Rnode_graph_get_node_position: { args: ["u32", "i32", "ptr", "ptr"], returns: "void" },
 	Rnode_graph_get_node_size: { args: ["u32", "i32", "ptr", "ptr"], returns: "void" },
 	Rnode_graph_set_node_color: { args: ["u32", "i32", "f32", "f32", "f32"], returns: "void" },
+	Rnode_graph_set_node_style: { args: ["u32", "i32", "ptr", "ptr"], returns: "i32" },
 	Rnode_graph_set_node_content: { args: ["u32", "i32", "u32"], returns: "void" },
 	Rnode_graph_get_node_content: { args: ["u32", "i32"], returns: "u32" },
 	Rnode_graph_set_node_name: { args: ["u32", "i32", "ptr"], returns: "void" },
@@ -833,6 +1002,8 @@ const _symbols = {
 	Rnode_graph_get_input: { args: ["u32", "i32", "i32"], returns: "i32" },
 	Rnode_graph_get_output: { args: ["u32", "i32", "i32"], returns: "i32" },
 	Rnode_graph_set_type_color: { args: ["u32", "ptr", "f32", "f32", "f32"], returns: "void" },
+	Rnode_graph_set_type_style: { args: ["u32", "ptr", "ptr", "ptr"], returns: "i32" },
+	Rnode_graph_set_pin_style: { args: ["u32", "i32", "ptr", "ptr"], returns: "i32" },
 	Rnode_graph_connect: { args: ["u32", "i32", "i32"], returns: "i32" },
 	Rnode_graph_disconnect: { args: ["u32", "i32"], returns: "void" },
 	Rnode_graph_get_link_count: { args: ["u32"], returns: "i32" },
@@ -848,6 +1019,8 @@ const _symbols = {
 	Rnode_graph_set_grid_visible: { args: ["u32", "i32"], returns: "void" },
 	Rnode_graph_set_flow_visible: { args: ["u32", "i32"], returns: "void" },
 	Rnode_graph_set_read_only: { args: ["u32", "i32"], returns: "void" },
+	Rnode_graph_set_preset: { args: ["u32", "i32"], returns: "void" },
+	Rnode_graph_get_preset: { args: ["u32"], returns: "i32" },
 	Rnode_graph_select_node: { args: ["u32", "i32", "i32"], returns: "void" },
 	Rnode_graph_clear_selection: { args: ["u32"], returns: "void" },
 	Rnode_graph_is_node_selected: { args: ["u32", "i32"], returns: "i32" },
@@ -935,6 +1108,10 @@ const _symbols = {
 	Rfile_browser_set_accepted_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rfile_browser_set_cancelled_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rfile_browser_set_selection_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rnotification_show: { args: ["ptr", "ptr", "i32"], returns: "i32" },
+	Rnotification_is_supported: { args: [], returns: "i32" },
+	Rnotification_set_fallback: { args: ["ptr", "ptr"], returns: "void" },
+	Rnotification_set_clicked_callback: { args: ["ptr", "ptr"], returns: "void" },
 	Rviewport_set_texture: { args: ["u32", "u32"], returns: "void" },
 	Rviewport_set_stretch: { args: ["u32", "i32"], returns: "void" },
 	Rviewport_set_flip_y: { args: ["u32", "i32"], returns: "void" },
@@ -979,6 +1156,8 @@ const _symbols = {
 	Rwidget_create_from_xml: { args: ["ptr", "usize"], returns: "u32" },
 	Rwidget_create_from_xml_file: { args: ["ptr"], returns: "u32" },
 	Rxml_set_base_path: { args: ["ptr"], returns: "void" },
+	Rxml_set_auto_load: { args: ["i32"], returns: "void" },
+	Rxml_get_auto_load: { args: [], returns: "i32" },
 	Rxml_set_live_reload: { args: ["i32"], returns: "void" },
 	Rxml_get_live_reload: { args: [], returns: "i32" },
 	Rxml_set_reload_callback: { args: ["ptr", "ptr"], returns: "void" },
@@ -1091,7 +1270,7 @@ const _symbols = {
 /** Opens the library: RAVEN_LIBRARY, then beside this file, then where the system looks. */
 function _load() {
 	const names = process.platform === "win32" ? ["raven.dll", "libraven.dll"] : process.platform === "darwin" ? ["libraven.dylib"] : ["libraven.so", "libraven.so.0"];
-	const explicit = process.env.RAVEN_LIBRARY;
+	const explicit = process.env["RAVEN_LIBRARY"];
 	const candidates = [...(explicit ? [explicit] : []), ...names.map((name) => `${import.meta.dir}/${name}`), ...names];
 	const tried: string[] = [];
 	for (const candidate of candidates) {
@@ -1108,7 +1287,7 @@ const _lib = _load();
 
 export const RAVEN_VERSION_MAJOR = 0;
 export const RAVEN_VERSION_MINOR = 2;
-export const RAVEN_VERSION_PATCH = 1;
+export const RAVEN_VERSION_PATCH = 3;
 export const RAVEN_API_VERSION = "0.2";
 export const R_FALSE = 0;
 export const R_TRUE = 1;
@@ -1121,11 +1300,14 @@ export enum RBackend {
 	R_BACKEND_NULL = 2,
 	/** Backend supplied with Rbackend_register (see raven_backend.h). */
 	R_BACKEND_CUSTOM = 3,
+	/** Browser renderer (Emscripten, WebGL 2). */
+	R_BACKEND_WEBGL = 4,
 }
 
 export const R_BACKEND_VULKAN = RBackend.R_BACKEND_VULKAN;
 export const R_BACKEND_NULL = RBackend.R_BACKEND_NULL;
 export const R_BACKEND_CUSTOM = RBackend.R_BACKEND_CUSTOM;
+export const R_BACKEND_WEBGL = RBackend.R_BACKEND_WEBGL;
 
 export enum RError {
 	R_NO_ERROR = 0x0070,
@@ -1190,6 +1372,18 @@ export enum RWindowFlags {
 	 * system can do.
 	 */
 	R_WINDOW_TRANSPARENT = 0x0020,
+	/**
+	 * A splash screen: shown while the application starts. No frame (it
+	 * implies R_WINDOW_BORDERLESS and R_WINDOW_NO_RESIZE, and cancels
+	 * R_WINDOW_MAXIMIZED and R_WINDOW_CUSTOM_HEADER), centered on the screen
+	 * before it is first shown and again when its size changes, above the
+	 * other windows, out of the taskbar and of Alt+Tab (Windows), of the
+	 * Window menu and of Cmd+` (macOS), typed _NET_WM_WINDOW_TYPE_SPLASH on
+	 * X11. Wayland gives it no place of its own: it is a window without frame
+	 * there. The application destroys it once its main window is ready
+	 * (creating the main window first keeps Ris_running true).
+	 */
+	R_WINDOW_SPLASH_SCREEN = 0x0040,
 }
 
 export const R_WINDOW_DEFAULT = RWindowFlags.R_WINDOW_DEFAULT;
@@ -1199,6 +1393,20 @@ export const R_WINDOW_BORDERLESS = RWindowFlags.R_WINDOW_BORDERLESS;
 export const R_WINDOW_MAXIMIZED = RWindowFlags.R_WINDOW_MAXIMIZED;
 export const R_WINDOW_CUSTOM_HEADER = RWindowFlags.R_WINDOW_CUSTOM_HEADER;
 export const R_WINDOW_TRANSPARENT = RWindowFlags.R_WINDOW_TRANSPARENT;
+export const R_WINDOW_SPLASH_SCREEN = RWindowFlags.R_WINDOW_SPLASH_SCREEN;
+
+/** Where a window in picture in picture goes (Rwindow_set_picture_in_picture_layout). */
+export enum RPictureInPictureCorner {
+	R_PIP_BOTTOM_RIGHT = 0x0780,
+	R_PIP_BOTTOM_LEFT = 0x0781,
+	R_PIP_TOP_RIGHT = 0x0782,
+	R_PIP_TOP_LEFT = 0x0783,
+}
+
+export const R_PIP_BOTTOM_RIGHT = RPictureInPictureCorner.R_PIP_BOTTOM_RIGHT;
+export const R_PIP_BOTTOM_LEFT = RPictureInPictureCorner.R_PIP_BOTTOM_LEFT;
+export const R_PIP_TOP_RIGHT = RPictureInPictureCorner.R_PIP_TOP_RIGHT;
+export const R_PIP_TOP_LEFT = RPictureInPictureCorner.R_PIP_TOP_LEFT;
 
 /**
  * What is seen behind a window created with R_WINDOW_TRANSPARENT.
@@ -1237,6 +1445,7 @@ export enum RWindowSystem {
 	R_WINDOW_SYSTEM_X11 = 0x0092,
 	R_WINDOW_SYSTEM_WAYLAND = 0x0093,
 	R_WINDOW_SYSTEM_COCOA = 0x0094,
+	R_WINDOW_SYSTEM_EMSCRIPTEN = 0x0095,
 }
 
 export const R_WINDOW_SYSTEM_NONE = RWindowSystem.R_WINDOW_SYSTEM_NONE;
@@ -1244,6 +1453,7 @@ export const R_WINDOW_SYSTEM_WIN32 = RWindowSystem.R_WINDOW_SYSTEM_WIN32;
 export const R_WINDOW_SYSTEM_X11 = RWindowSystem.R_WINDOW_SYSTEM_X11;
 export const R_WINDOW_SYSTEM_WAYLAND = RWindowSystem.R_WINDOW_SYSTEM_WAYLAND;
 export const R_WINDOW_SYSTEM_COCOA = RWindowSystem.R_WINDOW_SYSTEM_COCOA;
+export const R_WINDOW_SYSTEM_EMSCRIPTEN = RWindowSystem.R_WINDOW_SYSTEM_EMSCRIPTEN;
 
 /** Edges and corners of a window, for Rwindow_begin_resize. */
 export enum RWindowEdge {
@@ -2082,6 +2292,22 @@ export enum RWidgetType {
 	R_WIDGET_TILE_VIEW = 0x0229,
 	/** Blocks that snap into each other, in the style of Scratch. */
 	R_WIDGET_BLOCK_EDITOR = 0x022A,
+	/** Rows of cells under columns that can be resized and sorted, virtualized. */
+	R_WIDGET_TABLE = 0x022B,
+	/** A date, chosen in a calendar that drops down. */
+	R_WIDGET_DATE_PICKER = 0x022C,
+	/** A time of the day: hours, minutes, optionally seconds. */
+	R_WIDGET_TIME_PICKER = 0x022D,
+	/** A short message that rises for a few seconds, with an optional action ("Undo"). */
+	R_WIDGET_TOAST = 0x022E,
+	/** The path to the current place: links separated by chevrons. */
+	R_WIDGET_BREADCRUMB = 0x022F,
+	/** A score shown and chosen with stars. */
+	R_WIDGET_RATING = 0x0230,
+	/** Page numbers with previous and next. */
+	R_WIDGET_PAGINATION = 0x0231,
+	/** Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom. */
+	R_WIDGET_PLOT = 0x0232,
 }
 
 export const R_WIDGET_VBOX = RWidgetType.R_WIDGET_VBOX;
@@ -2127,6 +2353,14 @@ export const R_WIDGET_TIMELINE = RWidgetType.R_WIDGET_TIMELINE;
 export const R_WIDGET_NODE_GRAPH = RWidgetType.R_WIDGET_NODE_GRAPH;
 export const R_WIDGET_TILE_VIEW = RWidgetType.R_WIDGET_TILE_VIEW;
 export const R_WIDGET_BLOCK_EDITOR = RWidgetType.R_WIDGET_BLOCK_EDITOR;
+export const R_WIDGET_TABLE = RWidgetType.R_WIDGET_TABLE;
+export const R_WIDGET_DATE_PICKER = RWidgetType.R_WIDGET_DATE_PICKER;
+export const R_WIDGET_TIME_PICKER = RWidgetType.R_WIDGET_TIME_PICKER;
+export const R_WIDGET_TOAST = RWidgetType.R_WIDGET_TOAST;
+export const R_WIDGET_BREADCRUMB = RWidgetType.R_WIDGET_BREADCRUMB;
+export const R_WIDGET_RATING = RWidgetType.R_WIDGET_RATING;
+export const R_WIDGET_PAGINATION = RWidgetType.R_WIDGET_PAGINATION;
+export const R_WIDGET_PLOT = RWidgetType.R_WIDGET_PLOT;
 
 export enum RHAlign {
 	R_HALIGN_FILL = 0x0240,
@@ -2268,6 +2502,33 @@ export const R_TEXT_ALIGN_LEFT = RTextAlign.R_TEXT_ALIGN_LEFT;
 export const R_TEXT_ALIGN_CENTER = RTextAlign.R_TEXT_ALIGN_CENTER;
 export const R_TEXT_ALIGN_RIGHT = RTextAlign.R_TEXT_ALIGN_RIGHT;
 
+export enum RToastKind {
+	/** A neutral message (the accent of the theme). */
+	R_TOAST_INFO = 0x04E0,
+	R_TOAST_SUCCESS = 0x04E1,
+	R_TOAST_WARNING = 0x04E2,
+	R_TOAST_ERROR = 0x04E3,
+}
+
+export const R_TOAST_INFO = RToastKind.R_TOAST_INFO;
+export const R_TOAST_SUCCESS = RToastKind.R_TOAST_SUCCESS;
+export const R_TOAST_WARNING = RToastKind.R_TOAST_WARNING;
+export const R_TOAST_ERROR = RToastKind.R_TOAST_ERROR;
+
+/** What a Toast does with a message that comes while another one is shown. */
+export enum RToastQueue {
+	/** The new message takes the place of the one shown (the default). */
+	R_TOAST_REPLACE = 0x0500,
+	/** The messages are shown one after the other, each for its own time. */
+	R_TOAST_SEQUENCE = 0x0501,
+	/** Up to Rtoast_set_max_visible messages are shown at once, one above the other; the others wait. */
+	R_TOAST_STACK = 0x0502,
+}
+
+export const R_TOAST_REPLACE = RToastQueue.R_TOAST_REPLACE;
+export const R_TOAST_SEQUENCE = RToastQueue.R_TOAST_SEQUENCE;
+export const R_TOAST_STACK = RToastQueue.R_TOAST_STACK;
+
 export enum RButtonStyle {
 	/** Filled with R_COLOR_CONTROL. */
 	R_BUTTON_DEFAULT = 0x0290,
@@ -2308,6 +2569,105 @@ export const R_STRETCH_FILL = RStretch.R_STRETCH_FILL;
 export const R_STRETCH_FIT = RStretch.R_STRETCH_FIT;
 export const R_STRETCH_COVER = RStretch.R_STRETCH_COVER;
 export const R_STRETCH_NONE = RStretch.R_STRETCH_NONE;
+
+/** The axes of a Plot. */
+export enum RPlotAxis {
+	/** The horizontal axis under the data. */
+	R_PLOT_X = 0x0520,
+	/** The vertical axis on the left. */
+	R_PLOT_Y = 0x0521,
+	/** A second horizontal axis, over the data: shown when a series or a drag line uses it. */
+	R_PLOT_X2 = 0x0522,
+	/** A second vertical axis, on the right: shown when a series or a drag line uses it. */
+	R_PLOT_Y2 = 0x0523,
+}
+
+export const R_PLOT_X = RPlotAxis.R_PLOT_X;
+export const R_PLOT_Y = RPlotAxis.R_PLOT_Y;
+export const R_PLOT_X2 = RPlotAxis.R_PLOT_X2;
+export const R_PLOT_Y2 = RPlotAxis.R_PLOT_Y2;
+
+/** How an axis of a Plot spreads its values. */
+export enum RPlotScale {
+	R_PLOT_SCALE_LINEAR = 0x0530,
+	/** Powers of ten at even distances; only values above zero are shown. */
+	R_PLOT_SCALE_LOG = 0x0531,
+	/**
+	 * Symmetric logarithm: linear between -t and t (Rplot_set_axis_linear_threshold,
+	 * 1 by default), logarithmic beyond on both sides: shows zero and the
+	 * negative values a logarithm cannot.
+	 */
+	R_PLOT_SCALE_SYMLOG = 0x0532,
+}
+
+export const R_PLOT_SCALE_LINEAR = RPlotScale.R_PLOT_SCALE_LINEAR;
+export const R_PLOT_SCALE_LOG = RPlotScale.R_PLOT_SCALE_LOG;
+export const R_PLOT_SCALE_SYMLOG = RPlotScale.R_PLOT_SCALE_SYMLOG;
+
+/** How the line of a series of a Plot is drawn. */
+export enum RPlotLine {
+	R_PLOT_LINE_SOLID = 0x0540,
+	R_PLOT_LINE_DASHED = 0x0541,
+	R_PLOT_LINE_DOTTED = 0x0542,
+	R_PLOT_LINE_DASH_DOT = 0x0543,
+	/** No line: only the markers (a scatter plot). */
+	R_PLOT_LINE_NONE = 0x0544,
+}
+
+export const R_PLOT_LINE_SOLID = RPlotLine.R_PLOT_LINE_SOLID;
+export const R_PLOT_LINE_DASHED = RPlotLine.R_PLOT_LINE_DASHED;
+export const R_PLOT_LINE_DOTTED = RPlotLine.R_PLOT_LINE_DOTTED;
+export const R_PLOT_LINE_DASH_DOT = RPlotLine.R_PLOT_LINE_DASH_DOT;
+export const R_PLOT_LINE_NONE = RPlotLine.R_PLOT_LINE_NONE;
+
+/** The mark drawn on each point of a series of a Plot. */
+export enum RPlotMarker {
+	R_PLOT_MARKER_NONE = 0x0550,
+	R_PLOT_MARKER_CIRCLE = 0x0551,
+	R_PLOT_MARKER_SQUARE = 0x0552,
+	R_PLOT_MARKER_DIAMOND = 0x0553,
+	R_PLOT_MARKER_TRIANGLE_UP = 0x0554,
+	R_PLOT_MARKER_TRIANGLE_DOWN = 0x0555,
+	R_PLOT_MARKER_CROSS = 0x0556,
+	R_PLOT_MARKER_PLUS = 0x0557,
+	R_PLOT_MARKER_ASTERISK = 0x0558,
+}
+
+export const R_PLOT_MARKER_NONE = RPlotMarker.R_PLOT_MARKER_NONE;
+export const R_PLOT_MARKER_CIRCLE = RPlotMarker.R_PLOT_MARKER_CIRCLE;
+export const R_PLOT_MARKER_SQUARE = RPlotMarker.R_PLOT_MARKER_SQUARE;
+export const R_PLOT_MARKER_DIAMOND = RPlotMarker.R_PLOT_MARKER_DIAMOND;
+export const R_PLOT_MARKER_TRIANGLE_UP = RPlotMarker.R_PLOT_MARKER_TRIANGLE_UP;
+export const R_PLOT_MARKER_TRIANGLE_DOWN = RPlotMarker.R_PLOT_MARKER_TRIANGLE_DOWN;
+export const R_PLOT_MARKER_CROSS = RPlotMarker.R_PLOT_MARKER_CROSS;
+export const R_PLOT_MARKER_PLUS = RPlotMarker.R_PLOT_MARKER_PLUS;
+export const R_PLOT_MARKER_ASTERISK = RPlotMarker.R_PLOT_MARKER_ASTERISK;
+
+/** Where the legend of a Plot is. */
+export enum RPlotLegend {
+	R_PLOT_LEGEND_HIDDEN = 0x0560,
+	R_PLOT_LEGEND_TOP_LEFT = 0x0561,
+	R_PLOT_LEGEND_TOP = 0x0562,
+	R_PLOT_LEGEND_TOP_RIGHT = 0x0563,
+	R_PLOT_LEGEND_RIGHT = 0x0564,
+	R_PLOT_LEGEND_BOTTOM_RIGHT = 0x0565,
+	R_PLOT_LEGEND_BOTTOM = 0x0566,
+	R_PLOT_LEGEND_BOTTOM_LEFT = 0x0567,
+	R_PLOT_LEGEND_LEFT = 0x0568,
+	/** To the right of the data, outside it. */
+	R_PLOT_LEGEND_OUTSIDE = 0x0569,
+}
+
+export const R_PLOT_LEGEND_HIDDEN = RPlotLegend.R_PLOT_LEGEND_HIDDEN;
+export const R_PLOT_LEGEND_TOP_LEFT = RPlotLegend.R_PLOT_LEGEND_TOP_LEFT;
+export const R_PLOT_LEGEND_TOP = RPlotLegend.R_PLOT_LEGEND_TOP;
+export const R_PLOT_LEGEND_TOP_RIGHT = RPlotLegend.R_PLOT_LEGEND_TOP_RIGHT;
+export const R_PLOT_LEGEND_RIGHT = RPlotLegend.R_PLOT_LEGEND_RIGHT;
+export const R_PLOT_LEGEND_BOTTOM_RIGHT = RPlotLegend.R_PLOT_LEGEND_BOTTOM_RIGHT;
+export const R_PLOT_LEGEND_BOTTOM = RPlotLegend.R_PLOT_LEGEND_BOTTOM;
+export const R_PLOT_LEGEND_BOTTOM_LEFT = RPlotLegend.R_PLOT_LEGEND_BOTTOM_LEFT;
+export const R_PLOT_LEGEND_LEFT = RPlotLegend.R_PLOT_LEGEND_LEFT;
+export const R_PLOT_LEGEND_OUTSIDE = RPlotLegend.R_PLOT_LEGEND_OUTSIDE;
 
 /** Shorthands of Rtext_editor_set_language for two languages. */
 export enum RSyntax {
@@ -2420,6 +2780,24 @@ export const R_HEADER_MINIMIZE = RHeaderButtons.R_HEADER_MINIMIZE;
 export const R_HEADER_MAXIMIZE = RHeaderButtons.R_HEADER_MAXIMIZE;
 export const R_HEADER_ALL_BUTTONS = RHeaderButtons.R_HEADER_ALL_BUTTONS;
 
+/** A progress bar on the icon of the application (Rwindow_set_taskbar_progress). */
+export enum RTaskbarProgress {
+	R_TASKBAR_PROGRESS_NONE = 0x07A0,
+	R_TASKBAR_PROGRESS_NORMAL = 0x07A1,
+	/** Shown as paused (yellow on Windows). */
+	R_TASKBAR_PROGRESS_PAUSED = 0x07A2,
+	/** Shown as failed (red on Windows). */
+	R_TASKBAR_PROGRESS_ERROR = 0x07A3,
+	/** Something goes on, without knowing how far it is. */
+	R_TASKBAR_PROGRESS_INDETERMINATE = 0x07A4,
+}
+
+export const R_TASKBAR_PROGRESS_NONE = RTaskbarProgress.R_TASKBAR_PROGRESS_NONE;
+export const R_TASKBAR_PROGRESS_NORMAL = RTaskbarProgress.R_TASKBAR_PROGRESS_NORMAL;
+export const R_TASKBAR_PROGRESS_PAUSED = RTaskbarProgress.R_TASKBAR_PROGRESS_PAUSED;
+export const R_TASKBAR_PROGRESS_ERROR = RTaskbarProgress.R_TASKBAR_PROGRESS_ERROR;
+export const R_TASKBAR_PROGRESS_INDETERMINATE = RTaskbarProgress.R_TASKBAR_PROGRESS_INDETERMINATE;
+
 /** Where a panel goes in a dock area, relative to another panel or to the whole area. */
 export enum RDockSide {
 	R_DOCK_LEFT = 0x0360,
@@ -2435,6 +2813,25 @@ export const R_DOCK_RIGHT = RDockSide.R_DOCK_RIGHT;
 export const R_DOCK_TOP = RDockSide.R_DOCK_TOP;
 export const R_DOCK_BOTTOM = RDockSide.R_DOCK_BOTTOM;
 export const R_DOCK_TAB = RDockSide.R_DOCK_TAB;
+
+export enum RVisualPreset {
+	/** The look of the theme of the window: its platform, dark or light. */
+	R_PRESET_AUTO = 0x0510,
+	/** Cards with soft shadows, few lines (follows dark or light). */
+	R_PRESET_MODERN = 0x0511,
+	/** Headers in gradients, a grid of lines, thick links that glow; pins of the type "exec" are arrows. */
+	R_PRESET_BLUEPRINT = 0x0512,
+	/** Compact nodes, flat headers in muted colors, thin links. */
+	R_PRESET_BLENDER = 0x0513,
+	/** Almost black, outlines and links of light. */
+	R_PRESET_NEON = 0x0514,
+}
+
+export const R_PRESET_AUTO = RVisualPreset.R_PRESET_AUTO;
+export const R_PRESET_MODERN = RVisualPreset.R_PRESET_MODERN;
+export const R_PRESET_BLUEPRINT = RVisualPreset.R_PRESET_BLUEPRINT;
+export const R_PRESET_BLENDER = RVisualPreset.R_PRESET_BLENDER;
+export const R_PRESET_NEON = RVisualPreset.R_PRESET_NEON;
 
 /** What an item of a timeline is. */
 export enum RTimelineItem {
@@ -2480,6 +2877,19 @@ export enum RBlockPlace {
 export const R_BLOCK_NEXT = RBlockPlace.R_BLOCK_NEXT;
 export const R_BLOCK_BODY = RBlockPlace.R_BLOCK_BODY;
 export const R_BLOCK_INPUT = RBlockPlace.R_BLOCK_INPUT;
+
+/** How much a notification of the system asks for attention (Rnotification_show). */
+export enum RNotificationUrgency {
+	/** No sound; may only go to the list of notifications. */
+	R_NOTIFICATION_LOW = 0x04F0,
+	R_NOTIFICATION_NORMAL = 0x04F1,
+	/** Stays until the user dismisses it, where the system allows it. */
+	R_NOTIFICATION_CRITICAL = 0x04F2,
+}
+
+export const R_NOTIFICATION_LOW = RNotificationUrgency.R_NOTIFICATION_LOW;
+export const R_NOTIFICATION_NORMAL = RNotificationUrgency.R_NOTIFICATION_NORMAL;
+export const R_NOTIFICATION_CRITICAL = RNotificationUrgency.R_NOTIFICATION_CRITICAL;
 
 export enum RFileDialogFlags {
 	/** Several files can be chosen (Rfile_dialog_open): see Rfile_dialog_get_result. */
@@ -2747,7 +3157,7 @@ export class RInitDesc extends RStruct {
 		return pointer ? new RInitDesc(pointer) : null;
 	}
 
-	/** Rendering backend. 0 selects R_BACKEND_VULKAN. */
+	/** Rendering backend. 0 selects WebGL in browser builds, Vulkan otherwise. */
 	get backend(): RBackend {
 		return this._view.getInt32(0, true) as RBackend;
 	}
@@ -2993,6 +3403,7 @@ export class RFrameStats extends RStruct {
  *   Wayland: display = wl_display*, window = wl_surface* (Linux and BSD choose
  *           Wayland or X11 when Rinit runs: check `system`)
  *   Cocoa : display = NSWindow*, window = CAMetalLayer* for Vulkan presentation
+ *   Emscripten: window = opaque browser surface token (no OS window handle)
  */
 export class RNativeWindow extends RStruct {
 	static readonly SIZE = 40;
@@ -4035,6 +4446,44 @@ export class RLanguageDesc extends RStruct {
 	}
 }
 
+/** A task of the jump list of Windows (Rtaskbar_set_jump_list). */
+export class RJumpTask extends RStruct {
+	static readonly SIZE = 24;
+
+	constructor(pointer?: Pointer) {
+		super(RJumpTask.SIZE, pointer);
+	}
+
+	/** The structure at an address of the library, or null. */
+	static from(pointer: Pointer | null): RJumpTask | null {
+		return pointer ? new RJumpTask(pointer) : null;
+	}
+
+	/** What the list shows. */
+	get title(): string | null {
+		return _text(_address(this._view.getBigUint64(0, true)));
+	}
+	set title(value: string | null) {
+		this._point("title", 0, _s(value));
+	}
+
+	/** The command line given to the application when it is chosen: it is started again with these arguments. */
+	get arguments(): string | null {
+		return _text(_address(this._view.getBigUint64(8, true)));
+	}
+	set arguments(value: string | null) {
+		this._point("arguments", 8, _s(value));
+	}
+
+	/** The tooltip; NULL: none. */
+	get description(): string | null {
+		return _text(_address(this._view.getBigUint64(16, true)));
+	}
+	set description(value: string | null) {
+		this._point("description", 16, _s(value));
+	}
+}
+
 /** A kind of file in a file dialog. */
 export class RFileFilter extends RStruct {
 	static readonly SIZE = 16;
@@ -4636,19 +5085,6 @@ function _adapt_RTaskCallback(function_: RTaskCallback | Pointer | null, threads
 
 export type RParallelRangeCallback = (begin: number, end: number, user_data: Pointer | null) => void;
 
-function _adapt_RParallelRangeCallback(function_: RParallelRangeCallback | Pointer | null, threadsafe = false): Pointer | null {
-	if (typeof function_ !== "function") {
-		return function_;
-	}
-	return _keep(new _JSCallback((begin: number, end: number, user_data: Pointer | null): void => {
-		try {
-			function_(begin, end, user_data);
-		} catch (error) {
-			_report(error as Error);
-		}
-	}, { args: ["u32", "u32", "ptr"], returns: "void", threadsafe }));
-}
-
 export type RTimerCallback = (timer: Rid, user_data: Pointer | null) => void;
 
 function _adapt_RTimerCallback(function_: RTimerCallback | Pointer | null, threadsafe = false): Pointer | null {
@@ -5234,6 +5670,204 @@ function _adapt_RTileDragDataCallback(function_: RTileDragDataCallback | Pointer
 	}, { args: ["u32", "ptr"], returns: "ptr", threadsafe }));
 }
 
+/**
+ * Virtual mode, for large or computed data: the table stores nothing and
+ * asks for the texts of the cells it draws. The returned string must stay
+ * valid until the next call.
+ */
+export type RTableCellTextCallback = (table: Rid, row: number, column: number, user_data: Pointer | null) => string | null;
+
+function _adapt_RTableCellTextCallback(function_: RTableCellTextCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	let text: Buffer = Buffer.from([0]);
+	return _keep(new _JSCallback((table: number, row: number, column: number, user_data: Pointer | null): Pointer | null => {
+		try {
+			text = Buffer.from((function_(table, row, column, user_data) ?? "") + "\0");
+			return _ptr(text);
+		} catch (error) {
+			_report(error as Error);
+			return _ptr(text);
+		}
+	}, { args: ["u32", "i32", "i32", "ptr"], returns: "ptr", threadsafe }));
+}
+
+export type RTableEventCallback = (table: Rid, row: number, user_data: Pointer | null) => void;
+
+function _adapt_RTableEventCallback(function_: RTableEventCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((table: number, row: number, user_data: Pointer | null): void => {
+		try {
+			function_(table, row, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user clicks a header; `column` -1: not sorted. */
+export type RTableSortCallback = (table: Rid, column: number, descending: number, user_data: Pointer | null) => void;
+
+function _adapt_RTableSortCallback(function_: RTableSortCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((table: number, column: number, descending: number, user_data: Pointer | null): void => {
+		try {
+			function_(table, column, descending, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user chooses a date. This also fires the action of the widget. */
+export type RDateChangedCallback = (date_picker: Rid, year: number, month: number, day: number, user_data: Pointer | null) => void;
+
+function _adapt_RDateChangedCallback(function_: RDateChangedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((date_picker: number, year: number, month: number, day: number, user_data: Pointer | null): void => {
+		try {
+			function_(date_picker, year, month, day, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user changes the time. This also fires the action of the widget. */
+export type RTimeChangedCallback = (time_picker: Rid, hour: number, minute: number, second: number, user_data: Pointer | null) => void;
+
+function _adapt_RTimeChangedCallback(function_: RTimeChangedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((time_picker: number, hour: number, minute: number, second: number, user_data: Pointer | null): void => {
+		try {
+			function_(time_picker, hour, minute, second, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called by the button of a message, which then hides. This also fires the action of the widget. */
+export type RToastCallback = (toast: Rid, user_data: Pointer | null) => void;
+
+function _adapt_RToastCallback(function_: RToastCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((toast: number, user_data: Pointer | null): void => {
+		try {
+			function_(toast, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user clicks an item. This also fires the action of the widget. */
+export type RBreadcrumbCallback = (breadcrumb: Rid, index: number, user_data: Pointer | null) => void;
+
+function _adapt_RBreadcrumbCallback(function_: RBreadcrumbCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((breadcrumb: number, index: number, user_data: Pointer | null): void => {
+		try {
+			function_(breadcrumb, index, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user changes the score. This also fires the action of the widget. */
+export type RRatingChangedCallback = (rating: Rid, value: number, user_data: Pointer | null) => void;
+
+function _adapt_RRatingChangedCallback(function_: RRatingChangedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((rating: number, value: number, user_data: Pointer | null): void => {
+		try {
+			function_(rating, value, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "f32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user goes to another page. This also fires the action of the widget. */
+export type RPageChangedCallback = (pagination: Rid, page: number, user_data: Pointer | null) => void;
+
+function _adapt_RPageChangedCallback(function_: RPageChangedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((pagination: number, page: number, user_data: Pointer | null): void => {
+		try {
+			function_(pagination, page, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user moves, zooms or fits the view (Rplot_get_axis_range tells where it is). */
+export type RPlotViewCallback = (plot: Rid, user_data: Pointer | null) => void;
+
+function _adapt_RPlotViewCallback(function_: RPlotViewCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((plot: number, user_data: Pointer | null): void => {
+		try {
+			function_(plot, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called while the user drags a drag line. This also fires the action of the widget. */
+export type RPlotDragLineCallback = (plot: Rid, line: number, value: number, user_data: Pointer | null) => void;
+
+function _adapt_RPlotDragLineCallback(function_: RPlotDragLineCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((plot: number, line: number, value: number, user_data: Pointer | null): void => {
+		try {
+			function_(plot, line, value, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "f64", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the user hides or shows a series from the legend. */
+export type RPlotSeriesCallback = (plot: Rid, series: number, visible: number, user_data: Pointer | null) => void;
+
+function _adapt_RPlotSeriesCallback(function_: RPlotSeriesCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((plot: number, series: number, visible: number, user_data: Pointer | null): void => {
+		try {
+			function_(plot, series, visible, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
 /** Called when the user zoomed (to zoom other editors the same, or to keep it for the next time). */
 export type RTextEditorZoomCallback = (editor: Rid, zoom: number, user_data: Pointer | null) => void;
 
@@ -5289,6 +5923,22 @@ function _adapt_RTextEditorChangedCallback(function_: RTextEditorChangedCallback
 			_report(error as Error);
 		}
 	}, { args: ["u32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Called when the tray icon is clicked (Rtray_set_clicked_callback). */
+export type RTrayClickedCallback = (tray: Rid, button: RMouseButton, user_data: Pointer | null) => void;
+
+function _adapt_RTrayClickedCallback(function_: RTrayClickedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((tray: number, button: number, user_data: Pointer | null): void => {
+		try {
+			function_(tray, button as RMouseButton, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "ptr"], returns: "void", threadsafe }));
 }
 
 /**
@@ -5520,25 +6170,42 @@ function _adapt_RFileBrowserCallback(function_: RFileBrowserCallback | Pointer |
 	}, { args: ["u32", "ptr", "ptr"], returns: "void", threadsafe }));
 }
 
+export type RNotificationFallback = (title: string | null, body: string | null, urgency: RNotificationUrgency, user_data: Pointer | null) => void;
+
+function _adapt_RNotificationFallback(function_: RNotificationFallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((title: Pointer | null, body: Pointer | null, urgency: number, user_data: Pointer | null): void => {
+		try {
+			function_(_text(title), _text(body), urgency as RNotificationUrgency, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["ptr", "ptr", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+export type RNotificationClickedCallback = (user_data: Pointer | null) => void;
+
+function _adapt_RNotificationClickedCallback(function_: RNotificationClickedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((user_data: Pointer | null): void => {
+		try {
+			function_(user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["ptr"], returns: "void", threadsafe }));
+}
+
 /**
  * Called on the render thread each time the window is rendered.
  * State you bind (pipeline, descriptor sets, viewport, scissor) does not
  * need to be restored. NULL removes the callback.
  */
 export type RViewportDrawCallback = (info: RViewportDrawInfo | null, user_data: Pointer | null) => void;
-
-function _adapt_RViewportDrawCallback(function_: RViewportDrawCallback | Pointer | null, threadsafe = false): Pointer | null {
-	if (typeof function_ !== "function") {
-		return function_;
-	}
-	return _keep(new _JSCallback((info: Pointer | null, user_data: Pointer | null): void => {
-		try {
-			function_(RViewportDrawInfo.from(info), user_data);
-		} catch (error) {
-			_report(error as Error);
-		}
-	}, { args: ["ptr", "ptr"], returns: "void", threadsafe }));
-}
 
 /** Called on the UI thread when the pixel size changes: resize your render target here. */
 export type RViewportResizeCallback = (viewport: Rid, width: number, height: number, user_data: Pointer | null) => void;
@@ -5974,6 +6641,7 @@ export function Raction_set_default_handler(callback: RActionCallback | Pointer 
  *   app.quit                          quits (Rquit(0))
  *   window.close, window.minimize,    the window of the widget
  *   window.maximize, window.restore   (maximize goes back when it already is)
+ *   window.picture_in_picture         in and out of picture in picture
  *   island.expand, island.fold,       the island of that window
  *   island.toggle
  *   theme.dark, theme.light,          the look of Raven, dark or light
@@ -6015,6 +6683,17 @@ export function Ropen_url(url: string | null): number {
 
 export function Rclipboard_set_text(text: string | null): void {
 	_lib.Rclipboard_set_text(_s(text));
+}
+
+/**
+ * Copies one content in two formats: `html` for the programs that
+ * paste formatting (word processors, chat, mail) and `text` for the
+ * others (editors, terminals). Each program takes the format it prefers.
+ * Where the window system has no clipboard formats (Win32 and macOS for
+ * now), or `html` is NULL, it is Rclipboard_set_text(text).
+ */
+export function Rclipboard_set_html(text: string | null, html: string | null): void {
+	_lib.Rclipboard_set_html(_s(text), _s(html));
 }
 
 /** Returns: The clipboard text, or "" when empty. Valid until the next call. */
@@ -6271,9 +6950,71 @@ export function Rwindow_set_topmost(window: Rid, topmost: number): number {
 	return _lib.Rwindow_set_topmost(window, topmost);
 }
 
+/**
+ * Picture in picture: the window becomes a small floating window
+ * that stays above the other windows, on every desktop (every space of
+ * macOS, over the applications in full screen too), in a corner of the
+ * work area of its monitor. It loses its title bar where the system
+ * allows: the empty parts of its content move it, its edges resize it,
+ * and its size keeps the proportions it was given. Leaving it gives back
+ * the size, place, frame and state the window had.
+ *
+ * Raven does not add a button to leave it: the content shows one, with
+ * the built-in action "window.picture_in_picture" (it goes in and out).
+ * Returns: R_FALSE when the window system cannot keep a window above the
+ * others (Wayland): the window is left as it is.
+ */
+export function Rwindow_set_picture_in_picture(window: Rid, enabled: number): number {
+	return _lib.Rwindow_set_picture_in_picture(window, enabled);
+}
+
+export function Rwindow_is_picture_in_picture(window: Rid): number {
+	return _lib.Rwindow_is_picture_in_picture(window);
+}
+
+/**
+ * Size (logical units) and corner of the window in picture in
+ * picture, for the next time it goes in (now, when it is in). 0, 0 (the
+ * default): 320 wide, with the proportions the content has when it goes
+ * in. The proportions of width / height are kept while the user resizes.
+ */
+export function Rwindow_set_picture_in_picture_layout(window: Rid, width: number, height: number, corner: RPictureInPictureCorner): void {
+	_lib.Rwindow_set_picture_in_picture_layout(window, width, height, corner);
+}
+
 /** Centers the window on the work area of its monitor (no task bar). */
 export function Rwindow_center(window: Rid): void {
 	_lib.Rwindow_center(window);
+}
+
+/**
+ * Shows (R_TRUE) or hides (R_FALSE) the inspector of the window: a
+ * window beside it that lists its widgets as a tree, says what the
+ * selected one is (type, name, classes, place and size in the window,
+ * desired size, constraints, slot, visibility, state, style, action,
+ * children) and what the last frame cost (layout, paint and render
+ * times, widgets, instances, draw calls). The selected widget is
+ * outlined in the window, with its type and size. "Pick" selects the
+ * next widget clicked in the window (that click goes to the inspector
+ * only). It follows the window as it changes; closing it hides it, and
+ * it goes with the window. Nothing opens it but this function.
+ */
+export function Rwindow_set_inspector(window: Rid, shown: number): void {
+	_lib.Rwindow_set_inspector(window, shown);
+}
+
+export function Rwindow_is_inspector_shown(window: Rid): number {
+	return _lib.Rwindow_is_inspector_shown(window);
+}
+
+/** Returns: The window of the inspector of a window (to place it), or R_INVALID_ID when it is hidden. */
+export function Rwindow_get_inspector(window: Rid): Rid {
+	return _lib.Rwindow_get_inspector(window);
+}
+
+/** Returns: R_TRUE for a window created with R_WINDOW_SPLASH_SCREEN (IsSplashScreen in XML). */
+export function Rwindow_is_splash_screen(window: Rid): number {
+	return _lib.Rwindow_is_splash_screen(window);
 }
 
 /** Asks for a new frame even if no widget changed. Thread-safe. */
@@ -6885,7 +7626,7 @@ export function Rfont_measure_text(font: Rid, size: number, text: string | null)
 
 /**
  * Creates a texture from the content of an image file (PNG, JPEG,
- * BMP, TGA, GIF, PSD). Decoding happens on the calling thread.
+ * BMP, TGA, GIF, PSD, SVG). Decoding happens on the calling thread.
  * Returns: R_INVALID_ID on failure.
  */
 export function Rtexture_create(data: string | null): Rid {
@@ -6901,6 +7642,31 @@ export function Rtexture_create(data: string | null): Rid {
 export function Rtexture_create_async(data: string | null): Rid {
 	const data_ = _s(data);
 	return _lib.Rtexture_create_async(data_, data_ === null ? 0 : data_.length - 1);
+}
+
+/**
+ * Draws an SVG image (an icon) into a texture, at `scale` pixels per
+ * unit of the SVG. The widgets show it at the size the SVG gives, whatever
+ * the scale (Rtexture_get_density).
+ *
+ * 0 or less: at the size it is shown. It is first drawn at a scale of 2;
+ * once painted, it is drawn again (on a worker thread) with as many pixels
+ * as the screen shows it with: the scale of the monitor of the window, an
+ * Image that stretches it, a zoom. It follows when the window moves to a
+ * screen of another density or the image grows, and comes down when it is
+ * shown much smaller (sides of at most 4096 pixels). Its width and height
+ * in pixels (Rtexture_get_size) change then; its size in logical units
+ * does not. Rtexture_create, Rtexture_create_from_file and the asynchronous
+ * ones read SVG files this way. Paths, fills, strokes and gradients are
+ * drawn; text, filters and masks are not.
+ */
+export function Rtexture_create_from_svg(svg: string | null, svg_size: number, scale: number): Rid {
+	return _lib.Rtexture_create_from_svg(_s(svg), svg_size, scale);
+}
+
+/** Pixels of the texture per logical unit: the scale of an SVG, 1 otherwise. */
+export function Rtexture_get_density(texture: Rid): number {
+	return _lib.Rtexture_get_density(texture);
 }
 
 export function Rtexture_create_from_file(path: string | null): Rid {
@@ -8289,6 +9055,24 @@ export function Rtree_view_set_drop_highlight(tree_view: Rid, item: Rid, whole_t
 	_lib.Rtree_view_set_drop_highlight(tree_view, item, whole_tree);
 }
 
+/**
+ * The menu bar of the system. On macOS, the first MenuBar of a
+ * window is shown in the bar at the top of the screen while the window is
+ * the active one, after the menu of the application (About, Hide, Quit);
+ * it then takes no room in the window. Its shortcuts are those of the
+ * system: R_MOD_SUPER is Command, R_MOD_CTRL is Control. Elsewhere it is
+ * drawn in the window. On by default; R_FALSE keeps it in the window
+ * everywhere. In XML: <MenuBar Native="false">.
+ */
+export function Rmenu_bar_set_native(menu_bar: Rid, native: number): void {
+	_lib.Rmenu_bar_set_native(menu_bar, native);
+}
+
+/** Returns: R_TRUE while the menu bar is shown by the system instead of the window. */
+export function Rmenu_bar_is_native(menu_bar: Rid): number {
+	return _lib.Rmenu_bar_is_native(menu_bar);
+}
+
 /** Creates a menu inside a menu bar or as a sub-menu of another menu. */
 export function Rmenu_add_menu(menu_bar_or_menu: Rid, title: string | null): Rid {
 	return _lib.Rmenu_add_menu(menu_bar_or_menu, _s(title));
@@ -8446,6 +9230,645 @@ export function Rtile_view_set_activated_callback(tile_view: Rid, callback: RTil
 
 export function Rtile_view_set_context_callback(tile_view: Rid, callback: RTileContextCallback | Pointer | null, user_data: RPointer = null): void {
 	_lib.Rtile_view_set_context_callback(tile_view, _adapt_RTileContextCallback(callback), user_data);
+}
+
+/**
+ * Adds a column.
+ * width Width in logical units; 0 or less gives the default (120).
+ * Returns: The index of the column. The stored rows get an empty cell in it.
+ */
+export function Rtable_add_column(table: Rid, header: string | null, width: number): number {
+	return _lib.Rtable_add_column(table, _s(header), width);
+}
+
+export function Rtable_get_column_count(table: Rid): number {
+	return _lib.Rtable_get_column_count(table);
+}
+
+/** Removes the columns and the stored rows. */
+export function Rtable_clear_columns(table: Rid): void {
+	_lib.Rtable_clear_columns(table);
+}
+
+export function Rtable_set_column_header(table: Rid, column: number, header: string | null): void {
+	_lib.Rtable_set_column_header(table, column, _s(header));
+}
+
+export function Rtable_get_column_header(table: Rid, column: number): string | null {
+	return _lib.Rtable_get_column_header(table, column);
+}
+
+export function Rtable_set_column_width(table: Rid, column: number, width: number): void {
+	_lib.Rtable_set_column_width(table, column, width);
+}
+
+/** The width the column has on screen (a filling column takes more than its width). */
+export function Rtable_get_column_width(table: Rid, column: number): number {
+	return _lib.Rtable_get_column_width(table, column);
+}
+
+/** > 0: the column takes this share of the room the others leave; 0: its width only. */
+export function Rtable_set_column_fill(table: Rid, column: number, fill: number): void {
+	_lib.Rtable_set_column_fill(table, column, fill);
+}
+
+/** R_FALSE: a click on the header does not sort (default R_TRUE). */
+export function Rtable_set_column_sortable(table: Rid, column: number, sortable: number): void {
+	_lib.Rtable_set_column_sortable(table, column, sortable);
+}
+
+/** Where the texts sit in the cells: 0 left, 0.5 center, 1 right. */
+export function Rtable_set_column_align(table: Rid, column: number, align: number): void {
+	_lib.Rtable_set_column_align(table, column, align);
+}
+
+/**
+ * Adds a row.
+ * cells The texts of the cells, separated by '|' ("Ada|36|London"),
+ *              or NULL for an empty row; Rtable_set_cell gives a text holding a '|'.
+ * Returns: The index of the row.
+ */
+export function Rtable_add_row(table: Rid, cells: string | null): number {
+	return _lib.Rtable_add_row(table, _s(cells));
+}
+
+export function Rtable_set_cell(table: Rid, row: number, column: number, text: string | null): void {
+	_lib.Rtable_set_cell(table, row, column, _s(text));
+}
+
+export function Rtable_get_cell(table: Rid, row: number, column: number): string | null {
+	return _lib.Rtable_get_cell(table, row, column);
+}
+
+export function Rtable_remove_row(table: Rid, row: number): void {
+	_lib.Rtable_remove_row(table, row);
+}
+
+export function Rtable_clear_rows(table: Rid): void {
+	_lib.Rtable_clear_rows(table);
+}
+
+export function Rtable_get_row_count(table: Rid): number {
+	return _lib.Rtable_get_row_count(table);
+}
+
+export function Rtable_set_virtual_rows(table: Rid, count: number, callback: RTableCellTextCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtable_set_virtual_rows(table, count, _adapt_RTableCellTextCallback(callback), user_data);
+}
+
+/** Selects a row. -1 selects nothing. */
+export function Rtable_set_selected(table: Rid, row: number): void {
+	_lib.Rtable_set_selected(table, row);
+}
+
+export function Rtable_get_selected(table: Rid): number {
+	return _lib.Rtable_get_selected(table);
+}
+
+export function Rtable_scroll_to_row(table: Rid, row: number): void {
+	_lib.Rtable_scroll_to_row(table, row);
+}
+
+/** Sorts by a column (stored rows are moved); -1 shows no sorted column. */
+export function Rtable_sort(table: Rid, column: number, descending: number): void {
+	_lib.Rtable_sort(table, column, descending);
+}
+
+export function Rtable_get_sort_column(table: Rid): number {
+	return _lib.Rtable_get_sort_column(table);
+}
+
+export function Rtable_is_sort_descending(table: Rid): number {
+	return _lib.Rtable_is_sort_descending(table);
+}
+
+export function Rtable_set_header_visible(table: Rid, visible: number): void {
+	_lib.Rtable_set_header_visible(table, visible);
+}
+
+export function Rtable_set_grid_lines(table: Rid, visible: number): void {
+	_lib.Rtable_set_grid_lines(table, visible);
+}
+
+/** Every other row a little darker. */
+export function Rtable_set_striped(table: Rid, striped: number): void {
+	_lib.Rtable_set_striped(table, striped);
+}
+
+export function Rtable_set_selection_changed_callback(table: Rid, callback: RTableEventCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtable_set_selection_changed_callback(table, _adapt_RTableEventCallback(callback), user_data);
+}
+
+/** Called on double click or Enter. This also fires the action of the widget. */
+export function Rtable_set_activated_callback(table: Rid, callback: RTableEventCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtable_set_activated_callback(table, _adapt_RTableEventCallback(callback), user_data);
+}
+
+export function Rtable_set_sort_callback(table: Rid, callback: RTableSortCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtable_set_sort_callback(table, _adapt_RTableSortCallback(callback), user_data);
+}
+
+/** Sets the date (today when the picker is created). An invalid date is refused. */
+export function Rdate_picker_set_date(date_picker: Rid, year: number, month: number, day: number): void {
+	_lib.Rdate_picker_set_date(date_picker, year, month, day);
+}
+
+export function Rdate_picker_get_date(date_picker: Rid): [year: number, month: number, day: number] {
+	const year_ = new Int32Array(1);
+	const month_ = new Int32Array(1);
+	const day_ = new Int32Array(1);
+	_lib.Rdate_picker_get_date(date_picker, year_, month_, day_);
+	return [year_[0]!, month_[0]!, day_[0]!];
+}
+
+/** The earliest and the latest dates that can be chosen; 0 for year leaves that side open. */
+export function Rdate_picker_set_range(date_picker: Rid, min_year: number, min_month: number, min_day: number, max_year: number, max_month: number, max_day: number): void {
+	_lib.Rdate_picker_set_range(date_picker, min_year, min_month, min_day, max_year, max_month, max_day);
+}
+
+/** 0 = Sunday (default), 1 = Monday... */
+export function Rdate_picker_set_first_day_of_week(date_picker: Rid, day: number): void {
+	_lib.Rdate_picker_set_first_day_of_week(date_picker, day);
+}
+
+/**
+ * How the field writes the date: YYYY, MM, M, DD, D, MMMM (the name
+ * of the month), MMM (its first three letters), dddd (the name of the day),
+ * ddd; anything else is kept. Default "YYYY-MM-DD"; "D MMMM YYYY" gives "3 November 2026".
+ */
+export function Rdate_picker_set_format(date_picker: Rid, format: string | null): void {
+	_lib.Rdate_picker_set_format(date_picker, _s(format));
+}
+
+/** The date as the field shows it (valid until the next call). */
+export function Rdate_picker_get_text(date_picker: Rid): string | null {
+	return _lib.Rdate_picker_get_text(date_picker);
+}
+
+/** Opens or closes the calendar. */
+export function Rdate_picker_set_open(date_picker: Rid, open: number): void {
+	_lib.Rdate_picker_set_open(date_picker, open);
+}
+
+export function Rdate_picker_is_open(date_picker: Rid): number {
+	return _lib.Rdate_picker_is_open(date_picker);
+}
+
+export function Rdate_picker_set_changed_callback(date_picker: Rid, callback: RDateChangedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rdate_picker_set_changed_callback(date_picker, _adapt_RDateChangedCallback(callback), user_data);
+}
+
+export function Rtime_picker_set_time(time_picker: Rid, hour: number, minute: number, second: number): void {
+	_lib.Rtime_picker_set_time(time_picker, hour, minute, second);
+}
+
+export function Rtime_picker_get_time(time_picker: Rid): [hour: number, minute: number, second: number] {
+	const hour_ = new Int32Array(1);
+	const minute_ = new Int32Array(1);
+	const second_ = new Int32Array(1);
+	_lib.Rtime_picker_get_time(time_picker, hour_, minute_, second_);
+	return [hour_[0]!, minute_[0]!, second_[0]!];
+}
+
+export function Rtime_picker_set_seconds_visible(time_picker: Rid, visible: number): void {
+	_lib.Rtime_picker_set_seconds_visible(time_picker, visible);
+}
+
+/** Step of the minutes for the arrows and the wheel (default 1). */
+export function Rtime_picker_set_minute_step(time_picker: Rid, step: number): void {
+	_lib.Rtime_picker_set_minute_step(time_picker, step);
+}
+
+export function Rtime_picker_set_changed_callback(time_picker: Rid, callback: RTimeChangedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtime_picker_set_changed_callback(time_picker, _adapt_RTimeChangedCallback(callback), user_data);
+}
+
+/** Shows a message for `seconds` (0 or less: until Rtoast_hide), with the kind and button set now. */
+export function Rtoast_show(toast: Rid, text: string | null, seconds: number): void {
+	_lib.Rtoast_show(toast, _s(text), seconds);
+}
+
+/** Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is). */
+export function Rtoast_show_kind(toast: Rid, text: string | null, kind: RToastKind, seconds: number): void {
+	_lib.Rtoast_show_kind(toast, _s(text), kind, seconds);
+}
+
+/** Hides the newest message shown; the next one waiting comes. */
+export function Rtoast_hide(toast: Rid): void {
+	_lib.Rtoast_hide(toast);
+}
+
+/** Hides every message, and forgets those waiting. */
+export function Rtoast_clear(toast: Rid): void {
+	_lib.Rtoast_clear(toast);
+}
+
+export function Rtoast_is_shown(toast: Rid): number {
+	return _lib.Rtoast_is_shown(toast);
+}
+
+/** Returns: The messages shown and waiting. */
+export function Rtoast_get_count(toast: Rid): number {
+	return _lib.Rtoast_get_count(toast);
+}
+
+/** Returns: The newest message shown (the last one, once hidden; the clicked one in the action callback). */
+export function Rtoast_get_text(toast: Rid): string | null {
+	return _lib.Rtoast_get_text(toast);
+}
+
+export function Rtoast_set_queue(toast: Rid, queue: RToastQueue): void {
+	_lib.Rtoast_set_queue(toast, queue);
+}
+
+export function Rtoast_get_queue(toast: Rid): RToastQueue {
+	return _lib.Rtoast_get_queue(toast) as RToastQueue;
+}
+
+/** How many messages a R_TOAST_STACK shows at once (default 3). */
+export function Rtoast_set_max_visible(toast: Rid, count: number): void {
+	_lib.Rtoast_set_max_visible(toast, count);
+}
+
+/** The kind of the next messages (and of the message shown, with R_TOAST_REPLACE). */
+export function Rtoast_set_kind(toast: Rid, kind: RToastKind): void {
+	_lib.Rtoast_set_kind(toast, kind);
+}
+
+/** A button at the end of the next messages ("Undo"); NULL or "" removes it. */
+export function Rtoast_set_action_text(toast: Rid, text: string | null): void {
+	_lib.Rtoast_set_action_text(toast, _s(text));
+}
+
+export function Rtoast_set_action_callback(toast: Rid, callback: RToastCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtoast_set_action_callback(toast, _adapt_RToastCallback(callback), user_data);
+}
+
+/** Replaces the items: their texts separated by '|'. */
+export function Rbreadcrumb_set_items(breadcrumb: Rid, items: string | null): void {
+	_lib.Rbreadcrumb_set_items(breadcrumb, _s(items));
+}
+
+/** Returns: The index of the new item, at the end. */
+export function Rbreadcrumb_add_item(breadcrumb: Rid, text: string | null): number {
+	return _lib.Rbreadcrumb_add_item(breadcrumb, _s(text));
+}
+
+/** Keeps the first `count` items: Rbreadcrumb_truncate(b, index + 1) goes back to the item clicked. */
+export function Rbreadcrumb_truncate(breadcrumb: Rid, count: number): void {
+	_lib.Rbreadcrumb_truncate(breadcrumb, count);
+}
+
+export function Rbreadcrumb_get_item_count(breadcrumb: Rid): number {
+	return _lib.Rbreadcrumb_get_item_count(breadcrumb);
+}
+
+export function Rbreadcrumb_get_item_text(breadcrumb: Rid, index: number): string | null {
+	return _lib.Rbreadcrumb_get_item_text(breadcrumb, index);
+}
+
+export function Rbreadcrumb_set_clicked_callback(breadcrumb: Rid, callback: RBreadcrumbCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rbreadcrumb_set_clicked_callback(breadcrumb, _adapt_RBreadcrumbCallback(callback), user_data);
+}
+
+/** The score, from 0 to the number of stars. */
+export function Rrating_set_value(rating: Rid, value: number): void {
+	_lib.Rrating_set_value(rating, value);
+}
+
+export function Rrating_get_value(rating: Rid): number {
+	return _lib.Rrating_get_value(rating);
+}
+
+/** Number of stars (default 5, at most 20). */
+export function Rrating_set_max(rating: Rid, max: number): void {
+	_lib.Rrating_set_max(rating, max);
+}
+
+export function Rrating_get_max(rating: Rid): number {
+	return _lib.Rrating_get_max(rating);
+}
+
+/** Half stars can be chosen (a whole star by default). */
+export function Rrating_set_allow_half(rating: Rid, allow: number): void {
+	_lib.Rrating_set_allow_half(rating, allow);
+}
+
+/** Shown only, the user cannot change it. */
+export function Rrating_set_read_only(rating: Rid, read_only: number): void {
+	_lib.Rrating_set_read_only(rating, read_only);
+}
+
+/** Size of a star (default 18). */
+export function Rrating_set_star_size(rating: Rid, size: number): void {
+	_lib.Rrating_set_star_size(rating, size);
+}
+
+export function Rrating_set_changed_callback(rating: Rid, callback: RRatingChangedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rrating_set_changed_callback(rating, _adapt_RRatingChangedCallback(callback), user_data);
+}
+
+export function Rpagination_set_page_count(pagination: Rid, count: number): void {
+	_lib.Rpagination_set_page_count(pagination, count);
+}
+
+export function Rpagination_get_page_count(pagination: Rid): number {
+	return _lib.Rpagination_get_page_count(pagination);
+}
+
+export function Rpagination_set_page(pagination: Rid, page: number): void {
+	_lib.Rpagination_set_page(pagination, page);
+}
+
+export function Rpagination_get_page(pagination: Rid): number {
+	return _lib.Rpagination_get_page(pagination);
+}
+
+/** Page numbers shown around the current one (default 1). */
+export function Rpagination_set_siblings(pagination: Rid, siblings: number): void {
+	_lib.Rpagination_set_siblings(pagination, siblings);
+}
+
+export function Rpagination_set_changed_callback(pagination: Rid, callback: RPageChangedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rpagination_set_changed_callback(pagination, _adapt_RPageChangedCallback(callback), user_data);
+}
+
+export function Rplot_set_title(plot: Rid, title: string | null): void {
+	_lib.Rplot_set_title(plot, _s(title));
+}
+
+export function Rplot_get_title(plot: Rid): string | null {
+	return _lib.Rplot_get_title(plot);
+}
+
+/** Adds a series (its name in the legend; NULL or "": not in the legend). Returns its index. */
+export function Rplot_add_series(plot: Rid, name: string | null): number {
+	return _lib.Rplot_add_series(plot, _s(name));
+}
+
+export function Rplot_remove_series(plot: Rid, series: number): void {
+	_lib.Rplot_remove_series(plot, series);
+}
+
+/** Removes every series and every drag line. */
+export function Rplot_clear(plot: Rid): void {
+	_lib.Rplot_clear(plot);
+}
+
+export function Rplot_get_series_count(plot: Rid): number {
+	return _lib.Rplot_get_series_count(plot);
+}
+
+export function Rplot_set_series_name(plot: Rid, series: number, name: string | null): void {
+	_lib.Rplot_set_series_name(plot, series, _s(name));
+}
+
+export function Rplot_get_series_name(plot: Rid, series: number): string | null {
+	return _lib.Rplot_get_series_name(plot, series);
+}
+
+/**
+ * Replaces the points of a series with `count` points, copied.
+ * x The X of the points, or NULL: 0, 1, 2...
+ * y The Y of the points. NaN leaves a gap in the line.
+ */
+export function Rplot_set_series_data(plot: Rid, series: number, x: Float64Array | readonly number[] | null, y: Float64Array | readonly number[] | null, count: number): void {
+	_lib.Rplot_set_series_data(plot, series, _n(x, (list) => new Float64Array(list)), _n(y, (list) => new Float64Array(list)), count);
+}
+
+/** Adds points after those of a series (x NULL: numbered after the last one). */
+export function Rplot_append_series_data(plot: Rid, series: number, x: Float64Array | readonly number[] | null, y: Float64Array | readonly number[] | null, count: number): void {
+	_lib.Rplot_append_series_data(plot, series, _n(x, (list) => new Float64Array(list)), _n(y, (list) => new Float64Array(list)), count);
+}
+
+/** Adds one point after those of a series. */
+export function Rplot_add_point(plot: Rid, series: number, x: number, y: number): void {
+	_lib.Rplot_add_point(plot, series, x, y);
+}
+
+export function Rplot_clear_series_data(plot: Rid, series: number): void {
+	_lib.Rplot_clear_series_data(plot, series);
+}
+
+export function Rplot_get_point_count(plot: Rid, series: number): number {
+	return _lib.Rplot_get_point_count(plot, series);
+}
+
+/** One point of a series. Returns R_FALSE when there is no such point. */
+export function Rplot_get_point(plot: Rid, series: number, index: number): [result: number, x: number, y: number] {
+	const x_ = new Float64Array(1);
+	const y_ = new Float64Array(1);
+	const result_ = _lib.Rplot_get_point(plot, series, index, x_, y_);
+	return [result_, x_[0]!, y_[0]!];
+}
+
+/** Keeps only the last `max` points of a series, for data that streams in (0: all of them, the default). */
+export function Rplot_set_series_max_points(plot: Rid, series: number, max: number): void {
+	_lib.Rplot_set_series_max_points(plot, series, max);
+}
+
+/** The color of a series (by default the next one of a palette of ten). */
+export function Rplot_set_series_color(plot: Rid, series: number, r: number, g: number, b: number, a: number): void {
+	_lib.Rplot_set_series_color(plot, series, r, g, b, a);
+}
+
+/** How the line is drawn and how wide (default solid, 1.75; width 0 keeps the width). */
+export function Rplot_set_series_line(plot: Rid, series: number, line: RPlotLine, width: number): void {
+	_lib.Rplot_set_series_line(plot, series, line, width);
+}
+
+/** The mark on each point and its radius (default none, 4; size 0 keeps the size). */
+export function Rplot_set_series_marker(plot: Rid, series: number, marker: RPlotMarker, size: number): void {
+	_lib.Rplot_set_series_marker(plot, series, marker, size);
+}
+
+/** Filled markers (the default) or only their outline. */
+export function Rplot_set_series_marker_filled(plot: Rid, series: number, filled: number): void {
+	_lib.Rplot_set_series_marker_filled(plot, series, filled);
+}
+
+/** Draws the line in steps: along at the height of a point, then up or down to the next. */
+export function Rplot_set_series_step(plot: Rid, series: number, step: number): void {
+	_lib.Rplot_set_series_step(plot, series, step);
+}
+
+/** Shades the area between the line and zero, at this opacity (0: none, the default). */
+export function Rplot_set_series_fill(plot: Rid, series: number, opacity: number): void {
+	_lib.Rplot_set_series_fill(plot, series, opacity);
+}
+
+/** The axes a series is drawn against: R_PLOT_X or R_PLOT_X2, R_PLOT_Y or R_PLOT_Y2. */
+export function Rplot_set_series_axes(plot: Rid, series: number, x_axis: RPlotAxis, y_axis: RPlotAxis): void {
+	_lib.Rplot_set_series_axes(plot, series, x_axis, y_axis);
+}
+
+/** Shows or hides a series (the user does it with a click on its name in the legend). */
+export function Rplot_set_series_visible(plot: Rid, series: number, visible: number): void {
+	_lib.Rplot_set_series_visible(plot, series, visible);
+}
+
+export function Rplot_is_series_visible(plot: Rid, series: number): number {
+	return _lib.Rplot_is_series_visible(plot, series);
+}
+
+/** The name written along an axis. */
+export function Rplot_set_axis_label(plot: Rid, axis: RPlotAxis, label: string | null): void {
+	_lib.Rplot_set_axis_label(plot, axis, _s(label));
+}
+
+export function Rplot_get_axis_label(plot: Rid, axis: RPlotAxis): string | null {
+	return _lib.Rplot_get_axis_label(plot, axis);
+}
+
+export function Rplot_set_axis_scale(plot: Rid, axis: RPlotAxis, scale: RPlotScale): void {
+	_lib.Rplot_set_axis_scale(plot, axis, scale);
+}
+
+export function Rplot_get_axis_scale(plot: Rid, axis: RPlotAxis): RPlotScale {
+	return _lib.Rplot_get_axis_scale(plot, axis) as RPlotScale;
+}
+
+/** R_PLOT_SCALE_SYMLOG: the axis is linear from -threshold to threshold (default 1). */
+export function Rplot_set_axis_linear_threshold(plot: Rid, axis: RPlotAxis, threshold: number): void {
+	_lib.Rplot_set_axis_linear_threshold(plot, axis, threshold);
+}
+
+/** Shows this range of an axis; the axis then stops following the data. */
+export function Rplot_set_axis_range(plot: Rid, axis: RPlotAxis, min: number, max: number): void {
+	_lib.Rplot_set_axis_range(plot, axis, min, max);
+}
+
+/** The range an axis shows now (after the user moved or zoomed it). */
+export function Rplot_get_axis_range(plot: Rid, axis: RPlotAxis): [min: number, max: number] {
+	const min_ = new Float64Array(1);
+	const max_ = new Float64Array(1);
+	_lib.Rplot_get_axis_range(plot, axis, min_, max_);
+	return [min_[0]!, max_[0]!];
+}
+
+/** The axis is fitted to the data whenever it changes (the default, until the view is moved; a double click turns it on again). */
+export function Rplot_set_axis_auto_fit(plot: Rid, axis: RPlotAxis, auto_fit: number): void {
+	_lib.Rplot_set_axis_auto_fit(plot, axis, auto_fit);
+}
+
+export function Rplot_is_axis_auto_fit(plot: Rid, axis: RPlotAxis): number {
+	return _lib.Rplot_is_axis_auto_fit(plot, axis);
+}
+
+/** How the labels of an axis are written: a printf format for one double ("%.1f s", "%g"), NULL: chosen from the ticks. */
+export function Rplot_set_axis_format(plot: Rid, axis: RPlotAxis, format: string | null): void {
+	_lib.Rplot_set_axis_format(plot, axis, _s(format));
+}
+
+/** 1: shown, 0: hidden, -1: R_PLOT_X and R_PLOT_Y always, the second axes when something uses them (the default). */
+export function Rplot_set_axis_visible(plot: Rid, axis: RPlotAxis, visible: number): void {
+	_lib.Rplot_set_axis_visible(plot, axis, visible);
+}
+
+/** Lines across the data at the ticks of an axis (on for R_PLOT_X and R_PLOT_Y). */
+export function Rplot_set_axis_grid(plot: Rid, axis: RPlotAxis, grid: number): void {
+	_lib.Rplot_set_axis_grid(plot, axis, grid);
+}
+
+/** The values grow the other way (to the left, or down). */
+export function Rplot_set_axis_inverted(plot: Rid, axis: RPlotAxis, inverted: number): void {
+	_lib.Rplot_set_axis_inverted(plot, axis, inverted);
+}
+
+/** The user cannot move or zoom this axis (the application still can). */
+export function Rplot_set_axis_locked(plot: Rid, axis: RPlotAxis, locked: number): void {
+	_lib.Rplot_set_axis_locked(plot, axis, locked);
+}
+
+/** Fits every axis that is not locked to the data, and has them follow it again (what a double click does). */
+export function Rplot_fit(plot: Rid): void {
+	_lib.Rplot_fit(plot);
+}
+
+/** Where the legend is (default R_PLOT_LEGEND_TOP_RIGHT). */
+export function Rplot_set_legend(plot: Rid, legend: RPlotLegend): void {
+	_lib.Rplot_set_legend(plot, legend);
+}
+
+/** Lines across the data through the pointer. */
+export function Rplot_set_crosshair(plot: Rid, crosshair: number): void {
+	_lib.Rplot_set_crosshair(plot, crosshair);
+}
+
+/** The coordinates of the pointer in a corner of the data (on by default). */
+export function Rplot_set_mouse_text(plot: Rid, shown: number): void {
+	_lib.Rplot_set_mouse_text(plot, shown);
+}
+
+/** The values of the point under the pointer, written next to it (on by default). */
+export function Rplot_set_tooltips(plot: Rid, shown: number): void {
+	_lib.Rplot_set_tooltips(plot, shown);
+}
+
+/** Where the pointer is, in the units of R_PLOT_X and R_PLOT_Y. Returns R_TRUE when it is over the data. */
+export function Rplot_get_mouse_position(plot: Rid): [result: number, x: number, y: number] {
+	const x_ = new Float64Array(1);
+	const y_ = new Float64Array(1);
+	const result_ = _lib.Rplot_get_mouse_position(plot, x_, y_);
+	return [result_, x_[0]!, y_[0]!];
+}
+
+/** Where a point of the data (R_PLOT_X, R_PLOT_Y) is in the widget, in logical units from its corner. */
+export function Rplot_data_to_point(plot: Rid, x: number, y: number): [point_x: number, point_y: number] {
+	const point_x_ = new Float32Array(1);
+	const point_y_ = new Float32Array(1);
+	_lib.Rplot_data_to_point(plot, x, y, point_x_, point_y_);
+	return [point_x_[0]!, point_y_[0]!];
+}
+
+/** The data (R_PLOT_X, R_PLOT_Y) at a point of the widget, in logical units from its corner. */
+export function Rplot_point_to_data(plot: Rid, point_x: number, point_y: number): [x: number, y: number] {
+	const x_ = new Float64Array(1);
+	const y_ = new Float64Array(1);
+	_lib.Rplot_point_to_data(plot, point_x, point_y, x_, y_);
+	return [x_[0]!, y_[0]!];
+}
+
+/**
+ * Adds a line across the data that the user drags: vertical at an X
+ * (axis R_PLOT_X or R_PLOT_X2), horizontal at a Y (R_PLOT_Y or R_PLOT_Y2).
+ * Its value is written on it, after `label` (may be NULL). Returns its index.
+ */
+export function Rplot_add_drag_line(plot: Rid, axis: RPlotAxis, value: number, label: string | null): number {
+	return _lib.Rplot_add_drag_line(plot, axis, value, _s(label));
+}
+
+export function Rplot_remove_drag_line(plot: Rid, line: number): void {
+	_lib.Rplot_remove_drag_line(plot, line);
+}
+
+export function Rplot_get_drag_line_count(plot: Rid): number {
+	return _lib.Rplot_get_drag_line_count(plot);
+}
+
+export function Rplot_set_drag_line_value(plot: Rid, line: number, value: number): void {
+	_lib.Rplot_set_drag_line_value(plot, line, value);
+}
+
+export function Rplot_get_drag_line_value(plot: Rid, line: number): number {
+	return _lib.Rplot_get_drag_line_value(plot, line);
+}
+
+/** The color of a drag line (by default the accent of the theme). */
+export function Rplot_set_drag_line_color(plot: Rid, line: number, r: number, g: number, b: number, a: number): void {
+	_lib.Rplot_set_drag_line_color(plot, line, r, g, b, a);
+}
+
+export function Rplot_set_view_changed_callback(plot: Rid, callback: RPlotViewCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rplot_set_view_changed_callback(plot, _adapt_RPlotViewCallback(callback), user_data);
+}
+
+export function Rplot_set_drag_line_callback(plot: Rid, callback: RPlotDragLineCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rplot_set_drag_line_callback(plot, _adapt_RPlotDragLineCallback(callback), user_data);
+}
+
+export function Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeriesCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rplot_set_series_toggled_callback(plot, _adapt_RPlotSeriesCallback(callback), user_data);
 }
 
 /** text Initial content, or NULL. */
@@ -9039,6 +10462,121 @@ export function Rwindow_get_island(window: Rid): Rid {
 	return _lib.Rwindow_get_island(window);
 }
 
+/**
+ * A progress bar on the icon of the application: on the button of
+ * the window in the taskbar (Windows), on the icon in the Dock (macOS),
+ * on the launcher (Linux). There is one icon for the whole application in
+ * the Dock and the launchers: the last window that set it is shown.
+ * value From 0 to 1 (not used by NONE and INDETERMINATE).
+ * Returns: R_FALSE where the system shows no progress.
+ */
+export function Rwindow_set_taskbar_progress(window: Rid, state: RTaskbarProgress, value: number): number {
+	return _lib.Rwindow_set_taskbar_progress(window, state, value);
+}
+
+/**
+ * Asks the user to look at the window when it is not the active
+ * one: its taskbar button flashes (Windows), the icon bounces in the
+ * Dock (macOS), the window is marked urgent (X11, the launchers of
+ * Linux). `critical`: until the user comes to the window; otherwise a few
+ * times. Nothing happens when the window is already the active one.
+ */
+export function Rwindow_request_attention(window: Rid, critical: number): number {
+	return _lib.Rwindow_request_attention(window, critical);
+}
+
+/**
+ * A short text on the icon of the application: a number of unread
+ * messages, "!". macOS: the badge of the Dock. Windows: a small round
+ * icon on the taskbar buttons of the windows, drawn from the text (one
+ * to three characters fit). Linux: a number only (the text is read as
+ * one; anything else shows nothing). NULL or "": no badge.
+ */
+export function Rtaskbar_set_badge(text: string | null): number {
+	return _lib.Rtaskbar_set_badge(_s(text));
+}
+
+/**
+ * The menu of the icon of the application in the Dock (macOS),
+ * above the entries of the system. A MENU without a parent: its
+ * MenuItems fire as when chosen in a window (clicked callback, action),
+ * and what changes in it shows the next time the menu opens.
+ * R_INVALID_ID: none. R_FALSE where the system has no such menu.
+ */
+export function Rtaskbar_set_menu(menu: Rid): number {
+	return _lib.Rtaskbar_set_menu(menu);
+}
+
+/**
+ * The tasks of the jump list of Windows (right click on the button
+ * of the application in the taskbar, or on its tile in the Start menu).
+ * Choosing one starts the application again with its arguments: the
+ * application reads them as any other command line. count 0: none.
+ * R_FALSE where there is no jump list.
+ */
+export function Rtaskbar_set_jump_list(tasks: readonly RJumpTask[] | null): number {
+	return _lib.Rtaskbar_set_jump_list(_structs(tasks, RJumpTask.SIZE), tasks?.length ?? 0);
+}
+
+/**
+ * Returns: R_TRUE when the system shows tray icons: always on Windows and
+ * macOS; on Linux, when a host of StatusNotifierItem runs (the panel of
+ * the desktop). An icon made where none runs yet appears when one starts.
+ */
+export function Rtray_is_supported(): number {
+	return _lib.Rtray_is_supported();
+}
+
+/**
+ * Puts an icon of the application beside the clock. While one
+ * exists, the application goes on running when its last window closes
+ * (Ris_running): Rquit (or the action app.quit) ends it.
+ * Returns: R_INVALID_ID where the system has none.
+ */
+export function Rtray_create(): Rid {
+	return _lib.Rtray_create();
+}
+
+export function Rtray_destroy(tray: Rid): void {
+	_lib.Rtray_destroy(tray);
+}
+
+export function Rtray_is_valid(tray: Rid): number {
+	return _lib.Rtray_is_valid(tray);
+}
+
+/**
+ * The picture, from tightly packed RGBA8 pixels (straight alpha);
+ * the system scales it (16 to 32 pixels square fit everywhere). Copied.
+ */
+export function Rtray_set_icon(tray: Rid, rgba: RPointer, width: number, height: number): void {
+	_lib.Rtray_set_icon(tray, rgba, width, height);
+}
+
+/** The text shown when the pointer rests on the icon (and its title for the Linux panels). */
+export function Rtray_set_tooltip(tray: Rid, text: string | null): void {
+	_lib.Rtray_set_tooltip(tray, _s(text));
+}
+
+/**
+ * The menu the system shows for the icon: on a right click
+ * (Windows, Linux), on a click (macOS). A MENU without a parent, whose
+ * MenuItems fire as when chosen in a window; what changes in it shows
+ * the next time it opens. R_INVALID_ID: none.
+ */
+export function Rtray_set_menu(tray: Rid, menu: Rid): void {
+	_lib.Rtray_set_menu(tray, menu);
+}
+
+/**
+ * Called on a click: the left button (activate), the right one
+ * when there is no menu, the middle one. On macOS an icon with a menu
+ * opens it instead.
+ */
+export function Rtray_set_clicked_callback(tray: Rid, callback: RTrayClickedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtray_set_clicked_callback(tray, _adapt_RTrayClickedCallback(callback), user_data);
+}
+
 export function Rcolor_picker_create(): Rid {
 	return _lib.Rcolor_picker_create();
 }
@@ -9291,6 +10829,18 @@ export function Rtimeline_set_track_muted(timeline: Rid, track: number, muted: n
 	_lib.Rtimeline_set_track_muted(timeline, track, muted);
 }
 
+/**
+ * A property of the look of a track: "ClipStyle" (Solid,
+ * Gradient, Tint, Outline), "KeyShape" (Diamond, Circle, Square...),
+ * "KeySize", "ClipRadius", "Background" (its lane), or a part and a
+ * property ("Clip.Glow", "Key.BorderColor"). "" or "Default" gives back
+ * the one of the timeline.
+ * Returns: R_FALSE when the name or the value is not one.
+ */
+export function Rtimeline_set_track_style(timeline: Rid, track: number, property: string | null, value: string | null): number {
+	return _lib.Rtimeline_set_track_style(timeline, track, _s(property), _s(value));
+}
+
 export function Rtimeline_is_track_muted(timeline: Rid, track: number): number {
 	return _lib.Rtimeline_is_track_muted(timeline, track);
 }
@@ -9352,6 +10902,25 @@ export function Rtimeline_get_item_label(timeline: Rid, item: number): string | 
 
 export function Rtimeline_set_item_color(timeline: Rid, item: number, r: number, g: number, b: number): void {
 	_lib.Rtimeline_set_item_color(timeline, item, r, g, b);
+}
+
+/**
+ * A property of the look of one clip, key or marker: "Style"
+ * (Solid, Gradient, Tint, Outline: clips), "Shape" (keys), or any
+ * property of its part ("Background", "BorderColor", "Glow",
+ * "CornerRadius", "Foreground" for its label...).
+ */
+export function Rtimeline_set_item_style(timeline: Rid, item: number, property: string | null, value: string | null): number {
+	return _lib.Rtimeline_set_item_style(timeline, item, _s(property), _s(value));
+}
+
+/** The look the timeline starts from (R_PRESET_AUTO by default; Preset="..." in XML). */
+export function Rtimeline_set_preset(timeline: Rid, preset: RVisualPreset): void {
+	_lib.Rtimeline_set_preset(timeline, preset);
+}
+
+export function Rtimeline_get_preset(timeline: Rid): RVisualPreset {
+	return _lib.Rtimeline_get_preset(timeline) as RVisualPreset;
 }
 
 export function Rtimeline_get_item_count(timeline: Rid): number {
@@ -9475,6 +11044,19 @@ export function Rnode_graph_set_node_color(graph: Rid, node: number, r: number, 
 }
 
 /**
+ * A property of the look of one node: "HeaderStyle" (Solid,
+ * Gradient, Stripe, Tint, None), "HeaderColor", "TitleColor",
+ * "Background", "BorderColor", "BorderWidth", "CornerRadius", "Glow",
+ * "Icon" (an image file shown before its title), or a part and a property
+ * ("Header.Gradient", "Node.ShadowSize"). "" or "Default" gives back the
+ * one of the graph.
+ * Returns: R_FALSE when the name or the value is not one.
+ */
+export function Rnode_graph_set_node_style(graph: Rid, node: number, property: string | null, value: string | null): number {
+	return _lib.Rnode_graph_set_node_style(graph, node, _s(property), _s(value));
+}
+
+/**
  * Puts a widget inside the node, under its pins: the graph owns
  * it from now on. R_INVALID_ID removes (and deletes) the one it had.
  */
@@ -9574,6 +11156,20 @@ export function Rnode_graph_set_type_color(graph: Rid, type: string | null, r: n
 }
 
 /**
+ * A property of the pins of a type and of their links: "Shape"
+ * (Circle, Ring, Square, Diamond, Triangle, Arrow), "Size", "Glow",
+ * "LinkShape" (Bezier, Straight, Step, Angled), "LinkWidth", "LinkGlow".
+ */
+export function Rnode_graph_set_type_style(graph: Rid, type: string | null, property: string | null, value: string | null): number {
+	return _lib.Rnode_graph_set_type_style(graph, _s(type), _s(property), _s(value));
+}
+
+/** The same for one pin ("Shape", "Size", "Glow", "Color"). */
+export function Rnode_graph_set_pin_style(graph: Rid, pin: number, property: string | null, value: string | null): number {
+	return _lib.Rnode_graph_set_pin_style(graph, pin, _s(property), _s(value));
+}
+
+/**
  * Links an output to an input, as the user does by dragging.
  * The connect callback is not asked.
  * Returns: The link; 0 when the pins cannot be linked (two inputs, the
@@ -9659,6 +11255,15 @@ export function Rnode_graph_set_flow_visible(graph: Rid, visible: number): void 
 /** R_TRUE: the user can look but not move, link or delete. */
 export function Rnode_graph_set_read_only(graph: Rid, read_only: number): void {
 	_lib.Rnode_graph_set_read_only(graph, read_only);
+}
+
+/** The look the graph starts from (R_PRESET_AUTO by default; Preset="..." in XML). */
+export function Rnode_graph_set_preset(graph: Rid, preset: RVisualPreset): void {
+	_lib.Rnode_graph_set_preset(graph, preset);
+}
+
+export function Rnode_graph_get_preset(graph: Rid): RVisualPreset {
+	return _lib.Rnode_graph_get_preset(graph) as RVisualPreset;
 }
 
 export function Rnode_graph_select_node(graph: Rid, node: number, add: number): void {
@@ -10127,6 +11732,32 @@ export function Rfile_browser_set_selection_changed_callback(browser: Rid, callb
 	_lib.Rfile_browser_set_selection_changed_callback(browser, _adapt_RFileBrowserCallback(callback), user_data);
 }
 
+/** Returns: R_TRUE when the system took the notification. */
+export function Rnotification_show(title: string | null, body: string | null, urgency: RNotificationUrgency): number {
+	return _lib.Rnotification_show(_s(title), _s(body), urgency);
+}
+
+/** R_FALSE when the platform has no notifications (Rnotification_show then always uses the fallback). */
+export function Rnotification_is_supported(): number {
+	return _lib.Rnotification_is_supported();
+}
+
+/** Called with the notifications the system could not show; NULL: none. */
+export function Rnotification_set_fallback(callback: RNotificationFallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rnotification_set_fallback(_adapt_RNotificationFallback(callback), user_data);
+}
+
+/**
+ * Called when the user clicks a notification of Rnotification_show
+ * (on the UI thread; the application may then bring its window to the
+ * front: the system lets it). It is the last one shown that was clicked:
+ * the application remembers what it was about. NULL: none.
+ * Windows only for now (elsewhere it is never called).
+ */
+export function Rnotification_set_clicked_callback(callback: RNotificationClickedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rnotification_set_clicked_callback(_adapt_RNotificationClickedCallback(callback), user_data);
+}
+
 /** Shows a texture. R_INVALID_ID shows nothing. */
 export function Rviewport_set_texture(viewport: Rid, texture: Rid): void {
 	_lib.Rviewport_set_texture(viewport, texture);
@@ -10384,11 +12015,25 @@ export function Rwidget_create_from_xml_file(path: string | null): Rid {
 }
 
 /**
- * Folder used to resolve relative paths found in XML (Source="...",
- * Font="..."). The *FromXmlFile functions use the folder of the file.
+ * A folder looked into after the one of the document (see above),
+ * and the first one for the documents given from memory. NULL or "": none.
  */
 export function Rxml_set_base_path(path: string | null): void {
 	_lib.Rxml_set_base_path(_s(path));
+}
+
+/**
+ * Turns auto-loading on or off (see above). It is on by default;
+ * the environment variable RAVEN_AUTO_LOAD=0 turns it off without
+ * rebuilding. Turned off, the register functions are the only way in;
+ * the places where paths are looked for stay the same.
+ */
+export function Rxml_set_auto_load(enabled: number): void {
+	_lib.Rxml_set_auto_load(enabled);
+}
+
+export function Rxml_get_auto_load(): number {
+	return _lib.Rxml_get_auto_load();
 }
 
 /**
@@ -10467,9 +12112,12 @@ export function Rxml_is_tag_registered(tag: string | null): number {
 
 /**
  * The path of a file named in a document: as the attributes
- * Source of Raven read it, relative to the folder of the document being
- * loaded (while it loads), else to the base path. For the attributes of
- * the tags made by code that name files.
+ * Source of Raven read it, looked for where files are looked for (see
+ * Rxml_set_base_path): the folder of the document being loaded (while it
+ * loads) and its subfolders, the base path, the current folder, PATH.
+ * When no place holds it, the path it would have next to the document
+ * (else in the base path). For the attributes of the tags made by code
+ * that name files.
  * Returns: The path; valid until the next call.
  */
 export function Rxml_resolve_path(path: string | null): string | null {
@@ -10593,7 +12241,12 @@ export function Rxml_node_get_index(node: Rid): number {
 	return _lib.Rxml_node_get_index(node);
 }
 
-/** index Where among the children; -1 for the end. */
+/**
+ * index Where among the children; -1 for the end.
+ * Returns: The new node; R_INVALID_ID (R_ERROR_XML) when it would be nested
+ *         deeper than a document can be: 256 levels under the root, as
+ *         when a text is read. The same holds for the functions below.
+ */
 export function Rxml_node_add_child(parent: Rid, tag: string | null, index: number): Rid {
 	return _lib.Rxml_node_add_child(parent, _s(tag), index);
 }
@@ -10620,7 +12273,7 @@ export function Rxml_node_remove(node: Rid): void {
  * Moves a node, with what it contains, under another parent of
  * the same document or elsewhere under its own.
  * index Where among the children of the new parent, counted once the node has left its place; -1 for the end.
- * Returns: R_FALSE when it cannot be done (the root, or a parent that is inside the node).
+ * Returns: R_FALSE when it cannot be done (the root, a parent that is inside the node, or a place too deep).
  */
 export function Rxml_node_move(node: Rid, new_parent: Rid, index: number): number {
 	return _lib.Rxml_node_move(node, new_parent, index);

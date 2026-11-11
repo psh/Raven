@@ -717,6 +717,252 @@ static void test_island(void) {
 	Rwindow_destroy(window);
 }
 
+/* Picture in picture: the null platform has a work area of 1920 x 1080 pixels. */
+static void test_inspector(void) {
+	static const char xml[] =
+		"<Window Title=\"Editor\" Width=\"500\" Height=\"300\">"
+		"  <VBox Name=\"root\">"
+		"    <Label Text=\"Hello\"/>"
+		"    <Button Name=\"save\" Class=\"primary big\" Text=\"Save\"/>"
+		"  </VBox>"
+		"</Window>";
+	Rid window = Rwindow_create_from_xml(xml, strlen(xml));
+	Rid save = Rwidget_find(window, "save"), inspector, tree, props, pick, item;
+	int i;
+	Rbutton_set_clicked_callback(save, on_clicked, NULL);
+	Rdraw_frame();
+	CHECK(!Rwindow_is_inspector_shown(window));
+	CHECK(Rwindow_get_inspector(window) == R_INVALID_ID);
+
+	/* shown: a window of its own, with the tree of the widgets */
+	Rwindow_set_inspector(window, R_TRUE);
+	CHECK(Rwindow_is_inspector_shown(window));
+	inspector = Rwindow_get_inspector(window);
+	CHECK(Rwindow_is_valid(inspector));
+	/* (asking again changes nothing) */
+	Rwindow_set_inspector(window, R_TRUE);
+	CHECK(Rwindow_get_inspector(window) == inspector);
+	tree = Rwidget_find(Rwindow_get_content(inspector), "tree");
+	props = Rwidget_find(Rwindow_get_content(inspector), "props");
+	pick = Rwidget_find(Rwindow_get_content(inspector), "pick");
+	CHECK(Rtree_view_get_item_count(tree) == 1);
+	item = Rtree_view_get_item(tree, 0);
+	CHECK_STR(Rtree_item_get_text(item), "VBox  \"root\"");
+	CHECK(Rtree_item_get_child_count(item) == 2);
+	CHECK_STR(Rtree_item_get_text(Rtree_item_get_child(item, 1)), "Button  \"save\"  .primary  .big");
+
+	/* selecting the button in the tree tells what it is */
+	Rtree_view_set_selected_item(tree, Rtree_item_get_child(item, 1));
+	Rdraw_frame();
+	CHECK(strstr(Rlabel_get_text(props), "Type        Button") != NULL);
+	CHECK(strstr(Rlabel_get_text(props), "Classes     primary big") != NULL);
+	Rdraw_frame();
+
+	/* the tree follows the window */
+	Rwidget_add_child(Rwidget_find(window, "root"), Rwidget_create(R_WIDGET_SLIDER));
+	for (i = 0; i < 100 && Rtree_item_get_child_count(Rtree_view_get_item(tree, 0)) != 3; i++) {
+		Rdraw_frame();
+		Rwait_events(0.01);
+	}
+	CHECK(Rtree_item_get_child_count(Rtree_view_get_item(tree, 0)) == 3);
+	/* (the selection stays) */
+	CHECK(strstr(Rlabel_get_text(props), "Type        Button") != NULL);
+
+	/* Pick: the next click in the window selects, and does not reach the widget */
+	Rtree_view_set_selected_item(tree, R_INVALID_ID);
+	Rcheckbox_set_checked(pick, R_TRUE);
+	Rdraw_frame();
+	g_clicked = 0;
+	test_click(window, save);
+	CHECK(g_clicked == 0);
+	CHECK(!Rcheckbox_is_checked(pick));
+	CHECK(strstr(Rlabel_get_text(props), "Type        Button") != NULL);
+	CHECK_STR(Rtree_item_get_text(Rtree_view_get_selected_item(tree)), "Button  \"save\"  .primary  .big");
+	/* then the clicks go to the window again */
+	test_click(window, save);
+	CHECK(g_clicked == 1);
+
+	/* an inspector has no inspector */
+	EXPECT_ERRORS_BEGIN();
+	Rwindow_set_inspector(inspector, R_TRUE);
+	EXPECT_ERRORS_END(1);
+
+	/* hidden by the same function; then shown again, it goes with its window */
+	Rwindow_set_inspector(window, R_FALSE);
+	Rdraw_frame();
+	CHECK(!Rwindow_is_inspector_shown(window));
+	CHECK(!Rwindow_is_valid(inspector));
+	Rwindow_set_inspector(window, R_TRUE);
+	inspector = Rwindow_get_inspector(window);
+	Rdraw_frame();
+	Rwindow_destroy(window);
+	Rdraw_frame();
+	CHECK(!Rwindow_is_valid(inspector));
+	CHECK(!Rwindow_is_inspector_shown(window));
+}
+
+static void test_splash_screen(void) {
+	static const char xml[] =
+		"<Window Title=\"Loading\" Width=\"400\" Height=\"240\" IsSplashScreen=\"true\" Maximized=\"true\">"
+		"  <Label Text=\"Starting...\"/>"
+		"</Window>";
+	Rid splash = Rwindow_create_from_xml(xml, strlen(xml));
+	Rid plain = Rwindow_create("main", 640, 360, R_WINDOW_HIDDEN);
+	int x = 0, y = 0, width = 0, height = 0;
+	CHECK(splash != R_INVALID_ID);
+	CHECK(Rwindow_is_splash_screen(splash));
+	CHECK(!Rwindow_is_splash_screen(plain));
+	CHECK(!Rwindow_is_splash_screen(R_INVALID_ID));
+	/* centered before it shows, at its size (Maximized is cancelled) */
+	Rdraw_frame();
+	Rwindow_get_size(splash, &width, &height);
+	CHECK(width == 400 && height == 240);
+	Rwindow_get_position(splash, &x, &y);
+	CHECK(x == (1920 - 400) / 2 && y == (1080 - 240) / 2);
+	/* and again when its size changes */
+	Rwindow_set_size(splash, 600, 300);
+	Rwindow_get_position(splash, &x, &y);
+	CHECK(x == (1920 - 600) / 2 && y == (1080 - 300) / 2);
+	/* the usual swap: the main window first, then the splash goes */
+	Rwindow_show(plain);
+	Rwindow_destroy(splash);
+	Rdraw_frame();
+	CHECK(Ris_running());
+	Rwindow_destroy(plain);
+}
+
+static void test_picture_in_picture(void) {
+	static const char xml[] =
+		"<VBox Name=\"root\">"
+		"  <Label Name=\"video\" Text=\"a video\" Slot.Fill=\"1\"/>"
+		"  <Button Name=\"back\" Text=\"Back\" OnClicked=\"window.picture_in_picture\"/>"
+		"</VBox>";
+	Rid window = Rwindow_create("player", 640, 360, R_WINDOW_DEFAULT);
+	Rid root = Rwidget_create_from_xml(xml, strlen(xml));
+	int width = 0, height = 0, x = 0, y = 0;
+	Rwindow_set_content(window, root);
+	Rwindow_set_position(window, 100, 120);
+	Rdraw_frame();
+	CHECK(!Rwindow_is_picture_in_picture(window));
+
+	/* in: 320 wide with the proportions of the content, in the bottom right corner */
+	CHECK(Rwindow_set_picture_in_picture(window, R_TRUE));
+	Rdraw_frame();
+	CHECK(Rwindow_is_picture_in_picture(window));
+	Rwindow_get_size(window, &width, &height);
+	CHECK(width == 320 && height == 180);
+	Rwindow_get_position(window, &x, &y);
+	CHECK(x == 1920 - 320 - 16 && y == 1080 - 180 - 16);
+	/* asking again changes nothing */
+	CHECK(Rwindow_set_picture_in_picture(window, R_TRUE));
+
+	/* another size and corner, at once while in */
+	Rwindow_set_picture_in_picture_layout(window, 400, 0, R_PIP_TOP_LEFT);
+	Rdraw_frame();
+	Rwindow_get_size(window, &width, &height);
+	CHECK(width == 400 && height == 225);
+	Rwindow_get_position(window, &x, &y);
+	CHECK(x == 16 && y == 16);
+
+	/* the button of the content takes it out (built-in action): size and place come back */
+	test_click(window, Rwidget_find(root, "back"));
+	Rdraw_frame();
+	CHECK(!Rwindow_is_picture_in_picture(window));
+	Rwindow_get_size(window, &width, &height);
+	CHECK(width == 640 && height == 360);
+	Rwindow_get_position(window, &x, &y);
+	CHECK(x == 100 && y == 120);
+	CHECK(Rwindow_set_picture_in_picture(window, R_FALSE));
+
+	/* the layout is kept for the next time; an invalid corner is refused */
+	CHECK(Rwindow_set_picture_in_picture(window, R_TRUE));
+	Rdraw_frame();
+	Rwindow_get_size(window, &width, &height);
+	CHECK(width == 400 && height == 225);
+	EXPECT_ERRORS_BEGIN();
+	Rwindow_set_picture_in_picture_layout(window, 0, 0, (RPictureInPictureCorner)0);
+	EXPECT_ERRORS_END(1);
+	CHECK(Raction_is_builtin("window.picture_in_picture"));
+	Rwindow_destroy(window);
+}
+
+/* The taskbar and the Dock: the null platform takes everything, as a system that shows it all. */
+static void test_taskbar(void) {
+	static const RJumpTask tasks[2] = { { "New window", "--new-window", "Opens another window" }, { "Settings", "--settings", NULL } };
+	static const RJumpTask untitled[1] = { { "", "--x", NULL } };
+	Rid window = Rwindow_create("taskbar", 300, 200, R_WINDOW_DEFAULT);
+	Rid menu = Rwidget_create(R_WIDGET_MENU);
+	Rid bar = Rwidget_create(R_WIDGET_MENU_BAR);
+	Rid inside = Rmenu_add_menu(bar, "File");
+	Rmenu_add_item(menu, "New window");
+
+	CHECK(Rwindow_set_taskbar_progress(window, R_TASKBAR_PROGRESS_NORMAL, 0.4f));
+	CHECK(Rwindow_set_taskbar_progress(window, R_TASKBAR_PROGRESS_INDETERMINATE, 0.0f));
+	CHECK(Rwindow_set_taskbar_progress(window, R_TASKBAR_PROGRESS_NONE, 0.0f));
+	CHECK(Rwindow_request_attention(window, R_TRUE));
+	CHECK(Rtaskbar_set_badge("3"));
+	CHECK(Rtaskbar_set_badge(NULL));
+	CHECK(Rtaskbar_set_jump_list(tasks, 2));
+	CHECK(Rtaskbar_set_jump_list(NULL, 0));
+
+	/* the menu of the icon follows its Menu, and is forgotten with it */
+	CHECK(Rtaskbar_set_menu(menu));
+	Rmenu_add_item(menu, "Settings");
+	Rdraw_frame();
+	Rwidget_destroy(menu);
+	Rdraw_frame();
+	CHECK(Rtaskbar_set_menu(R_INVALID_ID));
+
+	EXPECT_ERRORS_BEGIN();
+	CHECK(!Rwindow_set_taskbar_progress(window, (RTaskbarProgress)0, 0.5f));
+	CHECK(!Rtaskbar_set_jump_list(untitled, 1));
+	CHECK(!Rtaskbar_set_jump_list(NULL, 2));
+	/* a menu of a bar is not the menu of the icon */
+	CHECK(!Rtaskbar_set_menu(inside));
+	CHECK(!Rtaskbar_set_menu(window));
+	EXPECT_ERRORS_END(5);
+	Rwidget_destroy(bar);
+	Rwindow_destroy(window);
+}
+
+/* Tray icons: handles, checks, and their menu that follows its Menu. */
+static void test_tray(void) {
+	static uint8_t pixels[16 * 16 * 4];
+	Rid tray, menu, bar, inside;
+	CHECK(Rtray_is_supported());
+	tray = Rtray_create();
+	CHECK(tray != R_INVALID_ID && Rtray_is_valid(tray));
+	Rtray_set_icon(tray, pixels, 16, 16);
+	Rtray_set_tooltip(tray, "Raven");
+	menu = Rwidget_create(R_WIDGET_MENU);
+	Rmenu_add_item(menu, "Show");
+	Rtray_set_menu(tray, menu);
+	Rmenu_add_item(menu, "Quit");
+	Rdraw_frame();
+	/* the menu deleted by the application: the icon has none any more */
+	Rwidget_destroy(menu);
+	Rdraw_frame();
+	Rtray_set_menu(tray, R_INVALID_ID);
+
+	bar = Rwidget_create(R_WIDGET_MENU_BAR);
+	inside = Rmenu_add_menu(bar, "File");
+	EXPECT_ERRORS_BEGIN();
+	Rtray_set_icon(tray, NULL, 16, 16);
+	Rtray_set_icon(tray, pixels, 0, 16);
+	Rtray_set_menu(tray, inside);
+	EXPECT_ERRORS_END(3);
+	Rwidget_destroy(bar);
+
+	Rtray_destroy(tray);
+	CHECK(!Rtray_is_valid(tray));
+	EXPECT_ERRORS_BEGIN();
+	Rtray_set_tooltip(tray, "gone");
+	EXPECT_ERRORS_END(1);
+	/* left at the end: Rshutdown takes it away */
+	tray = Rtray_create();
+	CHECK(Rtray_is_valid(tray));
+}
+
 int main(void) {
 	if (!test_init(0)) {
 		printf("test_shell: cannot initialize Raven\n");
@@ -729,6 +975,11 @@ int main(void) {
 	RUN(test_dock);
 	RUN(test_dock_animated);
 	RUN(test_island);
+	RUN(test_picture_in_picture);
+	RUN(test_splash_screen);
+	RUN(test_inspector);
+	RUN(test_taskbar);
+	RUN(test_tray);
 	Rshutdown();
 	return test_report("test_shell");
 }

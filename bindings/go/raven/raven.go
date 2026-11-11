@@ -119,6 +119,7 @@ const (
 	R_BACKEND_VULKAN RBackend = 1
 	R_BACKEND_NULL   RBackend = 2
 	R_BACKEND_CUSTOM RBackend = 3
+	R_BACKEND_WEBGL  RBackend = 4
 )
 
 type RError int32
@@ -157,6 +158,17 @@ const (
 	R_WINDOW_MAXIMIZED     RWindowFlags = 8
 	R_WINDOW_CUSTOM_HEADER RWindowFlags = 0x0010
 	R_WINDOW_TRANSPARENT   RWindowFlags = 0x0020
+	R_WINDOW_SPLASH_SCREEN RWindowFlags = 0x0040
+)
+
+// RPictureInPictureCorner: Where a window in picture in picture goes (Rwindow_set_picture_in_picture_layout).
+type RPictureInPictureCorner int32
+
+const (
+	R_PIP_BOTTOM_RIGHT RPictureInPictureCorner = 0x0780
+	R_PIP_BOTTOM_LEFT  RPictureInPictureCorner = 0x0781
+	R_PIP_TOP_RIGHT    RPictureInPictureCorner = 0x0782
+	R_PIP_TOP_LEFT     RPictureInPictureCorner = 0x0783
 )
 
 // RBackdrop: What is seen behind a window created with R_WINDOW_TRANSPARENT. Windows 11 every value Windows
@@ -177,11 +189,12 @@ const (
 type RWindowSystem int32
 
 const (
-	R_WINDOW_SYSTEM_NONE    RWindowSystem = 0x0090
-	R_WINDOW_SYSTEM_WIN32   RWindowSystem = 0x0091
-	R_WINDOW_SYSTEM_X11     RWindowSystem = 0x0092
-	R_WINDOW_SYSTEM_WAYLAND RWindowSystem = 0x0093
-	R_WINDOW_SYSTEM_COCOA   RWindowSystem = 0x0094
+	R_WINDOW_SYSTEM_NONE       RWindowSystem = 0x0090
+	R_WINDOW_SYSTEM_WIN32      RWindowSystem = 0x0091
+	R_WINDOW_SYSTEM_X11        RWindowSystem = 0x0092
+	R_WINDOW_SYSTEM_WAYLAND    RWindowSystem = 0x0093
+	R_WINDOW_SYSTEM_COCOA      RWindowSystem = 0x0094
+	R_WINDOW_SYSTEM_EMSCRIPTEN RWindowSystem = 0x0095
 )
 
 // RWindowEdge: Edges and corners of a window, for Rwindow_begin_resize.
@@ -618,6 +631,14 @@ const (
 	R_WIDGET_NODE_GRAPH      RWidgetType = 0x0228
 	R_WIDGET_TILE_VIEW       RWidgetType = 0x0229
 	R_WIDGET_BLOCK_EDITOR    RWidgetType = 0x022A
+	R_WIDGET_TABLE           RWidgetType = 0x022B
+	R_WIDGET_DATE_PICKER     RWidgetType = 0x022C
+	R_WIDGET_TIME_PICKER     RWidgetType = 0x022D
+	R_WIDGET_TOAST           RWidgetType = 0x022E
+	R_WIDGET_BREADCRUMB      RWidgetType = 0x022F
+	R_WIDGET_RATING          RWidgetType = 0x0230
+	R_WIDGET_PAGINATION      RWidgetType = 0x0231
+	R_WIDGET_PLOT            RWidgetType = 0x0232
 )
 
 type RHAlign int32
@@ -700,6 +721,24 @@ const (
 	R_TEXT_ALIGN_RIGHT  RTextAlign = 0x0282
 )
 
+type RToastKind int32
+
+const (
+	R_TOAST_INFO    RToastKind = 0x04E0
+	R_TOAST_SUCCESS RToastKind = 0x04E1
+	R_TOAST_WARNING RToastKind = 0x04E2
+	R_TOAST_ERROR   RToastKind = 0x04E3
+)
+
+// RToastQueue: What a Toast does with a message that comes while another one is shown.
+type RToastQueue int32
+
+const (
+	R_TOAST_REPLACE  RToastQueue = 0x0500
+	R_TOAST_SEQUENCE RToastQueue = 0x0501
+	R_TOAST_STACK    RToastQueue = 0x0502
+)
+
 type RButtonStyle int32
 
 const (
@@ -723,6 +762,67 @@ const (
 	R_STRETCH_FIT   RStretch = 0x02B1
 	R_STRETCH_COVER RStretch = 0x02B2
 	R_STRETCH_NONE  RStretch = 0x02B3
+)
+
+// RPlotAxis: The axes of a Plot.
+type RPlotAxis int32
+
+const (
+	R_PLOT_X  RPlotAxis = 0x0520
+	R_PLOT_Y  RPlotAxis = 0x0521
+	R_PLOT_X2 RPlotAxis = 0x0522
+	R_PLOT_Y2 RPlotAxis = 0x0523
+)
+
+// RPlotScale: How an axis of a Plot spreads its values.
+type RPlotScale int32
+
+const (
+	R_PLOT_SCALE_LINEAR RPlotScale = 0x0530
+	R_PLOT_SCALE_LOG    RPlotScale = 0x0531
+	R_PLOT_SCALE_SYMLOG RPlotScale = 0x0532
+)
+
+// RPlotLine: How the line of a series of a Plot is drawn.
+type RPlotLine int32
+
+const (
+	R_PLOT_LINE_SOLID    RPlotLine = 0x0540
+	R_PLOT_LINE_DASHED   RPlotLine = 0x0541
+	R_PLOT_LINE_DOTTED   RPlotLine = 0x0542
+	R_PLOT_LINE_DASH_DOT RPlotLine = 0x0543
+	R_PLOT_LINE_NONE     RPlotLine = 0x0544
+)
+
+// RPlotMarker: The mark drawn on each point of a series of a Plot.
+type RPlotMarker int32
+
+const (
+	R_PLOT_MARKER_NONE          RPlotMarker = 0x0550
+	R_PLOT_MARKER_CIRCLE        RPlotMarker = 0x0551
+	R_PLOT_MARKER_SQUARE        RPlotMarker = 0x0552
+	R_PLOT_MARKER_DIAMOND       RPlotMarker = 0x0553
+	R_PLOT_MARKER_TRIANGLE_UP   RPlotMarker = 0x0554
+	R_PLOT_MARKER_TRIANGLE_DOWN RPlotMarker = 0x0555
+	R_PLOT_MARKER_CROSS         RPlotMarker = 0x0556
+	R_PLOT_MARKER_PLUS          RPlotMarker = 0x0557
+	R_PLOT_MARKER_ASTERISK      RPlotMarker = 0x0558
+)
+
+// RPlotLegend: Where the legend of a Plot is.
+type RPlotLegend int32
+
+const (
+	R_PLOT_LEGEND_HIDDEN       RPlotLegend = 0x0560
+	R_PLOT_LEGEND_TOP_LEFT     RPlotLegend = 0x0561
+	R_PLOT_LEGEND_TOP          RPlotLegend = 0x0562
+	R_PLOT_LEGEND_TOP_RIGHT    RPlotLegend = 0x0563
+	R_PLOT_LEGEND_RIGHT        RPlotLegend = 0x0564
+	R_PLOT_LEGEND_BOTTOM_RIGHT RPlotLegend = 0x0565
+	R_PLOT_LEGEND_BOTTOM       RPlotLegend = 0x0566
+	R_PLOT_LEGEND_BOTTOM_LEFT  RPlotLegend = 0x0567
+	R_PLOT_LEGEND_LEFT         RPlotLegend = 0x0568
+	R_PLOT_LEGEND_OUTSIDE      RPlotLegend = 0x0569
 )
 
 // RSyntax: Shorthands of Rtext_editor_set_language for two languages.
@@ -788,6 +888,17 @@ const (
 	R_HEADER_ALL_BUTTONS RHeaderButtons = 7
 )
 
+// RTaskbarProgress: A progress bar on the icon of the application (Rwindow_set_taskbar_progress).
+type RTaskbarProgress int32
+
+const (
+	R_TASKBAR_PROGRESS_NONE          RTaskbarProgress = 0x07A0
+	R_TASKBAR_PROGRESS_NORMAL        RTaskbarProgress = 0x07A1
+	R_TASKBAR_PROGRESS_PAUSED        RTaskbarProgress = 0x07A2
+	R_TASKBAR_PROGRESS_ERROR         RTaskbarProgress = 0x07A3
+	R_TASKBAR_PROGRESS_INDETERMINATE RTaskbarProgress = 0x07A4
+)
+
 // RDockSide: Where a panel goes in a dock area, relative to another panel or to the whole area.
 type RDockSide int32
 
@@ -797,6 +908,16 @@ const (
 	R_DOCK_TOP    RDockSide = 0x0362
 	R_DOCK_BOTTOM RDockSide = 0x0363
 	R_DOCK_TAB    RDockSide = 0x0364
+)
+
+type RVisualPreset int32
+
+const (
+	R_PRESET_AUTO      RVisualPreset = 0x0510
+	R_PRESET_MODERN    RVisualPreset = 0x0511
+	R_PRESET_BLUEPRINT RVisualPreset = 0x0512
+	R_PRESET_BLENDER   RVisualPreset = 0x0513
+	R_PRESET_NEON      RVisualPreset = 0x0514
 )
 
 // RTimelineItem: What an item of a timeline is.
@@ -826,6 +947,15 @@ const (
 	R_BLOCK_NEXT  RBlockPlace = 0x0710
 	R_BLOCK_BODY  RBlockPlace = 0x0711
 	R_BLOCK_INPUT RBlockPlace = 0x0712
+)
+
+// RNotificationUrgency: How much a notification of the system asks for attention (Rnotification_show).
+type RNotificationUrgency int32
+
+const (
+	R_NOTIFICATION_LOW      RNotificationUrgency = 0x04F0
+	R_NOTIFICATION_NORMAL   RNotificationUrgency = 0x04F1
+	R_NOTIFICATION_CRITICAL RNotificationUrgency = 0x04F2
 )
 
 type RFileDialogFlags int32
@@ -1136,15 +1266,15 @@ func ActionFire(name string, sender ID) {
 
 // ActionSetBuiltins: The actions Raven knows by itself: an interface written in XML uses them with no C at
 // all (OnClicked="app.quit"). app.quit quits (Rquit(0)) window.close, window.minimize, the window of the
-// widget window.maximize, window.restore (maximize goes back when it already is) island.expand, island.fold,
-// the island of that window island.toggle theme.dark, theme.light, the look of Raven, dark or light
-// theme.toggle theme:NAME Rtheme_use(NAME): a theme loaded or built in language:CODE
-// Rlocale_set_language(CODE) open:ADDRESS Ropen_url (https:, mailto:, a file) copy:TEXT the text to the
-// clipboard show:NAME, hide:NAME, toggle:NAME the widget named NAME in the window (hidden: Collapsed)
-// enable:NAME, disable:NAME focus:NAME page:NAME=2, page:NAME=+1 what a Switcher, a TabView, a ComboBox or a
-// ListView shows; +1 and -1 step, and go round A function bound to one of these names (Raction_bind) replaces
-// it; the default handler receives the others only. enabled R_FALSE turns them all off: a design tool that
-// shows interfaces without running them. On by default.
+// widget window.maximize, window.restore (maximize goes back when it already is) window.picture_in_picture in
+// and out of picture in picture island.expand, island.fold, the island of that window island.toggle
+// theme.dark, theme.light, the look of Raven, dark or light theme.toggle theme:NAME Rtheme_use(NAME): a theme
+// loaded or built in language:CODE Rlocale_set_language(CODE) open:ADDRESS Ropen_url (https:, mailto:, a
+// file) copy:TEXT the text to the clipboard show:NAME, hide:NAME, toggle:NAME the widget named NAME in the
+// window (hidden: Collapsed) enable:NAME, disable:NAME focus:NAME page:NAME=2, page:NAME=+1 what a Switcher,
+// a TabView, a ComboBox or a ListView shows; +1 and -1 step, and go round A function bound to one of these
+// names (Raction_bind) replaces it; the default handler receives the others only. enabled R_FALSE turns them
+// all off: a design tool that shows interfaces without running them. On by default.
 func ActionSetBuiltins(enabled int) {
 	C.Raction_set_builtins(C.int(enabled))
 }
@@ -1170,6 +1300,18 @@ func ClipboardSetText(text string) {
 	text_ := C.CString(text)
 	defer C.free(unsafe.Pointer(text_))
 	C.Rclipboard_set_text(text_)
+}
+
+// ClipboardSetHtml: Copies one content in two formats: `html` for the programs that paste formatting (word
+// processors, chat, mail) and `text` for the others (editors, terminals). Each program takes the format it
+// prefers. Where the window system has no clipboard formats (Win32 and macOS for now), or `html` is NULL, it
+// is Rclipboard_set_text(text).
+func ClipboardSetHtml(text string, html string) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	html_ := C.CString(html)
+	defer C.free(unsafe.Pointer(html_))
+	C.Rclipboard_set_html(text_, html_)
 }
 
 // ClipboardGetText: Returns: The clipboard text, or "" when empty. Valid until the next call.
@@ -1378,9 +1520,58 @@ func WindowSetTopmost(window ID, topmost int) int {
 	return int(C.Rwindow_set_topmost(C.Rid(window), C.int(topmost)))
 }
 
+// WindowSetPictureInPicture: Picture in picture: the window becomes a small floating window that stays above
+// the other windows, on every desktop (every space of macOS, over the applications in full screen too), in a
+// corner of the work area of its monitor. It loses its title bar where the system allows: the empty parts of
+// its content move it, its edges resize it, and its size keeps the proportions it was given. Leaving it gives
+// back the size, place, frame and state the window had. Raven does not add a button to leave it: the content
+// shows one, with the built-in action "window.picture_in_picture" (it goes in and out). Returns: R_FALSE when
+// the window system cannot keep a window above the others (Wayland): the window is left as it is.
+func WindowSetPictureInPicture(window ID, enabled int) int {
+	return int(C.Rwindow_set_picture_in_picture(C.Rid(window), C.int(enabled)))
+}
+
+func WindowIsPictureInPicture(window ID) int {
+	return int(C.Rwindow_is_picture_in_picture(C.Rid(window)))
+}
+
+// WindowSetPictureInPictureLayout: Size (logical units) and corner of the window in picture in picture, for
+// the next time it goes in (now, when it is in). 0, 0 (the default): 320 wide, with the proportions the
+// content has when it goes in. The proportions of width / height are kept while the user resizes.
+func WindowSetPictureInPictureLayout(window ID, width int, height int, corner RPictureInPictureCorner) {
+	C.Rwindow_set_picture_in_picture_layout(C.Rid(window), C.int(width), C.int(height), C.RPictureInPictureCorner(corner))
+}
+
 // WindowCenter: Centers the window on the work area of its monitor (no task bar).
 func WindowCenter(window ID) {
 	C.Rwindow_center(C.Rid(window))
+}
+
+// WindowSetInspector: Shows (R_TRUE) or hides (R_FALSE) the inspector of the window: a window beside it that
+// lists its widgets as a tree, says what the selected one is (type, name, classes, place and size in the
+// window, desired size, constraints, slot, visibility, state, style, action, children) and what the last
+// frame cost (layout, paint and render times, widgets, instances, draw calls). The selected widget is
+// outlined in the window, with its type and size. "Pick" selects the next widget clicked in the window (that
+// click goes to the inspector only). It follows the window as it changes; closing it hides it, and it goes
+// with the window. Nothing opens it but this function.
+func WindowSetInspector(window ID, shown int) {
+	C.Rwindow_set_inspector(C.Rid(window), C.int(shown))
+}
+
+func WindowIsInspectorShown(window ID) int {
+	return int(C.Rwindow_is_inspector_shown(C.Rid(window)))
+}
+
+// WindowGetInspector: Returns: The window of the inspector of a window (to place it), or R_INVALID_ID when it
+// is hidden.
+func WindowGetInspector(window ID) ID {
+	return ID(C.Rwindow_get_inspector(C.Rid(window)))
+}
+
+// WindowIsSplashScreen: Returns: R_TRUE for a window created with R_WINDOW_SPLASH_SCREEN (IsSplashScreen in
+// XML).
+func WindowIsSplashScreen(window ID) int {
+	return int(C.Rwindow_is_splash_screen(C.Rid(window)))
 }
 
 // WindowRequestRedraw: Asks for a new frame even if no widget changed. Thread-safe.
@@ -1882,7 +2073,7 @@ func FontMeasureText(font ID, size float32, text string) (width float32, height 
 	return
 }
 
-// TextureCreate: Creates a texture from the content of an image file (PNG, JPEG, BMP, TGA, GIF, PSD).
+// TextureCreate: Creates a texture from the content of an image file (PNG, JPEG, BMP, TGA, GIF, PSD, SVG).
 // Decoding happens on the calling thread. Returns: R_INVALID_ID on failure.
 func TextureCreate(data []byte) ID {
 	var data_ *C.char
@@ -1900,6 +2091,26 @@ func TextureCreateAsync(data []byte) ID {
 		data_ = (*C.char)(unsafe.Pointer(&data[0]))
 	}
 	return ID(C.Rtexture_create_async(data_, C.size_t(len(data))))
+}
+
+// TextureCreateFromSvg: Draws an SVG image (an icon) into a texture, at `scale` pixels per unit of the SVG.
+// The widgets show it at the size the SVG gives, whatever the scale (Rtexture_get_density). 0 or less: at the
+// size it is shown. It is first drawn at a scale of 2; once painted, it is drawn again (on a worker thread)
+// with as many pixels as the screen shows it with: the scale of the monitor of the window, an Image that
+// stretches it, a zoom. It follows when the window moves to a screen of another density or the image grows,
+// and comes down when it is shown much smaller (sides of at most 4096 pixels). Its width and height in pixels
+// (Rtexture_get_size) change then; its size in logical units does not. Rtexture_create,
+// Rtexture_create_from_file and the asynchronous ones read SVG files this way. Paths, fills, strokes and
+// gradients are drawn; text, filters and masks are not.
+func TextureCreateFromSvg(svg string, svg_size int, scale float32) ID {
+	svg_ := C.CString(svg)
+	defer C.free(unsafe.Pointer(svg_))
+	return ID(C.Rtexture_create_from_svg(svg_, C.size_t(svg_size), C.float(scale)))
+}
+
+// TextureGetDensity: Pixels of the texture per logical unit: the scale of an SVG, 1 otherwise.
+func TextureGetDensity(texture ID) float32 {
+	return float32(C.Rtexture_get_density(C.Rid(texture)))
 }
 
 func TextureCreateFromFile(path string) ID {
@@ -3130,6 +3341,20 @@ func TreeViewSetDropHighlight(tree_view ID, item ID, whole_tree int) {
 	C.Rtree_view_set_drop_highlight(C.Rid(tree_view), C.Rid(item), C.int(whole_tree))
 }
 
+// MenuBarSetNative: The menu bar of the system. On macOS, the first MenuBar of a window is shown in the bar
+// at the top of the screen while the window is the active one, after the menu of the application (About,
+// Hide, Quit); it then takes no room in the window. Its shortcuts are those of the system: R_MOD_SUPER is
+// Command, R_MOD_CTRL is Control. Elsewhere it is drawn in the window. On by default; R_FALSE keeps it in the
+// window everywhere. In XML: <MenuBar Native="false">.
+func MenuBarSetNative(menu_bar ID, native int) {
+	C.Rmenu_bar_set_native(C.Rid(menu_bar), C.int(native))
+}
+
+// MenuBarIsNative: Returns: R_TRUE while the menu bar is shown by the system instead of the window.
+func MenuBarIsNative(menu_bar ID) int {
+	return int(C.Rmenu_bar_is_native(C.Rid(menu_bar)))
+}
+
 // MenuAddMenu: Creates a menu inside a menu bar or as a sub-menu of another menu.
 func MenuAddMenu(menu_bar_or_menu ID, title string) ID {
 	title_ := C.CString(title)
@@ -3268,6 +3493,652 @@ func TileViewSetDragType(tile_view ID, type_ string) {
 	type__ := C.CString(type_)
 	defer C.free(unsafe.Pointer(type__))
 	C.Rtile_view_set_drag_type(C.Rid(tile_view), type__)
+}
+
+// TableAddColumn: Adds a column. width Width in logical units; 0 or less gives the default (120). Returns:
+// The index of the column. The stored rows get an empty cell in it.
+func TableAddColumn(table ID, header string, width float32) int {
+	header_ := C.CString(header)
+	defer C.free(unsafe.Pointer(header_))
+	return int(C.Rtable_add_column(C.Rid(table), header_, C.float(width)))
+}
+
+func TableGetColumnCount(table ID) int {
+	return int(C.Rtable_get_column_count(C.Rid(table)))
+}
+
+// TableClearColumns: Removes the columns and the stored rows.
+func TableClearColumns(table ID) {
+	C.Rtable_clear_columns(C.Rid(table))
+}
+
+func TableSetColumnHeader(table ID, column int, header string) {
+	header_ := C.CString(header)
+	defer C.free(unsafe.Pointer(header_))
+	C.Rtable_set_column_header(C.Rid(table), C.int(column), header_)
+}
+
+func TableGetColumnHeader(table ID, column int) string {
+	return C.GoString(C.Rtable_get_column_header(C.Rid(table), C.int(column)))
+}
+
+func TableSetColumnWidth(table ID, column int, width float32) {
+	C.Rtable_set_column_width(C.Rid(table), C.int(column), C.float(width))
+}
+
+// TableGetColumnWidth: The width the column has on screen (a filling column takes more than its width).
+func TableGetColumnWidth(table ID, column int) float32 {
+	return float32(C.Rtable_get_column_width(C.Rid(table), C.int(column)))
+}
+
+// TableSetColumnFill: > 0: the column takes this share of the room the others leave; 0: its width only.
+func TableSetColumnFill(table ID, column int, fill float32) {
+	C.Rtable_set_column_fill(C.Rid(table), C.int(column), C.float(fill))
+}
+
+// TableSetColumnSortable: R_FALSE: a click on the header does not sort (default R_TRUE).
+func TableSetColumnSortable(table ID, column int, sortable int) {
+	C.Rtable_set_column_sortable(C.Rid(table), C.int(column), C.int(sortable))
+}
+
+// TableSetColumnAlign: Where the texts sit in the cells: 0 left, 0.5 center, 1 right.
+func TableSetColumnAlign(table ID, column int, align float32) {
+	C.Rtable_set_column_align(C.Rid(table), C.int(column), C.float(align))
+}
+
+// TableAddRow: Adds a row. cells The texts of the cells, separated by '|' ("Ada|36|London"), or NULL for an
+// empty row; Rtable_set_cell gives a text holding a '|'. Returns: The index of the row.
+func TableAddRow(table ID, cells string) int {
+	cells_ := C.CString(cells)
+	defer C.free(unsafe.Pointer(cells_))
+	return int(C.Rtable_add_row(C.Rid(table), cells_))
+}
+
+func TableSetCell(table ID, row int, column int, text string) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rtable_set_cell(C.Rid(table), C.int(row), C.int(column), text_)
+}
+
+func TableGetCell(table ID, row int, column int) string {
+	return C.GoString(C.Rtable_get_cell(C.Rid(table), C.int(row), C.int(column)))
+}
+
+func TableRemoveRow(table ID, row int) {
+	C.Rtable_remove_row(C.Rid(table), C.int(row))
+}
+
+func TableClearRows(table ID) {
+	C.Rtable_clear_rows(C.Rid(table))
+}
+
+func TableGetRowCount(table ID) int {
+	return int(C.Rtable_get_row_count(C.Rid(table)))
+}
+
+// TableSetSelected: Selects a row. -1 selects nothing.
+func TableSetSelected(table ID, row int) {
+	C.Rtable_set_selected(C.Rid(table), C.int(row))
+}
+
+func TableGetSelected(table ID) int {
+	return int(C.Rtable_get_selected(C.Rid(table)))
+}
+
+func TableScrollToRow(table ID, row int) {
+	C.Rtable_scroll_to_row(C.Rid(table), C.int(row))
+}
+
+// TableSort: Sorts by a column (stored rows are moved); -1 shows no sorted column.
+func TableSort(table ID, column int, descending int) {
+	C.Rtable_sort(C.Rid(table), C.int(column), C.int(descending))
+}
+
+func TableGetSortColumn(table ID) int {
+	return int(C.Rtable_get_sort_column(C.Rid(table)))
+}
+
+func TableIsSortDescending(table ID) int {
+	return int(C.Rtable_is_sort_descending(C.Rid(table)))
+}
+
+func TableSetHeaderVisible(table ID, visible int) {
+	C.Rtable_set_header_visible(C.Rid(table), C.int(visible))
+}
+
+func TableSetGridLines(table ID, visible int) {
+	C.Rtable_set_grid_lines(C.Rid(table), C.int(visible))
+}
+
+// TableSetStriped: Every other row a little darker.
+func TableSetStriped(table ID, striped int) {
+	C.Rtable_set_striped(C.Rid(table), C.int(striped))
+}
+
+// DatePickerSetDate: Sets the date (today when the picker is created). An invalid date is refused.
+func DatePickerSetDate(date_picker ID, year int, month int, day int) {
+	C.Rdate_picker_set_date(C.Rid(date_picker), C.int(year), C.int(month), C.int(day))
+}
+
+func DatePickerGetDate(date_picker ID) (year int, month int, day int) {
+	var year_ C.int
+	var month_ C.int
+	var day_ C.int
+	C.Rdate_picker_get_date(C.Rid(date_picker), &year_, &month_, &day_)
+	year = int(year_)
+	month = int(month_)
+	day = int(day_)
+	return
+}
+
+// DatePickerSetRange: The earliest and the latest dates that can be chosen; 0 for year leaves that side open.
+func DatePickerSetRange(date_picker ID, min_year int, min_month int, min_day int, max_year int, max_month int, max_day int) {
+	C.Rdate_picker_set_range(C.Rid(date_picker), C.int(min_year), C.int(min_month), C.int(min_day), C.int(max_year), C.int(max_month), C.int(max_day))
+}
+
+// DatePickerSetFirstDayOfWeek: 0 = Sunday (default), 1 = Monday...
+func DatePickerSetFirstDayOfWeek(date_picker ID, day int) {
+	C.Rdate_picker_set_first_day_of_week(C.Rid(date_picker), C.int(day))
+}
+
+// DatePickerSetFormat: How the field writes the date: YYYY, MM, M, DD, D, MMMM (the name of the month), MMM
+// (its first three letters), dddd (the name of the day), ddd; anything else is kept. Default "YYYY-MM-DD"; "D
+// MMMM YYYY" gives "3 November 2026".
+func DatePickerSetFormat(date_picker ID, format string) {
+	format_ := C.CString(format)
+	defer C.free(unsafe.Pointer(format_))
+	C.Rdate_picker_set_format(C.Rid(date_picker), format_)
+}
+
+// DatePickerGetText: The date as the field shows it (valid until the next call).
+func DatePickerGetText(date_picker ID) string {
+	return C.GoString(C.Rdate_picker_get_text(C.Rid(date_picker)))
+}
+
+// DatePickerSetOpen: Opens or closes the calendar.
+func DatePickerSetOpen(date_picker ID, open int) {
+	C.Rdate_picker_set_open(C.Rid(date_picker), C.int(open))
+}
+
+func DatePickerIsOpen(date_picker ID) int {
+	return int(C.Rdate_picker_is_open(C.Rid(date_picker)))
+}
+
+func TimePickerSetTime(time_picker ID, hour int, minute int, second int) {
+	C.Rtime_picker_set_time(C.Rid(time_picker), C.int(hour), C.int(minute), C.int(second))
+}
+
+func TimePickerGetTime(time_picker ID) (hour int, minute int, second int) {
+	var hour_ C.int
+	var minute_ C.int
+	var second_ C.int
+	C.Rtime_picker_get_time(C.Rid(time_picker), &hour_, &minute_, &second_)
+	hour = int(hour_)
+	minute = int(minute_)
+	second = int(second_)
+	return
+}
+
+func TimePickerSetSecondsVisible(time_picker ID, visible int) {
+	C.Rtime_picker_set_seconds_visible(C.Rid(time_picker), C.int(visible))
+}
+
+// TimePickerSetMinuteStep: Step of the minutes for the arrows and the wheel (default 1).
+func TimePickerSetMinuteStep(time_picker ID, step int) {
+	C.Rtime_picker_set_minute_step(C.Rid(time_picker), C.int(step))
+}
+
+// ToastShow: Shows a message for `seconds` (0 or less: until Rtoast_hide), with the kind and button set now.
+func ToastShow(toast ID, text string, seconds float64) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rtoast_show(C.Rid(toast), text_, C.double(seconds))
+}
+
+// ToastShowKind: Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is).
+func ToastShowKind(toast ID, text string, kind RToastKind, seconds float64) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rtoast_show_kind(C.Rid(toast), text_, C.RToastKind(kind), C.double(seconds))
+}
+
+// ToastHide: Hides the newest message shown; the next one waiting comes.
+func ToastHide(toast ID) {
+	C.Rtoast_hide(C.Rid(toast))
+}
+
+// ToastClear: Hides every message, and forgets those waiting.
+func ToastClear(toast ID) {
+	C.Rtoast_clear(C.Rid(toast))
+}
+
+func ToastIsShown(toast ID) int {
+	return int(C.Rtoast_is_shown(C.Rid(toast)))
+}
+
+// ToastGetCount: Returns: The messages shown and waiting.
+func ToastGetCount(toast ID) int {
+	return int(C.Rtoast_get_count(C.Rid(toast)))
+}
+
+// ToastGetText: Returns: The newest message shown (the last one, once hidden; the clicked one in the action
+// callback).
+func ToastGetText(toast ID) string {
+	return C.GoString(C.Rtoast_get_text(C.Rid(toast)))
+}
+
+func ToastSetQueue(toast ID, queue RToastQueue) {
+	C.Rtoast_set_queue(C.Rid(toast), C.RToastQueue(queue))
+}
+
+func ToastGetQueue(toast ID) RToastQueue {
+	return RToastQueue(C.Rtoast_get_queue(C.Rid(toast)))
+}
+
+// ToastSetMaxVisible: How many messages a R_TOAST_STACK shows at once (default 3).
+func ToastSetMaxVisible(toast ID, count int) {
+	C.Rtoast_set_max_visible(C.Rid(toast), C.int(count))
+}
+
+// ToastSetKind: The kind of the next messages (and of the message shown, with R_TOAST_REPLACE).
+func ToastSetKind(toast ID, kind RToastKind) {
+	C.Rtoast_set_kind(C.Rid(toast), C.RToastKind(kind))
+}
+
+// ToastSetActionText: A button at the end of the next messages ("Undo"); NULL or "" removes it.
+func ToastSetActionText(toast ID, text string) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rtoast_set_action_text(C.Rid(toast), text_)
+}
+
+// BreadcrumbSetItems: Replaces the items: their texts separated by '|'.
+func BreadcrumbSetItems(breadcrumb ID, items string) {
+	items_ := C.CString(items)
+	defer C.free(unsafe.Pointer(items_))
+	C.Rbreadcrumb_set_items(C.Rid(breadcrumb), items_)
+}
+
+// BreadcrumbAddItem: Returns: The index of the new item, at the end.
+func BreadcrumbAddItem(breadcrumb ID, text string) int {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	return int(C.Rbreadcrumb_add_item(C.Rid(breadcrumb), text_))
+}
+
+// BreadcrumbTruncate: Keeps the first `count` items: Rbreadcrumb_truncate(b, index + 1) goes back to the item
+// clicked.
+func BreadcrumbTruncate(breadcrumb ID, count int) {
+	C.Rbreadcrumb_truncate(C.Rid(breadcrumb), C.int(count))
+}
+
+func BreadcrumbGetItemCount(breadcrumb ID) int {
+	return int(C.Rbreadcrumb_get_item_count(C.Rid(breadcrumb)))
+}
+
+func BreadcrumbGetItemText(breadcrumb ID, index int) string {
+	return C.GoString(C.Rbreadcrumb_get_item_text(C.Rid(breadcrumb), C.int(index)))
+}
+
+// RatingSetValue: The score, from 0 to the number of stars.
+func RatingSetValue(rating ID, value float32) {
+	C.Rrating_set_value(C.Rid(rating), C.float(value))
+}
+
+func RatingGetValue(rating ID) float32 {
+	return float32(C.Rrating_get_value(C.Rid(rating)))
+}
+
+// RatingSetMax: Number of stars (default 5, at most 20).
+func RatingSetMax(rating ID, max int) {
+	C.Rrating_set_max(C.Rid(rating), C.int(max))
+}
+
+func RatingGetMax(rating ID) int {
+	return int(C.Rrating_get_max(C.Rid(rating)))
+}
+
+// RatingSetAllowHalf: Half stars can be chosen (a whole star by default).
+func RatingSetAllowHalf(rating ID, allow int) {
+	C.Rrating_set_allow_half(C.Rid(rating), C.int(allow))
+}
+
+// RatingSetReadOnly: Shown only, the user cannot change it.
+func RatingSetReadOnly(rating ID, read_only int) {
+	C.Rrating_set_read_only(C.Rid(rating), C.int(read_only))
+}
+
+// RatingSetStarSize: Size of a star (default 18).
+func RatingSetStarSize(rating ID, size float32) {
+	C.Rrating_set_star_size(C.Rid(rating), C.float(size))
+}
+
+func PaginationSetPageCount(pagination ID, count int) {
+	C.Rpagination_set_page_count(C.Rid(pagination), C.int(count))
+}
+
+func PaginationGetPageCount(pagination ID) int {
+	return int(C.Rpagination_get_page_count(C.Rid(pagination)))
+}
+
+func PaginationSetPage(pagination ID, page int) {
+	C.Rpagination_set_page(C.Rid(pagination), C.int(page))
+}
+
+func PaginationGetPage(pagination ID) int {
+	return int(C.Rpagination_get_page(C.Rid(pagination)))
+}
+
+// PaginationSetSiblings: Page numbers shown around the current one (default 1).
+func PaginationSetSiblings(pagination ID, siblings int) {
+	C.Rpagination_set_siblings(C.Rid(pagination), C.int(siblings))
+}
+
+func PlotSetTitle(plot ID, title string) {
+	title_ := C.CString(title)
+	defer C.free(unsafe.Pointer(title_))
+	C.Rplot_set_title(C.Rid(plot), title_)
+}
+
+func PlotGetTitle(plot ID) string {
+	return C.GoString(C.Rplot_get_title(C.Rid(plot)))
+}
+
+// PlotAddSeries: Adds a series (its name in the legend; NULL or "": not in the legend). Returns its index.
+func PlotAddSeries(plot ID, name string) int {
+	name_ := C.CString(name)
+	defer C.free(unsafe.Pointer(name_))
+	return int(C.Rplot_add_series(C.Rid(plot), name_))
+}
+
+func PlotRemoveSeries(plot ID, series int) {
+	C.Rplot_remove_series(C.Rid(plot), C.int(series))
+}
+
+// PlotClear: Removes every series and every drag line.
+func PlotClear(plot ID) {
+	C.Rplot_clear(C.Rid(plot))
+}
+
+func PlotGetSeriesCount(plot ID) int {
+	return int(C.Rplot_get_series_count(C.Rid(plot)))
+}
+
+func PlotSetSeriesName(plot ID, series int, name string) {
+	name_ := C.CString(name)
+	defer C.free(unsafe.Pointer(name_))
+	C.Rplot_set_series_name(C.Rid(plot), C.int(series), name_)
+}
+
+func PlotGetSeriesName(plot ID, series int) string {
+	return C.GoString(C.Rplot_get_series_name(C.Rid(plot), C.int(series)))
+}
+
+// PlotSetSeriesData: Replaces the points of a series with `count` points, copied. x The X of the points, or
+// NULL: 0, 1, 2... y The Y of the points. NaN leaves a gap in the line.
+func PlotSetSeriesData(plot ID, series int, x []float64, y []float64, count int) {
+	var x_ *C.double
+	if len(x) > 0 {
+		x_ = (*C.double)(unsafe.Pointer(&x[0]))
+	}
+	var y_ *C.double
+	if len(y) > 0 {
+		y_ = (*C.double)(unsafe.Pointer(&y[0]))
+	}
+	C.Rplot_set_series_data(C.Rid(plot), C.int(series), x_, y_, C.int(count))
+}
+
+// PlotAppendSeriesData: Adds points after those of a series (x NULL: numbered after the last one).
+func PlotAppendSeriesData(plot ID, series int, x []float64, y []float64, count int) {
+	var x_ *C.double
+	if len(x) > 0 {
+		x_ = (*C.double)(unsafe.Pointer(&x[0]))
+	}
+	var y_ *C.double
+	if len(y) > 0 {
+		y_ = (*C.double)(unsafe.Pointer(&y[0]))
+	}
+	C.Rplot_append_series_data(C.Rid(plot), C.int(series), x_, y_, C.int(count))
+}
+
+// PlotAddPoint: Adds one point after those of a series.
+func PlotAddPoint(plot ID, series int, x float64, y float64) {
+	C.Rplot_add_point(C.Rid(plot), C.int(series), C.double(x), C.double(y))
+}
+
+func PlotClearSeriesData(plot ID, series int) {
+	C.Rplot_clear_series_data(C.Rid(plot), C.int(series))
+}
+
+func PlotGetPointCount(plot ID, series int) int {
+	return int(C.Rplot_get_point_count(C.Rid(plot), C.int(series)))
+}
+
+// PlotGetPoint: One point of a series. Returns R_FALSE when there is no such point.
+func PlotGetPoint(plot ID, series int, index int) (result int, x float64, y float64) {
+	var x_ C.double
+	var y_ C.double
+	result = int(C.Rplot_get_point(C.Rid(plot), C.int(series), C.int(index), &x_, &y_))
+	x = float64(x_)
+	y = float64(y_)
+	return
+}
+
+// PlotSetSeriesMaxPoints: Keeps only the last `max` points of a series, for data that streams in (0: all of
+// them, the default).
+func PlotSetSeriesMaxPoints(plot ID, series int, max int) {
+	C.Rplot_set_series_max_points(C.Rid(plot), C.int(series), C.int(max))
+}
+
+// PlotSetSeriesColor: The color of a series (by default the next one of a palette of ten).
+func PlotSetSeriesColor(plot ID, series int, r float32, g float32, b float32, a float32) {
+	C.Rplot_set_series_color(C.Rid(plot), C.int(series), C.float(r), C.float(g), C.float(b), C.float(a))
+}
+
+// PlotSetSeriesLine: How the line is drawn and how wide (default solid, 1.75; width 0 keeps the width).
+func PlotSetSeriesLine(plot ID, series int, line RPlotLine, width float32) {
+	C.Rplot_set_series_line(C.Rid(plot), C.int(series), C.RPlotLine(line), C.float(width))
+}
+
+// PlotSetSeriesMarker: The mark on each point and its radius (default none, 4; size 0 keeps the size).
+func PlotSetSeriesMarker(plot ID, series int, marker RPlotMarker, size float32) {
+	C.Rplot_set_series_marker(C.Rid(plot), C.int(series), C.RPlotMarker(marker), C.float(size))
+}
+
+// PlotSetSeriesMarkerFilled: Filled markers (the default) or only their outline.
+func PlotSetSeriesMarkerFilled(plot ID, series int, filled int) {
+	C.Rplot_set_series_marker_filled(C.Rid(plot), C.int(series), C.int(filled))
+}
+
+// PlotSetSeriesStep: Draws the line in steps: along at the height of a point, then up or down to the next.
+func PlotSetSeriesStep(plot ID, series int, step int) {
+	C.Rplot_set_series_step(C.Rid(plot), C.int(series), C.int(step))
+}
+
+// PlotSetSeriesFill: Shades the area between the line and zero, at this opacity (0: none, the default).
+func PlotSetSeriesFill(plot ID, series int, opacity float32) {
+	C.Rplot_set_series_fill(C.Rid(plot), C.int(series), C.float(opacity))
+}
+
+// PlotSetSeriesAxes: The axes a series is drawn against: R_PLOT_X or R_PLOT_X2, R_PLOT_Y or R_PLOT_Y2.
+func PlotSetSeriesAxes(plot ID, series int, x_axis RPlotAxis, y_axis RPlotAxis) {
+	C.Rplot_set_series_axes(C.Rid(plot), C.int(series), C.RPlotAxis(x_axis), C.RPlotAxis(y_axis))
+}
+
+// PlotSetSeriesVisible: Shows or hides a series (the user does it with a click on its name in the legend).
+func PlotSetSeriesVisible(plot ID, series int, visible int) {
+	C.Rplot_set_series_visible(C.Rid(plot), C.int(series), C.int(visible))
+}
+
+func PlotIsSeriesVisible(plot ID, series int) int {
+	return int(C.Rplot_is_series_visible(C.Rid(plot), C.int(series)))
+}
+
+// PlotSetAxisLabel: The name written along an axis.
+func PlotSetAxisLabel(plot ID, axis RPlotAxis, label string) {
+	label_ := C.CString(label)
+	defer C.free(unsafe.Pointer(label_))
+	C.Rplot_set_axis_label(C.Rid(plot), C.RPlotAxis(axis), label_)
+}
+
+func PlotGetAxisLabel(plot ID, axis RPlotAxis) string {
+	return C.GoString(C.Rplot_get_axis_label(C.Rid(plot), C.RPlotAxis(axis)))
+}
+
+func PlotSetAxisScale(plot ID, axis RPlotAxis, scale RPlotScale) {
+	C.Rplot_set_axis_scale(C.Rid(plot), C.RPlotAxis(axis), C.RPlotScale(scale))
+}
+
+func PlotGetAxisScale(plot ID, axis RPlotAxis) RPlotScale {
+	return RPlotScale(C.Rplot_get_axis_scale(C.Rid(plot), C.RPlotAxis(axis)))
+}
+
+// PlotSetAxisLinearThreshold: R_PLOT_SCALE_SYMLOG: the axis is linear from -threshold to threshold (default
+// 1).
+func PlotSetAxisLinearThreshold(plot ID, axis RPlotAxis, threshold float64) {
+	C.Rplot_set_axis_linear_threshold(C.Rid(plot), C.RPlotAxis(axis), C.double(threshold))
+}
+
+// PlotSetAxisRange: Shows this range of an axis; the axis then stops following the data.
+func PlotSetAxisRange(plot ID, axis RPlotAxis, min float64, max float64) {
+	C.Rplot_set_axis_range(C.Rid(plot), C.RPlotAxis(axis), C.double(min), C.double(max))
+}
+
+// PlotGetAxisRange: The range an axis shows now (after the user moved or zoomed it).
+func PlotGetAxisRange(plot ID, axis RPlotAxis) (min float64, max float64) {
+	var min_ C.double
+	var max_ C.double
+	C.Rplot_get_axis_range(C.Rid(plot), C.RPlotAxis(axis), &min_, &max_)
+	min = float64(min_)
+	max = float64(max_)
+	return
+}
+
+// PlotSetAxisAutoFit: The axis is fitted to the data whenever it changes (the default, until the view is
+// moved; a double click turns it on again).
+func PlotSetAxisAutoFit(plot ID, axis RPlotAxis, auto_fit int) {
+	C.Rplot_set_axis_auto_fit(C.Rid(plot), C.RPlotAxis(axis), C.int(auto_fit))
+}
+
+func PlotIsAxisAutoFit(plot ID, axis RPlotAxis) int {
+	return int(C.Rplot_is_axis_auto_fit(C.Rid(plot), C.RPlotAxis(axis)))
+}
+
+// PlotSetAxisFormat: How the labels of an axis are written: a printf format for one double ("%.1f s", "%g"),
+// NULL: chosen from the ticks.
+func PlotSetAxisFormat(plot ID, axis RPlotAxis, format string) {
+	format_ := C.CString(format)
+	defer C.free(unsafe.Pointer(format_))
+	C.Rplot_set_axis_format(C.Rid(plot), C.RPlotAxis(axis), format_)
+}
+
+// PlotSetAxisVisible: 1: shown, 0: hidden, -1: R_PLOT_X and R_PLOT_Y always, the second axes when something
+// uses them (the default).
+func PlotSetAxisVisible(plot ID, axis RPlotAxis, visible int) {
+	C.Rplot_set_axis_visible(C.Rid(plot), C.RPlotAxis(axis), C.int(visible))
+}
+
+// PlotSetAxisGrid: Lines across the data at the ticks of an axis (on for R_PLOT_X and R_PLOT_Y).
+func PlotSetAxisGrid(plot ID, axis RPlotAxis, grid int) {
+	C.Rplot_set_axis_grid(C.Rid(plot), C.RPlotAxis(axis), C.int(grid))
+}
+
+// PlotSetAxisInverted: The values grow the other way (to the left, or down).
+func PlotSetAxisInverted(plot ID, axis RPlotAxis, inverted int) {
+	C.Rplot_set_axis_inverted(C.Rid(plot), C.RPlotAxis(axis), C.int(inverted))
+}
+
+// PlotSetAxisLocked: The user cannot move or zoom this axis (the application still can).
+func PlotSetAxisLocked(plot ID, axis RPlotAxis, locked int) {
+	C.Rplot_set_axis_locked(C.Rid(plot), C.RPlotAxis(axis), C.int(locked))
+}
+
+// PlotFit: Fits every axis that is not locked to the data, and has them follow it again (what a double click
+// does).
+func PlotFit(plot ID) {
+	C.Rplot_fit(C.Rid(plot))
+}
+
+// PlotSetLegend: Where the legend is (default R_PLOT_LEGEND_TOP_RIGHT).
+func PlotSetLegend(plot ID, legend RPlotLegend) {
+	C.Rplot_set_legend(C.Rid(plot), C.RPlotLegend(legend))
+}
+
+// PlotSetCrosshair: Lines across the data through the pointer.
+func PlotSetCrosshair(plot ID, crosshair int) {
+	C.Rplot_set_crosshair(C.Rid(plot), C.int(crosshair))
+}
+
+// PlotSetMouseText: The coordinates of the pointer in a corner of the data (on by default).
+func PlotSetMouseText(plot ID, shown int) {
+	C.Rplot_set_mouse_text(C.Rid(plot), C.int(shown))
+}
+
+// PlotSetTooltips: The values of the point under the pointer, written next to it (on by default).
+func PlotSetTooltips(plot ID, shown int) {
+	C.Rplot_set_tooltips(C.Rid(plot), C.int(shown))
+}
+
+// PlotGetMousePosition: Where the pointer is, in the units of R_PLOT_X and R_PLOT_Y. Returns R_TRUE when it
+// is over the data.
+func PlotGetMousePosition(plot ID) (result int, x float64, y float64) {
+	var x_ C.double
+	var y_ C.double
+	result = int(C.Rplot_get_mouse_position(C.Rid(plot), &x_, &y_))
+	x = float64(x_)
+	y = float64(y_)
+	return
+}
+
+// PlotDataToPoint: Where a point of the data (R_PLOT_X, R_PLOT_Y) is in the widget, in logical units from its
+// corner.
+func PlotDataToPoint(plot ID, x float64, y float64) (point_x float32, point_y float32) {
+	var point_x_ C.float
+	var point_y_ C.float
+	C.Rplot_data_to_point(C.Rid(plot), C.double(x), C.double(y), &point_x_, &point_y_)
+	point_x = float32(point_x_)
+	point_y = float32(point_y_)
+	return
+}
+
+// PlotPointToData: The data (R_PLOT_X, R_PLOT_Y) at a point of the widget, in logical units from its corner.
+func PlotPointToData(plot ID, point_x float32, point_y float32) (x float64, y float64) {
+	var x_ C.double
+	var y_ C.double
+	C.Rplot_point_to_data(C.Rid(plot), C.float(point_x), C.float(point_y), &x_, &y_)
+	x = float64(x_)
+	y = float64(y_)
+	return
+}
+
+// PlotAddDragLine: Adds a line across the data that the user drags: vertical at an X (axis R_PLOT_X or
+// R_PLOT_X2), horizontal at a Y (R_PLOT_Y or R_PLOT_Y2). Its value is written on it, after `label` (may be
+// NULL). Returns its index.
+func PlotAddDragLine(plot ID, axis RPlotAxis, value float64, label string) int {
+	label_ := C.CString(label)
+	defer C.free(unsafe.Pointer(label_))
+	return int(C.Rplot_add_drag_line(C.Rid(plot), C.RPlotAxis(axis), C.double(value), label_))
+}
+
+func PlotRemoveDragLine(plot ID, line int) {
+	C.Rplot_remove_drag_line(C.Rid(plot), C.int(line))
+}
+
+func PlotGetDragLineCount(plot ID) int {
+	return int(C.Rplot_get_drag_line_count(C.Rid(plot)))
+}
+
+func PlotSetDragLineValue(plot ID, line int, value float64) {
+	C.Rplot_set_drag_line_value(C.Rid(plot), C.int(line), C.double(value))
+}
+
+func PlotGetDragLineValue(plot ID, line int) float64 {
+	return float64(C.Rplot_get_drag_line_value(C.Rid(plot), C.int(line)))
+}
+
+// PlotSetDragLineColor: The color of a drag line (by default the accent of the theme).
+func PlotSetDragLineColor(plot ID, line int, r float32, g float32, b float32, a float32) {
+	C.Rplot_set_drag_line_color(C.Rid(plot), C.int(line), C.float(r), C.float(g), C.float(b), C.float(a))
 }
 
 // TextEditorCreate: text Initial content, or NULL.
@@ -3800,6 +4671,76 @@ func WindowGetIsland(window ID) ID {
 	return ID(C.Rwindow_get_island(C.Rid(window)))
 }
 
+// WindowSetTaskbarProgress: A progress bar on the icon of the application: on the button of the window in the
+// taskbar (Windows), on the icon in the Dock (macOS), on the launcher (Linux). There is one icon for the
+// whole application in the Dock and the launchers: the last window that set it is shown. value From 0 to 1
+// (not used by NONE and INDETERMINATE). Returns: R_FALSE where the system shows no progress.
+func WindowSetTaskbarProgress(window ID, state RTaskbarProgress, value float32) int {
+	return int(C.Rwindow_set_taskbar_progress(C.Rid(window), C.RTaskbarProgress(state), C.float(value)))
+}
+
+// WindowRequestAttention: Asks the user to look at the window when it is not the active one: its taskbar
+// button flashes (Windows), the icon bounces in the Dock (macOS), the window is marked urgent (X11, the
+// launchers of Linux). `critical`: until the user comes to the window; otherwise a few times. Nothing happens
+// when the window is already the active one.
+func WindowRequestAttention(window ID, critical int) int {
+	return int(C.Rwindow_request_attention(C.Rid(window), C.int(critical)))
+}
+
+// TaskbarSetBadge: A short text on the icon of the application: a number of unread messages, "!". macOS: the
+// badge of the Dock. Windows: a small round icon on the taskbar buttons of the windows, drawn from the text
+// (one to three characters fit). Linux: a number only (the text is read as one; anything else shows nothing).
+// NULL or "": no badge.
+func TaskbarSetBadge(text string) int {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	return int(C.Rtaskbar_set_badge(text_))
+}
+
+// TaskbarSetMenu: The menu of the icon of the application in the Dock (macOS), above the entries of the
+// system. A MENU without a parent: its MenuItems fire as when chosen in a window (clicked callback, action),
+// and what changes in it shows the next time the menu opens. R_INVALID_ID: none. R_FALSE where the system has
+// no such menu.
+func TaskbarSetMenu(menu ID) int {
+	return int(C.Rtaskbar_set_menu(C.Rid(menu)))
+}
+
+// TrayIsSupported: Returns: R_TRUE when the system shows tray icons: always on Windows and macOS; on Linux,
+// when a host of StatusNotifierItem runs (the panel of the desktop). An icon made where none runs yet appears
+// when one starts.
+func TrayIsSupported() int {
+	return int(C.Rtray_is_supported())
+}
+
+// TrayCreate: Puts an icon of the application beside the clock. While one exists, the application goes on
+// running when its last window closes (Ris_running): Rquit (or the action app.quit) ends it. Returns:
+// R_INVALID_ID where the system has none.
+func TrayCreate() ID {
+	return ID(C.Rtray_create())
+}
+
+func TrayDestroy(tray ID) {
+	C.Rtray_destroy(C.Rid(tray))
+}
+
+func TrayIsValid(tray ID) int {
+	return int(C.Rtray_is_valid(C.Rid(tray)))
+}
+
+// TraySetTooltip: The text shown when the pointer rests on the icon (and its title for the Linux panels).
+func TraySetTooltip(tray ID, text string) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rtray_set_tooltip(C.Rid(tray), text_)
+}
+
+// TraySetMenu: The menu the system shows for the icon: on a right click (Windows, Linux), on a click (macOS).
+// A MENU without a parent, whose MenuItems fire as when chosen in a window; what changes in it shows the next
+// time it opens. R_INVALID_ID: none.
+func TraySetMenu(tray ID, menu ID) {
+	C.Rtray_set_menu(C.Rid(tray), C.Rid(menu))
+}
+
 func ColorPickerCreate() ID {
 	return ID(C.Rcolor_picker_create())
 }
@@ -4061,6 +5002,18 @@ func TimelineSetTrackMuted(timeline ID, track int, muted int) {
 	C.Rtimeline_set_track_muted(C.Rid(timeline), C.int(track), C.int(muted))
 }
 
+// TimelineSetTrackStyle: A property of the look of a track: "ClipStyle" (Solid, Gradient, Tint, Outline),
+// "KeyShape" (Diamond, Circle, Square...), "KeySize", "ClipRadius", "Background" (its lane), or a part and a
+// property ("Clip.Glow", "Key.BorderColor"). "" or "Default" gives back the one of the timeline. Returns:
+// R_FALSE when the name or the value is not one.
+func TimelineSetTrackStyle(timeline ID, track int, property string, value string) int {
+	property_ := C.CString(property)
+	defer C.free(unsafe.Pointer(property_))
+	value_ := C.CString(value)
+	defer C.free(unsafe.Pointer(value_))
+	return int(C.Rtimeline_set_track_style(C.Rid(timeline), C.int(track), property_, value_))
+}
+
 func TimelineIsTrackMuted(timeline ID, track int) int {
 	return int(C.Rtimeline_is_track_muted(C.Rid(timeline), C.int(track)))
 }
@@ -4129,6 +5082,26 @@ func TimelineGetItemLabel(timeline ID, item int) string {
 
 func TimelineSetItemColor(timeline ID, item int, r float32, g float32, b float32) {
 	C.Rtimeline_set_item_color(C.Rid(timeline), C.int(item), C.float(r), C.float(g), C.float(b))
+}
+
+// TimelineSetItemStyle: A property of the look of one clip, key or marker: "Style" (Solid, Gradient, Tint,
+// Outline: clips), "Shape" (keys), or any property of its part ("Background", "BorderColor", "Glow",
+// "CornerRadius", "Foreground" for its label...).
+func TimelineSetItemStyle(timeline ID, item int, property string, value string) int {
+	property_ := C.CString(property)
+	defer C.free(unsafe.Pointer(property_))
+	value_ := C.CString(value)
+	defer C.free(unsafe.Pointer(value_))
+	return int(C.Rtimeline_set_item_style(C.Rid(timeline), C.int(item), property_, value_))
+}
+
+// TimelineSetPreset: The look the timeline starts from (R_PRESET_AUTO by default; Preset="..." in XML).
+func TimelineSetPreset(timeline ID, preset RVisualPreset) {
+	C.Rtimeline_set_preset(C.Rid(timeline), C.RVisualPreset(preset))
+}
+
+func TimelineGetPreset(timeline ID) RVisualPreset {
+	return RVisualPreset(C.Rtimeline_get_preset(C.Rid(timeline)))
 }
 
 func TimelineGetItemCount(timeline ID) int {
@@ -4226,6 +5199,19 @@ func NodeGraphGetNodeSize(graph ID, node int) (width float32, height float32) {
 // NodeGraphSetNodeColor: Color of the header of the node; without one it takes the accent color of the theme.
 func NodeGraphSetNodeColor(graph ID, node int, r float32, g float32, b float32) {
 	C.Rnode_graph_set_node_color(C.Rid(graph), C.int(node), C.float(r), C.float(g), C.float(b))
+}
+
+// NodeGraphSetNodeStyle: A property of the look of one node: "HeaderStyle" (Solid, Gradient, Stripe, Tint,
+// None), "HeaderColor", "TitleColor", "Background", "BorderColor", "BorderWidth", "CornerRadius", "Glow",
+// "Icon" (an image file shown before its title), or a part and a property ("Header.Gradient",
+// "Node.ShadowSize"). "" or "Default" gives back the one of the graph. Returns: R_FALSE when the name or the
+// value is not one.
+func NodeGraphSetNodeStyle(graph ID, node int, property string, value string) int {
+	property_ := C.CString(property)
+	defer C.free(unsafe.Pointer(property_))
+	value_ := C.CString(value)
+	defer C.free(unsafe.Pointer(value_))
+	return int(C.Rnode_graph_set_node_style(C.Rid(graph), C.int(node), property_, value_))
 }
 
 // NodeGraphSetNodeContent: Puts a widget inside the node, under its pins: the graph owns it from now on.
@@ -4335,6 +5321,28 @@ func NodeGraphSetTypeColor(graph ID, type_ string, r float32, g float32, b float
 	C.Rnode_graph_set_type_color(C.Rid(graph), type__, C.float(r), C.float(g), C.float(b))
 }
 
+// NodeGraphSetTypeStyle: A property of the pins of a type and of their links: "Shape" (Circle, Ring, Square,
+// Diamond, Triangle, Arrow), "Size", "Glow", "LinkShape" (Bezier, Straight, Step, Angled), "LinkWidth",
+// "LinkGlow".
+func NodeGraphSetTypeStyle(graph ID, type_ string, property string, value string) int {
+	type__ := C.CString(type_)
+	defer C.free(unsafe.Pointer(type__))
+	property_ := C.CString(property)
+	defer C.free(unsafe.Pointer(property_))
+	value_ := C.CString(value)
+	defer C.free(unsafe.Pointer(value_))
+	return int(C.Rnode_graph_set_type_style(C.Rid(graph), type__, property_, value_))
+}
+
+// NodeGraphSetPinStyle: The same for one pin ("Shape", "Size", "Glow", "Color").
+func NodeGraphSetPinStyle(graph ID, pin int, property string, value string) int {
+	property_ := C.CString(property)
+	defer C.free(unsafe.Pointer(property_))
+	value_ := C.CString(value)
+	defer C.free(unsafe.Pointer(value_))
+	return int(C.Rnode_graph_set_pin_style(C.Rid(graph), C.int(pin), property_, value_))
+}
+
 // NodeGraphConnect: Links an output to an input, as the user does by dragging. The connect callback is not
 // asked. Returns: The link; 0 when the pins cannot be linked (two inputs, the same node, different types).
 func NodeGraphConnect(graph ID, output_pin int, input_pin int) int {
@@ -4423,6 +5431,15 @@ func NodeGraphSetFlowVisible(graph ID, visible int) {
 // NodeGraphSetReadOnly: R_TRUE: the user can look but not move, link or delete.
 func NodeGraphSetReadOnly(graph ID, read_only int) {
 	C.Rnode_graph_set_read_only(C.Rid(graph), C.int(read_only))
+}
+
+// NodeGraphSetPreset: The look the graph starts from (R_PRESET_AUTO by default; Preset="..." in XML).
+func NodeGraphSetPreset(graph ID, preset RVisualPreset) {
+	C.Rnode_graph_set_preset(C.Rid(graph), C.RVisualPreset(preset))
+}
+
+func NodeGraphGetPreset(graph ID) RVisualPreset {
+	return RVisualPreset(C.Rnode_graph_get_preset(C.Rid(graph)))
 }
 
 func NodeGraphSelectNode(graph ID, node int, add int) {
@@ -4825,6 +5842,21 @@ func FileBrowserSelect(browser ID, name string) {
 	C.Rfile_browser_select(C.Rid(browser), name_)
 }
 
+// NotificationShow: Returns: R_TRUE when the system took the notification.
+func NotificationShow(title string, body string, urgency RNotificationUrgency) int {
+	title_ := C.CString(title)
+	defer C.free(unsafe.Pointer(title_))
+	body_ := C.CString(body)
+	defer C.free(unsafe.Pointer(body_))
+	return int(C.Rnotification_show(title_, body_, C.RNotificationUrgency(urgency)))
+}
+
+// NotificationIsSupported: R_FALSE when the platform has no notifications (Rnotification_show then always
+// uses the fallback).
+func NotificationIsSupported() int {
+	return int(C.Rnotification_is_supported())
+}
+
 // ViewportSetTexture: Shows a texture. R_INVALID_ID shows nothing.
 func ViewportSetTexture(viewport ID, texture ID) {
 	C.Rviewport_set_texture(C.Rid(viewport), C.Rid(texture))
@@ -4942,12 +5974,23 @@ func WidgetCreateFromXmlFile(path string) ID {
 	return ID(C.Rwidget_create_from_xml_file(path_))
 }
 
-// XmlSetBasePath: Folder used to resolve relative paths found in XML (Source="...", Font="..."). The
-// *FromXmlFile functions use the folder of the file.
+// XmlSetBasePath: A folder looked into after the one of the document (see above), and the first one for the
+// documents given from memory. NULL or "": none.
 func XmlSetBasePath(path string) {
 	path_ := C.CString(path)
 	defer C.free(unsafe.Pointer(path_))
 	C.Rxml_set_base_path(path_)
+}
+
+// XmlSetAutoLoad: Turns auto-loading on or off (see above). It is on by default; the environment variable
+// RAVEN_AUTO_LOAD=0 turns it off without rebuilding. Turned off, the register functions are the only way in;
+// the places where paths are looked for stay the same.
+func XmlSetAutoLoad(enabled int) {
+	C.Rxml_set_auto_load(C.int(enabled))
+}
+
+func XmlGetAutoLoad() int {
+	return int(C.Rxml_get_auto_load())
 }
 
 // XmlSetLiveReload: Turns live reload on or off. It is on by default; the environment variable
@@ -5014,9 +6057,11 @@ func XmlIsTagRegistered(tag string) int {
 	return int(C.Rxml_is_tag_registered(tag_))
 }
 
-// XmlResolvePath: The path of a file named in a document: as the attributes Source of Raven read it, relative
-// to the folder of the document being loaded (while it loads), else to the base path. For the attributes of
-// the tags made by code that name files. Returns: The path; valid until the next call.
+// XmlResolvePath: The path of a file named in a document: as the attributes Source of Raven read it, looked
+// for where files are looked for (see Rxml_set_base_path): the folder of the document being loaded (while it
+// loads) and its subfolders, the base path, the current folder, PATH. When no place holds it, the path it
+// would have next to the document (else in the base path). For the attributes of the tags made by code that
+// name files. Returns: The path; valid until the next call.
 func XmlResolvePath(path string) string {
 	path_ := C.CString(path)
 	defer C.free(unsafe.Pointer(path_))
@@ -5136,7 +6181,9 @@ func XmlNodeGetIndex(node ID) int {
 	return int(C.Rxml_node_get_index(C.Rid(node)))
 }
 
-// XmlNodeAddChild: index Where among the children; -1 for the end.
+// XmlNodeAddChild: index Where among the children; -1 for the end. Returns: The new node; R_INVALID_ID
+// (R_ERROR_XML) when it would be nested deeper than a document can be: 256 levels under the root, as when a
+// text is read. The same holds for the functions below.
 func XmlNodeAddChild(parent ID, tag string, index int) ID {
 	tag_ := C.CString(tag)
 	defer C.free(unsafe.Pointer(tag_))
@@ -5164,7 +6211,8 @@ func XmlNodeRemove(node ID) {
 
 // XmlNodeMove: Moves a node, with what it contains, under another parent of the same document or elsewhere
 // under its own. index Where among the children of the new parent, counted once the node has left its place;
-// -1 for the end. Returns: R_FALSE when it cannot be done (the root, or a parent that is inside the node).
+// -1 for the end. Returns: R_FALSE when it cannot be done (the root, a parent that is inside the node, or a
+// place too deep).
 func XmlNodeMove(node ID, new_parent ID, index int) int {
 	return int(C.Rxml_node_move(C.Rid(node), C.Rid(new_parent), C.int(index)))
 }
@@ -5546,9 +6594,14 @@ func HostInjectClose(window ID) {
 // Rtree_item_set_user_handle, Rtree_item_get_user_handle, Rtree_view_set_selection_changed_callback
 // Rtree_view_set_activated_callback, Rtree_view_set_context_callback, Rmenu_item_set_clicked_callback
 // Rtile_view_set_items, Rtile_view_set_drag_data_callback, Rtile_view_set_selection_changed_callback
-// Rtile_view_set_activated_callback, Rtile_view_set_context_callback, Rtext_editor_set_zoom_callback
-// Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback, Rtext_editor_set_changed_callback
-// Rdock_area_set_close_callback, Rdock_area_set_changed_callback, Risland_set_changed_callback
+// Rtile_view_set_activated_callback, Rtile_view_set_context_callback, Rtable_set_virtual_rows
+// Rtable_set_selection_changed_callback, Rtable_set_activated_callback, Rtable_set_sort_callback
+// Rdate_picker_set_changed_callback, Rtime_picker_set_changed_callback, Rtoast_set_action_callback
+// Rbreadcrumb_set_clicked_callback, Rrating_set_changed_callback, Rpagination_set_changed_callback
+// Rplot_set_view_changed_callback, Rplot_set_drag_line_callback, Rplot_set_series_toggled_callback
+// Rtext_editor_set_zoom_callback, Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback
+// Rtext_editor_set_changed_callback, Rdock_area_set_close_callback, Rdock_area_set_changed_callback
+// Risland_set_changed_callback, Rtaskbar_set_jump_list, Rtray_set_icon, Rtray_set_clicked_callback
 // Rcolor_picker_set_changed_callback, Rtimeline_set_time_callback, Rtimeline_set_changed_callback
 // Rtimeline_set_selection_callback, Rtimeline_set_activated_callback, Rtimeline_set_removed_callback
 // Rnode_graph_set_node_user_data, Rnode_graph_get_node_user_data, Rnode_graph_set_connect_callback
@@ -5558,10 +6611,11 @@ func HostInjectClose(window ID) {
 // Rblock_editor_set_context_callback, Rdialog_open, Rfile_dialog_open, Rfile_dialog_save
 // Rfile_dialog_select_folder, Rfile_read, Rfile_browser_set_filters, Rfile_browser_set_accepted_callback
 // Rfile_browser_set_cancelled_callback, Rfile_browser_set_selection_changed_callback
-// Rviewport_set_draw_callback, Rviewport_get_native_handle, Rviewport_set_resize_callback
-// Rcustom_set_paint_callback, Rcustom_set_measure_callback, Rdraw_rect, Rdraw_rect_outline, Rdraw_circle
-// Rdraw_line, Rdraw_curve, Rdraw_triangle, Rdraw_image, Rdraw_text, Rdraw_glass, Rdraw_spring, Rspring_kick
-// Rspring_set, Rdraw_push_clip_rect, Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init
-// Rshader_look_defaults, Rdraw_shader, Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag
-// Rxml_document_parse, Rxml_get_attribute_info, Rlocale_set_changed_callback, Rtr_format
-// Raccessibility_get_system_settings, Rhost_platform_register
+// Rnotification_set_fallback, Rnotification_set_clicked_callback, Rviewport_set_draw_callback
+// Rviewport_get_native_handle, Rviewport_set_resize_callback, Rcustom_set_paint_callback
+// Rcustom_set_measure_callback, Rdraw_rect, Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_curve
+// Rdraw_triangle, Rdraw_image, Rdraw_text, Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set
+// Rdraw_push_clip_rect, Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults
+// Rdraw_shader, Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse
+// Rxml_get_attribute_info, Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings
+// Rhost_platform_register

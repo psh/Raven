@@ -31,6 +31,8 @@
 #include "../widgets/common.h"
 
 #define RVN_XC_MAX_DEPTH 48
+/** Nesting inside one expression: parentheses, ?:, arguments, and operators in front of a value. */
+#define RVN_XE_MAX_DEPTH 64
 
 typedef struct rvn_component_t {
 	char* name;
@@ -503,16 +505,22 @@ static rvn_xv_t rvn_xe_primary(rvn_xe_t* e) {
 }
 
 static rvn_xv_t rvn_xe_unary(rvn_xe_t* e) {
+	rvn_xv_t value;
+	int negate;
 	rvn_xe_space(e);
-	if (e->cursor < e->end && *e->cursor == '!' && !(e->cursor + 1 < e->end && e->cursor[1] == '=')) {
-		e->cursor++;
-		return rvn_xv_bool(!rvn_xv_truth(rvn_xe_unary(e)));
+	if (e->cursor < e->end && *e->cursor == '!' && !(e->cursor + 1 < e->end && e->cursor[1] == '=')) negate = R_FALSE;
+	else if (e->cursor < e->end && *e->cursor == '-') negate = R_TRUE;
+	else return rvn_xe_primary(e);
+	e->cursor++;
+	/* ("!!!!...x": one call per operator, counted like the other nestings) */
+	if (++e->depth > RVN_XE_MAX_DEPTH) {
+		rvn_xe_fail(e, "nested too deeply");
+		e->depth--;
+		return rvn_xv_text("");
 	}
-	if (e->cursor < e->end && *e->cursor == '-') {
-		e->cursor++;
-		return rvn_xv_number(e, -rvn_xe_unary(e).number);
-	}
-	return rvn_xe_primary(e);
+	value = rvn_xe_unary(e);
+	e->depth--;
+	return negate ? rvn_xv_number(e, -value.number) : rvn_xv_bool(!rvn_xv_truth(value));
 }
 
 static rvn_xv_t rvn_xe_product(rvn_xe_t* e) {
@@ -600,7 +608,7 @@ static rvn_xv_t rvn_xe_or(rvn_xe_t* e) {
 
 static rvn_xv_t rvn_xe_expression(rvn_xe_t* e) {
 	rvn_xv_t condition;
-	if (++e->depth > 64) {
+	if (++e->depth > RVN_XE_MAX_DEPTH) {
 		rvn_xe_fail(e, "nested too deeply");
 		e->depth--;
 		return rvn_xv_text("");
@@ -926,6 +934,10 @@ static void rvn_xc_expand(rvn_xc_t* ctx, const rvn_xml_node_t* node, const rvn_x
 		else if (rvn_xv_truth(rvn_xv_text(test))) rvn_xc_expand_children(ctx, node, scope, holder);
 	} else if ((component = rvn_component_find(node->name)) != NULL) {
 		rvn_xc_instantiate(ctx, component, node, scope, holder);
+	} else if (!rvn_widget_class_by_name(node->name) && !rvn_xml_tag_find(node->name) && !rvn_xc_reserved(node->name) &&
+		rvn_xml_discover_widget(node->name) && (component = rvn_component_find(node->name)) != NULL) {
+		/* a tag that names nothing yet: declared by the file <Tag>.xml found where files are looked for */
+		rvn_xc_instantiate(ctx, component, node, scope, holder);
 	} else {
 		/* an ordinary element: itself, with what is inside rewritten */
 		copy = rvn_xc_node(arena, node, node->name);
@@ -983,6 +995,7 @@ int Rxml_register_widgets(const char* xml, size_t size) {
 	rvn_xml_document_t document;
 	int registered = 0;
 	RVN_API_GUARD(0);
+	rvn_xml_search_autoload();
 	if (!xml) {
 		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rxml_register_widgets: NULL text");
 		return 0;

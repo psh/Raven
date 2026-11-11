@@ -38,6 +38,7 @@
 #include <shellapi.h>
 #include "win32_uia.h"
 #include "win32_manipulation.h"
+#include "win32_taskbar.h"
 
 #ifndef WM_DPICHANGED
 #define WM_DPICHANGED 0x02E0
@@ -161,6 +162,14 @@ struct rvn_pwindow_t {
 	int transparent;
 	/** Its precision touchpad (Direct Manipulation), or NULL: the touchpad is then the wheel. */
 	rvn_win32_manipulation_t* manipulation;
+	/** Picture in picture: the proportions it keeps, and what the window had before. */
+	int pip;
+	int pip_ratio_width, pip_ratio_height;
+	WINDOWPLACEMENT pip_placement;
+	int pip_was_custom, pip_was_topmost;
+	/** The progress on its taskbar button, given again when the button is made (0: none). */
+	int progress_state;
+	float progress_value;
 	struct rvn_pwindow_t* next;
 };
 
@@ -197,6 +206,9 @@ static struct {
 	rvn_win32_get_pointer_type_fn get_pointer_type;
 	rvn_win32_get_pointer_touch_info_fn get_pointer_touch_info;
 	rvn_win32_get_pointer_pen_info_fn get_pointer_pen_info;
+	/** The hidden window that owns the icon of the notifications, and whether the icon was added. */
+	HWND notify_window;
+	int notify_icon;
 } g_win32;
 
 /* ---------------------------------------------------------------------------
@@ -269,6 +281,8 @@ void rvn_dispatch_end(void);
 
 typedef struct rvn_win32_queued_t {
 	rvn_pwindow_t* window;
+	/** An event of the application, of no window (a tray icon, a menu of the system): `user` is its own. */
+	int app;
 	rvn_pevent_t event;
 } rvn_win32_queued_t;
 
@@ -283,7 +297,7 @@ static struct {
 } g_win32_queue;
 
 static void rvn_win32_deliver(rvn_pwindow_t* window, rvn_pevent_t* event) {
-	event->user = window ? window->user : NULL;
+	if (window) event->user = window->user;
 	g_win32_queue.handling++;
 	g_win32.handler(event);
 	g_win32_queue.handling--;
@@ -331,7 +345,21 @@ static void rvn_win32_emit(rvn_pwindow_t* window, rvn_pevent_t* event) {
 	}
 	queued = &g_win32_queue.events[g_win32_queue.count++];
 	queued->window = window;
+	queued->app = R_FALSE;
 	queued->event = *event;
+}
+
+/* An event of no window (win32_taskbar.c: a tray icon), in its turn with the others. */
+static void rvn_win32_emit_app(rvn_pevent_t* event) {
+	if ((g_win32_queue.dispatching && !g_win32_queue.handling) || g_win32_queue.count == RVN_WIN32_QUEUE_SIZE) {
+		if (g_win32_queue.head < g_win32_queue.count && !g_win32_queue.handling) rvn_win32_flush_events();
+		rvn_win32_deliver(NULL, event);
+		return;
+	}
+	g_win32_queue.events[g_win32_queue.count].window = NULL;
+	g_win32_queue.events[g_win32_queue.count].app = R_TRUE;
+	g_win32_queue.events[g_win32_queue.count].event = *event;
+	g_win32_queue.count++;
 }
 
 /* What waited reaches the core, in order (it may destroy windows: their events are dropped then). */
@@ -341,7 +369,7 @@ static void rvn_win32_flush_events(void) {
 	while (g_win32_queue.head < g_win32_queue.count) {
 		rvn_win32_queued_t queued = g_win32_queue.events[g_win32_queue.head++];
 		/* (the events told now may queue others: they go after) */
-		if (queued.window) rvn_win32_deliver(queued.window, &queued.event);
+		if (queued.window || queued.app) rvn_win32_deliver(queued.window, &queued.event);
 	}
 	g_win32_queue.head = g_win32_queue.count = 0;
 	g_win32_queue.dispatching--;
@@ -673,6 +701,30 @@ static void rvn_win32_on_manipulation(void* user, const rvn_win32_manipulation_e
 	rvn_win32_emit(window, &event);
 }
 
+/*
+ * The surface Windows keeps for the GDI drawing of a window (its
+ * redirection surface) lies under what the renderer presents. Raven never
+ * drew in it, and Windows fills it with white. On the screen a window seen
+ * through does not show it (the alpha of the frame is what counts), but the
+ * copies of the screen that Snipping Tool and Win + Print Screen take
+ * compose the frame over it: there, everything the window lets through was
+ * white (issue #53). Painted black it is fully transparent (GDI writes an
+ * alpha of 0, which the desktop keeps once rvn_win32_set_alpha is on), so
+ * the copies show what the screen shows. Opaque windows are left alone: the
+ * frame covers the surface, and erasing would only flicker.
+ *
+ * A device context of the cache, not the own one of the window (CS_OWNDC):
+ * the driver may present through that one, from the thread that renders.
+ */
+static void rvn_win32_clear_surface(rvn_pwindow_t* window) {
+	RECT client;
+	HDC dc = GetDCEx(window->handle, NULL, DCX_CACHE);
+	if (!dc) return;
+	GetClientRect(window->handle, &client);
+	FillRect(dc, &client, (HBRUSH)GetStockObject(BLACK_BRUSH));
+	ReleaseDC(window->handle, dc);
+}
+
 static LRESULT CALLBACK rvn_win32_window_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam) {
 	rvn_pwindow_t* window = (rvn_pwindow_t*)GetWindowLongPtrW(handle, GWLP_USERDATA);
 	rvn_pevent_t event;
@@ -699,10 +751,18 @@ static LRESULT CALLBACK rvn_win32_window_proc(HWND handle, UINT message, WPARAM 
 				PostMessageW(handle, WM_CLOSE, 0, 0);
 				return 0;
 			case WM_ERASEBKGND:
+				if (window->transparent) rvn_win32_clear_surface(window);
 				return 1;
 			default:
 				return DefWindowProcW(handle, message, wparam, lparam);
 		}
+	}
+
+	/* the taskbar button of the window exists (again, when Explorer restarted): what it shows is given now */
+	if (message == rvn_win32_taskbar_created_message() && message != 0) {
+		if (window->progress_state) rvn_win32_taskbar_progress(handle, window->progress_state, window->progress_value);
+		rvn_win32_taskbar_overlay(handle);
+		return 0;
 	}
 
 	/* screen readers (win32_uia.c) */
@@ -722,7 +782,31 @@ static LRESULT CALLBACK rvn_win32_window_proc(HWND handle, UINT message, WPARAM 
 			return 0;
 
 		case WM_NCHITTEST:
-			if (window->flags & R_WINDOW_CUSTOM_HEADER) return rvn_win32_custom_hit_test(window, wparam, lparam);
+			if ((window->flags & R_WINDOW_CUSTOM_HEADER) || window->pip) return rvn_win32_custom_hit_test(window, wparam, lparam);
+			break;
+
+		case WM_SIZING:
+			/* picture in picture: the edge the user drags decides, the other side follows the proportions */
+			if (window->pip && window->pip_ratio_width > 0 && window->pip_ratio_height > 0) {
+				RECT* rect = (RECT*)lparam;
+				RECT frame;
+				int extra_width, extra_height, width, height;
+				frame.left = frame.top = frame.right = frame.bottom = 0;
+				rvn_win32_adjust(handle, &frame);
+				extra_width = frame.right - frame.left;
+				extra_height = frame.bottom - frame.top;
+				width = rect->right - rect->left - extra_width;
+				height = rect->bottom - rect->top - extra_height;
+				if (wparam == WMSZ_TOP || wparam == WMSZ_BOTTOM) {
+					width = MulDiv(height, window->pip_ratio_width, window->pip_ratio_height);
+					rect->right = rect->left + width + extra_width;
+				} else {
+					height = MulDiv(width, window->pip_ratio_height, window->pip_ratio_width);
+					if (wparam == WMSZ_TOPLEFT || wparam == WMSZ_TOPRIGHT) rect->top = rect->bottom - height - extra_height;
+					else rect->bottom = rect->top + height + extra_height;
+				}
+				return TRUE;
+			}
 			break;
 
 		case WM_DROPFILES:
@@ -745,6 +829,8 @@ static LRESULT CALLBACK rvn_win32_window_proc(HWND handle, UINT message, WPARAM 
 			if (width != window->width || height != window->height) {
 				window->width = width;
 				window->height = height;
+				/* the part of the surface that is new is white again (rvn_win32_clear_surface) */
+				if (window->transparent) rvn_win32_clear_surface(window);
 				rvn_win32_emit_resize(window);
 				/* live resize: the loop of the application is not running, draw the new size now */
 				if (g_win32.modal_loop) rvn_win32_emit_modal_tick();
@@ -777,10 +863,12 @@ static LRESULT CALLBACK rvn_win32_window_proc(HWND handle, UINT message, WPARAM 
 			break;
 
 		case WM_ERASEBKGND:
-			/* the renderer covers the whole client area: erasing would only flicker */
+			/* the renderer covers the whole client area: erasing would only flicker (seen through: see rvn_win32_clear_surface) */
+			if (window->transparent) rvn_win32_clear_surface(window);
 			return 1;
 
 		case WM_PAINT:
+			if (window->transparent) rvn_win32_clear_surface(window);
 			ValidateRect(handle, NULL);
 			event.type = RVN_PEVENT_EXPOSE;
 			rvn_win32_emit(window, &event);
@@ -973,6 +1061,7 @@ static int rvn_win32_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t re
 
 	memset(&g_win32, 0, sizeof(g_win32));
 	g_win32.handler = handler;
+	rvn_win32_tray_set_emit(rvn_win32_emit_app);
 	g_win32.regions = regions;
 	g_win32.instance = GetModuleHandleW(NULL);
 	g_win32.thread_id = GetCurrentThreadId();
@@ -1027,9 +1116,102 @@ static int rvn_win32_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t re
 	return R_TRUE;
 }
 
+/* ---------------------------------------------------------------------------
+ *  Notifications: a balloon of an icon of the notification area, which
+ *  Windows 10 and 11 show as a toast (and keep in the notification center).
+ * ------------------------------------------------------------------------- */
+
+static void rvn_win32_copy_wide(WCHAR* out, size_t capacity, const char* text) {
+	WCHAR* wide = rvn_win32_widen(text);
+	size_t i = 0;
+	if (wide) {
+		for (; i + 1 < capacity && wide[i]; i++) out[i] = wide[i];
+		rvn_free(wide);
+	}
+	out[i] = 0;
+}
+
+/* The message of the notification icon: a click on a balloon (or on the
+ * notification Windows makes of it). */
+#define RVN_WM_NOTIFY_ICON (WM_APP + 0x52)
+#ifndef NIN_BALLOONUSERCLICK
+#define NIN_BALLOONUSERCLICK (WM_USER + 5)
+#endif
+
+static WNDPROC g_rvn_notify_static_proc;
+
+static LRESULT CALLBACK rvn_win32_notify_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam) {
+	if (message == RVN_WM_NOTIFY_ICON) {
+		/* the event is lparam (or its low word, with NOTIFYICON_VERSION_4) */
+		if (LOWORD(lparam) == NIN_BALLOONUSERCLICK) rvn_notification_clicked();
+		return 0;
+	}
+	return CallWindowProcW(g_rvn_notify_static_proc, handle, message, wparam, lparam);
+}
+
+static void rvn_win32_notify_shutdown(void);
+
+static int rvn_win32_notify(const char* app, const char* title, const char* body, int urgency) {
+	NOTIFYICONDATAW data;
+	/* low: no sound; critical: the error sign */
+	DWORD info_flags = urgency <= 0 ? (NIIF_NONE | NIIF_NOSOUND) : urgency >= 2 ? NIIF_ERROR : NIIF_INFO;
+	{
+		/* the application has a tray icon: the notification is shown on it
+		 * (one icon in the notification area, not two) */
+		WCHAR info_title[64], info_text[256];
+		rvn_win32_copy_wide(info_title, RVN_COUNT_OF(info_title), *title ? title : app);
+		rvn_win32_copy_wide(info_text, RVN_COUNT_OF(info_text), *body ? body : " ");
+		if (rvn_win32_tray_balloon(info_title, info_text, info_flags)) {
+			/* (an icon of its own made before the tray icon came: gone) */
+			if (g_win32.notify_icon) rvn_win32_notify_shutdown();
+			return R_TRUE;
+		}
+	}
+	if (!g_win32.notify_window) {
+		/* a message-only window: never shown, it only owns the icon and hears its clicks */
+		g_win32.notify_window = CreateWindowExW(0, L"STATIC", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, g_win32.instance, NULL);
+		if (!g_win32.notify_window) return R_FALSE;
+		g_rvn_notify_static_proc = (WNDPROC)SetWindowLongPtrW(g_win32.notify_window, GWLP_WNDPROC, (LONG_PTR)rvn_win32_notify_proc);
+	}
+	memset(&data, 0, sizeof(data));
+	data.cbSize = sizeof(data);
+	data.hWnd = g_win32.notify_window;
+	data.uID = 1;
+	if (!g_win32.notify_icon) {
+		data.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE;
+		data.uCallbackMessage = RVN_WM_NOTIFY_ICON;
+		data.hIcon = g_win32.app_icon_small ? g_win32.app_icon_small : (g_win32.app_icon ? g_win32.app_icon : LoadIconW(NULL, IDI_APPLICATION));
+		rvn_win32_copy_wide(data.szTip, RVN_COUNT_OF(data.szTip), app);
+		if (!Shell_NotifyIconW(NIM_ADD, &data)) return R_FALSE;
+		g_win32.notify_icon = R_TRUE;
+	}
+	data.uFlags = NIF_INFO;
+	rvn_win32_copy_wide(data.szInfoTitle, RVN_COUNT_OF(data.szInfoTitle), *title ? title : app);
+	rvn_win32_copy_wide(data.szInfo, RVN_COUNT_OF(data.szInfo), *body ? body : " ");
+	data.dwInfoFlags = info_flags;
+	return Shell_NotifyIconW(NIM_MODIFY, &data) ? R_TRUE : R_FALSE;
+}
+
+static void rvn_win32_notify_shutdown(void) {
+	if (g_win32.notify_icon) {
+		NOTIFYICONDATAW data;
+		memset(&data, 0, sizeof(data));
+		data.cbSize = sizeof(data);
+		data.hWnd = g_win32.notify_window;
+		data.uID = 1;
+		Shell_NotifyIconW(NIM_DELETE, &data);
+	}
+	if (g_win32.notify_window) DestroyWindow(g_win32.notify_window);
+	g_win32.notify_window = NULL;
+	g_win32.notify_icon = R_FALSE;
+}
+
 static void rvn_win32_shutdown(void) {
+	rvn_win32_notify_shutdown();
 	rvn_uia_shutdown();
 	rvn_win32_manipulation_shutdown();
+	rvn_win32_taskbar_shutdown();
+	rvn_win32_tray_shutdown();
 	if (g_win32.wake_event) CloseHandle(g_win32.wake_event);
 	UnregisterClassW(RVN_WIN32_CHILD_CLASS, g_win32.instance);
 	UnregisterClassW(RVN_WIN32_CLASS, g_win32.instance);
@@ -1081,7 +1263,9 @@ static rvn_pwindow_t* rvn_win32_window_create(const rvn_pwindow_desc_t* desc) {
 
 	window->user = desc->user;
 	window->flags = desc->flags;
-	window->handle = CreateWindowExW(WS_EX_APPWINDOW, RVN_WIN32_CLASS, title, style, CW_USEDEFAULT, CW_USEDEFAULT,
+	/* (a splash screen is a tool window: out of the taskbar and of Alt+Tab) */
+	window->handle = CreateWindowExW((desc->flags & R_WINDOW_SPLASH_SCREEN) ? WS_EX_TOOLWINDOW : WS_EX_APPWINDOW,
+		RVN_WIN32_CLASS, title, style, CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, g_win32.instance, NULL);
 	rvn_free(title);
 	if (!window->handle) {
@@ -1240,6 +1424,8 @@ static int rvn_win32_window_set_backdrop(rvn_pwindow_t* window, int backdrop, in
 
 	if (backdrop == (int)R_BACKDROP_MICA && g_dwm.build < 22000u) given = backdrop = (int)R_BACKDROP_ACRYLIC;
 	rvn_win32_set_alpha(window, backdrop != (int)R_BACKDROP_NONE);
+	/* the surface under the frame no longer white: the copies of the screen show the backdrop, not white */
+	if (backdrop != (int)R_BACKDROP_NONE) rvn_win32_clear_surface(window);
 	rvn_win32_set_accent(window, 0, 0);
 
 	if (backdrop == (int)R_BACKDROP_BLUR) {
@@ -1287,6 +1473,81 @@ static int rvn_win32_window_set_opacity(rvn_pwindow_t* window, float opacity) {
 static int rvn_win32_window_set_topmost(rvn_pwindow_t* window, int topmost) {
 	return SetWindowPos(window->handle, topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
 		SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE) != 0;
+}
+
+/*
+ * Picture in picture. The title bar goes as for a custom header (the borders,
+ * the shadow and the resizing stay, the core answers the regions); the window
+ * stays on top, in a corner of the work area of its monitor.
+ */
+static int rvn_win32_window_set_picture_in_picture(rvn_pwindow_t* window, int enabled, int width, int height, int corner) {
+	HWND handle = window->handle;
+	if (enabled) {
+		MONITORINFO info;
+		RECT frame;
+		int left = corner == (int)R_PIP_BOTTOM_LEFT || corner == (int)R_PIP_TOP_LEFT;
+		int top = corner == (int)R_PIP_TOP_RIGHT || corner == (int)R_PIP_TOP_LEFT;
+		int margin, frame_width, frame_height, x, y;
+		if (!window->pip) {
+			window->pip_placement.length = sizeof(window->pip_placement);
+			if (!GetWindowPlacement(handle, &window->pip_placement)) return R_FALSE;
+			window->pip_was_topmost = (GetWindowLongW(handle, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
+			window->pip_was_custom = GetPropW(handle, RVN_WIN32_CUSTOM_PROPERTY) != NULL;
+			/* a maximized or minimized window first becomes a normal one */
+			if (IsZoomed(handle) || IsIconic(handle)) ShowWindow(handle, SW_RESTORE);
+			if (!window->pip_was_custom && !(window->flags & R_WINDOW_BORDERLESS)) {
+				SetPropW(handle, RVN_WIN32_CUSTOM_PROPERTY, (HANDLE)(INT_PTR)1);
+			}
+			window->pip = R_TRUE;
+		}
+		window->pip_ratio_width = rvn_maxi(width, 1);
+		window->pip_ratio_height = rvn_maxi(height, 1);
+		info.cbSize = sizeof(info);
+		if (!GetMonitorInfoW(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST), &info)) return R_TRUE;
+		frame.left = frame.top = 0;
+		frame.right = width;
+		frame.bottom = height;
+		rvn_win32_adjust(handle, &frame);
+		frame_width = frame.right - frame.left;
+		frame_height = frame.bottom - frame.top;
+		margin = (int)(16.0f * window->scale + 0.5f);
+		x = left ? info.rcWork.left + margin : info.rcWork.right - frame_width - margin;
+		y = top ? info.rcWork.top + margin : info.rcWork.bottom - frame_height - margin;
+		SetWindowPos(handle, HWND_TOPMOST, x, y, frame_width, frame_height, SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+		return R_TRUE;
+	}
+	if (!window->pip) return R_TRUE;
+	window->pip = R_FALSE;
+	if (!window->pip_was_custom) RemovePropW(handle, RVN_WIN32_CUSTOM_PROPERTY);
+	SetWindowPos(handle, window->pip_was_topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+		SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+	/* the place, the size and the state it had (maximized too) */
+	SetWindowPlacement(handle, &window->pip_placement);
+	return R_TRUE;
+}
+
+/* ---- the taskbar (win32_taskbar.c) ---- */
+
+static int rvn_win32_window_set_progress(rvn_pwindow_t* window, int state, float value) {
+	if (window->is_child) return R_FALSE;
+	window->progress_state = state;
+	window->progress_value = value;
+	return rvn_win32_taskbar_progress(window->handle, state, value);
+}
+
+static int rvn_win32_window_request_attention(rvn_pwindow_t* window, int critical) {
+	if (window->is_child) return R_FALSE;
+	return rvn_win32_taskbar_flash(window->handle, critical);
+}
+
+/* The badge goes on the button of every window of the application. */
+static int rvn_win32_app_set_badge(const char* text) {
+	rvn_pwindow_t* window;
+	if (!rvn_win32_taskbar_set_badge(text)) return R_FALSE;
+	for (window = g_win32.windows; window; window = window->next) {
+		if (!window->is_child && !rvn_win32_taskbar_overlay(window->handle)) return R_FALSE;
+	}
+	return R_TRUE;
 }
 
 static void rvn_win32_window_center(rvn_pwindow_t* window) {
@@ -1667,6 +1928,16 @@ const rvn_platform_t* rvn_platform_win32(void) {
 		.window_set_backdrop = rvn_win32_window_set_backdrop,
 		.window_set_opacity = rvn_win32_window_set_opacity,
 		.window_set_topmost = rvn_win32_window_set_topmost,
+		.window_set_picture_in_picture = rvn_win32_window_set_picture_in_picture,
+		.window_set_progress = rvn_win32_window_set_progress,
+		.window_request_attention = rvn_win32_window_request_attention,
+		.app_set_badge = rvn_win32_app_set_badge,
+		.app_set_jump_list = rvn_win32_taskbar_jump_list,
+		.tray_create = rvn_win32_tray_create,
+		.tray_destroy = rvn_win32_tray_destroy,
+		.tray_set_icon = rvn_win32_tray_set_icon,
+		.tray_set_tooltip = rvn_win32_tray_set_tooltip,
+		.tray_set_menu = rvn_win32_tray_set_menu,
 		.window_center = rvn_win32_window_center,
 		.window_set_icon = rvn_win32_window_set_icon,
 		.window_set_cursor = rvn_win32_window_set_cursor,
@@ -1681,7 +1952,8 @@ const rvn_platform_t* rvn_platform_win32(void) {
 		.a11y_event = rvn_win32_a11y_event,
 		.a11y_announce = rvn_win32_a11y_announce,
 		.a11y_active = rvn_uia_active,
-		.a11y_settings = rvn_uia_settings
+		.a11y_settings = rvn_uia_settings,
+		.notify = rvn_win32_notify
 	};
 	return &platform;
 }

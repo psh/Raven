@@ -43,6 +43,16 @@ typedef struct rvn_texture_t {
 	uint8_t* source_data;
 	size_t source_size;
 	uint8_t* kept_pixels;
+	/** Texels per logical unit: 1 for a picture, the scale an SVG was drawn at (0 counts as 1). */
+	float density;
+	/*
+	 * An SVG drawn at the size it is shown (no scale asked for): the most
+	 * pixels per logical unit it was painted with during the last frame, and
+	 * R_TRUE while it is being drawn again at a new scale on a worker.
+	 */
+	int svg_auto;
+	float svg_wanted;
+	int svg_pending;
 } rvn_texture_t;
 
 rvn_texture_t* rvn_texture_get(Rid id);
@@ -67,6 +77,7 @@ typedef struct rvn_shader_t {
 	/** Built-in effect it stands for, or -1. */
 	int effect;
 	/** Its SPIR-V, to make it again after the loss of the device. */
+	char* source_glsl; /* Browser effect source, when supplied instead of SPIR-V. */
 	uint32_t* spirv;
 	size_t spirv_size;
 } rvn_shader_t;
@@ -83,6 +94,23 @@ void rvn_renderer_destroy_shader(Rid shader);
 
 /** Decodes an image file into RGBA8 (render/image_decode.c). Free with rvn_free. */
 uint8_t* rvn_image_decode(const uint8_t* data, size_t size, int* width, int* height);
+/**
+ * Same; an SVG is rasterized at `svg_scale` pixels per unit of the SVG (0 or
+ * less: RVN_SVG_DENSITY). `density`, when given, receives the pixels per
+ * logical unit of the result: the scale of an SVG, 1 for the other images.
+ */
+uint8_t* rvn_image_decode_at(const uint8_t* data, size_t size, float svg_scale, int* width, int* height, float* density);
+/** Pixels per unit an SVG is first drawn at, before it has been shown (then: at the size it is shown, rvn_textures_update_svg). */
+#define RVN_SVG_DENSITY 2.0f
+/**
+ * Once a frame: draws again, on a worker, the SVGs that were painted bigger
+ * than their pixels (a screen of a higher density, a stretched Image, a zoom)
+ * or much smaller.
+ */
+void rvn_textures_update_svg(void);
+/* ---- render/svg_decode.c (nanosvg) ---- */
+int rvn_svg_detect(const uint8_t* data, size_t size);
+uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* width, int* height);
 /** Downloads and decodes an HTTP(S) image asynchronously. Internal resource helper. */
 Rid rvn_texture_create_from_url_async(const char* url);
 
@@ -148,6 +176,9 @@ void rvn_renderer_throttle(rvn_atomic_t* frames_in_flight, int max_frames);
 void rvn_renderer_submit_frame(rvn_frame_t* frame);
 
 /* Built-in backends */
+#if defined(RAVEN_BACKEND_WEBGL_ENABLED)
+const RBackendVTable* rvn_backend_webgl(void);
+#endif
 const RBackendVTable* rvn_backend_null(void);
 #if defined(RAVEN_BACKEND_VULKAN_ENABLED)
 const RBackendVTable* rvn_backend_vulkan(void);

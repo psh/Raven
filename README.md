@@ -31,6 +31,8 @@
 </p>
 </p>
 
+Try the [web demo gallery](https://oscar-soirey.github.io/Raven/demos/) (WebAssembly and WebGL 2), or [build and preview it locally](docs/emscripten.md).
+
 ## Disclaimer : This project is still in active development and public API is subject to change.
 
 ## Build from source
@@ -433,6 +435,23 @@ as it changes, and alive.
 Undo and redo, open and save, `F7` for the preview in a window of its own.
 The files are in `tools/theme_editor/`.
 
+## The inspector
+
+```c
+Rwindow_set_inspector(window, R_TRUE);   /* R_FALSE hides it */
+```
+
+A window beside the application that shows what a window is made of while it
+runs: its widgets as a tree (type, name, classes), what the selected one is
+(place and size in the window, desired size, constraints, slot, visibility,
+state, style, action, children) and what the last frame cost (layout, paint
+and render times, widgets, instances, draw calls). The selected widget is
+outlined in the window with its type and size; *Pick* selects the next widget
+clicked in the window, and that click goes to the inspector only. The tree
+follows the window as widgets come and go. No key opens it: the application
+calls the function (behind a debug menu, a command line option...), and
+`Rwindow_get_inspector` gives its window, to place it.
+
 ## License
 
 **Raven is open source**, under the [Apache License 2.0](LICENSE) (see also
@@ -451,7 +470,7 @@ Questions: oscarsoirey.contact@gmail.com.
 
 ## Status
 
-Version 0.2.1. Everything in this README has been tested: the headless test
+Version 0.2.3. Everything in this README has been tested: the headless test
 programs (layout, widgets, XML, threads, memory, animations, text editor,
 shell, dialogs, themes, Markdown, tools, locales and accessibility, clean
 under AddressSanitizer, UBSan and ThreadSanitizer), the renderer and glass on
@@ -530,6 +549,7 @@ options go after `--`: `generate-cmake.bat -- -DRAVEN_WARNINGS_AS_ERRORS=ON`.
 | `RAVEN_PLATFORM` | `auto` | `win32`, `x11`, `cocoa` (macOS) or `null` |
 | `RAVEN_WAYLAND` | `ON` | Linux and BSD: native Wayland compiled beside X11 ([Linux: Wayland and X11](#linux-wayland-and-x11)) |
 | `RAVEN_WITH_STB_IMAGE` | `ON` | PNG / JPEG / BMP / TGA decoding |
+| `RAVEN_WITH_SVG` | `ON` | SVG images (icons), drawn by nanosvg |
 | `RAVEN_FETCH_VULKAN_HEADERS` | `ON` | download the Khronos headers when no SDK is found |
 | `RAVEN_VULKAN_INCLUDE_DIR` | | folder containing `vulkan/vulkan.h`, to skip the search |
 | `RAVEN_REBUILD_SHADERS` | `OFF` | recompile the GLSL (needs `glslangValidator` or `glslc`); the SPIR-V is committed |
@@ -557,7 +577,7 @@ dist.bat --test       :: also runs the tests of each build
 ```
 
 ```
-dist\raven-0.2.1\
+dist\raven-0.2.3\
     msvc-static\     include\, lib\raven.lib, lib\cmake\raven, bin\raven_designer.exe, share\raven\
     msvc-shared\     bin\raven.dll, lib\raven.lib (to link with the DLL), the rest as above
     mingw-static\    lib\libraven.a, the rest as above
@@ -866,8 +886,10 @@ popup is more opaque than the panel it comes from, and a panel than the bar
 above it, so that what is on top stays readable.
 
 With glass, controls are capsules that show a blurred, more vivid version of
-what is behind them; their rim bends it like a lens and catches a light
-placed at the top left; the knob of a slider turns into a clear lens while it
+what is behind them; their rim bends it like a lens, splits it into a thin
+rainbow where its colors change (violet bent more than red, seven wavelengths)
+and catches a light placed at the top left; the edge of a `BackgroundBlur`
+splits what is behind it the same way, more faintly; the knob of a slider turns into a clear lens while it
 is dragged. Glass needs something behind it: the glass themes put every
 window on a plain dark grey (dark) or plain white (light); `Rwindow_set_background`
 puts an image behind it instead, and a theme file can give colored blobs
@@ -955,6 +977,36 @@ run along the links while the pointer is over the graph
 (`Rnode_graph_set_flow_visible`). Widgets inside nodes are ordinary widgets
 and work at any zoom.
 
+**Looks.** The graph and the timeline start from a look: `Auto` (the
+default) follows the theme of the window, its platform (Raven, Windows,
+macOS, GNOME) and whether it is dark; `Modern`, `Blueprint`, `Blender` and
+`Neon` are looks of their own. Any part can then be changed, the most
+specific last: by the styles of the theme for every graph, by the widget,
+by one of its items.
+
+```xml
+<NodeGraph Preset="Blueprint" Link.Shape="Step" Pin.Size="6" Grid.Shape="Lines" Node.CornerRadius="4">
+    <Type Name="exec" Color="#FFFFFF" Shape="Arrow" LinkWidth="3"/>
+    <Node Title="Noise" Color="#FF9F0A" HeaderStyle="Gradient" Icon="noise.svg" Glow="0.6"> ... </Node>
+</NodeGraph>
+<Timeline Preset="Neon" KeyShape="Circle" PlayheadColor="#FF375F">
+    <Track Name="Audio" ClipStyle="Gradient"> <Clip Start="0" Length="4" Style="Outline"/> </Track>
+</Timeline>
+<!-- in a theme -->
+<Style Widget="NodeGraph" Part="Link" State="Selected" Glow="1" Size="4"/>
+```
+
+The parts are the grid, the nodes, their headers, the pins, the links and
+the badges of a graph; the ruler, the headers of the tracks, the tracks,
+the lines of time, the clips, the keys, the markers and the playhead of a
+timeline. Besides the properties of every style they take `Shape` (pins and
+keys: `Circle`, `Ring`, `Square`, `Diamond`, `Triangle`, `Arrow`; links:
+`Bezier`, `Straight`, `Step`, `Angled`; grids: `Dots`, `Lines`, `Cross`,
+`None`; headers and clips: `Solid`, `Gradient`, `Stripe`, `Tint`, `Outline`,
+`None`), `Glow` and `Gradient`. In C: `Rnode_graph_set_preset`,
+`Rnode_graph_set_node_style`, `Rnode_graph_set_type_style`,
+`Rtimeline_set_track_style`... `examples/studio` switches between the looks.
+
 ### Markdown
 
 ```xml
@@ -970,6 +1022,43 @@ and work at any zoom.
 On a label the text is rendered (headings, lists, quotes, code blocks, tables,
 links that open or fire actions); on the text editor it stays as typed and is
 styled where it stands.
+
+### Tables, dates and the small controls
+
+```xml
+<Table Name="people" Striped="true" Slot.Fill="1">
+    <Column Header="Name" Width="160"/>
+    <Column Header="Age" Width="60" Align="Right"/>
+    <Column Header="City" Fill="1"/>
+    <Row>Ada|36|London</Row>
+</Table>
+<HBox Spacing="8">
+    <DatePicker Date="Today" FirstDayOfWeek="Monday"/>
+    <TimePicker Time="09:30" MinuteStep="15"/>
+    <Rating Value="4" AllowHalf="true"/>
+</HBox>
+<Breadcrumb Items="Home|Documents|Report"/>
+<Pagination PageCount="20" Page="0"/>
+```
+
+A table virtualizes its rows as a list does (`Rtable_set_virtual_rows`); its
+columns are resized by their edges and sorted by their headers. A `Toast`, put
+in an `Overlay`, shows a short message for a few seconds (`Rtoast_show`), with
+an optional button ("Undo"). Messages that come while one is shown replace it,
+wait their turn (`Queue="Sequence"`) or stack up, the newest at the bottom
+(`Queue="Stack" MaxVisible="3"`), each with its own kind, button and time.
+`Rnotification_show` asks the system for a
+notification (Windows, macOS, `org.freedesktop.Notifications` on Linux) and,
+where there is none, calls the fallback the application gave
+(`Rnotification_set_fallback`), to show it in a toast for instance. A click on
+a notification calls `Rnotification_set_clicked_callback` (Windows for now).
+
+SVG files are read wherever an image is (`Image Source="icon.svg"`,
+`Rtexture_create_from_file`) and shown at the size the SVG gives. They are
+drawn with as many pixels as they are shown with: once painted, an SVG is
+drawn again on a worker thread for the density of the screen, an `Image` that
+stretches it or a zoom, and again when the window moves to another monitor.
+`Rtexture_create_from_svg` with a scale draws one at that scale only.
 
 ### Files that are loaded again
 
@@ -1080,6 +1169,91 @@ a click pins it open and a click elsewhere closes it. It is dark whatever
 the theme, as the notch of a phone is (`Theme="Default"` gives it the theme
 of the window). It is optional, and an `Island` can also be used as an
 ordinary widget anywhere.
+
+### Picture in picture
+
+```c
+Rwindow_set_picture_in_picture(player, R_TRUE);   /* and R_FALSE to come back */
+```
+
+The window becomes a small floating window above all the others, on every
+desktop (every space of macOS, over full-screen applications too), in a
+corner of the work area. It loses its title bar: its empty parts move it, its
+edges resize it, its proportions are kept. Leaving gives back its size, place,
+frame and state. `Rwindow_set_picture_in_picture_layout` chooses its size and
+corner; a button with `OnClicked="window.picture_in_picture"` goes in and out.
+Wayland does not let an application keep a window above the others: the call
+returns `R_FALSE` there.
+
+### Splash screen
+
+```xml
+<Window Title="Loading" Width="480" Height="280" IsSplashScreen="true">
+    <Image Source="splash.png"/>
+</Window>
+```
+
+`IsSplashScreen="true"` (or `R_WINDOW_SPLASH_SCREEN` given to
+`Rwindow_create`) makes a splash screen: no frame and a fixed size, centered
+on the screen before it is first shown and again when its size changes, above
+the other windows, out of the taskbar and of Alt+Tab on Windows, out of the
+Window menu on macOS, typed as a splash for the window manager on X11. On
+Wayland it is a window without frame. Create the main window, then destroy
+the splash: the application keeps running between the two.
+
+### The menu bar of macOS
+
+On macOS, the first `MenuBar` of a window goes to the menu bar at the top of
+the screen while the window is the active one, after the menu of the
+application (About, Hide, Hide Others, Show All, Quit). It then takes no room
+in the window; its entries, check marks and shortcuts are those of the system
+(`R_MOD_SUPER` is Command, `R_MOD_CTRL` Control). Quit, and Cmd+Q, fire the
+action `app.quit`, which an application may bind to ask first. Elsewhere the
+bar is drawn in the window; `Rmenu_bar_set_native(bar, R_FALSE)` or
+`<MenuBar Native="false">` keeps it there on macOS too.
+
+### Taskbar and Dock
+
+```c
+Rwindow_set_taskbar_progress(window, R_TASKBAR_PROGRESS_NORMAL, 0.4f);
+Rtaskbar_set_badge("3");                      /* NULL removes it */
+Rwindow_request_attention(window, R_FALSE);   /* R_TRUE: until the user comes */
+Rtaskbar_set_menu(menu);                      /* the menu of the icon in the Dock */
+```
+
+A progress bar and a badge on the icon of the application: on the taskbar
+button of the window (Windows; the badge is a small round icon drawn from its
+text), on the Dock icon (macOS), on the launchers of Linux desktops that
+listen to `com.canonical.Unity.LauncherEntry` (KDE, Ubuntu Dock, Dash to
+Dock, Plank; the badge is a number there). A request for attention flashes
+the taskbar button, bounces the Dock icon or marks the window urgent. On
+macOS a `Menu` becomes the menu of the Dock icon, whose entries fire as when
+clicked; Quit from the Dock goes through `app.quit`. On Windows,
+`Rtaskbar_set_jump_list` fills the tasks of the jump list: each starts the
+application again with its arguments. Each call returns `R_FALSE` where the
+system has nothing to show it with.
+
+### Tray icon
+
+```c
+Rid tray = Rtray_create();                    /* R_INVALID_ID where there is no tray */
+Rtray_set_icon(tray, rgba, 32, 32);           /* RGBA pixels, copied */
+Rtray_set_tooltip(tray, "Sync: up to date");
+Rtray_set_menu(tray, menu);                   /* a Menu: shown on a click */
+Rtray_set_clicked_callback(tray, on_tray, NULL);
+```
+
+An icon beside the clock: in the notification area of Windows, as a status
+item in the menu bar of macOS, as a `StatusNotifierItem` on Linux (KDE,
+GNOME with the AppIndicator extension, XFCE, waybar...), its menu served over
+`com.canonical.dbusmenu`. The menu is a `Menu` like the others: its entries
+fire their callbacks and actions, and changes to it reach the system on the
+next frame. The callback receives the button: the left one for a click (also
+on Linux when the panel calls `Activate`), the right one when the icon has no
+menu. On macOS, an icon with a menu opens it and does not call the callback.
+While an icon exists, the application keeps running after its last window
+is closed: `app.quit` (or a Quit entry in the menu) ends it.
+`Rtray_is_supported` says whether the desktop shows such icons now.
 
 ### Memory
 
@@ -1238,12 +1412,14 @@ and how to add a widget, a window system or a backend.
 
 ## Not implemented yet
 
+The plan for what comes next is in [ROADMAP.md](ROADMAP.md).
+
 What Raven does not do yet, by area. Contributions are welcome.
 
 **Platforms**
 - Wayland: placing windows (`Rwindow_set_position`, `Rwindow_center`), keeping
-  one above the others and fading a whole window: the protocol does not let an
-  application do it. Input methods (text-input-v3: Chinese, Japanese, Korean)
+  one above the others (so picture in picture and splash screens too) and fading a whole window:
+  the protocol does not let an application do it. Input methods (text-input-v3: Chinese, Japanese, Korean)
   are not connected yet; dead keys and compose sequences work.
 - Embedding the system web view (WebView2, WebKitGTK); `raven_web` drives an
   installed Chromium-based browser instead.
@@ -1271,7 +1447,8 @@ What Raven does not do yet, by area. Contributions are welcome.
 
 ## Third-party code
 
-`stb_truetype` and `stb_image` (public domain / MIT, Sean Barrett), a subset
+`stb_truetype` and `stb_image` (public domain / MIT, Sean Barrett), `nanosvg`
+(zlib, Mikko Mononen), a subset
 of the Roboto font (Apache 2.0, Google) and a subset of Roboto Mono (SIL Open
 Font License 1.1) are included under `third_party/`; see
 [THIRD_PARTY.md](THIRD_PARTY.md). The Vulkan headers (Apache 2.0 / MIT,

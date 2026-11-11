@@ -50,6 +50,8 @@ def rust_type(api, ctype):
         return "*const u8"
     if kind == "out":
         return "*mut %s" % (SCALAR[detail[1]] if detail[0] == "scalar" else detail[1])
+    if kind == "carray":
+        return "*const %s" % SCALAR[detail]
     if kind == "struct":
         return detail
     if kind == "struct_ptr":
@@ -176,13 +178,17 @@ fn main() {
             }
         }
         let target = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-        let libs: &[&str] = match target.as_str() {
-            "windows" => &["user32", "gdi32", "shell32", "comdlg32", "ole32"],
-            "linux" => &["X11", "dl", "pthread", "m"],
-            _ => &[],
+        let (libs, frameworks): (&[&str], &[&str]) = match target.as_str() {
+            "windows" => (&["user32", "gdi32", "shell32", "comdlg32", "ole32"], &[]),
+            "linux" => (&["X11", "dl", "pthread", "m"], &[]),
+            "macos" => (&["objc"], &["AppKit", "QuartzCore", "Metal", "Foundation", "CoreFoundation"]),
+            _ => (&[], &[]),
         };
         for lib in libs {
             println!("cargo:rustc-link-lib={}", lib);
+        }
+        for framework in frameworks {
+            println!("cargo:rustc-link-lib=framework={}", framework);
         }
     }
 }

@@ -291,6 +291,25 @@ char* rvn_path_home(void) {
 	return rvn_fs_narrow(home);
 }
 
+char* rvn_env_get(const char* name) {
+	WCHAR* wide_name = rvn_fs_wide(name);
+	WCHAR* value;
+	DWORD length;
+	char* result;
+	if (!wide_name) return NULL;
+	length = GetEnvironmentVariableW(wide_name, NULL, 0);
+	if (length == 0) {
+		rvn_free(wide_name);
+		return NULL;
+	}
+	value = (WCHAR*)rvn_alloc(sizeof(WCHAR) * (size_t)length);
+	if (GetEnvironmentVariableW(wide_name, value, length) >= length) value[0] = 0;
+	rvn_free(wide_name);
+	result = value[0] ? rvn_fs_narrow(value) : NULL;
+	rvn_free(value);
+	return result;
+}
+
 int rvn_make_dir(const char* path) {
 	WCHAR* wide = rvn_fs_wide(path);
 	int ok;
@@ -433,6 +452,11 @@ char* rvn_path_home(void) {
 	return rvn_strdup(home && home[0] ? home : "/");
 }
 
+char* rvn_env_get(const char* name) {
+	const char* value = name ? getenv(name) : NULL;
+	return value && value[0] ? rvn_strdup(value) : NULL;
+}
+
 int rvn_make_dir(const char* path) {
 	return mkdir(path, 0777) == 0;
 }
@@ -446,6 +470,19 @@ int rvn_write_file(const char* path, const void* data, size_t size) {
 	return ok;
 }
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+int Ropen_url(const char* url) {
+    if (!url || !url[0]) return R_FALSE;
+    return EM_ASM_INT({
+        try {
+            const url = new URL(UTF8ToString($0), location.href);
+            if (!['https:', 'http:', 'mailto:'].includes(url.protocol)) return 0;
+            window.open(url.href, '_blank', 'noopener,noreferrer'); return 1;
+        } catch (_) { return 0; }
+    }, url);
+}
+#else
 int Ropen_url(const char* url) {
 	pid_t child;
 	if (!url || !url[0]) return R_FALSE;
@@ -470,6 +507,8 @@ int Ropen_url(const char* url) {
 		return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 	}
 }
+
+#endif
 
 void rvn_fs_places(rvn_place_t** places, uint32_t* count) {
 	char* home = rvn_path_home();
@@ -568,6 +607,13 @@ done:
 	if (session) WinHttpCloseHandle(session);
 	rvn_free(wide_url); rvn_free(host); rvn_free(object); rvn_free(bytes);
 	return ok;
+}
+#elif defined(__EMSCRIPTEN__)
+int rvn_fs_download_url(const char* url, uint8_t** data, size_t* size) {
+    RVN_UNUSED(url);
+    if (data) *data = NULL;
+    if (size) *size = 0;
+    return R_FALSE; /* Browser users use the asynchronous fetch adapter. */
 }
 #else
 #include <fcntl.h>

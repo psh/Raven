@@ -147,6 +147,7 @@ static const rvn_schema_attribute_t g_window[] = {
 	B("Borderless", "No frame at all."),
 	B("Maximized", "Starts maximized."),
 	B("Hidden", "Starts hidden, until Rwindow_show."),
+	B("IsSplashScreen", "A splash screen: no frame, a fixed size, centered on the screen, above the other windows, out of the taskbar."),
 	K("ClearColor", "Color behind the content."),
 	F("Background", "Image behind the content (what glass refracts)."),
 	B("Transparent", "The window can be seen through where nothing is drawn (needs a compositing window system)."),
@@ -266,6 +267,80 @@ static const rvn_schema_attribute_t g_list_view[] = {
 	A("OnChanged", "Action fired when the selection changes."),
 	A("OnActivated", "Action fired by a double click or Enter."),
 };
+static const rvn_schema_attribute_t g_table[] = {
+	L("Columns", "The headers of the columns, separated by '|' (or Column elements: Header, Width, Fill, Sortable, Align)."),
+	N("Selected", "Which row is selected, from 0; -1 for none."),
+	N("SortColumn", "The column the rows are sorted by, from 0; -1 for none."),
+	B("SortDescending", "Sorted from the largest to the smallest."),
+	B("ShowHeader", "Shows the row of the headers."),
+	B("GridLines", "Lines between the rows and the columns."),
+	B("Striped", "Every other row a little darker."),
+	A("OnActivated", "Action fired by a double click or Enter."),
+};
+static const rvn_schema_attribute_t g_date_picker[] = {
+	T("Date", "The date, \"YYYY-MM-DD\" or Today."),
+	T("Min", "The earliest date that can be chosen, \"YYYY-MM-DD\"."),
+	T("Max", "The latest date that can be chosen, \"YYYY-MM-DD\"."),
+	C("FirstDayOfWeek", "Sunday|Monday|Saturday", "The day the weeks of the calendar start with (or 0 to 6)."),
+	T("Format", "How the date is written: YYYY, MM, M, DD, D, MMMM, MMM, dddd, ddd; default YYYY-MM-DD."),
+	A("OnChanged", "Action fired when the user chooses a date."),
+};
+static const rvn_schema_attribute_t g_time_picker[] = {
+	T("Time", "The time, \"HH:MM\" or \"HH:MM:SS\"."),
+	B("ShowSeconds", "Shows the seconds."),
+	N("MinuteStep", "Step of the minutes for the arrows and the wheel."),
+	A("OnChanged", "Action fired when the user changes the time."),
+};
+static const rvn_schema_attribute_t g_toast[] = {
+	T("Text", "A message shown when the window opens."),
+	N("Duration", "Seconds a message written here stays; 0: until hidden."),
+	C("Kind", "Info|Success|Warning|Error", "The color of the dot before the message."),
+	T("ActionText", "A button at the end of the message (\"Undo\")."),
+	A("OnClicked", "Action fired by the button of the message."),
+	C("Queue", "Replace|Sequence|Stack", "A message that comes while another is shown: takes its place, waits its turn, or stacks up."),
+	N("MaxVisible", "How many messages a Stack shows at once (default 3)."),
+};
+static const rvn_schema_attribute_t g_breadcrumb[] = {
+	L("Items", "The items, separated by '|' (or Item elements); the last one is the current place."),
+	A("OnClicked", "Action fired when the user clicks an item."),
+};
+static const rvn_schema_attribute_t g_rating[] = {
+	N("Value", "The score, from 0 to Max."),
+	N("Max", "Number of stars."),
+	B("AllowHalf", "Half stars can be chosen."),
+	B("ReadOnly", "Shown only."),
+	N("StarSize", "Size of a star."),
+	A("OnChanged", "Action fired when the user changes the score."),
+};
+static const rvn_schema_attribute_t g_pagination[] = {
+	N("PageCount", "Number of pages."),
+	N("Page", "The current page, from 0."),
+	N("Siblings", "Page numbers shown on each side of the current one."),
+	A("OnChanged", "Action fired when the user goes to another page."),
+};
+static const rvn_schema_attribute_t g_plot[] = {
+	T("Title", "The title over the data."),
+	C("Legend", "Hidden|TopLeft|Top|TopRight|Right|BottomRight|Bottom|BottomLeft|Left|Outside", "Where the legend is."),
+	B("Crosshair", "Lines across the data through the pointer."),
+	B("MouseText", "The coordinates of the pointer in a corner of the data."),
+	B("Tooltips", "The values of the point under the pointer, next to it."),
+	B("Grid", "Lines at the ticks of X and Y."),
+	T("XLabel", "The name of the horizontal axis (YLabel, X2Label, Y2Label for the others)."),
+	C("XScale", "Linear|Log|SymLog", "How X spreads its values (YScale, X2Scale, Y2Scale)."),
+	N("XMin", "The lowest X shown (YMin, X2Min, Y2Min); the axis then stops following the data."),
+	N("XMax", "The highest X shown (YMax, X2Max, Y2Max)."),
+	T("XFormat", "A printf format for the labels of X, \"%.1f s\" (YFormat...)."),
+	N("XLinearThreshold", "SymLog: X is linear from minus this to this (default 1)."),
+	B("XGrid", "Lines at the ticks of X (YGrid, X2Grid, Y2Grid)."),
+	B("XInverted", "X grows to the left (YInverted: Y grows down)."),
+	B("XLocked", "The user cannot move or zoom X (YLocked...)."),
+	B("XVisible", "Shows or hides X (Y2Visible shows the right axis without a series on it)."),
+	T("YLabel", "The name of the vertical axis on the left."),
+	C("YScale", "Linear|Log|SymLog", "How Y spreads its values."),
+	T("Y2Label", "The name of the vertical axis on the right."),
+	C("Y2Scale", "Linear|Log|SymLog", "How the right axis spreads its values."),
+	A("OnChanged", "Action fired while the user drags a drag line."),
+};
 static const rvn_schema_attribute_t g_tree_view[] = {
 	A("OnChanged", "Action fired when the selection changes."),
 	A("OnActivated", "Action fired by a double click or Enter."),
@@ -279,6 +354,9 @@ static const rvn_schema_attribute_t g_tile_view[] = {
 	T("EmptyText", "Text shown when there is no tile."),
 	T("DragType", "Type given to Rdrag_begin when tiles are dragged; empty: no drag."),
 	A("OnActivated", "Action fired by a double click or Enter."),
+};
+static const rvn_schema_attribute_t g_menu_bar[] = {
+	B("Native", "false keeps the bar in the window on macOS too, instead of the menu bar of the system."),
 };
 static const rvn_schema_attribute_t g_menu[] = { T("Title", "Text of the menu in its bar, or in the menu that holds it.") };
 static const rvn_schema_attribute_t g_menu_item[] = {
@@ -377,6 +455,14 @@ static const rvn_schema_attribute_t g_timeline[] = {
 	N("TrackHeight", "Height of the tracks that have none of their own; 0 follows the theme."),
 	N("RulerHeight", "Height of the ruler of time; 0 follows the theme."),
 	A("OnChanged", "Action fired when the user moves, stretches or removes something."),
+	C("Preset", "Auto|Modern|Blueprint|Blender|Neon", "The look it starts from; Auto follows the theme of the window. Any part can then be changed: Clip.Glow=\"0.5\", Key.Shape=\"Circle\"..."),
+	C("ClipStyle", "Solid|Gradient|Tint|Outline", "How the clips are filled (also ClipStyle on a Track, Style on a Clip)."),
+	N("ClipRadius", "Corners of the clips."),
+	C("KeyShape", "Diamond|Circle|Ring|Square|Triangle", "The form of the keys (also on a Track)."),
+	N("KeySize", "Half the size of the keys."),
+	C("GridStyle", "Lines|Dots|None", "The lines of time across the tracks."),
+	K("PlayheadColor", "Color of the playhead."),
+	N("PlayheadWidth", "Width of its line."),
 };
 static const rvn_schema_attribute_t g_block_editor[] = {
 	N("Zoom", "Size of the canvas: 1 = life size."),
@@ -392,6 +478,17 @@ static const rvn_schema_attribute_t g_node_graph[] = {
 	B("ReadOnly", "The user can look, select and move the view, but not change the graph."),
 	B("FrameAll", "Starts with every node in view."),
 	A("OnChanged", "Action fired when the user links, unlinks, moves or removes something."),
+	C("Preset", "Auto|Modern|Blueprint|Blender|Neon", "The look it starts from; Auto follows the theme of the window. Any part can then be changed: Link.Glow=\"1\", Node.CornerRadius=\"4\", Header.Gradient=\"#000\"..."),
+	C("LinkShape", "Bezier|Straight|Step|Angled", "The form of the links (also LinkShape on a Type)."),
+	N("LinkWidth", "Thickness of the links."),
+	N("LinkGlow", "Light around the links, 0..1."),
+	C("PinShape", "Circle|Ring|Square|Diamond|Triangle|Arrow", "The form of the pins (also Shape on a Type, an Input, an Output)."),
+	N("PinSize", "Half the size of the pins."),
+	C("GridStyle", "Dots|Lines|Cross|None", "The grid of the canvas."),
+	N("GridSize", "Space between the points of the grid."),
+	N("NodeRadius", "Corners of the nodes."),
+	C("HeaderStyle", "Solid|Gradient|Stripe|Tint|Outline|None", "How the headers wear the color of their node (also on a Node)."),
+	N("HeaderHeight", "Height of the headers of the nodes."),
 };
 
 typedef struct rvn_schema_tag_t {
@@ -434,7 +531,7 @@ static const rvn_schema_tag_t g_tags[] = {
 	TAG("ListView", g_list_view, "Rows of text, one selected; any number of them."),
 	TAG("TreeView", g_tree_view, "Rows inside rows, made of Item elements."),
 	TAG("TileView", g_tile_view, "A grid of tiles, an icon over a name, given by the application (Rtile_view_set_items)."),
-	TAG_PLAIN("MenuBar", "A bar of Menu elements."),
+	TAG("MenuBar", g_menu_bar, "A bar of Menu elements; on macOS, shown in the menu bar of the system."),
 	TAG("Menu", g_menu, "A menu: MenuItem, Separator and Menu elements."),
 	TAG("MenuItem", g_menu_item, "An item of a menu."),
 	TAG("Viewport", g_viewport, "A place the application draws in with its own renderer."),
@@ -448,6 +545,14 @@ static const rvn_schema_tag_t g_tags[] = {
 	TAG("ColorPicker", g_color_picker, "Chooses a color: square, hues, opacity, code, numbers, swatches."),
 	TAG("Timeline", g_timeline, "A sequencer: Track elements holding Clip and Key elements, and Marker elements."),
 	TAG("BlockEditor", g_block_editor, "Blocks that snap into each other (Scratch): Kind elements (Name, Label, Shape, Category) and Category elements (Name, Color)."),
+	TAG("Table", g_table, "Rows of cells under columns that can be resized and sorted: Column and Row elements; any number of rows."),
+	TAG("DatePicker", g_date_picker, "A date, chosen in a calendar that drops down."),
+	TAG("TimePicker", g_time_picker, "A time of the day: hours, minutes, optionally seconds."),
+	TAG("Toast", g_toast, "A short message that rises over the content for a few seconds (in an Overlay)."),
+	TAG("Breadcrumb", g_breadcrumb, "The path to the current place: links separated by chevrons."),
+	TAG("Rating", g_rating, "A score shown and chosen with stars."),
+	TAG("Pagination", g_pagination, "Page numbers with previous and next."),
+	TAG("Plot", g_plot, "Curves of X / Y data: Series elements (Name, Color, Line, LineWidth, Marker, MarkerSize, MarkerFilled, Step, Fill, XAxis, Axis, MaxPoints, X and Y lists or Points \"x,y x,y\"), Scatter elements, and DragLine elements (Axis, Value, Label, Color)."),
 	TAG("NodeGraph", g_node_graph, "Nodes linked by wires: Node elements (Input, Output, any widget), Link and Type elements."),
 };
 

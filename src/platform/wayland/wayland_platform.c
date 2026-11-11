@@ -28,7 +28,9 @@
  */
 
 #include "../platform.h"
+#include "../../core/thread.h"
 #include "../atspi.h"
+#include "../sni.h"
 #include "../x11/x11_internal.h"   /* the key symbols of X11 and of xkbcommon are the same numbers */
 
 #include <dlfcn.h>
@@ -432,6 +434,9 @@ struct rvn_pwindow_t {
 	int shown;
 	int configured;
 	int maximized;
+	/* the compositor was asked when it wants the next frame (wl_surface.frame), and has not answered yet */
+	struct wl_callback* frame_callback;
+	double frame_asked;          /* rvn_clock_seconds */
 	int transparent;
 	int blur;
 	/* from the last xdg_toplevel.configure, applied on xdg_surface.configure */
@@ -516,6 +521,7 @@ static struct {
 
 	/* clipboard */
 	char* clipboard;
+	char* clipboard_html;          /* NULL: the selection is text only */
 	struct wl_data_source* source;
 	struct wl_data_offer* selection;
 
@@ -726,6 +732,53 @@ static void rvn_wl_surface_preferred_buffer_transform(void* data, struct wl_surf
 static const struct wl_surface_listener g_wl_surface_listener = {
 	rvn_wl_surface_enter, rvn_wl_surface_leave, rvn_wl_surface_preferred_buffer_scale, rvn_wl_surface_preferred_buffer_transform
 };
+
+/* ---------------------------------------------------------------------------
+ *  Frame pacing: the compositor says when it wants the next frame
+ *
+ * The renderer presents without the driver's vertical synchronization on
+ * Wayland (rvn_present_vsync): a FIFO present waits, inside the driver and
+ * without limit, for the compositor to answer the previous one, and a
+ * compositor need not answer for a surface it does not show. NVIDIA's driver
+ * then never returns once a window was hidden right after a frame. Here the
+ * same wait happens on the UI thread, where it is bounded: the window simply
+ * paints later, with everything that changed meanwhile.
+ * ------------------------------------------------------------------------- */
+
+/* A compositor that does not answer (it does not show the window) gets a frame this often anyway. */
+#define RVN_WL_FRAME_WAIT_MAX 1.0
+
+static void rvn_wl_frame_forget(rvn_pwindow_t* window) {
+	if (window->frame_callback) wl_callback_destroy(window->frame_callback);
+	window->frame_callback = NULL;
+}
+
+static void rvn_wl_frame_done(void* data, struct wl_callback* callback, uint32_t time) {
+	rvn_pwindow_t* window = (rvn_pwindow_t*)data;
+	RVN_UNUSED(time);
+	if (window->frame_callback == callback) window->frame_callback = NULL;
+	wl_callback_destroy(callback);
+}
+
+static const struct wl_callback_listener g_wl_frame_listener = { rvn_wl_frame_done };
+
+static double rvn_wl_window_frame_wait(rvn_pwindow_t* window) {
+	double waited;
+	if (!window->frame_callback || g_wl.failed) return 0.0;
+	waited = rvn_clock_seconds() - window->frame_asked;
+	return waited >= RVN_WL_FRAME_WAIT_MAX ? 0.0 : RVN_WL_FRAME_WAIT_MAX - waited;
+}
+
+static void rvn_wl_window_frame_begin(rvn_pwindow_t* window) {
+	if (g_wl.failed || window->is_child || !window->shown) return;
+	/* (an answer that never came is not waited for twice) */
+	rvn_wl_frame_forget(window);
+	window->frame_callback = wl_surface_frame(window->surface);
+	if (!window->frame_callback) return;
+	wl_callback_add_listener(window->frame_callback, &g_wl_frame_listener, window);
+	window->frame_asked = rvn_clock_seconds();
+	/* (no commit: the renderer's present commits the request with the frame) */
+}
 
 static void rvn_wl_fractional_preferred_scale(void* data, struct wp_fractional_scale_v1* fractional, uint32_t scale) {
 	rvn_pwindow_t* window = (rvn_pwindow_t*)data;
@@ -1406,6 +1459,9 @@ static void rvn_wl_keyboard_keymap(void* data, struct wl_keyboard* keyboard, uin
 	g_wl.mod_super = g_xkb.keymap_mod_get_index(keymap, "Mod4");
 }
 
+/* Attention was asked through the launchers (Wayland itself has no way without xdg-activation). */
+static int g_wl_urgent;
+
 static void rvn_wl_keyboard_enter(void* data, struct wl_keyboard* keyboard, uint32_t serial, struct wl_surface* surface, struct wl_array* keys) {
 	rvn_pwindow_t* window = rvn_wl_window_of(surface);
 	rvn_pevent_t event;
@@ -1413,6 +1469,11 @@ static void rvn_wl_keyboard_enter(void* data, struct wl_keyboard* keyboard, uint
 	g_wl.input_serial = serial;
 	g_wl.keyboard_window = window;
 	if (!window) return;
+	/* the user came: the launchers stop asking */
+	if (g_wl_urgent) {
+		g_wl_urgent = R_FALSE;
+		rvn_dbus_launcher_urgent(R_FALSE);
+	}
 	memset(&event, 0, sizeof(event));
 	event.type = RVN_PEVENT_FOCUS;
 	event.focused = R_TRUE;
@@ -2066,8 +2127,10 @@ static void rvn_wl_source_target(void* data, struct wl_data_source* source, cons
 
 static void rvn_wl_source_send(void* data, struct wl_data_source* source, const char* mime, int32_t fd) {
 	const char* text = g_wl.clipboard ? g_wl.clipboard : "";
-	size_t size = strlen(text), written = 0;
-	RVN_UNUSED(data); RVN_UNUSED(source); RVN_UNUSED(mime);
+	size_t size, written = 0;
+	RVN_UNUSED(data); RVN_UNUSED(source);
+	if (g_wl.clipboard_html && mime && strcmp(mime, "text/html") == 0) text = g_wl.clipboard_html;
+	size = strlen(text);
 	/* (a reader that stops reading must not hang us forever: the pipe is non-blocking and given a deadline) */
 	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 	while (written < size) {
@@ -2108,12 +2171,16 @@ static const struct wl_data_source_listener g_wl_source_listener = {
 	rvn_wl_source_dnd_drop_performed, rvn_wl_source_dnd_finished, rvn_wl_source_action
 };
 
-static void rvn_wl_clipboard_set(const char* text) {
+static void rvn_wl_clipboard_offer(const char* text, const char* html) {
 	rvn_str_set(&g_wl.clipboard, text);
+	rvn_free(g_wl.clipboard_html);
+	g_wl.clipboard_html = html ? rvn_strdup(html) : NULL;
 	if (!g_wl.data_device || g_wl.failed) return;
 	if (g_wl.source) wl_data_source_destroy(g_wl.source);
 	g_wl.source = wl_data_device_manager_create_data_source(g_wl.data_device_manager);
 	wl_data_source_add_listener(g_wl.source, &g_wl_source_listener, NULL);
+	/* (first: the programs that paste formatting look for it) */
+	if (html) wl_data_source_offer(g_wl.source, "text/html");
 	wl_data_source_offer(g_wl.source, "text/plain;charset=utf-8");
 	wl_data_source_offer(g_wl.source, "UTF8_STRING");
 	wl_data_source_offer(g_wl.source, "text/plain");
@@ -2122,6 +2189,14 @@ static void rvn_wl_clipboard_set(const char* text) {
 	/* (the compositor only takes it when the serial is the one of a recent input event of a focused window) */
 	wl_data_device_set_selection(g_wl.data_device, g_wl.source, g_wl.input_serial);
 	g_wlc.display_flush(g_wl.display);
+}
+
+static void rvn_wl_clipboard_set(const char* text) {
+	rvn_wl_clipboard_offer(text, NULL);
+}
+
+static void rvn_wl_clipboard_set_html(const char* text, const char* html) {
+	rvn_wl_clipboard_offer(text, html);
 }
 
 static char* rvn_wl_clipboard_get(void) {
@@ -2293,6 +2368,7 @@ static void rvn_wl_disconnect(void) {
 	if (g_wl.wake_pipe[0] >= 0) close(g_wl.wake_pipe[0]);
 	if (g_wl.wake_pipe[1] >= 0) close(g_wl.wake_pipe[1]);
 	rvn_free(g_wl.clipboard);
+	rvn_free(g_wl.clipboard_html);
 	rvn_free(g_wl.app_id);
 	memset(&g_wl, 0, sizeof(g_wl));
 	g_wl.repeat_fd = g_wl.wake_pipe[0] = g_wl.wake_pipe[1] = -1;
@@ -2357,6 +2433,7 @@ static int rvn_wl_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t regio
 	}
 	g_wl.probed = R_FALSE;
 	g_wl.handler = handler;
+	rvn_sni_set_handler(handler);
 	g_wl.cursor = R_CURSOR_ARROW;
 
 	/* text input needs the character encoding of the user (compose tables are per locale) */
@@ -2379,9 +2456,13 @@ static int rvn_wl_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t regio
 		g_wl.cursor_shape = wp_cursor_shape_manager_v1_get_pointer(g_wl.cursor_shape_manager, g_wl.pointer);
 	}
 	if (!g_wl.cursor_shape_manager) rvn_wl_load_cursor();
-	if (!g_wl.decoration_manager && rvn_wl_load_decor()) {
-		g_wl.decor = g_decor.create(g_wl.display, &g_wl_decor_interface);
-	}
+	/*
+	 * libdecor is not started here but by the first window that needs a title
+	 * bar from it (rvn_wl_make_toplevel): starting it loads a plugin (GTK on
+	 * GNOME) and asks the desktop portal for its settings, which costs a
+	 * whole toolkit, and up to 25 s when the portal is slow, to applications
+	 * whose windows all draw their own header.
+	 */
 
 	g_wl.repeat_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	if (pipe(g_wl.wake_pipe) == 0) {
@@ -2408,6 +2489,8 @@ static int rvn_wl_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t regio
 
 static void rvn_wl_shutdown(void) {
 	rvn_atspi_shutdown();
+	rvn_sni_shutdown();
+	rvn_dbus_notify_shutdown();
 	rvn_wl_disconnect();
 }
 
@@ -2458,6 +2541,9 @@ static void rvn_wl_apply_size_limits(rvn_pwindow_t* window) {
 static void rvn_wl_make_toplevel(rvn_pwindow_t* window) {
 	int undecorated = (window->flags & (R_WINDOW_BORDERLESS | R_WINDOW_CUSTOM_HEADER)) != 0;
 	window->configured = R_FALSE;
+	if (!undecorated && !g_wl.decoration_manager && !g_wl.decor && rvn_wl_load_decor()) {
+		g_wl.decor = g_decor.create(g_wl.display, &g_wl_decor_interface);
+	}
 	if (!undecorated && !g_wl.decoration_manager && g_wl.decor) {
 		window->frame = g_decor.decorate(g_wl.decor, window->surface, &g_wl_decor_frame_interface, window);
 	}
@@ -2554,6 +2640,7 @@ static void rvn_wl_window_destroy(rvn_pwindow_t* window) {
 	}
 	if (g_wl.drag_window == window) g_wl.drag_window = NULL;
 	if (!g_wl.failed) {
+		rvn_wl_frame_forget(window);
 		if (window->subsurface) wl_subsurface_destroy(window->subsurface);
 		if (window->effect) ext_background_effect_surface_v1_destroy(window->effect);
 		rvn_wl_drop_toplevel(window);
@@ -2623,6 +2710,8 @@ static float rvn_wl_window_get_scale(rvn_pwindow_t* window) {
 
 static void rvn_wl_window_show(rvn_pwindow_t* window, int visible) {
 	if (g_wl.failed || window->is_child) return;
+	/* an unmapped surface's request may never be answered: the next show starts afresh */
+	rvn_wl_frame_forget(window);
 	if (visible) {
 		if (window->shown) return;
 		window->shown = R_TRUE;
@@ -2714,6 +2803,18 @@ static int rvn_wl_window_set_topmost(rvn_pwindow_t* window, int topmost) {
 	/* not something a Wayland client may ask */
 	RVN_UNUSED(window); RVN_UNUSED(topmost);
 	return R_FALSE;
+}
+
+static int rvn_wl_window_request_attention(rvn_pwindow_t* window, int critical) {
+	RVN_UNUSED(critical);
+	if (g_wl.keyboard_window == window) return R_TRUE;
+	g_wl_urgent = R_TRUE;
+	return rvn_dbus_launcher_urgent(R_TRUE);
+}
+
+static int rvn_wl_window_set_progress(rvn_pwindow_t* window, int state, float value) {
+	RVN_UNUSED(window);
+	return rvn_dbus_launcher_progress(state, value);
 }
 
 static void rvn_wl_window_center(rvn_pwindow_t* window) {
@@ -2857,8 +2958,8 @@ static void rvn_wl_lost(void) {
 }
 
 static void rvn_wl_pump(double timeout_seconds) {
-	struct pollfd fds[5];
-	int count = 0, i, timeout_ms, a11y, decor_fd = -1, display_fd;
+	struct pollfd fds[6];
+	int count = 0, i, timeout_ms, a11y, tray, decor_fd = -1, display_fd;
 	/* (what a roundtrip outside this function dispatched: not worth sleeping over) */
 	if (g_wl.close_first) {
 		rvn_wl_deliver_closes();
@@ -2909,6 +3010,13 @@ static void rvn_wl_pump(double timeout_seconds) {
 		fds[count].events = POLLIN;
 		fds[count++].revents = 0;
 	}
+	/* and the panel that shows the tray icons, on the session bus */
+	tray = rvn_sni_fd();
+	if (tray >= 0) {
+		fds[count].fd = tray;
+		fds[count].events = POLLIN;
+		fds[count++].revents = 0;
+	}
 	if (g_wl.decor) {
 		decor_fd = g_decor.get_fd(g_wl.decor);
 		if (decor_fd >= 0 && decor_fd != display_fd) {
@@ -2941,6 +3049,7 @@ static void rvn_wl_pump(double timeout_seconds) {
 		if (fds[i].fd == g_wl.repeat_fd && (fds[i].revents & POLLIN)) rvn_wl_repeat_fire();
 	}
 	rvn_atspi_dispatch();
+	rvn_sni_dispatch();
 	/* empty the wake-up pipe, whether we slept or not */
 	if (g_wl.wake_pipe[0] >= 0) {
 		char buffer[64];
@@ -2990,12 +3099,25 @@ const rvn_platform_t* rvn_platform_wayland(void) {
 		.child_set_rect = rvn_wl_child_set_rect,
 		.pump = rvn_wl_pump,
 		.wake = rvn_wl_wake,
+		.window_frame_wait = rvn_wl_window_frame_wait,
+		.window_frame_begin = rvn_wl_window_frame_begin,
 		.clipboard_set = rvn_wl_clipboard_set,
+		.clipboard_set_html = rvn_wl_clipboard_set_html,
 		.clipboard_get = rvn_wl_clipboard_get,
 		.a11y_event = rvn_atspi_event,
 		.a11y_announce = rvn_atspi_announce,
 		.a11y_active = rvn_atspi_active,
-		.a11y_settings = rvn_atspi_settings
+		.a11y_settings = rvn_atspi_settings,
+		.notify = rvn_dbus_notify,
+		.window_set_progress = rvn_wl_window_set_progress,
+		.window_request_attention = rvn_wl_window_request_attention,
+		.app_set_badge = rvn_dbus_launcher_badge,
+		.tray_supported = rvn_sni_supported,
+		.tray_create = rvn_sni_create,
+		.tray_destroy = rvn_sni_destroy,
+		.tray_set_icon = rvn_sni_set_icon,
+		.tray_set_tooltip = rvn_sni_set_tooltip,
+		.tray_set_menu = rvn_sni_set_menu
 	};
 	return &platform;
 }

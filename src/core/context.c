@@ -41,8 +41,15 @@ void rvn_dispatch_end(void) {
 	if (--g_rvn.dispatch_depth > 0) return;
 	g_rvn.dispatch_depth = 0;
 	/* nobody up the stack holds pointers any more: release what was deleted */
-	if (g_rvn.dead_widget_count) rvn_widgets_collect();
-	if (g_rvn.dead_window_count) rvn_windows_collect();
+	rvn_collect_dead();
+}
+
+void rvn_collect_dead(void) {
+	/* (freeing a widget can close a window, and a window going takes widgets with it) */
+	while (g_rvn.dead_widget_count || g_rvn.dead_window_count) {
+		rvn_widgets_collect();
+		rvn_windows_collect();
+	}
 }
 
 void rvn_wake(void) {
@@ -77,7 +84,15 @@ static const RBackendVTable* rvn_select_backend(RBackend backend) {
 			rvn_error(R_ERROR_BACKEND, R_SEVERITY_FATAL, "Raven was built without the Vulkan backend");
 			return NULL;
 #endif
-		case R_BACKEND_NULL:
+		        case R_BACKEND_WEBGL:
+#if defined(RAVEN_BACKEND_WEBGL_ENABLED)
+            return rvn_backend_webgl();
+#else
+            rvn_error(R_ERROR_BACKEND, R_SEVERITY_FATAL,
+                      "Raven was built without the WebGL backend");
+            return NULL;
+#endif
+        case R_BACKEND_NULL:
 			return rvn_backend_null();
 		case R_BACKEND_CUSTOM:
 			if (!g_custom_backend_set) {
@@ -109,7 +124,20 @@ int Rinit_ex(const RInitDesc* user_desc) {
 	}
 	memset(&desc, 0, sizeof(desc));
 	if (user_desc) desc = *user_desc;
-	if (desc.backend == 0) desc.backend = R_BACKEND_VULKAN;
+	if (desc.backend == 0) {
+#if defined(RAVEN_BACKEND_WEBGL_ENABLED)
+        desc.backend = R_BACKEND_WEBGL;
+#else
+        desc.backend = R_BACKEND_VULKAN;
+#endif
+    }
+#if defined(__EMSCRIPTEN__)
+    /* DOM and WebGL contexts belong to the browser main thread. */
+    desc.disable_render_thread = R_TRUE;
+#if !defined(__EMSCRIPTEN_PTHREADS__)
+    desc.worker_threads = -1;
+#endif
+#endif
 
 	backend = rvn_select_backend(desc.backend);
 	if (!backend) return R_FALSE;
@@ -158,7 +186,7 @@ int Rinit_ex(const RInitDesc* user_desc) {
 	g_rvn.enable_validation = desc.enable_validation;
 	info.app_name = g_rvn.app_name;
 	info.enable_validation = desc.enable_validation;
-	info.vsync = g_rvn.vsync;
+	info.vsync = rvn_present_vsync();
 	info.window_system = g_rvn.platform->system;
 	info.native_display = g_rvn.platform->native_display();
 	if (!rvn_renderer_init(backend, &info, threaded)) {
@@ -196,13 +224,21 @@ fail_platform:
 	return R_FALSE;
 }
 
+#if defined(__EMSCRIPTEN__)
+void rvn_web_images_shutdown(void);
+#endif
 void Rshutdown(void) {
 	uint32_t i;
 	if (!rvn_api_check(__func__)) return;
 
-	/* Stop native filesystem notifications before draining posted UI tasks. */
+	#if defined(__EMSCRIPTEN__)
+    rvn_web_images_shutdown();
+#endif
+    /* Stop native filesystem notifications before draining posted UI tasks. */
 	rvn_fs_watch_stop();
 	/* windows first: this deletes every widget that is shown */
+	/* (the inspectors first: they are windows that follow other windows) */
+	rvn_inspector_shutdown();
 	rvn_windows_destroy_all();
 	/* then the widgets the application created but never attached */
 	for (i = 0; i < g_rvn.widgets.used; i++) {
@@ -210,7 +246,7 @@ void Rshutdown(void) {
 		/* internal widgets are destroyed by the widget that owns them */
 		if (widget && !widget->parent && !(widget->flags & RVN_WF_INTERNAL)) rvn_widget_destroy(widget);
 	}
-	rvn_widgets_collect();
+	rvn_collect_dead();
 
 	/* let the running jobs finish and deliver their results */
 	rvn_jobs_shutdown();
@@ -225,6 +261,8 @@ void Rshutdown(void) {
 	}
 
 	rvn_xml_shutdown();
+	rvn_taskbar_shutdown();
+	rvn_tray_shutdown();
 	rvn_locale_shutdown();
 	rvn_a11y_shutdown();
 	rvn_themes_shutdown();
@@ -525,6 +563,15 @@ void Rclipboard_set_text(const char* text) {
 	g_rvn.platform->clipboard_set(text ? text : "");
 }
 
+void Rclipboard_set_html(const char* text, const char* html) {
+	RVN_API_GUARD_VOID();
+	if (html && g_rvn.platform->clipboard_set_html) {
+		g_rvn.platform->clipboard_set_html(text ? text : "", html);
+	} else {
+		g_rvn.platform->clipboard_set(text ? text : "");
+	}
+}
+
 const char* Rclipboard_get_text(void) {
 	RVN_API_GUARD("");
 	rvn_free(g_rvn.clipboard);
@@ -547,6 +594,8 @@ int Ris_running(void) {
 	uint32_t i;
 	if (!g_rvn.initialized || rvn_atomic_load(&g_rvn.quit_requested)) return R_FALSE;
 	if (!g_rvn.had_window) return R_TRUE;
+	/* an application with a tray icon lives on without windows, until Rquit */
+	if (rvn_tray_count() > 0) return R_TRUE;
 	for (i = 0; i < g_rvn.windows.used; i++) {
 		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
 		if (window && !window->dead) return R_TRUE;
@@ -586,7 +635,9 @@ void Rwait_events(double timeout_seconds) {
 	}
 	for (i = 0; i < g_rvn.windows.used && timeout_seconds != 0.0; i++) {
 		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
-		if (window && rvn_window_wants_frame(window)) timeout_seconds = 0.0;
+		/* (a window waiting for the compositor sleeps until it answers, or until its wait runs out) */
+		double frame_in = window ? rvn_window_frame_in(window) : -1.0;
+		if (frame_in >= 0.0 && (timeout_seconds < 0.0 || frame_in < timeout_seconds)) timeout_seconds = frame_in;
 	}
 	timer_delay = rvn_timers_next_delay();
 	if (timer_delay >= 0.0 && (timeout_seconds < 0.0 || timer_delay < timeout_seconds)) timeout_seconds = timer_delay;
@@ -615,11 +666,26 @@ void rvn_update(void) {
 	g_rvn.last_update_time = now;
 
 	if (rvn_atomic_exchange(&g_rvn.redraw_all, 0)) rvn_repaint_all_windows();
+	/* the menu of the icon of the application follows its Menu */
+	rvn_taskbar_update();
+	rvn_tray_update();
+	rvn_textures_update_svg();
+	rvn_inspector_update();
 	for (i = 0; i < g_rvn.windows.used; i++) {
 		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
 		if (window) rvn_window_update(window);
 	}
 	g_rvn.in_update = R_FALSE;
+}
+
+int rvn_frame_pacing(void) {
+	/* (only the Vulkan backend presents to the window: a frame of the null backend would never be answered) */
+	return g_rvn.backend == R_BACKEND_VULKAN && g_rvn.platform &&
+		g_rvn.platform->window_frame_wait && g_rvn.platform->window_frame_begin;
+}
+
+int rvn_present_vsync(void) {
+	return g_rvn.vsync && !rvn_frame_pacing();
 }
 
 int Rdraw_frame(void) {

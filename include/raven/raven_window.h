@@ -34,8 +34,28 @@ typedef enum RWindowFlags{
 	 * chosen with Rwindow_set_backdrop. See RBackdrop for what each window
 	 * system can do.
 	 */
-	R_WINDOW_TRANSPARENT = (1 << 5)
+	R_WINDOW_TRANSPARENT = (1 << 5),
+	/**
+	 * A splash screen: shown while the application starts. No frame (it
+	 * implies R_WINDOW_BORDERLESS and R_WINDOW_NO_RESIZE, and cancels
+	 * R_WINDOW_MAXIMIZED and R_WINDOW_CUSTOM_HEADER), centered on the screen
+	 * before it is first shown and again when its size changes, above the
+	 * other windows, out of the taskbar and of Alt+Tab (Windows), of the
+	 * Window menu and of Cmd+` (macOS), typed _NET_WM_WINDOW_TYPE_SPLASH on
+	 * X11. Wayland gives it no place of its own: it is a window without frame
+	 * there. The application destroys it once its main window is ready
+	 * (creating the main window first keeps Ris_running true).
+	 */
+	R_WINDOW_SPLASH_SCREEN = (1 << 6)
 }RWindowFlags;
+
+/** Where a window in picture in picture goes (Rwindow_set_picture_in_picture_layout). */
+typedef enum RPictureInPictureCorner {
+	R_PIP_BOTTOM_RIGHT = 0x0780,
+	R_PIP_BOTTOM_LEFT,
+	R_PIP_TOP_RIGHT,
+	R_PIP_TOP_LEFT
+} RPictureInPictureCorner;
 
 /**
  * What is seen behind a window created with R_WINDOW_TRANSPARENT.
@@ -67,7 +87,8 @@ typedef enum RWindowSystem{
 	R_WINDOW_SYSTEM_WIN32,
 	R_WINDOW_SYSTEM_X11,
 	R_WINDOW_SYSTEM_WAYLAND,
-	R_WINDOW_SYSTEM_COCOA
+	R_WINDOW_SYSTEM_COCOA,
+    R_WINDOW_SYSTEM_EMSCRIPTEN
 }RWindowSystem;
 
 /**
@@ -77,6 +98,7 @@ typedef enum RWindowSystem{
  *   Wayland: display = wl_display*, window = wl_surface* (Linux and BSD choose
  *           Wayland or X11 when Rinit runs: check `system`)
  *   Cocoa : display = NSWindow*, window = CAMetalLayer* for Vulkan presentation
+ *   Emscripten: window = opaque browser surface token (no OS window handle)
  */
 typedef struct RNativeWindow {
 	RWindowSystem system;
@@ -411,8 +433,51 @@ extern "C" {
 	 */
 	RAVEN_API int Rwindow_set_topmost(Rid window, int topmost);
 
+	/**
+	 * @brief Picture in picture: the window becomes a small floating window
+	 * that stays above the other windows, on every desktop (every space of
+	 * macOS, over the applications in full screen too), in a corner of the
+	 * work area of its monitor. It loses its title bar where the system
+	 * allows: the empty parts of its content move it, its edges resize it,
+	 * and its size keeps the proportions it was given. Leaving it gives back
+	 * the size, place, frame and state the window had.
+	 *
+	 * Raven does not add a button to leave it: the content shows one, with
+	 * the built-in action "window.picture_in_picture" (it goes in and out).
+	 * @return R_FALSE when the window system cannot keep a window above the
+	 * others (Wayland): the window is left as it is.
+	 */
+	RAVEN_API int Rwindow_set_picture_in_picture(Rid window, int enabled);
+	RAVEN_API int Rwindow_is_picture_in_picture(Rid window);
+	/**
+	 * @brief Size (logical units) and corner of the window in picture in
+	 * picture, for the next time it goes in (now, when it is in). 0, 0 (the
+	 * default): 320 wide, with the proportions the content has when it goes
+	 * in. The proportions of width / height are kept while the user resizes.
+	 */
+	RAVEN_API void Rwindow_set_picture_in_picture_layout(Rid window, int width, int height, RPictureInPictureCorner corner);
+
 	/** @brief Centers the window on the work area of its monitor (no task bar). */
 	RAVEN_API void Rwindow_center(Rid window);
+	/**
+	 * @brief Shows (R_TRUE) or hides (R_FALSE) the inspector of the window: a
+	 * window beside it that lists its widgets as a tree, says what the
+	 * selected one is (type, name, classes, place and size in the window,
+	 * desired size, constraints, slot, visibility, state, style, action,
+	 * children) and what the last frame cost (layout, paint and render
+	 * times, widgets, instances, draw calls). The selected widget is
+	 * outlined in the window, with its type and size. "Pick" selects the
+	 * next widget clicked in the window (that click goes to the inspector
+	 * only). It follows the window as it changes; closing it hides it, and
+	 * it goes with the window. Nothing opens it but this function.
+	 */
+	RAVEN_API void Rwindow_set_inspector(Rid window, int shown);
+	RAVEN_API int Rwindow_is_inspector_shown(Rid window);
+	/** @return The window of the inspector of a window (to place it), or R_INVALID_ID when it is hidden. */
+	RAVEN_API Rid Rwindow_get_inspector(Rid window);
+
+	/** @return R_TRUE for a window created with R_WINDOW_SPLASH_SCREEN (IsSplashScreen in XML). */
+	RAVEN_API int Rwindow_is_splash_screen(Rid window);
 
 	/** @brief Asks for a new frame even if no widget changed. Thread-safe. */
 	RAVEN_API void Rwindow_request_redraw(Rid window);
