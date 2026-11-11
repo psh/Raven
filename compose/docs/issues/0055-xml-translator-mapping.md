@@ -10,7 +10,7 @@ state, stub actions, and TODOs with warnings for anything unsupported. Spec:
 [`samples/xml-translator`](../spec.md#samplesxml-translator) (Translator, Mapping, Faithful
 output, State and actions, Unsupported input, Output).
 
-**Depends on:** [XML translator: parsing](0054-xml-translator-parsing.md), for `XmlElement`.
+**Depends on:** [XML translator: parsing](archive/0054-xml-translator-parsing.md), for `XmlElement`.
 
 ## Deliverables
 
@@ -20,7 +20,8 @@ output, State and actions, Unsupported input, Output).
 - [ ] Explicit `fillMax*` modifiers wherever the XML relies on Raven's `Fill` default.
 - [ ] A hoisted `var <name> by remember { mutableStateOf(...) }` per input, named from `Name` or
       generated (`checkbox1`), and stub lambdas for actions.
-- [ ] Unsupported elements become `// TODO(raven-xml): ...` plus a warning with line and column;
+- [ ] Unsupported elements become `// TODO(raven-xml): ...` plus a warning with its line (Raven
+      gives a node no column, see [parsing](archive/0054-xml-translator-parsing.md));
       unknown attributes become a warning plus a trailing comment.
 - [ ] One compilable file with 4-space indents: imports, `@Composable fun TranslatedUi()` with the
       state at the top, then `main()` when the root is `<Window>`.

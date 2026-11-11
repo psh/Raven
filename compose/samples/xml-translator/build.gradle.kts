@@ -9,5 +9,7 @@ kotlin {
     }
     sourceSets.nativeMain.dependencies {
         implementation(project(":compose-raven-foundation"))
+        // parseRavenXml reads Raven's XML API through raven.cinterop
+        implementation(project(":raven-native"))
     }
 }

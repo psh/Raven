@@ -47,7 +47,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `raven-native` with `implementation` |
 | `compose-raven-bom` (phase 3) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
-| `compose-raven-xml` (phase 3) | The XML translator as a library: the parse adapter, the private `ravenxml.def` cinterop and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
+| `compose-raven-xml` (phase 3) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
 | `tools/raven-xml2compose` (phase 3) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
 | `compose-raven-test` (phase 3) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
@@ -918,14 +918,15 @@ This sample translates Raven XML into compose-raven source.
     built-in Kotlin language ([section 11](#11-required-raven-changes)).
   - A `Text` below shows the warnings.
   - Translation reruns on every change.
-- **Parsing**: Raven's own parser, through a private cinterop (in `compose-raven-xml` from phase
-  3, in the sample before that). `ravenxml.def` uses
-  `package = raven.sample.xml.cinterop` and a `headerFilter` of `raven_xml.h`, plus
-  `Rinit_ex`/`Rshutdown`/`RInitDesc` for tests. It has no `staticLibraries`, because `libraven.a`
-  already arrives through `raven-native`. A single adapter, `parseRavenXml(text)`, calls
-  `Rxml_document_parse` (UI thread, Raven running) and copies the result into a Kotlin
-  `XmlElement(tag, attributes, text, line, children)` tree, keeping comments. It then destroys the
-  document.
+- **Parsing**: Raven's own parser, through `raven-native`'s `raven.cinterop`, which already
+  binds `raven_xml.h` (in `compose-raven-xml` from phase 3, in the sample before that, as an
+  `implementation` dependency, so no Raven type is in its API). A single adapter,
+  `parseRavenXml(text)`, calls `Rxml_document_parse` (UI thread, Raven running) and copies the
+  result into a Kotlin `XmlElement(tag, attributes, text, line, children)` tree, then destroys the
+  document. It throws `XmlParseException(line, column, reason)` for text that isn't well-formed.
+  - Comments are kept as nodes with an empty `tag` (`isComment`), as in Raven's tree, except those
+    before the root: Raven keeps them out of the tree, with no getter.
+  - Raven gives a node its line only. A column exists only for a parse error.
 - **Translator**: `translate(xml: String): Translation(code, warnings)`, working on the Kotlin
   tree. Names are matched case-insensitively, through an alias table taken from `docs/XML.md`.
 - **Mapping** (exactly the [phase 1 vocabulary](#8-component-vocabulary)):
@@ -977,7 +978,8 @@ This sample translates Raven XML into compose-raven source.
     ([verified](../spikes/README.md)), so `parseRavenXml` needs no clean-up.
 - **Unsupported input** is never refused:
   - An element with no composable, `<Include>`, or an expression that fails to parse becomes
-    `// TODO(raven-xml): ...` in its place, plus a warning with its line and column.
+    `// TODO(raven-xml): ...` in its place, plus a warning with its line (Raven gives a node no
+    column).
   - An attribute with no equivalent becomes a warning plus a trailing comment.
 - **Output**: one compilable file, with 4-space indents. It holds the imports, then
   `@Composable fun TranslatedUi()` with the hoisted state at the top, then `main()` when the root
