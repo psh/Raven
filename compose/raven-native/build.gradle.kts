@@ -102,7 +102,11 @@ kotlin {
             definitionFile.set(layout.projectDirectory.file("src/nativeInterop/cinterop/raven.def"))
             includeDirs(ravenRoot.dir("include").asFile)
             extraOpts("-libraryPath", ravenBuildDir.get().asFile.absolutePath)
-            tasks.named(interopProcessingTaskName) { dependsOn(buildRaven, checkRavenLinkerOpts) }
+            tasks.named(interopProcessingTaskName) {
+                dependsOn(buildRaven, checkRavenLinkerOpts)
+                // The klib embeds libraven.a (staticLibraries), so a rebuilt library must re-run it.
+                inputs.files(buildRaven)
+            }
         }
     }
 }
