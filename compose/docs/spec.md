@@ -928,7 +928,11 @@ This sample translates Raven XML into compose-raven source.
     before the root: Raven keeps them out of the tree, with no getter.
   - Raven gives a node its line only. A column exists only for a parse error.
 - **Translator**: `translate(xml: String): Translation(code, warnings)`, working on the Kotlin
-  tree. Names are matched case-insensitively, through an alias table taken from `docs/XML.md`.
+  tree, which `translate(root: XmlElement)` takes directly, for the unit tests. A text that doesn't
+  parse gives no code and its parse error, with its column, as the one warning. Names are matched
+  case-insensitively, through an alias table taken from `docs/XML.md` (also `Name`/`Id`,
+  `TextSize`/`FontSize`, and the five action spellings). `Box` is Raven's alias for `SizeBox`, not
+  `Overlay`, so it is not in the vocabulary.
 - **Mapping** (exactly the [phase 1 vocabulary](#8-component-vocabulary)):
 
   | XML | Compose |
@@ -949,11 +953,28 @@ This sample translates Raven XML into compose-raven source.
   | `Slot.*`, `Width`/`Height`, `Min*`/`Max*` | Modifiers |
   | `Spacing` | `Arrangement.spacedBy` |
 - **Faithful output**: wherever the XML relies on Raven's `Fill` default, the output adds
-  explicit `fillMax*` modifiers.
+  explicit `fillMax*` modifiers. What a child gets depends on what its parent reads in Raven:
+  - In a `Column` or `VerticalScroll`, `Slot.HAlign` gives `fillMaxWidth()` (Fill) or
+    `align(Alignment.Start/CenterHorizontally/End)`. In a `Row` or `HorizontalScroll`, the same
+    for `Slot.VAlign`. In a `Box`, both: `align(...)` first, then `fillMax*()` for an axis that
+    fills, since the last element wins on each axis.
+  - `Slot.Fill` is `weight` in a `Row`, a `Column` and a splitter (the pane's size). Raven's
+    ScrollBox and Overlay ignore it, and so does the output.
+  - The window's content fills it: `fillMaxSize()`. Content aligned otherwise goes in a
+    `Box(Modifier.fillMaxSize())`, since `TranslatedUi()` has no scope to align in.
+  - A root other than `<Window>` gets no implicit fill, and its `Slot` attributes are warnings.
 - **State and actions**: each input gets a hoisted
   `var <name> by remember { mutableStateOf(<initial>) }` and is wired as a controlled input. The
   name comes from `Name`, or is generated (`checkbox1`). Actions become stub lambdas, for example
   `onClick = { /* file.save */ }`.
+  - The radio buttons of one parent share one `Int` state, the index of the checked one or -1,
+    since Raven keeps them exclusive: `selected = radioGroup1 == 0`.
+  - A `Checkbox` with text becomes a `Row(verticalAlignment = Alignment.CenterVertically)` of the
+    toggle and a `Text`, and the slot Modifier goes on the `Row`.
+  - A Slider's `Step` becomes `steps`, the count of values between the ends, when it divides the
+    range; otherwise a warning. A TextInput's action fires on Enter, which `TextField` doesn't
+    report, so it is a warning.
+  - Until the templates (`{...}` expressions, `<Widget>`, `<If>`...), they are warnings and TODOs.
 - **Templates**:
   - Each `<Widget Name="Card" Title="Untitled" Wide="false">` becomes a top-level composable,
     `@Composable fun Card(modifier: Modifier = Modifier, title: String = "Untitled", wide: Boolean = false, content: @Composable () -> Unit = {})`,

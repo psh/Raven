@@ -8,7 +8,7 @@ Translate `<Widget>` declarations into top-level composables, `<Children>` into 
 whole `{...}` expression language into Kotlin, and `If`/`Repeat`/`ForEach` into Kotlin control
 flow. Spec: [`samples/xml-translator`](../spec.md#samplesxml-translator) (Templates).
 
-**Depends on:** [XML translator: mapping the phase 1 vocabulary](0055-xml-translator-mapping.md).
+**Depends on:** [XML translator: mapping the phase 1 vocabulary](archive/0055-xml-translator-mapping.md).
 
 ## Deliverables
 

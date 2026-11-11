@@ -92,6 +92,22 @@ class RavenXmlTest {
     }
 
     @Test
+    fun aTextIsParsedThenTranslated() = withRaven {
+        val translation = translate("<Window Title=\"Hi\">\n    <Label>Hello</Label>\n</Window>")
+        assertTrue("Text(\"Hello\", modifier = Modifier.fillMaxSize())" in translation.code, translation.code)
+        assertEquals(emptyList(), translation.warnings)
+    }
+
+    @Test
+    fun aTextThatDoesntParseGivesItsErrorAsTheWarning() = withRaven {
+        val translation = translate("<VBox>\n    <Label>\n</VBox>")
+        assertEquals("", translation.code)
+        val warning = translation.warnings.single()
+        assertEquals(3, warning.line)
+        assertTrue(warning.column > 0)
+    }
+
+    @Test
     fun needsRavenRunning() {
         assertFailsWith<IllegalStateException> { parseRavenXml("<VBox/>") }
     }
