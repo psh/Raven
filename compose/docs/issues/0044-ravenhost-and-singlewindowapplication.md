@@ -9,7 +9,7 @@ Write the internal `RavenHost` (`start(content)`, `frame()`, `close()`) and
 the same host. Spec: [4. Application host](../spec.md#4-application-host),
 [9. Testing](../spec.md#9-testing).
 
-**Depends on:** [RavenNode and RavenApplier](0043-ravennode-and-ravenapplier.md).
+**Depends on:** [RavenNode and RavenApplier](archive/0043-ravennode-and-ravenapplier.md).
 
 Phase 1 has one window. Keep the window's composition, root and Applier separate from the
 application composition, so phase 3's `application { Window { } }` adds windows without

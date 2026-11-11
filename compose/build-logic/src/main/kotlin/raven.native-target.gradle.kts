@@ -14,4 +14,8 @@ kotlin {
         KonanTarget.LINUX_X64 -> linuxX64()
         else -> error("compose-raven builds on macOS (arm64) and Linux (x64) only, not ${HostManager.host}")
     }
+    compilerOptions.optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
+    sourceSets.named("commonTest") {
+        dependencies { implementation(kotlin("test")) }
+    }
 }

@@ -105,10 +105,6 @@ kotlin {
             tasks.named(interopProcessingTaskName) { dependsOn(buildRaven, checkRavenLinkerOpts) }
         }
     }
-    compilerOptions.optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
-    sourceSets.nativeTest.dependencies {
-        implementation(kotlin("test"))
-    }
 }
 
 tasks.named("check") { dependsOn(checkRavenLinkerOpts) }

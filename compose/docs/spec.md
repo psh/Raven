@@ -258,8 +258,11 @@ Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-thread
   `onEndChanges`, because Raven lays out lazily later in the same frame and setters don't fire
   change callbacks.
 - **Moves** use `Rwidget_move_child(parent, from, to)` ([section 11](#11-required-raven-changes)).
-  The Applier calls it once for each of Compose's `count` items, with `to - count` when
-  `from < to`.
+  The Applier calls it once for each of Compose's `count` items, following `AbstractApplier`'s
+  own list move so Raven stays in step with the mirror list. Moving back, each item goes from
+  `from + i` to `to + i`. Moving forward, the block's first item goes from `from` to
+  `to - 1` each time. A single item next to its target is swapped, as `AbstractApplier` does.
+  Within a single-child parent, a move only reorders the mirror list.
 - **DockArea children**: Raven moves dock panels by itself (docking, tearing into floating
   windows), so the Applier makes no index-based Raven calls on a DockArea's children. Insert uses
   `Rdock_area_add_panel`, removal destroys the panel, and moves only reorder the mirror list.
