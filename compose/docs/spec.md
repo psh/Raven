@@ -1041,6 +1041,11 @@ This sample translates Raven XML into compose-raven source.
   tests. A few headless smoke tests cover `parseRavenXml`. A CI test translates the `.xml` files of
   Raven's `examples/` and **compiles** the output against the current `compose-raven-foundation`,
   so the translator can't drift from the API.
+  - It is a Gradle check of the sample, run by `allTests` and `check`: a second executable of the
+    sample, `translateFiles`, translates each file headless into a package named after its path
+    (`examples.music.ui.nowplaying`), with its warnings as comments, and an `examples` compilation
+    compiles them against foundation. The translator binary is an input, so a changed translator
+    always translates again.
 
 ### `compose-raven-xml` and `raven-xml2compose` (phase 3)
 
