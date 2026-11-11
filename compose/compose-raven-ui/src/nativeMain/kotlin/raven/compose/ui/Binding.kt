@@ -6,7 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.DisallowComposableCalls
 import androidx.compose.runtime.Updater
+import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.staticCFunction
 import raven.cinterop.RAccessibleRole
 import raven.cinterop.RWidgetType
@@ -24,10 +26,17 @@ import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rcheckbox_set_changed_callback
 import raven.cinterop.Rcheckbox_set_checked
 import raven.cinterop.Rid
+import raven.cinterop.Rslider_get_value
+import raven.cinterop.Rslider_set_changed_callback
+import raven.cinterop.Rslider_set_value
+import raven.cinterop.Rtext_input_get_text
+import raven.cinterop.Rtext_input_set_changed_callback
+import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
 import raven.native.callbackTarget
+import raven.native.toRavenString
 
 // The binding layer: composables are declarations over these few protocols.
 
@@ -197,6 +206,23 @@ public val CheckboxChecked: ControlledValue<Boolean> = ControlledValue(
     write = { widget, checked -> Rcheckbox_set_checked(widget, if (checked) R_TRUE else R_FALSE) },
 )
 
+/**
+ * A text input's text. It is written only when it differs from what the widget shows, so typing
+ * the composed text back never moves the caret; Raven puts the caret at the end when it is written.
+ */
+@InternalComposeRavenApi
+public val TextInputText: ControlledValue<String> = ControlledValue(
+    read = { Rtext_input_get_text(it).toRavenString() },
+    write = { widget, text -> Rtext_input_set_text(widget, text) },
+)
+
+/** A slider's value. Raven snaps what is written to the slider's range and step. */
+@InternalComposeRavenApi
+public val SliderValue: ControlledValue<Float> = ControlledValue(
+    read = { Rslider_get_value(it) },
+    write = { widget, value -> Rslider_set_value(widget, value) },
+)
+
 @InternalComposeRavenApi
 public val ButtonClicked: Event<() -> Unit> = Event { widget, userData ->
     Rbutton_set_clicked_callback(widget, onButtonClicked, userData)
@@ -216,6 +242,16 @@ public val RadioClicked: Event<() -> Unit> = Event(marks = CheckboxChecked) { wi
     Rcheckbox_set_changed_callback(widget, onRadioChanged, userData)
 }
 
+@InternalComposeRavenApi
+public val TextChanged: Event<(String) -> Unit> = Event(marks = TextInputText) { widget, userData ->
+    Rtext_input_set_changed_callback(widget, onTextChanged, userData)
+}
+
+@InternalComposeRavenApi
+public val SliderChanged: Event<(Float) -> Unit> = Event(marks = SliderValue) { widget, userData ->
+    Rslider_set_changed_callback(widget, onSliderChanged, userData)
+}
+
 private val onRadioChanged = staticCFunction { _: Rid, checked: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, RadioClicked) { if (checked == R_TRUE) it() }
 }
@@ -226,4 +262,12 @@ private val onButtonClicked = staticCFunction { _: Rid, userData: COpaquePointer
 
 private val onCheckboxChanged = staticCFunction { _: Rid, checked: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, CheckboxChanged) { it(checked == R_TRUE) }
+}
+
+private val onTextChanged = staticCFunction { _: Rid, text: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, TextChanged) { it(text.toRavenString()) }
+}
+
+private val onSliderChanged = staticCFunction { _: Rid, value: Float, userData: COpaquePointer? ->
+    dispatchEvent(userData, SliderChanged) { it(value) }
 }

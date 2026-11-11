@@ -29,6 +29,8 @@ import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
+import raven.cinterop.Rwindow_inject_text
+import raven.cinterop.Rwidget_is_focused
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rmemory_get_stats
 import raven.compose.ui.RavenHost
@@ -160,8 +162,19 @@ internal class NodeInteraction(
     }
 
     /** Presses and releases the left button at the centre of the node's widget, as the user would. */
-    fun performClick(): NodeInteraction = apply {
+    fun performClick(): NodeInteraction = apply { click(fetchWidget()) }
+
+    /**
+     * Types [text] into the node's widget, one character at a time with no frame between them. It
+     * clicks the widget first unless it already has focus, so the caret stays where it was.
+     */
+    fun performTextInput(text: String): NodeInteraction = apply {
         val widget = fetchWidget()
+        if (Rwidget_is_focused(widget) != R_TRUE) click(widget)
+        Rwindow_inject_text(Rwidget_get_window(widget), text)
+    }
+
+    private fun click(widget: Rid) {
         val (x, y) = memScoped {
             val values = List(4) { alloc<FloatVar>() }
             Rwidget_get_rect(widget, values[0].ptr, values[1].ptr, values[2].ptr, values[3].ptr)

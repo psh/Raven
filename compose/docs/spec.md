@@ -391,7 +391,9 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
 
   Raven's setters don't fire change callbacks, so nothing loops.
 - **Text**: `TextField(value: String, onValueChange)`. Text is written back only when it differs
-  from what the widget shows, so typing never moves the caret.
+  from what the widget shows, so typing never moves the caret. Text the app rewrites moves the
+  caret to the end. Raven sees only committed text, never an IME preedit, so a write-back can't
+  cancel a composition ([verified](../spikes/README.md)).
 - **Errors**: a Kotlin exception must not cross a `staticCFunction`. Each shared callback catches
   it and passes it to the host's error path ([section 4](#4-application-host)).
 - **Phase 1 events** are only the callbacks that belong to each widget, listed in
@@ -466,8 +468,8 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
 | `Switch(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_SWITCH` | as `Checkbox` |
 | `RadioButton(selected, onClick)` | Checkbox, `R_CHECKBOX_RADIO` | the controlled check makes the app's state override Raven's sibling unchecking: Raven reports each sibling it unchecks, so each is marked, and only the radio that became checked calls `onClick` |
-| `TextField(value, onValueChange, modifier, placeholder: String, singleLine = true)` | TextInput | single line only |
-| `Slider(value, onValueChange, valueRange, steps)` | Slider | controlled |
+| `TextField(value, onValueChange, modifier, enabled, readOnly, placeholder: String, singleLine = true)` | TextInput | single line only: `singleLine = false` fails |
+| `Slider(value, onValueChange, modifier, enabled, valueRange, steps)` | Slider | controlled. `steps` values lie between the ends, as in Compose, so Raven's step is `range / (steps + 1)` |
 | `LinearProgressIndicator(progress)` | ProgressBar | |
 | `HorizontalDivider()`, `VerticalDivider()` | Separator | |
 | `Spacer(modifier)` | Spacer | no children |
