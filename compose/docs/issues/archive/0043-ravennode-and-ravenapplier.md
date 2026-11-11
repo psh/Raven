@@ -38,7 +38,7 @@ an error, such as a stale handle or a double destroy, or if a widget reference o
 
 - **`RavenNode`** has the widget, its `userData` (the registry's `StableRef`), the mirror
   `children` and a `ChildKind`. The fields for event lambdas and layout values aren't added yet:
-  [The binding layer](../0045-binding-layer.md) and
+  [The binding layer](0045-binding-layer.md) and
   [Modifier, Dp and the layout containers](../0046-modifier-dp-and-layout-containers.md) add them
   with the code that uses them.
 - **`onRelease`** destroys the widget only if it is still valid (`Rwidget_is_valid`), because

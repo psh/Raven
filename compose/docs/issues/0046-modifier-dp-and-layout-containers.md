@@ -8,7 +8,7 @@ Write compose-raven's own `Modifier` and `Dp`, fold the phase 1 elements into Ra
 setters, and add `Column`, `Row` and `Box` with Compose's `Arrangement` and `Alignment` shapes.
 Spec: [6. Layout and Modifiers](../spec.md#6-layout-and-modifiers).
 
-**Depends on:** [The binding layer](0045-binding-layer.md).
+**Depends on:** [The binding layer](archive/0045-binding-layer.md).
 
 ## Deliverables
 

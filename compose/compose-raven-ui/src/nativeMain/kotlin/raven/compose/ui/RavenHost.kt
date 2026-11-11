@@ -97,6 +97,9 @@ public class RavenHost(
     internal var applyGeneration: Long = 0L
         private set
 
+    // Controlled values the user changed, waiting for the app's response to be composed.
+    private val markedInputs = LinkedHashSet<ComposedValue<*>>()
+
     /** Starts Raven on the calling thread and composes [content]. */
     public fun start(content: @Composable () -> Unit) {
         check(state == State.New) { "a RavenHost starts once" }
@@ -132,13 +135,15 @@ public class RavenHost(
      * Whether nothing is left to do but wait: no dispatched task, no snapshot apply and no
      * recomposition pending. Frame awaiters (animations, `withFrameNanos` loops) don't count.
      */
-    public fun isIdle(): Boolean {
-        if (dispatcher.hasQueuedTasks || applyPending.load() != 0) return false
+    public fun isIdle(): Boolean = markedInputs.isEmpty() && !hasPendingRecomposition()
+
+    private fun hasPendingRecomposition(): Boolean {
+        if (dispatcher.hasQueuedTasks || applyPending.load() != 0) return true
         // Paused, the frame clock hides its awaiters from hasPendingWork.
         recomposer.pauseCompositionFrameClock()
         val pending = recomposer.hasPendingWork
         recomposer.resumeCompositionFrameClock()
-        return !pending && !dispatcher.hasQueuedTasks
+        return pending || dispatcher.hasQueuedTasks
     }
 
     /**
@@ -152,6 +157,30 @@ public class RavenHost(
 
     internal fun onChangesApplied() {
         applyGeneration++
+    }
+
+    /** Marks a user change to [input], to check once the app's response has been composed. */
+    internal fun markUserChange(input: ComposedValue<*>) {
+        input.markedAt = applyGeneration
+        markedInputs += input
+    }
+
+    /**
+     * Shows the composed value again in each marked input whose user change the app has answered:
+     * a batch was applied since the mark, or nothing is left to recompose, so the app ignored it.
+     * Running animations never hold the check back, since frame awaiters aren't pending work.
+     */
+    private fun checkMarkedInputs() {
+        if (markedInputs.isEmpty()) return
+        val answered = !hasPendingRecomposition()
+        val iterator = markedInputs.iterator()
+        while (iterator.hasNext()) {
+            val input = iterator.next()
+            if (answered || applyGeneration > input.markedAt) {
+                iterator.remove()
+                input.showComposed()
+            }
+        }
     }
 
     /**
@@ -175,6 +204,7 @@ public class RavenHost(
         // Cancelled coroutines finish on the dispatcher: the Recomposer unregisters its observers.
         dispatcher.drain()
         writeObserver?.dispose()
+        markedInputs.clear()
         caches.clear()
         HostEpoch.advance()
         dispatcher.close()
@@ -221,6 +251,7 @@ public class RavenHost(
             // The frame awaiters it resumed (animations, withFrameNanos loops) take their step now,
             // instead of leaving work queued after every frame.
             dispatcher.drain()
+            checkMarkedInputs()
         } catch (t: Throwable) {
             reportError(t)
         }

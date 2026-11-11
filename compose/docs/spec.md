@@ -298,7 +298,10 @@ thin declaration over it:
   changes.
 - **Event binding**: the callback kinds a widget has, registered once per node, dispatching to the
   lambdas in the node's fields, with the C-boundary catch built in. Raven's single generic event
-  callback is shared by all input modifiers of the node.
+  callback is shared by all input modifiers of the node. An event kind can name the controlled
+  value it changes, and the dispatch marks it before calling the lambda.
+- **Content node**: `RavenWidget(descriptor, update) { content }` emits the widget and, for a
+  descriptor with a content kind, the content node inside it.
 - **`ControlledValue<T>(read, write, equals)`**: the controlled-input protocol of
   [section 7](#7-events-and-state) (remember the composed value, mark on a user change, check after
   the next applied frame, write back on difference). `Checkbox`, `Slider`, `TextField`,
@@ -365,14 +368,15 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
 - **Controlled inputs**, as in Compose: a composable shows the value the app composed. Raven
   changes a widget's own value before it calls back, so each input node remembers the value it
   last composed, and a user change marks the node with the current **apply generation** (a counter
-  the host advances each time a frame's changes are applied). A marked node is checked in the
-  Applier's `onEndChanges` of the **first frame applied after that generation**, so the app's
-  response to the change has been composed by then. Each marked node sets its widget back to the
-  composed value if the two differ:
+  the host advances each time a frame's changes are applied). The host checks the marked nodes at
+  the end of each frame callback, after the frame's recomposition. A marked node is checked once
+  the app has answered: a batch was applied after its generation, or nothing is left to recompose
+  (a rejected change composes nothing, so it would never see an applied batch). Each checked node
+  sets its widget back to the composed value if the two differ:
   - An accepted change already matches, so nothing happens and nothing flickers.
   - A rejected change reverts on that frame.
-  - Running animations or effects never delay the check: it doesn't wait for the Recomposer to be
-    idle.
+  - Running animations or effects never delay the check: frame awaiters aren't pending
+    recomposition, and an animation that recomposes every frame applies a batch every frame.
 
   Raven's setters don't fire change callbacks, so nothing loops.
 - **Text**: `TextField(value: String, onValueChange)`. Text is written back only when it differs

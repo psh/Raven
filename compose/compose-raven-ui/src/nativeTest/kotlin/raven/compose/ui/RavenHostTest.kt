@@ -32,29 +32,8 @@ class RavenHostTest {
         ComposeNode<RavenNode, RavenApplier>(factory = { node(name).also { labels += it.widget } }, update = {})
     }
 
-    /** Starts a headless host with [content], runs [block] once it is idle, then closes it. */
-    private fun host(content: @Composable () -> Unit, block: RavenHost.() -> Unit = {}) = withRavenChecks {
-        val host = RavenHost(headless = true)
-        try {
-            host.start(content)
-            host.runUntilIdle()
-            host.block()
-        } finally {
-            host.close()
-        }
-        host.error?.let { throw it }
-    }
-
-    private fun RavenHost.runUntilIdle() {
-        repeat(100) {
-            if (isIdle()) return
-            check(frame()) { "Raven quit" }
-        }
-        error("not idle after 100 frames")
-    }
-
     @Test
-    fun aWindowsContentGoesUnderItsOverlayRoot() = host({
+    fun aWindowsContentGoesUnderItsOverlayRoot() = withHost({
         Window(onCloseRequest = {}) { Label("label") }
     }) {
         val label = labels.single()
@@ -68,7 +47,7 @@ class RavenHostTest {
         var shown by mutableStateOf(true)
         var window: Rid = 0u
         var windowValidAtDispose = R_FALSE
-        host({
+        withHost({
             if (shown) {
                 Window(onCloseRequest = {}) {
                     Label("label")
@@ -93,7 +72,7 @@ class RavenHostTest {
     @Test
     fun closingAWindowCallsOnCloseRequestAndKeepsTheWindow() {
         var requests = 0
-        host({ Window(onCloseRequest = { requests++ }) { Label("label") } }) {
+        withHost({ Window(onCloseRequest = { requests++ }) { Label("label") } }) {
             val window = Rwidget_get_window(labels.single())
             Rwindow_close(window)
             assertEquals(1, requests)
@@ -171,7 +150,7 @@ class RavenHostTest {
     @Test
     fun theApplyGenerationAdvancesWithEachAppliedChange() {
         var name by mutableStateOf("a")
-        host({ Window(onCloseRequest = {}) { Label(name) } }) {
+        withHost({ Window(onCloseRequest = {}) { Label(name) } }) {
             val before = applyGeneration
             name = "b"
             runUntilIdle()
