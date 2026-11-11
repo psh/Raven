@@ -179,21 +179,31 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
 - **Start**: `Rinit`, then start the application composition. It emits no nodes. Each `Window`
   in it creates a Raven window, its fixed root ([section 5](#5-node-model-and-applier)) and its
   own composition.
-- **Dispatcher**: an internal `RavenDispatcher : CoroutineDispatcher`. `dispatch` calls
-  `Rtask_post` with a `StableRef` to the block, and `isDispatchNeeded` is always `true`, so
-  Applier work never runs re-entrantly inside a Raven callback. It isn't public and isn't
-  `Dispatchers.Main`. After shutdown it drops dispatches instead of calling Raven.
+- **Dispatcher**: an internal `RavenDispatcher : CoroutineDispatcher`. `isDispatchNeeded` is
+  always `true`, so Applier work never runs re-entrantly inside a Raven callback. It isn't public
+  and isn't `Dispatchers.Main`.
+  - Blocks wait in a queue of its own, behind a lock. The first dispatch into an empty queue
+    calls `Rtask_post` with one drain task, which runs the queue until it is empty, including
+    blocks queued while it runs. Raven runs only the batch of tasks it took at the start of the
+    frame, so with one task per block, a snapshot apply that resumes the Recomposer would only
+    recompose a frame later.
+  - After shutdown it drops dispatches instead of calling Raven. The drain task still posted runs
+    in `Rshutdown`'s last run of the task queue and finds nothing.
 - **Frame clock**: a `BroadcastFrameClock`. Its `onNewAwaiters` calls `Rwake_up()`.
-  compose-raven owns the single `Rset_frame_callback` slot outright and calls
-  `sendFrame((Rget_time() * 1e9).toLong())` from it. The frame callback runs after tasks and before
-  layout, so a recomposition is laid out and painted in the same frame.
+  compose-raven owns the single `Rset_frame_callback` slot outright. The callback drains the
+  dispatcher, calls `sendFrame((Rget_time() * 1e9).toLong())`, then drains again.
+  - The Recomposer recomposes and applies inside `sendFrame`, and the frame callback runs after
+    tasks and before layout, so a recomposition is laid out and painted in the same frame.
+  - The drain before takes in what was dispatched after the frame's tasks ran (a timer's state
+    write). The drain after lets the frame awaiters that `sendFrame` resumed (animations,
+    `withFrameNanos` loops) take their step in this frame, so nothing is left queued after it.
 - **Recomposer**: `runRecomposeAndApplyChanges()` in a scope of `RavenDispatcher` plus the clock.
 - **Snapshot apply pump**: `Snapshot.registerGlobalWriteObserver` sets a flag. If the flag wasn't
   already set, it dispatches one `Snapshot.sendApplyNotifications()`. `Rtask_post` is thread-safe
   and wakes `Rwait_frame`, so a state write from any thread wakes the loop.
-- **When the loop ends**: windows refuse Raven's close, so Raven never ends `Rwait_frame` by
-  itself. `application` calls `Rquit()` when its content has no `Window` left, and
-  `exitApplication()` calls it directly.
+- **When the loop ends**: windows refuse Raven's close, so the user never ends `Rwait_frame`.
+  When the content removes its last `Window`, Raven itself returns false, since it ends the loop
+  once every window it had is gone. `exitApplication()` calls `Rquit()` directly.
 - **Ownership rule**: some Raven containers take ownership of widgets and delete them
   (`Rwindow_set_content`, `Rdialog_open`, `Rwindow_set_island`, a window and everything in it). A
   composition is always **disposed before its Raven owner is destroyed**, so no node ever holds a
@@ -205,11 +215,11 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
     R_INVALID_ID)`.
 - **Shutdown**, when `Rwait_frame` returns false:
   1. Remove every remaining window as above, then dispose the application composition.
-  2. Cancel the Recomposer, then its scope.
+  2. Cancel the Recomposer, then its scope, and drain the dispatcher so the cancelled coroutines
+     finish (the Recomposer unregisters its snapshot observer as it ends).
   3. Unregister the write observer.
   4. Clear every Raven-handle cache of the host and advance the host epoch (see below).
-  5. `Rshutdown()`. Its last run of the task queue disposes any `StableRef` still in a pending
-     dispatch.
+  5. Close the dispatcher, then `Rshutdown()`.
 - **Handles and Raven instances**: Raven's handles carry only an 8-bit generation, and `Rinit`
   resets every pool. So after `Rshutdown` and a new `Rinit` (every test does this), an old `Rid`
   can name a **different, valid** object. Two invariants prevent that:
@@ -796,6 +806,12 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   invalidation, snapshot apply or controlled check is pending. Frame awaiters (running animations,
   `withFrameNanos` loops) don't count, so an infinite animation never stalls a test: time for them
   advances through `mainClock`.
+  - `RavenHost.isIdle()` checks for no queued dispatch, no pending snapshot apply, and no
+    `Recomposer.hasPendingWork` while the composition frame clock is paused for the check, since
+    pausing hides its awaiters.
+  - Until phase 3, the harness is internal to foundation's test source set. `RavenHost` and the
+    single-window `Window` it hosts are public in `compose-raven-ui` behind
+    `@InternalComposeRavenApi`.
 - **API**, a small part of `ComposeUiTest`:
   ```kotlin
   runRavenTest {

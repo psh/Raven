@@ -56,7 +56,7 @@ an error, such as a stale handle or a double destroy, or if a widget reference o
   if/else in a single-child parent, keyed reorders that keep the same widgets, `movableContentOf`
   across a Many and a Single parent, and dispose leaving only the root.
 - `TestSupport.kt` starts Raven headless with an error callback. It's a stopgap until
-  [RavenHost and singleWindowApplication](../0044-ravenhost-and-singlewindowapplication.md) brings
+  [RavenHost and singleWindowApplication](0044-ravenhost-and-singlewindowapplication.md) brings
   the harness.
 - The cinterop opt-in and `kotlin-test` (in `commonTest`) moved into the `raven.native-target`
   convention plugin, for every module.

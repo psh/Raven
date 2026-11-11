@@ -13,9 +13,13 @@ import raven.cinterop.Rwidget_remove_child
  * host sets as the window's content, and is never replaced.
  *
  * [remove] only detaches, so `movableContentOf` can insert the same node somewhere else; nodes are
- * destroyed when Compose releases them ([RavenNode.onRelease]).
+ * destroyed when Compose releases them ([RavenNode.onRelease]). [onChangesApplied] runs after each
+ * batch of changes.
  */
-internal class RavenApplier(root: RavenNode) : AbstractApplier<RavenNode>(root) {
+internal class RavenApplier(
+    root: RavenNode,
+    private val onChangesApplied: () -> Unit = {},
+) : AbstractApplier<RavenNode>(root) {
     /** Single-child parents changed in this batch, to reattach their child in [onEndChanges]. */
     private val changedSingleParents = mutableSetOf<RavenNode>()
 
@@ -78,6 +82,7 @@ internal class RavenApplier(root: RavenNode) : AbstractApplier<RavenNode>(root) 
             if (!only.isAttachedTo(parent)) Rwidget_insert_child(parent.widget, only.widget, 0)
         }
         changedSingleParents.clear()
+        onChangesApplied()
     }
 
     private fun detachAllRavenChildren(parent: RavenNode) {

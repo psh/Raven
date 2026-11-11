@@ -7,6 +7,7 @@ import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
 import raven.cinterop.RError
 import raven.cinterop.RInitDesc
+import raven.cinterop.RMemoryStats
 import raven.cinterop.RSeverity
 import raven.cinterop.RWidgetType
 import raven.cinterop.R_BACKEND_NULL
@@ -17,6 +18,7 @@ import raven.cinterop.R_TRUE
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rid
 import raven.cinterop.Rinit_ex
+import raven.cinterop.Rmemory_get_stats
 import raven.cinterop.Rshutdown
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_get_child
@@ -27,19 +29,36 @@ import raven.native.CallbackRegistry
 import raven.native.toRavenString
 import kotlin.test.assertEquals
 
-// Until RavenHost and the test harness exist, these tests start Raven themselves.
+// The Applier tests start Raven themselves; the host tests go through RavenHost.
 
 private val ravenErrors = mutableListOf<String>()
 
 /**
- * Runs [block] with Raven started headless, then stops it. Fails if Raven reported an error (a
- * stale handle, a wrong widget type) or if a widget's reference outlived Raven.
+ * Runs [block], which starts and stops Raven. Fails if Raven reported an error (a stale handle, a
+ * wrong widget type), if it still holds memory, or if a widget's reference outlived it.
  */
-internal fun withHeadlessRaven(block: () -> Unit) {
+internal fun withRavenChecks(block: () -> Unit) {
     ravenErrors.clear()
     Rerror_set_callback(staticCFunction { _: RError, severity: RSeverity, detail: kotlinx.cinterop.CPointer<kotlinx.cinterop.ByteVar>? ->
         if (severity == R_SEVERITY_ERROR || severity == R_SEVERITY_FATAL) ravenErrors += detail?.toKString() ?: "?"
     })
+    try {
+        block()
+    } finally {
+        Rerror_set_callback(null)
+    }
+    assertEquals(emptyList(), ravenErrors.toList(), "errors reported by Raven")
+    val held = memScoped {
+        val stats = alloc<RMemoryStats>()
+        Rmemory_get_stats(stats.ptr)
+        stats.allocation_count
+    }
+    assertEquals(0uL, held, "blocks Raven still holds after Rshutdown")
+    assertEquals(0, CallbackRegistry.liveCount, "widget references left after Rshutdown")
+}
+
+/** Runs [block] with Raven started headless, then stops it, with [withRavenChecks]. */
+internal fun withHeadlessRaven(block: () -> Unit) = withRavenChecks {
     memScoped {
         val desc = alloc<RInitDesc>().apply {
             backend = R_BACKEND_NULL
@@ -57,10 +76,7 @@ internal fun withHeadlessRaven(block: () -> Unit) {
         block()
     } finally {
         Rshutdown()
-        Rerror_set_callback(null)
     }
-    assertEquals(emptyList(), ravenErrors.toList(), "errors reported by Raven")
-    assertEquals(0, CallbackRegistry.liveCount, "widget references left after Rshutdown")
 }
 
 /** A node over a new widget named [name], so the Raven tree can be read back by names. */
