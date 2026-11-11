@@ -172,9 +172,12 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   `selectFolderDialog(...)`.
   - By default they are built on `Dialog` and `FileBrowser`, so they never block, run no nested
     frames, and work headless in tests.
-  - `native = true` uses the OS dialog through Raven's blocking calls (`Rmessage_box`,
-    `Rfile_dialog_*`) as a task on `RavenDispatcher`. Raven runs frames while those wait, so this
-    option needs the nested-frames check of the roadmap first.
+  - `native = true` uses Raven's blocking calls (`Rmessage_box`, `Rfile_dialog_*`) as a task on
+    `RavenDispatcher`. Raven runs frames while those wait, and Compose recomposes in them safely
+    (the nested-frames check of the roadmap). The file dialogs are the OS's on Windows, and on
+    Linux with zenity or kdialog; everywhere else, and for every message box, they are Raven's
+    own, only blocking. Calls that wait at the same time return in reverse order: the first one
+    opened resumes only once every later one has closed.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
 `close()`. `application` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is

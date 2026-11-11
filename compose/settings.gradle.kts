@@ -22,4 +22,5 @@ include(
     ":compose-raven-foundation",
     ":samples:hello",
     ":samples:xml-translator",
+    ":spikes:nested-frames",
 )

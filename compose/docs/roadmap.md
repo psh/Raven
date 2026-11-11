@@ -33,7 +33,7 @@ a Windows host or a real window:
 | `Rxml_document_parse` registers no `<Widget>` declarations globally | `parseRavenXml` unregisters them | [10](spec.md#10-samples) | **Passed** |
 | A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) | **Failed**, worked around: a MenuItem with `Separator = true` |
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) | **Failed**: compose-raven sets them |
-| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | `native = true` dialogs are dropped (the default ones are already built on `Dialog` and FileBrowser) | [4](spec.md#4-application-host) | Waits for the host |
+| Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | `native = true` dialogs are dropped (the default ones are already built on `Dialog` and FileBrowser) | [4](spec.md#4-application-host) | **Passed** (2026-11-11): recomposition, applies and controlled values stay correct and nothing re-enters the Applier. Calls waiting together return in reverse order, and Windows' own modal loop waits for a Windows host |
 | A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) | Waits for a Windows host |
 | Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) | **Passed** |
 | Writing text back to a TextInput during IME composition (preedit) doesn't cancel the composition, and what Raven reports as the text during preedit (phase 1) | `TextField` defers write-backs while a composition is active, if Raven exposes that, or a fork change adds it | [7](spec.md#7-events-and-state) | **Passed**: Raven has no preedit on any backend and reports only committed text (checked in the platform code, 2026-11-11) |
@@ -76,7 +76,7 @@ Broken into tickets, in dependency order. Each ticket's **Depends on** line name
 | CI on macOS and Linux | [9](spec.md#9-testing) | [CI job for compose](issues/0052-ci-job-for-compose.md) |
 | `samples/hello` | [10](spec.md#10-samples) | [samples/hello](issues/archive/0051-samples-hello.md) |
 | `samples/xml-translator`, including templates and its private cinterop (needs fork change 3) | [10](spec.md#10-samples) | [parsing](issues/0054-xml-translator-parsing.md), [mapping the phase 1 vocabulary](issues/0055-xml-translator-mapping.md), [templates and expressions](issues/0056-xml-translator-templates-and-expressions.md), [the sample UI and the examples check](issues/0057-xml-translator-sample-ui-and-examples-check.md) |
-| Verify first: recomposition inside nested frames, now that the host exists | [4](spec.md#4-application-host) | [Verify recomposition inside nested frames](issues/0053-verify-recomposition-in-nested-frames.md) |
+| Verify first: recomposition inside nested frames, now that the host exists | [4](spec.md#4-application-host) | [Verify recomposition inside nested frames](issues/archive/0053-verify-recomposition-in-nested-frames.md) |
 
 ## 3. Phase 2
 
