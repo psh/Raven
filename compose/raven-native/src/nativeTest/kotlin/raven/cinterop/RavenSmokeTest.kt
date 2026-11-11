@@ -23,7 +23,7 @@ class RavenSmokeTest {
             ui_scale = 0f
         }
         assertEquals(R_TRUE, Rinit_ex(desc.ptr))
-        assertEquals("0.2.1", Rget_version()?.toKString())
+        assertEquals("$RAVEN_VERSION_MAJOR.$RAVEN_VERSION_MINOR.$RAVEN_VERSION_PATCH", Rget_version()?.toKString())
 
         val column = Rwidget_create(R_WIDGET_VBOX)
         val label = Rwidget_create(R_WIDGET_LABEL)
