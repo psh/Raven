@@ -16,6 +16,7 @@ import raven.cinterop.Rwidget_remove_child
  * destroyed when Compose releases them ([RavenNode.onRelease]). [onChangesApplied] runs after each
  * batch of changes.
  */
+@OptIn(InternalComposeRavenApi::class)
 internal class RavenApplier(
     root: RavenNode,
     private val onChangesApplied: () -> Unit = {},
@@ -40,12 +41,15 @@ internal class RavenApplier(
             ChildKind.Many -> Rwidget_insert_child(parent.widget, instance.widget, index)
         }
         parent.children.add(index, instance)
+        instance.parent = parent
+        instance.applyLayout()
     }
 
     override fun remove(index: Int, count: Int) {
         val parent = current
         for (i in index until index + count) {
             val child = parent.children[i]
+            child.parent = null
             when (parent.childKind) {
                 ChildKind.Many -> Rwidget_remove_child(parent.widget, child.widget)
                 // A child that an insert has detached since is no longer in Raven's tree.
@@ -70,6 +74,7 @@ internal class RavenApplier(
     override fun onClear() {
         for (child in root.children) {
             if (child.isAttachedTo(root)) Rwidget_remove_child(root.widget, child.widget)
+            child.parent = null
         }
         root.children.clear()
     }

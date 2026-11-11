@@ -1,5 +1,3 @@
-@file:OptIn(InternalComposeRavenApi::class)
-
 package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
@@ -17,7 +15,6 @@ import raven.cinterop.R_SEVERITY_ERROR
 import raven.cinterop.R_SEVERITY_FATAL
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rmemory_get_stats
-import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.Window
 import raven.native.CallbackRegistry

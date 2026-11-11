@@ -1,5 +1,3 @@
-@file:OptIn(InternalComposeRavenApi::class)
-
 package raven.compose.ui
 
 import androidx.compose.runtime.Composable

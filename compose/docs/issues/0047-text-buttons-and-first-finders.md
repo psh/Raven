@@ -9,7 +9,7 @@ The first end-to-end slice: `Text`, the three buttons, `Spacer`, the dividers an
 spec's overview runs as a test. Spec: [8. Component vocabulary](../spec.md#8-component-vocabulary),
 [9. Testing](../spec.md#9-testing).
 
-**Depends on:** [Modifier, Dp and the layout containers](0046-modifier-dp-and-layout-containers.md).
+**Depends on:** [Modifier, Dp and the layout containers](archive/0046-modifier-dp-and-layout-containers.md).
 
 ## Deliverables
 

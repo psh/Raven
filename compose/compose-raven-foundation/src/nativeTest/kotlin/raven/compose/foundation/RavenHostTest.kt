@@ -1,5 +1,3 @@
-@file:OptIn(InternalComposeRavenApi::class)
-
 package raven.compose.foundation
 
 import androidx.compose.runtime.LaunchedEffect
@@ -7,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
-import raven.compose.ui.InternalComposeRavenApi
 import kotlin.native.concurrent.ObsoleteWorkersApi
 import kotlin.native.concurrent.TransferMode
 import kotlin.native.concurrent.Worker

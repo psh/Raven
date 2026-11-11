@@ -322,6 +322,16 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   composable parameters.
 - **`Dp`**: a value class in `raven.compose.ui.unit` (`16.dp`). 1.dp is one Raven logical unit
   and is passed through unchanged.
+- **Packages follow Compose's**: `Modifier`, `Alignment` and `testTag` are in `raven.compose.ui`.
+  The modifier functions (`padding`, `size`, `fillMaxWidth`, ...), `Arrangement`, the scopes and
+  `Column`/`Row`/`Box` are in `raven.compose.foundation.layout`. The elements they create, and the
+  folding into slot values, are in `compose-raven-ui`.
+- **Placement needs the parent**: `fillMaxWidth` means a fill alignment in a Column and a weight
+  in a Row, and a child without an alignment takes its container's. So the Applier records each
+  node's parent when it inserts it, and the node resolves its folded Modifier against the
+  parent's panel layout (axis and default alignments). A container whose layout changes places
+  its children again. A content node keeps Raven's fill defaults, so it fills the widget holding
+  it.
 - **Containers**: `Column` uses VBox, `Row` uses HBox and `Box` uses Overlay.
 - **Defaults are Compose's**: each node sets its slot to start/top alignment when it is created,
   overriding Raven's `FILL`. Stretching is opt-in.
@@ -814,8 +824,9 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
     `Recomposer.hasPendingWork` while the composition frame clock is paused for the check, since
     pausing hides its awaiters.
   - Until phase 3, the harness is internal to foundation's test source set. `RavenHost` and the
-    single-window `Window` it hosts are public in `compose-raven-ui` behind
-    `@InternalComposeRavenApi`.
+    single-window `Window` it hosts, and the binding layer foundation's composables are written
+    on, are public in `compose-raven-ui` behind `@InternalComposeRavenApi`. Foundation opts in
+    module-wide.
 - **API**, a small part of `ComposeUiTest`:
   ```kotlin
   runRavenTest {

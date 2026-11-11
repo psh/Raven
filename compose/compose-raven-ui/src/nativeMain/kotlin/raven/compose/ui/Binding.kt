@@ -28,37 +28,41 @@ import raven.native.callbackTarget
 // The binding layer: composables are declarations over these few protocols.
 
 /** The panel that holds a single-child widget's content: a Row for buttons, a Box for the others. */
-internal enum class ContentKind(val type: RWidgetType) {
-    Row(R_WIDGET_HBOX),
-    Box(R_WIDGET_OVERLAY),
+@InternalComposeRavenApi
+public enum class ContentKind(internal val type: RWidgetType, internal val layout: PanelLayout) {
+    Row(R_WIDGET_HBOX, PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.CenterVertically)),
+    Box(R_WIDGET_OVERLAY, PanelLayout.Box),
 }
 
 /**
- * What a composable's widget is: its Raven [type], the [children] it takes, the [content] panel a
- * single-child widget holds its content in, its accessible [role] (null keeps Raven's own), and
- * the [events] it reports.
+ * What a composable's widget is: the composable's [name] (for warnings), its Raven [type], the
+ * [children] it takes, the [content] panel a single-child widget holds its content in, its
+ * accessible [role] (null keeps Raven's own), and the [events] it reports.
  */
-internal class WidgetDescriptor(
-    val type: RWidgetType,
-    val children: ChildKind = ChildKind.None,
-    val content: ContentKind? = null,
-    val role: RAccessibleRole? = null,
-    val events: List<Event<*>> = emptyList(),
+@InternalComposeRavenApi
+public class WidgetDescriptor(
+    internal val name: String,
+    internal val type: RWidgetType,
+    internal val children: ChildKind = ChildKind.None,
+    internal val content: ContentKind? = null,
+    internal val role: RAccessibleRole? = null,
+    internal val events: List<Event<*>> = emptyList(),
 ) {
     init {
         require(content == null || children == ChildKind.Single) { "only a single-child widget has a content panel" }
     }
 
-    fun create(host: RavenHost): RavenNode {
+    internal fun create(host: RavenHost): RavenNode {
         val widget = Rwidget_create(type)
         role?.let { Rwidget_set_accessible_role(widget, it) }
-        return RavenNode(widget, children, host).also { node -> events.forEach { it.register(node) } }
+        return RavenNode(widget, children, host, name = name).also { node -> events.forEach { it.register(node) } }
     }
 }
 
 /** A widget property: its typed Raven setter. */
-internal fun interface Property<T> {
-    fun set(widget: Rid, value: T)
+@InternalComposeRavenApi
+public fun interface Property<T> {
+    public fun set(widget: Rid, value: T)
 }
 
 /**
@@ -66,11 +70,12 @@ internal fun interface Property<T> {
  * `staticCFunction`, which calls the lambda of type [L] the node holds for it. A user change to
  * the value [marks] is marked before the lambda runs.
  */
-internal class Event<L : Any>(
-    val marks: ControlledValue<*>? = null,
+@InternalComposeRavenApi
+public class Event<L : Any> internal constructor(
+    internal val marks: ControlledValue<*>? = null,
     private val registerCallback: (widget: Rid, userData: COpaquePointer) -> Unit,
 ) {
-    fun register(node: RavenNode) = registerCallback(node.widget, node.userData)
+    internal fun register(node: RavenNode) = registerCallback(node.widget, node.userData)
 }
 
 /**
@@ -92,10 +97,11 @@ internal inline fun <L : Any> dispatchEvent(userData: COpaquePointer?, event: Ev
  * user change is checked once the app's response has been composed, and the composed value is
  * written back if the two differ. [read] and [write] are Raven's getter and setter.
  */
-internal class ControlledValue<T>(
-    val read: (Rid) -> T,
-    val write: (Rid, T) -> Unit,
-    val equals: (T, T) -> Boolean = { a, b -> a == b },
+@InternalComposeRavenApi
+public class ControlledValue<T> internal constructor(
+    internal val read: (Rid) -> T,
+    internal val write: (Rid, T) -> Unit,
+    internal val equals: (T, T) -> Boolean = { a, b -> a == b },
 )
 
 /** One node's [ControlledValue]: what the app last composed, and when the user last changed it. */
@@ -122,30 +128,44 @@ internal class ComposedValue<T>(private val widget: Rid, private val controlled:
 }
 
 /** Sets [property] to [value] when it changes. */
-internal fun <T> Updater<RavenNode>.bind(value: T, property: Property<T>) = set(value) { property.set(widget, it) }
+@InternalComposeRavenApi
+public fun <T> Updater<RavenNode>.bind(value: T, property: Property<T>): Unit = set(value) { property.set(widget, it) }
 
 /** Points [event] at [handler]: the callback stays registered, and a null handler does nothing. */
-internal fun <L : Any> Updater<RavenNode>.bind(handler: L?, event: Event<L>) = set(handler) { setHandler(event, it) }
+@InternalComposeRavenApi
+public fun <L : Any> Updater<RavenNode>.bind(handler: L?, event: Event<L>): Unit = set(handler) { setHandler(event, it) }
 
 /** Shows [value] as the composed value of [controlled], when it changes. */
-internal fun <T> Updater<RavenNode>.bind(value: T, controlled: ControlledValue<T>) = set(value) { compose(controlled, it) }
+@InternalComposeRavenApi
+public fun <T> Updater<RavenNode>.bind(value: T, controlled: ControlledValue<T>): Unit = set(value) { compose(controlled, it) }
+
+/** Sets how the node places its children, which places them again when it changes. */
+@InternalComposeRavenApi
+public fun Updater<RavenNode>.bind(layout: PanelLayout): Unit = set(layout) { panelLayout = it }
 
 /**
- * Emits the widget [descriptor] describes, with [update] binding its properties and events. A
- * single-child widget's [content] goes into its content panel, so it may emit any number of nodes.
+ * Emits the widget [descriptor] describes, placed by [modifier], with [update] binding its
+ * properties and events. A single-child widget's [content] goes into its content panel, so it may
+ * emit any number of nodes.
  */
+@InternalComposeRavenApi
 @Composable
-internal fun RavenWidget(
+public fun RavenWidget(
     descriptor: WidgetDescriptor,
+    modifier: Modifier,
     update: @DisallowComposableCalls Updater<RavenNode>.() -> Unit,
     content: @Composable () -> Unit = {},
 ) {
     val host = LocalRavenHost.current
     val contentKind = descriptor.content
+    val updateWithModifier: Updater<RavenNode>.() -> Unit = {
+        set(modifier) { setModifier(it) }
+        update()
+    }
     if (contentKind == null) {
-        ComposeNode<RavenNode, RavenApplier>(factory = { descriptor.create(host) }, update = update, content = content)
+        ComposeNode<RavenNode, RavenApplier>(factory = { descriptor.create(host) }, update = updateWithModifier, content = content)
     } else {
-        ComposeNode<RavenNode, RavenApplier>(factory = { descriptor.create(host) }, update = update) {
+        ComposeNode<RavenNode, RavenApplier>(factory = { descriptor.create(host) }, update = updateWithModifier) {
             ComposeNode<RavenNode, RavenApplier>(factory = { createContentNode(contentKind, host) }, update = {}, content = content)
         }
     }
@@ -154,21 +174,24 @@ internal fun RavenWidget(
 private fun createContentNode(kind: ContentKind, host: RavenHost): RavenNode {
     val widget = Rwidget_create(kind.type)
     Rwidget_set_accessible_role(widget, R_ROLE_NONE)
-    return RavenNode(widget, ChildKind.Many, host, isContentNode = true)
+    return RavenNode(widget, ChildKind.Many, host, isContentNode = true).also { it.panelLayout = kind.layout }
 }
 
 // The event kinds and controlled values of the phase 1 widgets.
 
-internal val CheckboxChecked = ControlledValue(
+@InternalComposeRavenApi
+public val CheckboxChecked: ControlledValue<Boolean> = ControlledValue(
     read = { Rcheckbox_is_checked(it) == R_TRUE },
     write = { widget, checked -> Rcheckbox_set_checked(widget, if (checked) R_TRUE else R_FALSE) },
 )
 
-internal val ButtonClicked: Event<() -> Unit> = Event { widget, userData ->
+@InternalComposeRavenApi
+public val ButtonClicked: Event<() -> Unit> = Event { widget, userData ->
     Rbutton_set_clicked_callback(widget, onButtonClicked, userData)
 }
 
-internal val CheckboxChanged: Event<(Boolean) -> Unit> = Event(marks = CheckboxChecked) { widget, userData ->
+@InternalComposeRavenApi
+public val CheckboxChanged: Event<(Boolean) -> Unit> = Event(marks = CheckboxChecked) { widget, userData ->
     Rcheckbox_set_changed_callback(widget, onCheckboxChanged, userData)
 }
 

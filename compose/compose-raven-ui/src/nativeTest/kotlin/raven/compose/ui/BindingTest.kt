@@ -1,5 +1,3 @@
-@file:OptIn(InternalComposeRavenApi::class)
-
 package raven.compose.ui
 
 import androidx.compose.runtime.LaunchedEffect
@@ -44,9 +42,9 @@ class BindingTest {
         Rlabel_set_text(widget, text)
     }
 
-    private val TestLabel = WidgetDescriptor(R_WIDGET_LABEL)
-    private val TestButton = WidgetDescriptor(R_WIDGET_BUTTON, ChildKind.Single, ContentKind.Row, events = listOf(ButtonClicked))
-    private val TestCheckbox = WidgetDescriptor(R_WIDGET_CHECKBOX, events = listOf(CountedCheckboxChanged))
+    private val TestLabel = WidgetDescriptor("TestLabel", R_WIDGET_LABEL)
+    private val TestButton = WidgetDescriptor("TestButton", R_WIDGET_BUTTON, ChildKind.Single, ContentKind.Row, events = listOf(ButtonClicked))
+    private val TestCheckbox = WidgetDescriptor("TestCheckbox", R_WIDGET_CHECKBOX, events = listOf(CountedCheckboxChanged))
 
     @Test
     fun anUnchangedPropertyMakesNoRavenCall() {
@@ -54,7 +52,7 @@ class BindingTest {
         var recompositions by mutableIntStateOf(0)
         withHost({
             Window(onCloseRequest = {}) {
-                recompositions.let { RavenWidget(TestLabel, { bind("label", Name); bind(text, CountedText) }) }
+                recompositions.let { RavenWidget(TestLabel, Modifier, { bind("label", Name); bind(text, CountedText) }) }
             }
         }) {
             assertEquals(1, textWrites)
@@ -70,11 +68,34 @@ class BindingTest {
     }
 
     @Test
+    fun aModifierTheParentCantHonourWarnsOnceNamingTheComposable() {
+        val warnings = mutableListOf<String>()
+        val sink = layoutWarningSink
+        layoutWarningSink = { warnings += it }
+        try {
+            val weighted = WidgetDescriptor("WeightedLabel", R_WIDGET_LABEL)
+            var text by mutableStateOf("a")
+            withHost({
+                Window(onCloseRequest = {}) {
+                    RavenWidget(weighted, Modifier then WeightElement(1f), { bind(text, CountedText) })
+                    RavenWidget(weighted, Modifier then WeightElement(1f), {})
+                }
+            }) {
+                text = "b"
+                runUntilIdle()
+            }
+        } finally {
+            layoutWarningSink = sink
+        }
+        assertEquals(listOf("WeightedLabel: Modifier.weight works only in a Row or Column, so it is ignored"), warnings)
+    }
+
+    @Test
     fun aSingleChildWidgetsContentGoesIntoItsContentPanel() = withHost({
         Window(onCloseRequest = {}) {
-            RavenWidget(TestButton, { bind("button", Name) }) {
-                RavenWidget(TestLabel, { bind("first", Name) })
-                RavenWidget(TestLabel, { bind("second", Name) })
+            RavenWidget(TestButton, Modifier, { bind("button", Name) }) {
+                RavenWidget(TestLabel, Modifier, { bind("first", Name) })
+                RavenWidget(TestLabel, Modifier, { bind("second", Name) })
             }
         }
     }) {
@@ -90,7 +111,7 @@ class BindingTest {
         try {
             host.start {
                 Window(onCloseRequest = {}) {
-                    RavenWidget(TestButton, { bind("button", Name); bind({ error("boom") }, ButtonClicked) })
+                    RavenWidget(TestButton, Modifier, { bind("button", Name); bind({ error("boom") }, ButtonClicked) })
                 }
             }
             host.runUntilIdle()
@@ -128,8 +149,8 @@ class BindingTest {
                 LaunchedEffect(Unit) {
                     while (true) withFrameNanos { frameTime = it }
                 }
-                RavenWidget(TestLabel, { bind(frameTime.toString(), CountedText) })
-                RavenWidget(TestCheckbox, {
+                RavenWidget(TestLabel, Modifier, { bind(frameTime.toString(), CountedText) })
+                RavenWidget(TestCheckbox, Modifier, {
                     bind("checkbox", Name)
                     bind(false, CountedChecked)
                     bind({ _: Boolean -> }, CountedCheckboxChanged)
@@ -168,7 +189,7 @@ class BindingTest {
         withHost({
             Window(onCloseRequest = {}) {
                 val value = checked()
-                RavenWidget(TestCheckbox, {
+                RavenWidget(TestCheckbox, Modifier, {
                     bind("checkbox", Name)
                     bind(value, CountedChecked)
                     bind(onCheckedChange, CountedCheckboxChanged)

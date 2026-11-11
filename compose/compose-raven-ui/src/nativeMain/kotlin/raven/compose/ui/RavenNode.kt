@@ -10,7 +10,8 @@ import raven.cinterop.Rwidget_is_valid
 import raven.native.CallbackRegistry
 
 /** What kind of children a widget takes. Raven keeps this in private flags, so each composable states it. */
-internal enum class ChildKind {
+@InternalComposeRavenApi
+public enum class ChildKind {
     /** Leaf widgets: Label, Slider, ... */
     None,
 
@@ -30,21 +31,60 @@ internal enum class ChildKind {
  * throw and checks their controlled values. A [content node][isContentNode] is the internal panel
  * that holds a single-child widget's content.
  */
-@OptIn(InternalComposeRavenApi::class)
-internal class RavenNode(
-    val widget: Rid,
-    val childKind: ChildKind,
-    val host: RavenHost? = null,
-    val isContentNode: Boolean = false,
+@InternalComposeRavenApi
+public class RavenNode internal constructor(
+    internal val widget: Rid,
+    internal val childKind: ChildKind,
+    internal val host: RavenHost? = null,
+    internal val isContentNode: Boolean = false,
+    /** The composable's name, for warnings. */
+    internal val name: String = "a widget",
 ) : ComposeNodeLifecycleCallback {
     /** The `user_data` of the widget's callbacks: a reference to this node. */
-    val userData: COpaquePointer = CallbackRegistry.register(widget, this)
+    internal val userData: COpaquePointer = CallbackRegistry.register(widget, this)
+
+    /** The node this one is inserted into, which places it. */
+    internal var parent: RavenNode? = null
+
+    /** How this node places its children. Changing it places them again. */
+    internal var panelLayout: PanelLayout = PanelLayout.Box
+        set(value) {
+            if (value == field) return
+            field = value
+            children.forEach { it.applyLayout() }
+        }
+
+    private var modifier = FoldedModifier()
+
+    // What Raven was last told about this widget's slot and size.
+    private var appliedLayout = SlotLayout.RavenDefault
+
+    /** The tag of `Modifier.testTag`, for test finders. */
+    internal val testTag: String? get() = modifier.testTag
+
+    internal fun setModifier(value: Modifier) {
+        modifier = fold(value)
+        applyLayout()
+    }
+
+    /**
+     * Tells Raven how the parent places this widget, calling only the setters whose values changed.
+     * A content node keeps Raven's defaults, so it fills the widget that holds it.
+     */
+    internal fun applyLayout() {
+        val parent = parent ?: return
+        if (isContentNode) return
+        val resolved = resolve(modifier, parent.panelLayout)
+        resolved.warnings.forEach { warnOnce("$name: $it, so it is ignored") }
+        resolved.slot.applyChanges(appliedLayout, RavenSlotTarget(widget))
+        appliedLayout = resolved.slot
+    }
 
     /**
      * The node's children as Compose sees them. For a [ChildKind.Many] widget this is exactly its
      * Raven children; a [ChildKind.Single] widget has at most one of them attached in Raven.
      */
-    val children: MutableList<RavenNode> = mutableListOf()
+    internal val children: MutableList<RavenNode> = mutableListOf()
 
     // The lambdas of the node's events, by event kind.
     private val handlers = HashMap<Event<*>, Any>()
@@ -53,17 +93,17 @@ internal class RavenNode(
     private val composedValues = HashMap<ControlledValue<*>, ComposedValue<*>>()
 
     @Suppress("UNCHECKED_CAST")
-    fun <L : Any> handler(event: Event<L>): L? = handlers[event] as L?
+    internal fun <L : Any> handler(event: Event<L>): L? = handlers[event] as L?
 
-    fun <L : Any> setHandler(event: Event<L>, handler: L?) {
+    internal fun <L : Any> setHandler(event: Event<L>, handler: L?) {
         if (handler == null) handlers.remove(event) else handlers[event] = handler
     }
 
     /** Shows [value], which the app composed, unless the widget shows it already. */
-    fun <T> compose(controlled: ControlledValue<T>, value: T) = composedValue(controlled).compose(value)
+    internal fun <T> compose(controlled: ControlledValue<T>, value: T) = composedValue(controlled).compose(value)
 
     /** Marks a change the user made to [controlled], to be checked against the composed value. */
-    fun markUserChange(controlled: ControlledValue<*>) {
+    internal fun markUserChange(controlled: ControlledValue<*>) {
         checkNotNull(host) { "a controlled value needs a node made through the binding layer" }
             .markUserChange(composedValue(controlled))
     }
@@ -73,7 +113,7 @@ internal class RavenNode(
         composedValues.getOrPut(controlled) { ComposedValue(widget, controlled) } as ComposedValue<T>
 
     /** True when this node's widget is alive and attached to [parent]'s widget. */
-    fun isAttachedTo(parent: RavenNode): Boolean =
+    internal fun isAttachedTo(parent: RavenNode): Boolean =
         Rwidget_is_valid(widget) == R_TRUE && Rwidget_get_parent(widget) == parent.widget
 
     override fun onRelease() {

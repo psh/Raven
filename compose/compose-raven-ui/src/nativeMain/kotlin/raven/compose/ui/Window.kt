@@ -66,12 +66,14 @@ internal class RavenWindow(
         // The window owns the root from now on, and deletes it with itself.
         Rwindow_set_content(window, root.widget)
         Rwindow_set_close_callback(window, onClose, selfRef.asCPointer())
+        host.windows += this
     }
 
     fun setContent(content: @Composable () -> Unit) = composition.setContent(content)
 
     /** Disposes the composition before the window, so no node holds a widget Raven deleted. */
     fun dispose() {
+        host.windows -= this
         composition.dispose()
         Rwindow_destroy(window)
         selfRef.dispose()

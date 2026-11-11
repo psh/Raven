@@ -28,6 +28,7 @@ import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import raven.cinterop.RInitDesc
+import raven.cinterop.Rid
 import raven.cinterop.R_BACKEND_NULL
 import raven.cinterop.R_BACKEND_VULKAN
 import raven.cinterop.R_FALSE
@@ -99,6 +100,16 @@ public class RavenHost(
 
     // Controlled values the user changed, waiting for the app's response to be composed.
     private val markedInputs = LinkedHashSet<ComposedValue<*>>()
+
+    /** The windows open now, in the order they opened. */
+    internal val windows: MutableList<RavenWindow> = mutableListOf()
+
+    /** The widget of the first node tagged [tag] with `Modifier.testTag`, in any window. */
+    public fun widgetWithTag(tag: String): Rid? {
+        fun find(node: RavenNode): RavenNode? =
+            if (node.testTag == tag) node else node.children.firstNotNullOfOrNull { find(it) }
+        return windows.firstNotNullOfOrNull { find(it.root) }?.widget
+    }
 
     /** Starts Raven on the calling thread and composes [content]. */
     public fun start(content: @Composable () -> Unit) {
