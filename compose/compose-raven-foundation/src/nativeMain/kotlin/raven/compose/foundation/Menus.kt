@@ -39,8 +39,7 @@ private val ItemWidget = WidgetDescriptor("Item", R_WIDGET_MENU_ITEM, events = l
 private val CheckboxItemWidget = WidgetDescriptor("CheckboxItem", R_WIDGET_MENU_ITEM, events = listOf(MenuItemCheckedChanged))
 private val SeparatorWidget = WidgetDescriptor("Separator", R_WIDGET_MENU_ITEM, role = R_ROLE_SEPARATOR)
 
-/** Raven's default puts the first MenuBar of a macOS window in the system's bar; compose-raven keeps it in the layout. */
-private val InWindow = Property<Boolean> { widget, inWindow -> Rmenu_bar_set_native(widget, if (inWindow) R_FALSE else R_TRUE) }
+private val Native = Property<Boolean> { widget, native -> Rmenu_bar_set_native(widget, if (native) R_TRUE else R_FALSE) }
 private val MenuTitle = Property<String> { widget, title -> Rmenu_set_title(widget, title) }
 private val ItemText = Property<String> { widget, text -> Rmenu_item_set_text(widget, text) }
 private val Checkable = Property<Boolean> { widget, checkable -> Rmenu_item_set_checkable(widget, if (checkable) R_TRUE else R_FALSE) }
@@ -55,15 +54,19 @@ private val MenuSeparator = Property<Boolean> { widget, separator ->
 
 /**
  * A bar of [Menu]s, each opened by its title. Unlike Compose Desktop's, it is a composable of the
- * layout, drawn where the app places it (in a Column above the content, or in a header bar), and
- * never moved to the macOS menu bar.
+ * layout, drawn where the app places it (in a Column above the content, or in a header bar).
+ *
+ * With [native], the first MenuBar of a macOS window is shown in the system's menu bar instead,
+ * where it takes no room in the window; elsewhere it is drawn in the window either way. Off by
+ * default, unlike Raven's, so the bar is in the window everywhere.
  */
 @Composable
 public fun MenuBar(
     modifier: Modifier = Modifier,
+    native: Boolean = false,
     content: @Composable MenuBarScope.() -> Unit,
 ) {
-    RavenWidget(MenuBarWidget, modifier, { bind(true, InWindow) }) { MenuBarScopeInstance.content() }
+    RavenWidget(MenuBarWidget, modifier, { bind(native, Native) }) { MenuBarScopeInstance.content() }
 }
 
 /** A menu of the bar, titled [text]. */

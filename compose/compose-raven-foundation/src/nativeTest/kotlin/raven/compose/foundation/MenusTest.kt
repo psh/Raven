@@ -9,6 +9,8 @@ import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
+import platform.posix.setenv
+import platform.posix.unsetenv
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_KEY_S
 import raven.cinterop.R_METRIC_ROW_HEIGHT
@@ -202,12 +204,88 @@ class MenusTest {
     }
 
     @Test
-    fun aMenuBarStaysInTheWindow() = runRavenTest {
-        setContent {
-            MenuBar { Menu("File") { Item("Save", onClick = {}) } }
+    fun aMenuBarStaysInTheWindow() = withSystemMenuBar {
+        runRavenTest {
+            setContent {
+                MenuBar { Menu("File") { Item("Save", onClick = {}) } }
+            }
+            assertEquals(R_FALSE, Rmenu_bar_is_native(barOf("Save")))
         }
-        val bar = Rwidget_get_parent(Rwidget_get_parent(onNodeWithText("Save").fetchWidget()))
-        assertEquals(R_FALSE, Rmenu_bar_is_native(bar))
+    }
+
+    @Test
+    fun aNativeMenuBarIsGivenToTheSystem() = withSystemMenuBar {
+        runRavenTest {
+            setContent {
+                MenuBar(native = true) { Menu("File") { Item("Save", onClick = {}) } }
+            }
+            assertEquals(R_TRUE, Rmenu_bar_is_native(barOf("Save")))
+        }
+    }
+
+    @Test
+    fun aChangeOfNativeTakesEffectAtOnce() = withSystemMenuBar {
+        runRavenTest {
+            var native by mutableStateOf(false)
+            setContent {
+                MenuBar(native = native) { Menu("File") { Item("Save", onClick = {}) } }
+            }
+            val bar = barOf("Save")
+            native = true
+            waitForIdle()
+            assertEquals(R_TRUE, Rmenu_bar_is_native(bar))
+            native = false
+            waitForIdle()
+            assertEquals(R_FALSE, Rmenu_bar_is_native(bar))
+        }
+    }
+
+    @Test
+    fun aNativeMenuBarsItemsRunWhereTheSystemHasNoBar() = runRavenTest {
+        var saves = 0
+        setContent {
+            MenuBar(native = true) {
+                Menu("File") { Item("Save", onClick = { saves++ }, shortcut = KeyShortcut(Key.S, ctrl = true)) }
+            }
+        }
+        // The headless host has no system menu bar, so Raven draws the bar in the window.
+        assertEquals(R_FALSE, Rmenu_bar_is_native(barOf("Save")))
+        onNodeWithText("Save").performClick()
+        pressKey(Rwidget_get_window(onNodeWithText("Save").fetchWidget()), R_KEY_S, R_MOD_CTRL)
+        assertEquals(2, saves)
+    }
+
+    @Test
+    fun aNativeMenuBarsItemsRunWhenTheSystemShowsIt() = withSystemMenuBar {
+        runRavenTest {
+            var saves = 0
+            setContent {
+                MenuBar(native = true) {
+                    Menu("File") { Item("Save", onClick = { saves++ }, shortcut = KeyShortcut(Key.S, ctrl = true)) }
+                }
+            }
+            assertEquals(R_TRUE, Rmenu_bar_is_native(barOf("Save")))
+            onNodeWithText("Save").performClick()
+            pressKey(Rwidget_get_window(onNodeWithText("Save").fetchWidget()), R_KEY_S, R_MOD_CTRL)
+            assertEquals(2, saves)
+        }
+    }
+
+    /** The MenuBar of the bar's menu holding the item showing [text]. */
+    private fun RavenTestScope.barOf(text: String): Rid =
+        Rwidget_get_parent(Rwidget_get_parent(onNodeWithText(text).fetchWidget()))
+
+    /**
+     * Runs [block] with the headless host offering a system menu bar, as macOS does, so a MenuBar
+     * Raven gives the system reports itself native. Raven reads this when it starts.
+     */
+    private fun withSystemMenuBar(block: () -> Unit) {
+        setenv("RAVEN_NULL_SYSTEM_MENU_BAR", "1", 1)
+        try {
+            block()
+        } finally {
+            unsetenv("RAVEN_NULL_SYSTEM_MENU_BAR")
+        }
     }
 
     /** The texts of a menu's entries in Raven's order, a separator's being empty. */
