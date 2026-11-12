@@ -178,6 +178,11 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     Linux with zenity or kdialog; everywhere else, and for every message box, they are Raven's
     own, only blocking. Calls that wait at the same time return in reverse order: the first one
     opened resumes only once every later one has closed.
+  - **Phased**: phase 2 ships all four with their final signatures, `native: Boolean = false`
+    included, but builds only `native = true`, for `samples/notepad`. A phase 2 call without
+    `native = true` fails with an error saying the default arrives in phase 3. Phase 3 builds the
+    default on `Dialog` and `FileBrowser` without changing the API, and with it the headless tests
+    of dialog flows.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
 `close()`. `application` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is

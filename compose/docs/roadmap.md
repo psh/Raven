@@ -93,6 +93,7 @@ of those before the sample tickets start.
 |---|---|---|---|
 | `Color`, `Shape`, `BorderStroke`, `Text(color)` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | every family below | [Color, Shape and BorderStroke](issues/0060-color-shape-and-borderstroke.md) |
 | Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` | [Menus and KeyShortcut](issues/0061-menus-and-keyshortcut.md), [HeaderBar and Window(customHeader)](issues/0062-headerbar-and-custom-header.md) |
+| Native message and file dialogs (`native = true` only) | [4](spec.md#4-application-host) | `notepad` | [Native message and file dialogs](issues/0080-native-message-and-file-dialogs.md) |
 | ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/0063-combobox-spinbox-and-codeeditorlanguages.md) |
 | Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/0064-surface-flowrow-and-expander.md) |
 | Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
@@ -111,6 +112,12 @@ ports need is now made:
 | `music` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Image and resources](issues/archive/0035-image-and-resources.md) |
 | `animations` | [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) |
 | `glass` | [Lists and trees](issues/archive/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
+
+Phase 3 also completes what phase 2 builds as a foundation:
+
+- The default message and file dialogs, on `Dialog` and `FileBrowser`, and headless tests of
+  dialog flows (`samples/notepad` included); phase 2 builds only `native = true`
+  ([Notepad's file dialogs and discard prompt](issues/archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
 
 Decided for phase 3 so far (in the spec):
 
