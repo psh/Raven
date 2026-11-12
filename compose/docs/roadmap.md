@@ -111,7 +111,7 @@ settled every one; nothing is left open before implementation.
 | Files and text dropped on a window (`Window(onExternalDrop)`) | [4](spec.md#4-application-host) | `notepad` | [Files and text dropped on a window](issues/archive/0082-files-and-text-dropped-on-a-window.md) |
 | `MenuBar(native)`, a choice of the macOS system menu bar | [8: menus](spec.md#phase-2-menus-and-the-header-bar) | `notepad` | [MenuBar(native)](issues/archive/0089-menubar-native-parameter.md) |
 | Theme file reloads reported by Raven (fork change 8) | [11](spec.md#11-required-raven-changes), [4](spec.md#4-application-host) | `themes` | [Raven reports theme file reloads](issues/archive/0090-raven-reports-theme-file-reloads.md) |
-| `Modifier.alpha` and `Modifier.clipToBounds` | [6](spec.md#6-layout-and-modifiers) | `components`, `notepad`, `overlay` | [Modifier.alpha and clipToBounds](issues/0091-modifier-alpha-and-cliptobounds.md) |
+| `Modifier.alpha` and `Modifier.clipToBounds` | [6](spec.md#6-layout-and-modifiers) | `components`, `notepad`, `overlay` | [Modifier.alpha and clipToBounds](issues/archive/0091-modifier-alpha-and-cliptobounds.md) |
 | `CodeEditor(placeholder)` | [8: CodeEditor](spec.md#phase-2-codeeditors-editing-extras) | `notepad` | [CodeEditor placeholder](issues/0092-codeeditor-placeholder.md) |
 | ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/archive/0063-combobox-spinbox-and-codeeditorlanguages.md) |
 | Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/archive/0064-surface-flowrow-and-expander.md) |
@@ -141,8 +141,10 @@ Phase 3 also completes what phase 2 builds as a foundation:
   ([Notepad's file dialogs and discard prompt](issues/archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
 - `samples/themes`' `ListView`, with the lists
   ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
-- `Text(softWrap)`, with the text styling, so `samples/overlay`'s explanation wraps instead of
-  being cut off ([samples/overlay](issues/archive/0072-samples-overlay.md)).
+- `Text(softWrap)` and `Text(fontFamily)`, with the text styling, so `samples/overlay`'s
+  explanation and `samples/themes`' status line wrap, and `samples/themes`' monospace label is
+  monospace ([samples/overlay](issues/archive/0072-samples-overlay.md),
+  [samples/themes](issues/archive/0071-samples-themes.md)).
 - `MarkdownText`'s `style` and the rest of transitions (`AnimatedVisibility`, `animate*AsState`,
   `Island`); phase 2 brings `MarkdownText` and `Modifier.appearTransition` early ([ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md)).
 

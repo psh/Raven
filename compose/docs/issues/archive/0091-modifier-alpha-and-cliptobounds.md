@@ -7,7 +7,7 @@ status: closed
 Two one-call modifiers the phase 2 ports found missing: `Modifier.alpha` for the C examples'
 `Opacity` (`samples/components`' and `samples/notepad`'s dimmed labels, approximated with colours
 for now) and `Modifier.clipToBounds` for their `Clip` (`samples/overlay`'s stripes, which run past
-the panel's padding). Spec: [6. Layout and Modifiers](../spec.md#6-layout-and-modifiers) (the
+the panel's padding). Spec: [6. Layout and Modifiers](../../spec.md#6-layout-and-modifiers) (the
 modifier table). Decided on 2026-11-12, from the gaps the sample ports reported.
 
 **Depends on:** nothing open.
