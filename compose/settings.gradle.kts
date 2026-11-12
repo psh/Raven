@@ -24,6 +24,7 @@ include(
     ":samples:components",
     ":samples:notepad",
     ":samples:overlay",
+    ":samples:themes",
     ":samples:xml-translator",
     ":spikes:nested-frames",
 )

@@ -64,6 +64,12 @@ panel says what it obtained: Windows 10 and 11 blur the desktop, and Mica and Ac
 11; X11 needs a compositor (and KWin for the blur), and without one the window is opaque and says
 so; on macOS the desktop shows as it is, unblurred. Close it with its Close button.
 
+`samples/themes`, the port of Raven's `examples/themes` (looks, theme files, an accent, a card with
+a theme of its own, Markdown), runs the same way: `./gradlew :samples:themes:runReleaseExecutableMacosArm64`,
+or `samples/themes/build/bin/<target>/releaseExecutable/themes.kexe`. It reads the theme files and
+`notes.md` from Raven's `examples/themes`, whose path the build writes into it; give another folder
+as its first argument. Edit those files while it runs and the window follows.
+
 Running an app (not the tests) needs a Vulkan driver:
 
 - **macOS**: MoltenVK, from `brew install molten-vk` or the Vulkan SDK. Raven loads it by name,
