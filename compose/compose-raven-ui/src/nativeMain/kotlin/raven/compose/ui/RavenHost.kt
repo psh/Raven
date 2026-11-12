@@ -83,7 +83,7 @@ public class RavenHost(
     private var state = State.New
     private val firstError = AtomicReference<Throwable?>(null)
 
-    private val dispatcher = RavenDispatcher(::reportError)
+    internal val dispatcher: RavenDispatcher = RavenDispatcher(::reportError)
     private val clock = BroadcastFrameClock { dispatcher.wakeUp() }
     private val job = Job()
     private val scope = CoroutineScope(
