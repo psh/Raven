@@ -98,7 +98,7 @@ settled every one; nothing is left open before implementation.
 
 | Family | Spec | Needed by | Ticket |
 |---|---|---|---|
-| `Color`, `Shape`, `BorderStroke`, `Text(color)` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | every family below | [Color, Shape and BorderStroke](issues/0060-color-shape-and-borderstroke.md) |
+| `Color`, `Shape`, `BorderStroke`, `Text(color)` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | every family below | [Color, Shape and BorderStroke](issues/archive/0060-color-shape-and-borderstroke.md) |
 | The single `Window` finished: `WindowState`, `DpSize`, `minimumSize`, the flags, `background`, `opacity`, `WindowBackdrop`, `LocalWindowInfo.isTransparent` | [4](spec.md#4-application-host), [6](spec.md#6-layout-and-modifiers) | every phase 2 sample | [Window: WindowState and its parameters](issues/0086-window-windowstate-and-its-parameters.md) |
 | Menus and the header bar (`KeyShortcut`, `HeaderBar`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar) | `notepad` | [Menus and KeyShortcut](issues/0061-menus-and-keyshortcut.md), [HeaderBar](issues/0062-headerbar.md) |
 | Native message and file dialogs (`native = true` only) | [4](spec.md#4-application-host) | `notepad` | [Native message and file dialogs](issues/0080-native-message-and-file-dialogs.md) |

@@ -11,7 +11,7 @@ The window flags, opacity, backdrop and transparency check the `overlay` port ne
 Opacity, the return value and `isTransparent` were decided in
 [Window extras the samples use](0076-window-extras-the-samples-use.md).
 
-**Depends on:** [Color, Shape and BorderStroke](../0060-color-shape-and-borderstroke.md).
+**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md).
 
 ## Deliverables
 

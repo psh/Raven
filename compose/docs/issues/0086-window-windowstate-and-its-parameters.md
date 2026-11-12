@@ -18,7 +18,7 @@ owners, `icon`, `island`, `onKeyEvent` and `backKeys`. Spec:
 and [Window minimum size and DpSize](archive/0085-window-minimum-size-and-dpsize.md) into this
 ticket, with the `customHeader` flag from [HeaderBar](0062-headerbar.md).
 
-**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md) (`background`).
+**Depends on:** [Color, Shape and BorderStroke](archive/0060-color-shape-and-borderstroke.md) (`background`).
 
 ## Deliverables
 

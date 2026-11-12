@@ -10,7 +10,7 @@ the `themes` port and `notepad`'s View menu. Spec: [8: theming](../spec.md#phase
 The accent, `saveTheme` and `themeNames` were decided in
 [Theme extras the themes sample uses](archive/0077-theme-extras-the-themes-sample-uses.md).
 
-**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md).
+**Depends on:** [Color, Shape and BorderStroke](archive/0060-color-shape-and-borderstroke.md).
 
 ## Deliverables
 

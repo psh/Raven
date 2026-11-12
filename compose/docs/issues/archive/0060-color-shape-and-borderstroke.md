@@ -6,10 +6,10 @@ status: closed
 
 The graphics types every other phase 2 family takes: `Color`, `Shape` and `BorderStroke` in
 `raven.compose.ui.graphics`, and `Text(color)`, the first parameter to use one. Spec:
-[8: Surface, FlowRow and Expander](../spec.md#phase-2-surface-flowrow-and-expander),
-[8. Component vocabulary](../spec.md#8-component-vocabulary).
+[8: Surface, FlowRow and Expander](../../spec.md#phase-2-surface-flowrow-and-expander),
+[8. Component vocabulary](../../spec.md#8-component-vocabulary).
 
-**Depends on:** nothing open (phase 1's [Text, buttons and the first finders](archive/0047-text-buttons-and-first-finders.md)).
+**Depends on:** nothing open (phase 1's [Text, buttons and the first finders](0047-text-buttons-and-first-finders.md)).
 
 ## Deliverables
 
