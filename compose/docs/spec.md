@@ -624,9 +624,14 @@ Added for the `themes` port:
     `accent`, `material`, an app-wide `theme` or `fontFamily`), so two windows can never disagree about
     them. In `singleWindowApplication`, the `RavenTheme` at the top of its content counts as
     application level.
-  - **Inside a window**: a subtree setting. `theme` gives the subtree its own theme through an
-    internal Box and `Rwidget_set_theme`, `fontFamily` uses `Rwidget_set_font`, and `typography`
-    is a CompositionLocal. Setting an app-wide setting here logs an error.
+  - **Inside a window**: a subtree setting, which, like `MaterialTheme`, emits no node and so
+    leaves the layout alone. `theme` is a CompositionLocal, and every node in the subtree calls
+    `Rwidget_set_theme` on its own outer widget when the value it reads changes (null following
+    the parent again), through the binding layer, so no composable handles it itself.
+    `fontFamily` (phase 3) follows the same pattern with `Rwidget_set_font`, and `typography` is a
+    CompositionLocal. Setting an app-wide setting here logs an error. Decided in
+    [Subtree themes as a CompositionLocal](issues/0093-subtree-themes-as-a-compositionlocal.md),
+    replacing the internal Box of phase 2's first version.
   - `Look` is one of `Raven`, `Glass`, `HighContrast`, `Windows`, `Macos`, `Gnome`, `Native` or
     `MacosGlass`.
 - **`accent`** uses `Rtheme_set_accent`, and Raven derives the rest from it: the hovered and
