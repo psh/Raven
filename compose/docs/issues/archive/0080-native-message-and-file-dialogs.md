@@ -6,11 +6,11 @@ status: closed
 
 The suspend message and file dialogs with their final signatures, built for `native = true` only:
 Raven's blocking calls run as a task on `RavenDispatcher`, for `samples/notepad`. Phase 3 builds the
-default on `Dialog` and `FileBrowser`. Spec: [4. Application host](../spec.md#4-application-host).
-Decided in: [Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md).
+default on `Dialog` and `FileBrowser`. Spec: [4. Application host](../../spec.md#4-application-host).
+Decided in: [Notepad's file dialogs and discard prompt](0074-notepad-file-dialogs-and-discard-prompt.md).
 
-**Depends on:** nothing open (phase 1's host, [Verify recomposition inside nested frames](archive/0053-verify-recomposition-in-nested-frames.md)
-and [RavenDispatcher wakes for work queued behind a blocked block](archive/0059-ravendispatcher-wakes-for-work-behind-a-blocked-block.md)).
+**Depends on:** nothing open (phase 1's host, [Verify recomposition inside nested frames](0053-verify-recomposition-in-nested-frames.md)
+and [RavenDispatcher wakes for work queued behind a blocked block](0059-ravendispatcher-wakes-for-work-behind-a-blocked-block.md)).
 
 ## Deliverables
 

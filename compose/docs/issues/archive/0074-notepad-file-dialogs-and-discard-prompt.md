@@ -30,7 +30,7 @@ the C example does with the system's dialogs.
   [Verify recomposition inside nested frames](0053-verify-recomposition-in-nested-frames.md). A
   call without `native = true` fails with an error naming phase 3. All four, `selectFolderDialog`
   too, so phase 3 has nothing of the native path left to finish. New ticket:
-  [Native message and file dialogs](../0080-native-message-and-file-dialogs.md).
+  [Native message and file dialogs](0080-native-message-and-file-dialogs.md).
 - **Phase 3 completes** the default on `Dialog` and `FileBrowser` with no API change, and with it
   headless tests of dialog flows, `notepad`'s included. Listed on `roadmap.md`'s phase 3.
 - **`notepad` in phase 2** passes `native = true`. New, Open and Quit (the menu's Ctrl+Q and the
