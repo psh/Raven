@@ -50,6 +50,13 @@ be started directly. `runDebugExecutable...` and `debugExecutable/` are the debu
 code), runs the same way: `./gradlew :samples:components:runReleaseExecutableMacosArm64`, or
 `samples/components/build/bin/<target>/releaseExecutable/components.kexe`.
 
+`samples/notepad` runs the same way (`:samples:notepad:runReleaseExecutable...`). Its linked
+program opens a file given on its command line:
+
+```sh
+samples/notepad/build/bin/macosArm64/releaseExecutable/notepad.kexe README.md
+```
+
 Running an app (not the tests) needs a Vulkan driver:
 
 - **macOS**: MoltenVK, from `brew install molten-vk` or the Vulkan SDK. Raven loads it by name,

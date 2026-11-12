@@ -22,6 +22,7 @@ include(
     ":compose-raven-foundation",
     ":samples:hello",
     ":samples:components",
+    ":samples:notepad",
     ":samples:xml-translator",
     ":spikes:nested-frames",
 )
