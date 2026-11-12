@@ -9,7 +9,7 @@ Port Raven's `examples/components`: cards, badges and stats, which the C example
 [10. Samples](../spec.md#10-samples),
 [8: Surface, FlowRow and Expander](../spec.md#phase-2-surface-flowrow-and-expander).
 
-**Depends on:** [Surface, FlowRow and Expander](0064-surface-flowrow-and-expander.md),
+**Depends on:** [Surface, FlowRow and Expander](archive/0064-surface-flowrow-and-expander.md),
 [Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md),
 [Modifier.appearTransition](0088-modifier-appeartransition.md).
 

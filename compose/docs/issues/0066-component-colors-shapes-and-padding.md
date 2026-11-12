@@ -8,7 +8,7 @@ status: open
 imply, and `shape` and `contentPadding` on buttons and `TextField`. Spec:
 [8: theming](../spec.md#phase-2-theming).
 
-**Depends on:** [Surface, FlowRow and Expander](0064-surface-flowrow-and-expander.md),
+**Depends on:** [Surface, FlowRow and Expander](archive/0064-surface-flowrow-and-expander.md),
 [RavenTheme and theme files](0065-raventheme-and-theme-files.md).
 
 ## Deliverables

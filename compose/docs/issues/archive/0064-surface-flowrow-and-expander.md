@@ -5,9 +5,9 @@ status: closed
 # Surface, FlowRow and Expander
 
 Three containers for the `components` port. Spec:
-[8: Surface, FlowRow and Expander](../spec.md#phase-2-surface-flowrow-and-expander).
+[8: Surface, FlowRow and Expander](../../spec.md#phase-2-surface-flowrow-and-expander).
 
-**Depends on:** [Color, Shape and BorderStroke](archive/0060-color-shape-and-borderstroke.md).
+**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md).
 
 ## Deliverables
 
