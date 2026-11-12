@@ -8,7 +8,7 @@ Glass panels, for the `overlay` port (and `glass` in phase 3). Spec:
 [8: glass and BackgroundBlur](../spec.md#phase-2-glass-and-backgroundblur).
 
 **Depends on:** [Surface, FlowRow and Expander](archive/0064-surface-flowrow-and-expander.md),
-[RavenTheme and theme files](0065-raventheme-and-theme-files.md).
+[RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md).
 
 ## Deliverables
 

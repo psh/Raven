@@ -21,7 +21,7 @@ does there.
 ## Resolution
 
 The accent, saving and listing themes come into phase 2, in
-[RavenTheme and theme files](../0065-raventheme-and-theme-files.md); the rest needs nothing new.
+[RavenTheme and theme files](0065-raventheme-and-theme-files.md); the rest needs nothing new.
 
 - **Accent**: `RavenTheme(accent: Color?)`, application level only, through `Rtheme_set_accent`,
   so Raven derives the hovered, pressed, focus, selection and link colours. A look or theme

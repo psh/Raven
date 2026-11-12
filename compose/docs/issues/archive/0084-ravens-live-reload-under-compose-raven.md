@@ -33,13 +33,13 @@ Decide:
 - **Tests**: whether the harness turns live reload off, so a test that loads a theme file starts no
   watcher reacting to the disk, and whether the watcher thread matters for leak checks.
 
-Then correct spec section 8's theming wording and [RavenTheme and theme files](../0065-raventheme-and-theme-files.md)
+Then correct spec section 8's theming wording and [RavenTheme and theme files](0065-raventheme-and-theme-files.md)
 to match. Surfaced on 2026-11-11, after the theme extras ticket closed.
 
 ## Resolution
 
 Live reload is a development convenience, on in debug executables only, with compose-raven owning
-Raven's reload callback. It joins [RavenTheme and theme files](../0065-raventheme-and-theme-files.md),
+Raven's reload callback. It joins [RavenTheme and theme files](0065-raventheme-and-theme-files.md),
 the first ticket to load a file.
 
 - **Default**: `Platform.isDebugBinary`. A shipped app never changes because a file on disk did, as

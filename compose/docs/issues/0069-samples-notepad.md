@@ -11,7 +11,7 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 **Depends on:** [Menus and KeyShortcut](archive/0061-menus-and-keyshortcut.md),
 [HeaderBar](0062-headerbar.md),
 [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
-[RavenTheme and theme files](0065-raventheme-and-theme-files.md) (the View menu's looks),
+[RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md) (the View menu's looks),
 [Native message and file dialogs](0080-native-message-and-file-dialogs.md),
 [CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md),
 [Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md),

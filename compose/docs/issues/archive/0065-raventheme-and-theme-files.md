@@ -5,12 +5,12 @@ status: closed
 # RavenTheme and theme files
 
 `RavenTheme` at application level and inside a window, theme files, and `RavenTheme.colors`, for
-the `themes` port and `notepad`'s View menu. Spec: [8: theming](../spec.md#phase-2-theming).
+the `themes` port and `notepad`'s View menu. Spec: [8: theming](../../spec.md#phase-2-theming).
 
 The accent, `saveTheme` and `themeNames` were decided in
-[Theme extras the themes sample uses](archive/0077-theme-extras-the-themes-sample-uses.md).
+[Theme extras the themes sample uses](0077-theme-extras-the-themes-sample-uses.md).
 
-**Depends on:** [Color, Shape and BorderStroke](archive/0060-color-shape-and-borderstroke.md).
+**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md).
 
 ## Deliverables
 
@@ -30,7 +30,7 @@ The accent, `saveTheme` and `themeNames` were decided in
 - [x] `saveTheme(path, name): Boolean` through `Rtheme_save`, valid only while Raven runs.
 - [x] `RavenTheme.themeNames`, snapshot state from `Rtheme_get_count`/`_name_at`, refreshed after
       `loadTheme`, a look change, and Raven's reload of a theme file.
-- [x] Live reload, decided in [Raven's live reload under compose-raven](archive/0084-ravens-live-reload-under-compose-raven.md):
+- [x] Live reload, decided in [Raven's live reload under compose-raven](0084-ravens-live-reload-under-compose-raven.md):
       `application(liveReload = Platform.isDebugBinary)` and the same on `singleWindowApplication`,
       calling `Rxml_set_live_reload` after `Rinit` unless `RAVEN_LIVE_RELOAD` is set;
       compose-raven owns `Rxml_set_reload_callback` (inside the C-boundary catch), with no public
@@ -47,7 +47,7 @@ The accent, `saveTheme` and `themeNames` were decided in
 
 ## Resolution
 
-Done on macOS, on top of [Window, WindowState and its parameters](archive/0086-window-windowstate-and-its-parameters.md).
+Done on macOS, on top of [Window, WindowState and its parameters](0086-window-windowstate-and-its-parameters.md).
 `./gradlew build allTests` passes: 216 tests, 76 of them in ui and 74 in foundation.
 
 - **Where it lives**: `RavenTheme`, `Look`, `RavenColors`, `loadTheme`, `loadThemeFromString` and
