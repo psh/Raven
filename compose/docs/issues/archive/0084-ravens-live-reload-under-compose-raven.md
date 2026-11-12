@@ -20,7 +20,7 @@ watched. (The header's "five per second" is stale: the code in `src/xml/xml_watc
 event-driven.)
 
 Phase 1 loads nothing from files, so none of this runs today. Phase 2's `loadTheme` turns it on,
-and [Theme extras the themes sample uses](archive/0077-theme-extras-the-themes-sample-uses.md)
+and [Theme extras the themes sample uses](0077-theme-extras-the-themes-sample-uses.md)
 decided that theme files reload through Raven and that `RavenTheme.themeNames` refreshes on reload.
 
 Decide:
@@ -33,7 +33,7 @@ Decide:
 - **Tests**: whether the harness turns live reload off, so a test that loads a theme file starts no
   watcher reacting to the disk, and whether the watcher thread matters for leak checks.
 
-Then correct spec section 8's theming wording and [RavenTheme and theme files](0065-raventheme-and-theme-files.md)
+Then correct spec section 8's theming wording and [RavenTheme and theme files](../0065-raventheme-and-theme-files.md)
 to match. Surfaced on 2026-11-11, after the theme extras ticket closed.
 
 ## Resolution
