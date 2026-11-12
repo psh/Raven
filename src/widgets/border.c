@@ -309,6 +309,39 @@ void Rborder_set_corner_radius(Rid id, float top_left, float top_right, float bo
 	rvn_widget_invalidate_paint(widget);
 }
 
+void Rborder_get_outline(Rid id, float* width, float* r, float* g, float* b, float* a) {
+	rvn_widget_t* widget = rvn_widget_check(id, R_WIDGET_BORDER, __func__);
+	rvn_border_t* border = (rvn_border_t*)widget;
+	if (width) *width = border ? border->outline_width : 0.0f;
+	rvn_color_to_floats(border ? border->outline_color : 0, r, g, b, a);
+}
+
+void Rborder_get_corner_radius(Rid id, float* top_left, float* top_right, float* bottom_right, float* bottom_left) {
+	rvn_widget_t* widget = rvn_widget_check(id, R_WIDGET_BORDER, __func__);
+	rvn_border_t* border = (rvn_border_t*)widget;
+	float* out[4];
+	int i;
+	out[0] = top_left;
+	out[1] = top_right;
+	out[2] = bottom_right;
+	out[3] = bottom_left;
+	for (i = 0; i < 4; i++) {
+		if (!out[i]) continue;
+		/* as it is painted: its own corners, else those of a style, else square */
+		if (!border) *out[i] = 0.0f;
+		else if (border->has_radii) *out[i] = border->radii[i];
+		else *out[i] = rvn_widget_has_metric(widget, R_METRIC_CORNER_RADIUS) ? rvn_widget_metric(widget, R_METRIC_CORNER_RADIUS) : 0.0f;
+	}
+}
+
+void Rborder_get_shadow(Rid id, float* blur, float* offset_x, float* offset_y) {
+	rvn_widget_t* widget = rvn_widget_check(id, R_WIDGET_BORDER, __func__);
+	rvn_border_t* border = (rvn_border_t*)widget;
+	if (blur) *blur = border ? border->shadow_blur : 0.0f;
+	if (offset_x) *offset_x = border ? border->shadow_offset.x : 0.0f;
+	if (offset_y) *offset_y = border ? border->shadow_offset.y : 0.0f;
+}
+
 void Rborder_set_material(Rid id, RMaterial material) {
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_BORDER);
 	Rwidget_set_material(id, material);

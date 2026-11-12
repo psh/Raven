@@ -3000,6 +3000,19 @@ fn void Border.set_corner_radius(self, float top_left, float top_right, float bo
 <* Soft drop shadow behind the border. Blur 0 disables it (default). *>
 fn void Border.set_shadow(self, float blur, float offset_x, float offset_y) @inline => c::r_border_set_shadow((c::Rid)self, blur, offset_x, offset_y);
 
+<* The outline width and color the border was given. Any pointer may be NULL. *>
+fn void Border.get_outline(self, float* width, float* r, float* g, float* b, float* a) @inline => c::r_border_get_outline((c::Rid)self, width, r, g, b, a);
+
+<*
+ The corner radii the border is drawn with: the ones it was given,
+ else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+ Any pointer may be NULL.
+*>
+fn void Border.get_corner_radius(self, float* top_left, float* top_right, float* bottom_right, float* bottom_left) @inline => c::r_border_get_corner_radius((c::Rid)self, top_left, top_right, bottom_right, bottom_left);
+
+<* The drop shadow the border was given (blur 0: none). Any pointer may be NULL. *>
+fn void Border.get_shadow(self, float* blur, float* offset_x, float* offset_y) @inline => c::r_border_get_shadow((c::Rid)self, blur, offset_x, offset_y);
+
 <*
  What the border is made of. R_MATERIAL_GLASS turns it into a
  panel of glass tinted by its background color (the alpha of the color

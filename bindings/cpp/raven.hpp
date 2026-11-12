@@ -1013,6 +1013,17 @@ public:
 	/// Soft drop shadow behind the border. Blur 0 disables it (default).
 	void set_shadow(float blur, float offset_x, float offset_y) const { Rborder_set_shadow(id_, blur, offset_x, offset_y); }
 
+	/// The outline width and color the border was given. Any pointer may be NULL.
+	void get_outline(float* width, float* r, float* g, float* b, float* a) const { Rborder_get_outline(id_, width, r, g, b, a); }
+
+	/// The corner radii the border is drawn with: the ones it was given,
+	/// else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+	/// Any pointer may be NULL.
+	void get_corner_radius(float* top_left, float* top_right, float* bottom_right, float* bottom_left) const { Rborder_get_corner_radius(id_, top_left, top_right, bottom_right, bottom_left); }
+
+	/// The drop shadow the border was given (blur 0: none). Any pointer may be NULL.
+	void get_shadow(float* blur, float* offset_x, float* offset_y) const { Rborder_get_shadow(id_, blur, offset_x, offset_y); }
+
 	/// What the border is made of. R_MATERIAL_GLASS turns it into a
 	/// panel of glass tinted by its background color (the alpha of the color
 	/// is the strength of the tint): floating tool bars, side bars, cards.

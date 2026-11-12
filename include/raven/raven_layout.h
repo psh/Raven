@@ -96,6 +96,16 @@ extern "C" {
 	RAVEN_API void Rborder_set_corner_radius(Rid border, float top_left, float top_right, float bottom_right, float bottom_left);
 	/** @brief Soft drop shadow behind the border. Blur 0 disables it (default). */
 	RAVEN_API void Rborder_set_shadow(Rid border, float blur, float offset_x, float offset_y);
+	/** @brief The outline width and color the border was given. Any pointer may be NULL. */
+	RAVEN_API void Rborder_get_outline(Rid border, float* width, float* r, float* g, float* b, float* a);
+	/**
+	 * @brief The corner radii the border is drawn with: the ones it was given,
+	 * else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+	 * Any pointer may be NULL.
+	 */
+	RAVEN_API void Rborder_get_corner_radius(Rid border, float* top_left, float* top_right, float* bottom_right, float* bottom_left);
+	/** @brief The drop shadow the border was given (blur 0: none). Any pointer may be NULL. */
+	RAVEN_API void Rborder_get_shadow(Rid border, float* blur, float* offset_x, float* offset_y);
 	/**
 	 * @brief What the border is made of. R_MATERIAL_GLASS turns it into a
 	 * panel of glass tinted by its background color (the alpha of the color

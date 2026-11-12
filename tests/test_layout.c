@@ -101,6 +101,59 @@ static void test_overlay_and_border(void) {
 	CHECK_RECT(replaced, 366, 266, 20, 20);
 }
 
+/* A border reads back the outline, corners and shadow it was given. */
+static void test_border_getters(void) {
+	Rid border = Rwidget_create(R_WIDGET_BORDER);
+	Rid label = Rwidget_create(R_WIDGET_LABEL);
+	float width, r, g, b, a, tl, tr, br, bl, blur, ox, oy;
+	Rwindow_set_content(g_window, border);
+
+	/* nothing given: no outline, square, no shadow */
+	Rborder_get_outline(border, &width, &r, &g, &b, &a);
+	CHECK_NEAR(width, 0);
+	CHECK_NEAR(a, 0);
+	Rborder_get_corner_radius(border, &tl, &tr, &br, &bl);
+	CHECK_NEAR(tl, 0);
+	CHECK_NEAR(bl, 0);
+	Rborder_get_shadow(border, &blur, &ox, &oy);
+	CHECK_NEAR(blur, 0);
+
+	/* a style's corner radius, until the border is given its own */
+	Rwidget_set_metric(border, R_METRIC_CORNER_RADIUS, 6);
+	Rborder_get_corner_radius(border, &tl, NULL, NULL, &bl);
+	CHECK_NEAR(tl, 6);
+	CHECK_NEAR(bl, 6);
+	Rborder_set_corner_radius(border, 1, 2, 3, 4);
+	Rborder_get_corner_radius(border, &tl, &tr, &br, &bl);
+	CHECK_NEAR(tl, 1);
+	CHECK_NEAR(tr, 2);
+	CHECK_NEAR(br, 3);
+	CHECK_NEAR(bl, 4);
+
+	Rborder_set_outline(border, 2, 1, 0, 0, 1);
+	Rborder_get_outline(border, &width, &r, &g, &b, &a);
+	CHECK_NEAR(width, 2);
+	CHECK_NEAR(r, 1);
+	CHECK_NEAR(g, 0);
+	CHECK_NEAR(a, 1);
+	Rborder_get_outline(border, NULL, NULL, NULL, NULL, NULL);
+
+	Rborder_set_shadow(border, 8, 1, 4);
+	Rborder_get_shadow(border, &blur, &ox, &oy);
+	CHECK_NEAR(blur, 8);
+	CHECK_NEAR(ox, 1);
+	CHECK_NEAR(oy, 4);
+
+	/* another widget is an error, and reads as nothing */
+	EXPECT_ERRORS_BEGIN();
+	Rborder_get_shadow(label, &blur, &ox, &oy);
+	Rborder_get_outline(label, &width, NULL, NULL, NULL, NULL);
+	EXPECT_ERRORS_END(2);
+	CHECK_NEAR(blur, 0);
+	CHECK_NEAR(width, 0);
+	Rwidget_destroy(label);
+}
+
 static void test_grid(void) {
 	Rid grid = Rwidget_create(R_WIDGET_GRID);
 	Rid a = Rwidget_add_child(grid, block(40, 20));
@@ -399,6 +452,7 @@ int main(void) {
 	RUN(test_vbox);
 	RUN(test_hbox);
 	RUN(test_overlay_and_border);
+	RUN(test_border_getters);
 	RUN(test_grid);
 	RUN(test_uniform_grid);
 	RUN(test_size_box_and_canvas);

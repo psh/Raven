@@ -4968,6 +4968,26 @@ namespace Raven
         public static extern void Rborder_set_shadow(uint border, float blur, float offset_x, float offset_y);
 
         /// <summary>
+        /// The outline width and color the border was given. Any pointer may be NULL.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rborder_get_outline(uint border, out float width, out float r, out float g, out float b, out float a);
+
+        /// <summary>
+        /// The corner radii the border is drawn with: the ones it was given,
+        /// else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+        /// Any pointer may be NULL.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rborder_get_corner_radius(uint border, out float top_left, out float top_right, out float bottom_right, out float bottom_left);
+
+        /// <summary>
+        /// The drop shadow the border was given (blur 0: none). Any pointer may be NULL.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rborder_get_shadow(uint border, out float blur, out float offset_x, out float offset_y);
+
+        /// <summary>
         /// What the border is made of. R_MATERIAL_GLASS turns it into a
         /// panel of glass tinted by its background color (the alpha of the color
         /// is the strength of the tint): floating tool bars, side bars, cards.

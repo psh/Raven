@@ -2645,6 +2645,49 @@ func BorderSetShadow(border ID, blur float32, offset_x float32, offset_y float32
 	C.Rborder_set_shadow(C.Rid(border), C.float(blur), C.float(offset_x), C.float(offset_y))
 }
 
+// BorderGetOutline: The outline width and color the border was given. Any pointer may be NULL.
+func BorderGetOutline(border ID) (width float32, r float32, g float32, b float32, a float32) {
+	var width_ C.float
+	var r_ C.float
+	var g_ C.float
+	var b_ C.float
+	var a_ C.float
+	C.Rborder_get_outline(C.Rid(border), &width_, &r_, &g_, &b_, &a_)
+	width = float32(width_)
+	r = float32(r_)
+	g = float32(g_)
+	b = float32(b_)
+	a = float32(a_)
+	return
+}
+
+// BorderGetCornerRadius: The corner radii the border is drawn with: the ones it was given, else the
+// R_METRIC_CORNER_RADIUS of a style that applies to it, else 0. Any pointer may be NULL.
+func BorderGetCornerRadius(border ID) (top_left float32, top_right float32, bottom_right float32, bottom_left float32) {
+	var top_left_ C.float
+	var top_right_ C.float
+	var bottom_right_ C.float
+	var bottom_left_ C.float
+	C.Rborder_get_corner_radius(C.Rid(border), &top_left_, &top_right_, &bottom_right_, &bottom_left_)
+	top_left = float32(top_left_)
+	top_right = float32(top_right_)
+	bottom_right = float32(bottom_right_)
+	bottom_left = float32(bottom_left_)
+	return
+}
+
+// BorderGetShadow: The drop shadow the border was given (blur 0: none). Any pointer may be NULL.
+func BorderGetShadow(border ID) (blur float32, offset_x float32, offset_y float32) {
+	var blur_ C.float
+	var offset_x_ C.float
+	var offset_y_ C.float
+	C.Rborder_get_shadow(C.Rid(border), &blur_, &offset_x_, &offset_y_)
+	blur = float32(blur_)
+	offset_x = float32(offset_x_)
+	offset_y = float32(offset_y_)
+	return
+}
+
 // BorderSetMaterial: What the border is made of. R_MATERIAL_GLASS turns it into a panel of glass tinted by
 // its background color (the alpha of the color is the strength of the tint): floating tool bars, side bars,
 // cards.

@@ -10200,6 +10200,77 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rborder_get_outline$;
+
+    /**
+     * The outline width and color the border was given. Any pointer may be NULL.
+     */
+    public static void Rborder_get_outline(int border, float[] width, float[] r, float[] g, float[] b, float[] a) {
+        MethodHandle $h = Rborder_get_outline$;
+        if ($h == null) Rborder_get_outline$ = $h = find("Rborder_get_outline", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment width$ = width == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment r$ = r == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment g$ = g == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment b$ = b == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment a$ = a == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            $h.invokeExact(border, width$, r$, g$, b$, a$);
+            if (width != null && width.length > 0) width[0] = width$.get(JAVA_FLOAT, 0);
+            if (r != null && r.length > 0) r[0] = r$.get(JAVA_FLOAT, 0);
+            if (g != null && g.length > 0) g[0] = g$.get(JAVA_FLOAT, 0);
+            if (b != null && b.length > 0) b[0] = b$.get(JAVA_FLOAT, 0);
+            if (a != null && a.length > 0) a[0] = a$.get(JAVA_FLOAT, 0);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rborder_get_corner_radius$;
+
+    /**
+     * The corner radii the border is drawn with: the ones it was given,
+     * else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+     * Any pointer may be NULL.
+     */
+    public static void Rborder_get_corner_radius(int border, float[] top_left, float[] top_right, float[] bottom_right, float[] bottom_left) {
+        MethodHandle $h = Rborder_get_corner_radius$;
+        if ($h == null) Rborder_get_corner_radius$ = $h = find("Rborder_get_corner_radius", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment top_left$ = top_left == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment top_right$ = top_right == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment bottom_right$ = bottom_right == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment bottom_left$ = bottom_left == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            $h.invokeExact(border, top_left$, top_right$, bottom_right$, bottom_left$);
+            if (top_left != null && top_left.length > 0) top_left[0] = top_left$.get(JAVA_FLOAT, 0);
+            if (top_right != null && top_right.length > 0) top_right[0] = top_right$.get(JAVA_FLOAT, 0);
+            if (bottom_right != null && bottom_right.length > 0) bottom_right[0] = bottom_right$.get(JAVA_FLOAT, 0);
+            if (bottom_left != null && bottom_left.length > 0) bottom_left[0] = bottom_left$.get(JAVA_FLOAT, 0);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rborder_get_shadow$;
+
+    /**
+     * The drop shadow the border was given (blur 0: none). Any pointer may be NULL.
+     */
+    public static void Rborder_get_shadow(int border, float[] blur, float[] offset_x, float[] offset_y) {
+        MethodHandle $h = Rborder_get_shadow$;
+        if ($h == null) Rborder_get_shadow$ = $h = find("Rborder_get_shadow", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment blur$ = blur == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment offset_x$ = offset_x == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment offset_y$ = offset_y == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            $h.invokeExact(border, blur$, offset_x$, offset_y$);
+            if (blur != null && blur.length > 0) blur[0] = blur$.get(JAVA_FLOAT, 0);
+            if (offset_x != null && offset_x.length > 0) offset_x[0] = offset_x$.get(JAVA_FLOAT, 0);
+            if (offset_y != null && offset_y.length > 0) offset_y[0] = offset_y$.get(JAVA_FLOAT, 0);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rborder_set_material$;
 
     /**

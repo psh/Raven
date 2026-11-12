@@ -336,6 +336,9 @@ static struct {
 	void (*Rborder_set_outline)(Rid, float, float, float, float, float);
 	void (*Rborder_set_corner_radius)(Rid, float, float, float, float);
 	void (*Rborder_set_shadow)(Rid, float, float, float);
+	void (*Rborder_get_outline)(Rid, float*, float*, float*, float*, float*);
+	void (*Rborder_get_corner_radius)(Rid, float*, float*, float*, float*);
+	void (*Rborder_get_shadow)(Rid, float*, float*, float*);
 	void (*Rborder_set_material)(Rid, RMaterial);
 	void (*Rsize_box_set_aspect_ratio)(Rid, float);
 	void (*Rspacer_set_size)(Rid, float, float);
@@ -1472,6 +1475,9 @@ static const struct {
 	{"Rborder_set_outline", offsetof(__typeof__(rn), Rborder_set_outline)},
 	{"Rborder_set_corner_radius", offsetof(__typeof__(rn), Rborder_set_corner_radius)},
 	{"Rborder_set_shadow", offsetof(__typeof__(rn), Rborder_set_shadow)},
+	{"Rborder_get_outline", offsetof(__typeof__(rn), Rborder_get_outline)},
+	{"Rborder_get_corner_radius", offsetof(__typeof__(rn), Rborder_get_corner_radius)},
+	{"Rborder_get_shadow", offsetof(__typeof__(rn), Rborder_get_shadow)},
 	{"Rborder_set_material", offsetof(__typeof__(rn), Rborder_set_material)},
 	{"Rsize_box_set_aspect_ratio", offsetof(__typeof__(rn), Rsize_box_set_aspect_ratio)},
 	{"Rspacer_set_size", offsetof(__typeof__(rn), Rspacer_set_size)},
@@ -9116,6 +9122,96 @@ static napi_value rn_w_Rborder_set_shadow(napi_env env, napi_callback_info info)
 	if (!rn_get_float(env, argv[2], &a2)) return NULL;
 	if (!rn_get_float(env, argv[3], &a3)) return NULL;
 	rn.Rborder_set_shadow((Rid)a0, (float)a1, (float)a2, (float)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rborder_get_outline(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1 = 0;
+	float a2 = 0;
+	float a3 = 0;
+	float a4 = 0;
+	float a5 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rborder_get_outline((Rid)a0, &a1, &a2, &a3, &a4, &a5);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a2, &o1_);
+		napi_value o2_;
+		napi_create_double(env, (double)a3, &o2_);
+		napi_value o3_;
+		napi_create_double(env, (double)a4, &o3_);
+		napi_value o4_;
+		napi_create_double(env, (double)a5, &o4_);
+		{
+			const napi_value values_[5] = {o0_, o1_, o2_, o3_, o4_};
+			result_ = rn_tuple(env, 5, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rborder_get_corner_radius(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1 = 0;
+	float a2 = 0;
+	float a3 = 0;
+	float a4 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rborder_get_corner_radius((Rid)a0, &a1, &a2, &a3, &a4);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a2, &o1_);
+		napi_value o2_;
+		napi_create_double(env, (double)a3, &o2_);
+		napi_value o3_;
+		napi_create_double(env, (double)a4, &o3_);
+		{
+			const napi_value values_[4] = {o0_, o1_, o2_, o3_};
+			result_ = rn_tuple(env, 4, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rborder_get_shadow(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1 = 0;
+	float a2 = 0;
+	float a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rborder_get_shadow((Rid)a0, &a1, &a2, &a3);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a2, &o1_);
+		napi_value o2_;
+		napi_create_double(env, (double)a3, &o2_);
+		{
+			const napi_value values_[3] = {o0_, o1_, o2_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
 	return result_;
 }
 
@@ -23225,6 +23321,9 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rborder_set_outline", NULL, rn_w_Rborder_set_outline, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rborder_set_corner_radius", NULL, rn_w_Rborder_set_corner_radius, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rborder_set_shadow", NULL, rn_w_Rborder_set_shadow, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rborder_get_outline", NULL, rn_w_Rborder_get_outline, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rborder_get_corner_radius", NULL, rn_w_Rborder_get_corner_radius, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rborder_get_shadow", NULL, rn_w_Rborder_get_shadow, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rborder_set_material", NULL, rn_w_Rborder_set_material, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rsize_box_set_aspect_ratio", NULL, rn_w_Rsize_box_set_aspect_ratio, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspacer_set_size", NULL, rn_w_Rspacer_set_size, NULL, NULL, NULL, napi_enumerable, NULL},

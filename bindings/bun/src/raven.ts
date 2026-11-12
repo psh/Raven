@@ -460,6 +460,9 @@ const _symbols = {
 	Rborder_set_outline: { args: ["u32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rborder_set_corner_radius: { args: ["u32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rborder_set_shadow: { args: ["u32", "f32", "f32", "f32"], returns: "void" },
+	Rborder_get_outline: { args: ["u32", "ptr", "ptr", "ptr", "ptr", "ptr"], returns: "void" },
+	Rborder_get_corner_radius: { args: ["u32", "ptr", "ptr", "ptr", "ptr"], returns: "void" },
+	Rborder_get_shadow: { args: ["u32", "ptr", "ptr", "ptr"], returns: "void" },
 	Rborder_set_material: { args: ["u32", "i32"], returns: "void" },
 	Rsize_box_set_aspect_ratio: { args: ["u32", "f32"], returns: "void" },
 	Rspacer_set_size: { args: ["u32", "f32", "f32"], returns: "void" },
@@ -8351,6 +8354,40 @@ export function Rborder_set_corner_radius(border: Rid, top_left: number, top_rig
 /** Soft drop shadow behind the border. Blur 0 disables it (default). */
 export function Rborder_set_shadow(border: Rid, blur: number, offset_x: number, offset_y: number): void {
 	_lib.Rborder_set_shadow(border, blur, offset_x, offset_y);
+}
+
+/** The outline width and color the border was given. Any pointer may be NULL. */
+export function Rborder_get_outline(border: Rid): [width: number, r: number, g: number, b: number, a: number] {
+	const width_ = new Float32Array(1);
+	const r_ = new Float32Array(1);
+	const g_ = new Float32Array(1);
+	const b_ = new Float32Array(1);
+	const a_ = new Float32Array(1);
+	_lib.Rborder_get_outline(border, width_, r_, g_, b_, a_);
+	return [width_[0]!, r_[0]!, g_[0]!, b_[0]!, a_[0]!];
+}
+
+/**
+ * The corner radii the border is drawn with: the ones it was given,
+ * else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+ * Any pointer may be NULL.
+ */
+export function Rborder_get_corner_radius(border: Rid): [top_left: number, top_right: number, bottom_right: number, bottom_left: number] {
+	const top_left_ = new Float32Array(1);
+	const top_right_ = new Float32Array(1);
+	const bottom_right_ = new Float32Array(1);
+	const bottom_left_ = new Float32Array(1);
+	_lib.Rborder_get_corner_radius(border, top_left_, top_right_, bottom_right_, bottom_left_);
+	return [top_left_[0]!, top_right_[0]!, bottom_right_[0]!, bottom_left_[0]!];
+}
+
+/** The drop shadow the border was given (blur 0: none). Any pointer may be NULL. */
+export function Rborder_get_shadow(border: Rid): [blur: number, offset_x: number, offset_y: number] {
+	const blur_ = new Float32Array(1);
+	const offset_x_ = new Float32Array(1);
+	const offset_y_ = new Float32Array(1);
+	_lib.Rborder_get_shadow(border, blur_, offset_x_, offset_y_);
+	return [blur_[0]!, offset_x_[0]!, offset_y_[0]!];
 }
 
 /**

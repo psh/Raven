@@ -5520,6 +5520,50 @@ def Rborder_set_shadow(border, blur, offset_x, offset_y):
     _lib.Rborder_set_shadow(border, blur, offset_x, offset_y)
 
 
+_lib.Rborder_get_outline.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rborder_get_outline.restype = None
+
+
+def Rborder_get_outline(border):
+    """The outline width and color the border was given. Any pointer may be NULL."""
+    width_ = ctypes.c_float()
+    r_ = ctypes.c_float()
+    g_ = ctypes.c_float()
+    b_ = ctypes.c_float()
+    a_ = ctypes.c_float()
+    _lib.Rborder_get_outline(border, ctypes.byref(width_), ctypes.byref(r_), ctypes.byref(g_), ctypes.byref(b_), ctypes.byref(a_))
+    return (width_.value, r_.value, g_.value, b_.value, a_.value)
+
+
+_lib.Rborder_get_corner_radius.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rborder_get_corner_radius.restype = None
+
+
+def Rborder_get_corner_radius(border):
+    """The corner radii the border is drawn with: the ones it was given,
+    else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+    Any pointer may be NULL."""
+    top_left_ = ctypes.c_float()
+    top_right_ = ctypes.c_float()
+    bottom_right_ = ctypes.c_float()
+    bottom_left_ = ctypes.c_float()
+    _lib.Rborder_get_corner_radius(border, ctypes.byref(top_left_), ctypes.byref(top_right_), ctypes.byref(bottom_right_), ctypes.byref(bottom_left_))
+    return (top_left_.value, top_right_.value, bottom_right_.value, bottom_left_.value)
+
+
+_lib.Rborder_get_shadow.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rborder_get_shadow.restype = None
+
+
+def Rborder_get_shadow(border):
+    """The drop shadow the border was given (blur 0: none). Any pointer may be NULL."""
+    blur_ = ctypes.c_float()
+    offset_x_ = ctypes.c_float()
+    offset_y_ = ctypes.c_float()
+    _lib.Rborder_get_shadow(border, ctypes.byref(blur_), ctypes.byref(offset_x_), ctypes.byref(offset_y_))
+    return (blur_.value, offset_x_.value, offset_y_.value)
+
+
 _lib.Rborder_set_material.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rborder_set_material.restype = None
 

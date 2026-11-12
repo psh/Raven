@@ -4219,6 +4219,19 @@ export function Rborder_set_corner_radius(border: Rid, top_left: number, top_rig
 /** Soft drop shadow behind the border. Blur 0 disables it (default). */
 export function Rborder_set_shadow(border: Rid, blur: number, offset_x: number, offset_y: number): void;
 
+/** The outline width and color the border was given. Any pointer may be NULL. */
+export function Rborder_get_outline(border: Rid): [width: number, r: number, g: number, b: number, a: number];
+
+/**
+ * The corner radii the border is drawn with: the ones it was given,
+ * else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+ * Any pointer may be NULL.
+ */
+export function Rborder_get_corner_radius(border: Rid): [top_left: number, top_right: number, bottom_right: number, bottom_left: number];
+
+/** The drop shadow the border was given (blur 0: none). Any pointer may be NULL. */
+export function Rborder_get_shadow(border: Rid): [blur: number, offset_x: number, offset_y: number];
+
 /**
  * What the border is made of. R_MATERIAL_GLASS turns it into a
  * panel of glass tinted by its background color (the alpha of the color

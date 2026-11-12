@@ -2580,6 +2580,14 @@ foreign lib {
 	Rborder_set_corner_radius :: proc(border: Rid, top_left: f32, top_right: f32, bottom_right: f32, bottom_left: f32) ---
 	// Soft drop shadow behind the border. Blur 0 disables it (default).
 	Rborder_set_shadow :: proc(border: Rid, blur: f32, offset_x: f32, offset_y: f32) ---
+	// The outline width and color the border was given. Any pointer may be NULL.
+	Rborder_get_outline :: proc(border: Rid, width: ^f32, r: ^f32, g: ^f32, b: ^f32, a: ^f32) ---
+	// The corner radii the border is drawn with: the ones it was given,
+	// else the R_METRIC_CORNER_RADIUS of a style that applies to it, else 0.
+	// Any pointer may be NULL.
+	Rborder_get_corner_radius :: proc(border: Rid, top_left: ^f32, top_right: ^f32, bottom_right: ^f32, bottom_left: ^f32) ---
+	// The drop shadow the border was given (blur 0: none). Any pointer may be NULL.
+	Rborder_get_shadow :: proc(border: Rid, blur: ^f32, offset_x: ^f32, offset_y: ^f32) ---
 	// What the border is made of. R_MATERIAL_GLASS turns it into a
 	// panel of glass tinted by its background color (the alpha of the color
 	// is the strength of the tint): floating tool bars, side bars, cards.
