@@ -27,9 +27,6 @@ with theme files loaded at start. Spec: [10. Samples](../spec.md#10-samples),
       read again by a polling `LaunchedEffect`. Theme files reload through Raven by themselves.
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`.
 - [ ] A headless test: choosing a look or theme changes Raven's, and `RavenTheme.colors` follows.
-- [ ] Each gap below is settled by [compose-raven phase 2 sample gaps](0073-compose-raven-phase-2-sample-gaps.md)
-      before this ticket starts: brought into phase 2, or a port gap naming the phase that
-      completes it.
 
 ## Gaps
 

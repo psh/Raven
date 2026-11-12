@@ -2,8 +2,9 @@
 
 The source of truth for **what gets built, in what order**. [`spec.md`](spec.md) says *what*
 compose-raven is, and this file says *when*. Implementation planning starts here: each milestone
-links to the spec sections that define it. Phases 1 to 3 are fully designed. Both wayfinder maps
-are closed, and the remaining fog, listed on
+links to the spec sections that define it. Phases 1 to 3 are fully designed. All three wayfinder
+maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
+settled the phase 2 samples), and the remaining fog, listed on
 [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
 for a phase 4 map.
 
@@ -89,9 +90,9 @@ closed unfinished for now, to be revisited; Phase 1 is done when they are finish
 
 Each family is fully decided. Broken into tickets, in dependency order; each ticket's **Depends
 on** line names its blockers. The samples port when their families are done, and each sample
-ticket lists what of its C example phase 2 doesn't cover. The map
-[compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md) settles each
-of those before the sample tickets start.
+ticket lists its port gaps, each with the later phase that completes it (listed under that phase
+below). The map [compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
+settled every one; nothing is left open before implementation.
 
 | Family | Spec | Needed by | Ticket |
 |---|---|---|---|
@@ -125,8 +126,11 @@ Phase 3 also completes what phase 2 builds as a foundation:
 - The default message and file dialogs, on `Dialog` and `FileBrowser`, and headless tests of
   dialog flows (`samples/notepad` included); phase 2 builds only `native = true`
   ([Notepad's file dialogs and discard prompt](issues/archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
-- `samples/themes`' `ListView` and its Markdown label, with `ListView` and `MarkdownText`
+- `samples/themes`' `ListView` and its Markdown labels, with `ListView` and `MarkdownText`
   ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
+- `samples/components`' card transitions (`Appear="Pop"`/`"Drop"`, `AppearDelay`), with
+  `Modifier.appearTransition`
+  ([The components sample's source pane](issues/archive/0078-the-components-samples-source-pane.md)).
 
 Decided for phase 3 so far (in the spec):
 

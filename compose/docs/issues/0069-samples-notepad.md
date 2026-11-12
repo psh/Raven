@@ -43,14 +43,11 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`.
 - [ ] A headless test: typing marks the document modified in the status line, choosing a
       language reaches the editor, and a dropped text is inserted (`performExternalDrop`).
-- [ ] Each gap below is settled by [compose-raven phase 2 sample gaps](0073-compose-raven-phase-2-sample-gaps.md)
-      before this ticket starts: brought into phase 2, or a port gap naming the phase that
-      completes it.
 
 ## Gaps
 
-Phase 2 doesn't cover these parts of the C example:
-
-- **Phase 3:** headless tests of the dialog flows,
-  with the dialogs' `Dialog`/`FileBrowser` default
+- **Phase 3:** headless tests of the dialog flows, with the dialogs' `Dialog`/`FileBrowser` default
   ([Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
+
+Everything else of the C example is in phase 2, settled by
+[compose-raven phase 2 sample gaps](0073-compose-raven-phase-2-sample-gaps.md).

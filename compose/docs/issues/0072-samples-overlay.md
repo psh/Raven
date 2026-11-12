@@ -22,9 +22,6 @@ side. Spec: [10. Samples](../spec.md#10-samples),
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`, with what each
       platform shows (a compositor on X11, Mica and Acrylic on Windows 11 only).
 - [ ] A headless test: choosing a backdrop reaches the window.
-- [ ] Each gap below is settled by [compose-raven phase 2 sample gaps](0073-compose-raven-phase-2-sample-gaps.md)
-      before this ticket starts: brought into phase 2, or a port gap naming the phase that
-      completes it.
 
 ## Gaps
 

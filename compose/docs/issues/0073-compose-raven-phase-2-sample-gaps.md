@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 wayfinder: map
 ---
 
@@ -55,12 +55,20 @@ so implementation starts with nothing open. This map plans; it builds nothing.
 - [The components sample's source pane](archive/0078-the-components-samples-source-pane.md): nothing for the spec; cards are the sample's own composables with a `footer` slot over app state, the pane shows the generated Kotlin call of the last card added, the tag registry has no counterpart; appear transitions stay phase 3, and the minimum size joined [Window minimum size](archive/0083-window-minimum-size.md).
 - [Window minimum size](archive/0083-window-minimum-size.md): phase 2's `Window(minimumSize: DpSize?)` with `DpSize` in a new ticket, [Window minimum size and DpSize](0085-window-minimum-size-and-dpsize.md); phase 3's `WindowState.size` is pinned as a `DpSize`.
 - [Raven's live reload under compose-raven](archive/0084-ravens-live-reload-under-compose-raven.md): on only in debug executables (`application(liveReload = Platform.isDebugBinary)`, `RAVEN_LIVE_RELOAD` wins); compose-raven owns the reload callback for `themeNames`, apps get no event; tests run with it off and trigger reloads with `checkFiles()`; joins [RavenTheme and theme files](0065-raventheme-and-theme-files.md).
+- [Sample tickets reflect every gap decision](archive/0079-sample-tickets-reflect-every-gap-decision.md): the sample tickets list only port gaps with their phases, spec section 10 states the port rule, and the roadmap lists each gap under the phase that completes it.
 
 ## Not yet specified
 
-- **The samples' headless tests and harness**: once the gaps settle, a sample's test may need
-  finders or actions phase 2 doesn't plan yet (a menu item inside a header bar, a dropped file).
-  Revisit when the gap tickets close.
+Closed on 2026-11-11 with the destination reached: every port gap of the four phase 2 samples is
+either in phase 2 or names the phase that completes it, and `roadmap.md` lists it there.
+
+The one patch of fog cleared with no new ticket. The samples' tests need finders and actions that
+phase 2 tickets already plan: finding and activating a menu item by its text (in
+[Menus and KeyShortcut](0061-menus-and-keyshortcut.md), wherever the menu sits),
+`performExternalDrop` (in [Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md)),
+ComboBox selection (in [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md)),
+`checkFiles()` (in [RavenTheme and theme files](0065-raventheme-and-theme-files.md)), and phase 1's
+clicks and text input.
 
 ## Out of scope
 

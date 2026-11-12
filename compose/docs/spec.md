@@ -982,7 +982,11 @@ Decided in: [Testing strategy](issues/archive/0012-testing-strategy.md),
 ## 10. Samples
 
 Each sample is its own executable module under `compose/samples/`. A port is idiomatic,
-hand-written Compose with the same look and behaviour as the C example it ports.
+hand-written Compose with the look of the C example it ports, and the behaviour its phase's
+vocabulary covers. What it leaves out is a **port gap**, listed on its ticket with the phase that
+completes it, and `roadmap.md` lists the gap under that phase; there is no gap without one. A part of
+the C example with no Compose counterpart (an XML document built from code, interface files
+reloaded from disk) is not a gap, and the ticket says so.
 
 ### `samples/hello`
 
