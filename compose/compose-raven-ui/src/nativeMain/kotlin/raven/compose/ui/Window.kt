@@ -14,21 +14,27 @@ import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.StableRef
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.asStableRef
+import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.pointed
 import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
 import raven.cinterop.RBackdrop
+import raven.cinterop.RDropEvent
 import raven.cinterop.RNativeWindow
 import raven.cinterop.R_BACKDROP_ACRYLIC
 import raven.cinterop.R_BACKDROP_BLUR
 import raven.cinterop.R_BACKDROP_MICA
 import raven.cinterop.R_BACKDROP_NONE
 import raven.cinterop.R_BACKDROP_TRANSPARENT
+import raven.cinterop.R_DROP_DROPPED
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_OVERLAY
@@ -56,6 +62,7 @@ import raven.cinterop.Rwindow_set_backdrop
 import raven.cinterop.Rwindow_set_clear_color
 import raven.cinterop.Rwindow_set_close_callback
 import raven.cinterop.Rwindow_set_content
+import raven.cinterop.Rwindow_set_drop_callback
 import raven.cinterop.Rwindow_set_min_size
 import raven.cinterop.Rwindow_set_opacity
 import raven.cinterop.Rwindow_set_position
@@ -89,6 +96,10 @@ import kotlin.math.roundToInt
  * content draws the title bar, with a `HeaderBar`), [transparent] (what is behind the window shows
  * where nothing opaque is drawn: see [WindowBackdrop]), [undecorated] (no frame) and [resizable]
  * are fixed when the window opens, and a change logs a warning.
+ *
+ * [onExternalDrop] takes the files or the text other applications drop on the window where no
+ * widget takes them. While it is set the window accepts drops, and Raven shows that it can; while
+ * it is `null` the window refuses them. It is called only for the drop itself.
  */
 @Composable
 public fun Window(
@@ -102,6 +113,7 @@ public fun Window(
     minimumSize: DpSize? = null,
     background: Color = Color.Unspecified,
     opacity: Float = 1f,
+    onExternalDrop: ((DragData) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val host = LocalRavenHost.current
@@ -111,7 +123,7 @@ public fun Window(
     // Read here, the state recomposes the Window when the app or the user changes it.
     val settings = WindowSettings(
         title, WindowFlags(customHeader, transparent, undecorated, resizable), minimumSize, background, opacity,
-        state.size, state.position, state.placement, state.isMinimized,
+        onExternalDrop, state.size, state.position, state.placement, state.isMinimized,
     )
     val opened = remember { OpenedWindow() }
     DisposableEffect(Unit) {
@@ -133,6 +145,7 @@ internal data class WindowSettings(
     val minimumSize: DpSize?,
     val background: Color,
     val opacity: Float,
+    val onExternalDrop: ((DragData) -> Unit)?,
     val size: DpSize,
     val position: WindowPosition,
     val placement: WindowPlacement,
@@ -219,6 +232,7 @@ internal class RavenWindow(
     private var background = Color.Unspecified
     private var opacity = 1f
     private var opacityRefused = false
+    private var onExternalDrop: ((DragData) -> Unit)? = null
 
     // What Raven has: a state that differs from these was written by the app.
     private var ravenSize = readSize()
@@ -278,6 +292,15 @@ internal class RavenWindow(
                 warn("Window: the window system refused opacity $opacity, so the window stays opaque")
             }
         }
+        // Raven takes drops on a window only while it has a callback.
+        if ((settings.onExternalDrop == null) != (onExternalDrop == null)) {
+            if (settings.onExternalDrop != null) {
+                Rwindow_set_drop_callback(window, onDrop, selfRef.asCPointer())
+            } else {
+                Rwindow_set_drop_callback(window, null, null)
+            }
+        }
+        onExternalDrop = settings.onExternalDrop
         updateState(settings)
     }
 
@@ -353,6 +376,30 @@ internal class RavenWindow(
             onCloseRequest()
         } catch (t: Throwable) {
             host.reportError(t)
+        }
+    }
+
+    /**
+     * Gives the handler what was dropped, copied, as Raven's strings last only for the callback.
+     * Returns whether the window takes it: whatever comes to a window with a handler, but a drop
+     * that carries nothing.
+     */
+    fun onDropped(event: RDropEvent): Boolean {
+        val handler = onExternalDrop ?: return false
+        if (event.phase != R_DROP_DROPPED) return true
+        return try {
+            val paths = List(event.path_count) { event.paths!![it]!!.toKString() }
+            val text = event.text?.toKString()
+            val data = when {
+                paths.isNotEmpty() -> DragData.FilesList(paths)
+                text != null -> DragData.Text(text)
+                else -> return false
+            }
+            handler(data)
+            true
+        } catch (t: Throwable) {
+            host.reportError(t)
+            false
         }
     }
 
@@ -444,6 +491,10 @@ private fun RBackdrop.toBackdrop(): Backdrop = when (this) {
 private val onClose = staticCFunction { _: Rid, userData: COpaquePointer? ->
     userData!!.asStableRef<RavenWindow>().get().requestClose()
     R_FALSE
+}
+
+private val onDrop = staticCFunction { _: Rid, event: CPointer<RDropEvent>?, userData: COpaquePointer? ->
+    if (userData!!.asStableRef<RavenWindow>().get().onDropped(event!!.pointed)) R_TRUE else R_FALSE
 }
 
 private val onResize = staticCFunction { _: Rid, width: Int, height: Int, userData: COpaquePointer? ->

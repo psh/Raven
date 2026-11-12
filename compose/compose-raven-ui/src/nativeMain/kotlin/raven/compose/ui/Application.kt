@@ -57,6 +57,7 @@ public fun singleWindowApplication(
     minimumSize: DpSize? = null,
     background: Color = Color.Unspecified,
     opacity: Float = 1f,
+    onExternalDrop: ((DragData) -> Unit)? = null,
     followSystemAccessibility: Boolean = true,
     liveReload: Boolean = Platform.isDebugBinary,
     content: @Composable () -> Unit,
@@ -73,6 +74,7 @@ public fun singleWindowApplication(
             minimumSize = minimumSize,
             background = background,
             opacity = opacity,
+            onExternalDrop = onExternalDrop,
         ) {
             SingleWindowContent(content)
         }

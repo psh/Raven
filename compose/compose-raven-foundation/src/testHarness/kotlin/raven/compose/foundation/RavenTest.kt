@@ -7,9 +7,11 @@ import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.FloatVar
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.cstr
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.toCValues
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
 import raven.cinterop.RError
@@ -52,6 +54,7 @@ import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
 import raven.cinterop.Rwindow_close_popups
 import raven.cinterop.Rwindow_inject_text
+import raven.cinterop.Rwindow_inject_drop
 import raven.cinterop.Rwidget_is_focused
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rmemory_get_stats
@@ -116,6 +119,20 @@ internal class RavenTestScope(val host: RavenHost) {
     /** Draws one frame. Throws what ended the host, if a failure asked Raven to quit. */
     fun frame() {
         if (!host.frame()) throw host.error ?: AssertionError("Raven quit")
+    }
+
+    /**
+     * Drops [paths] and [text] on the window from another application, at its centre, as the user
+     * would, and returns whether the window took them: see `Window(onExternalDrop)`.
+     */
+    fun performExternalDrop(paths: List<String> = emptyList(), text: String? = null): Boolean {
+        waitForIdle()
+        val root = host.windowRoots.singleOrNull() ?: fail("${host.windowRoots.size} windows, expected one")
+        val rect = widgetRect(root.widget)
+        return memScoped {
+            val cPaths = paths.map { it.cstr.ptr }.toCValues()
+            Rwindow_inject_drop(Rwidget_get_window(root.widget), rect.x + rect.width / 2, rect.y + rect.height / 2, cPaths, paths.size, text)
+        } == R_TRUE
     }
 
     /** The Text or the menu item showing [text], or a part of it with [substring]. */

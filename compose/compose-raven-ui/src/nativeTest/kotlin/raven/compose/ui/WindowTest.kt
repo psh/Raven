@@ -5,8 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.cstr
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.toCValues
 import kotlinx.cinterop.value
 import raven.cinterop.RBackdrop
 import raven.cinterop.R_BACKDROP_BLUR
@@ -27,6 +29,8 @@ import raven.cinterop.Rwindow_get_opacity
 import raven.cinterop.Rwindow_get_position
 import raven.cinterop.Rwindow_get_size
 import raven.cinterop.Rwindow_get_title
+import raven.cinterop.Rwindow_inject_drag
+import raven.cinterop.Rwindow_inject_drop
 import raven.cinterop.Rwindow_is_maximized
 import raven.cinterop.Rwindow_is_minimized
 import raven.cinterop.Rwindow_maximize
@@ -41,6 +45,7 @@ import raven.compose.ui.unit.dp
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class WindowTest {
     @Test
@@ -278,6 +283,74 @@ class WindowTest {
     }
 
     @Test
+    fun aDroppedFileListReachesTheHandler() {
+        val dropped = mutableListOf<DragData>()
+        withHost({ Window(onCloseRequest = {}, onExternalDrop = { dropped += it }) {} }) {
+            val window = windows.single().window
+            assertEquals(R_TRUE, Rwindow_inject_drag(window, 10f, 10f, R_TRUE), "accepted while dragged over")
+            assertEquals(emptyList(), dropped, "not called before the drop")
+
+            assertEquals(R_TRUE, drop(window, paths = listOf("/tmp/a.txt", "/tmp/b é.txt")))
+        }
+        assertEquals(listOf<DragData>(DragData.FilesList(listOf("/tmp/a.txt", "/tmp/b é.txt"))), dropped)
+    }
+
+    @Test
+    fun aDroppedTextReachesTheHandler() {
+        val dropped = mutableListOf<DragData>()
+        withHost({ Window(onCloseRequest = {}, onExternalDrop = { dropped += it }) {} }) {
+            assertEquals(R_TRUE, drop(windows.single().window, text = "Hello"))
+        }
+        assertEquals(listOf<DragData>(DragData.Text("Hello")), dropped)
+    }
+
+    @Test
+    fun aWindowWithoutAHandlerRefusesADrop() {
+        withHost({ Window(onCloseRequest = {}) {} }) {
+            val window = windows.single().window
+            assertEquals(R_FALSE, Rwindow_inject_drag(window, 10f, 10f, R_TRUE))
+            assertEquals(R_FALSE, drop(window, paths = listOf("/tmp/a.txt")))
+        }
+    }
+
+    @Test
+    fun aChangedHandlerTakesEffectAtOnce() {
+        val dropped = mutableListOf<String>()
+        var onExternalDrop by mutableStateOf<((DragData) -> Unit)?>(null)
+        withHost({ Window(onCloseRequest = {}, onExternalDrop = onExternalDrop) {} }) {
+            val window = windows.single().window
+            assertEquals(R_FALSE, drop(window, text = "refused"))
+
+            onExternalDrop = { dropped += "first $it" }
+            runUntilIdle()
+            assertEquals(R_TRUE, drop(window, text = "one"))
+
+            onExternalDrop = { dropped += "second $it" }
+            runUntilIdle()
+            assertEquals(R_TRUE, drop(window, text = "two"))
+
+            onExternalDrop = null
+            runUntilIdle()
+            assertEquals(R_FALSE, drop(window, text = "refused"))
+        }
+        assertEquals(listOf("first Text(text=one)", "second Text(text=two)"), dropped)
+    }
+
+    @Test
+    fun anExceptionInOnExternalDropReachesTheHost() = withRavenChecks {
+        val host = RavenHost(headless = true)
+        try {
+            host.start { Window(onCloseRequest = {}, onExternalDrop = { error("boom") }) {} }
+            host.runUntilIdle()
+            assertNull(host.error)
+            drop(host.windows.single().window, text = "Hello")
+        } finally {
+            host.close()
+        }
+        assertEquals("boom", host.error?.message)
+    }
+
+    @Test
     fun theTitleFollowsTheComposition() {
         var title by mutableStateOf("One")
         withHost({ Window(onCloseRequest = {}, title = title) {} }) {
@@ -336,6 +409,11 @@ private fun collectWarnings(block: () -> Unit): List<String> {
         layoutWarningSink = sink
     }
     return warnings
+}
+
+/** Drops [paths] and [text] from another application at the window's top left; returns whether it took them. */
+private fun drop(window: Rid, paths: List<String> = emptyList(), text: String? = null): Int = memScoped {
+    Rwindow_inject_drop(window, 10f, 10f, paths.map { it.cstr.ptr }.toCValues(), paths.size, text)
 }
 
 private fun sizeOf(window: Rid): Pair<Int, Int> = memScoped {
