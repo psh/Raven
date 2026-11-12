@@ -1,17 +1,17 @@
 ---
-status: open
+status: wont-fix
 ---
 
 # Window transparency, opacity and backdrop
 
 The window flags, opacity, backdrop and transparency check the `overlay` port needs. Spec:
-[4. Application host](../spec.md#4-application-host),
-[8: glass and BackgroundBlur](../spec.md#phase-2-glass-and-backgroundblur).
+[4. Application host](../../spec.md#4-application-host),
+[8: glass and BackgroundBlur](../../spec.md#phase-2-glass-and-backgroundblur).
 
 Opacity, the return value and `isTransparent` were decided in
-[Window extras the samples use](archive/0076-window-extras-the-samples-use.md).
+[Window extras the samples use](0076-window-extras-the-samples-use.md).
 
-**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md).
+**Depends on:** [Color, Shape and BorderStroke](../0060-color-shape-and-borderstroke.md).
 
 ## Deliverables
 
@@ -30,3 +30,8 @@ Opacity, the return value and `isTransparent` were decided in
 - [ ] `LocalWindowInfo.current.isTransparent` from `Rwindow_get_native_handle`'s `transparent`.
 - [ ] Tests (headless): the flags reach `Rwindow_create`, the backdrop follows the composition and its
       return value follows Raven's, opacity reaches the window, and the warnings are logged. The look itself is checked by running `samples/overlay`.
+
+## Resolution
+
+Not done as its own ticket: merged into [Window: WindowState and its parameters](../0086-window-windowstate-and-its-parameters.md)
+by [ADR 0001](../../adr/0001-phase-split-after-the-phase-2-sample-gaps.md), so the single `Window` is finished in one place.

@@ -4,12 +4,12 @@ status: closed
 
 # Linux build and libraven
 
-Make the build from [Gradle build and libraven](archive/0041-gradle-build-and-libraven.md) work on
+Make the build from [Gradle build and libraven](0041-gradle-build-and-libraven.md) work on
 the `linuxX64` target: build `libraven.a`, link it through `raven.def`, and pass the headless
 tests on a Linux (x64) host. That ticket was done and checked on macOS only. Spec:
 [2. Modules and build](../../spec.md#2-modules-and-build).
 
-**Depends on:** [Gradle build and libraven](archive/0041-gradle-build-and-libraven.md) (closed).
+**Depends on:** [Gradle build and libraven](0041-gradle-build-and-libraven.md) (closed).
 
 ## Deliverables
 

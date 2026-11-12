@@ -2,19 +2,18 @@
 status: open
 ---
 
-# HeaderBar and Window(customHeader)
+# HeaderBar
 
-A title bar that is part of the window's content, for the `notepad` port. Spec:
+A title bar that is part of the window's content, for the `notepad` port. The
+`customHeader` window flag it needs moved to
+[Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md). Spec:
 [8: menus and the header bar](../spec.md#phase-2-menus-and-the-header-bar),
 [4. Application host](../spec.md#4-application-host).
 
-**Depends on:** nothing open.
+**Depends on:** [Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md) (`customHeader`).
 
 ## Deliverables
 
-- [ ] `Window(customHeader = true)` creates the window with `R_WINDOW_CUSTOM_HEADER`, and so does
-      `singleWindowApplication(customHeader = true)`. `Window` keeps its phase 1 `width` and
-      `height` until phase 3's `WindowState`.
 - [ ] `HeaderBar(modifier, title, buttons: Set<WindowButton> = WindowButton.all()) { }` over
       HeaderBar, with `WindowButton` and `Rheader_bar_set_buttons`.
 - [ ] In `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right.

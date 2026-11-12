@@ -3,7 +3,7 @@
 **Status: phases 1, 2 and 3 complete.** Every decision below is settled. Both wayfinder maps,
 [compose-raven spec](issues/0001-compose-raven-spec.md) and
 [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), are closed. What remains
-is fog, listed on the phase 3 map and in [`roadmap.md`](roadmap.md), for a future phase 4 map. The vocabulary is in
+is fog, listed on the phase 3 map and in [`roadmap.md`](roadmap.md), for a future phase 5 map. The vocabulary is in
 [`compose/GLOSSARY.md`](../GLOSSARY.md).
 
 ## 1. Overview
@@ -45,14 +45,14 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
 | `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
 | `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `raven-native` with `implementation` |
-| `compose-raven-bom` (phase 3) | Version constraints for every module and `androidx.compose.runtime` | none |
+| `compose-raven-bom` (phase 4) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
-| `compose-raven-xml` (phase 3) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
-| `tools/raven-xml2compose` (phase 3) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
-| `compose-raven-test` (phase 3) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
+| `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
+| `tools/raven-xml2compose` (phase 4) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
+| `compose-raven-test` (phase 4) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
-| `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 3 |
+| `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 4 |
 
 The core and the composables are separate modules from the start: almost all of the complexity is
 in `compose-raven-ui`, and the composables stay thin declarations over its binding layer. Apps
@@ -62,7 +62,7 @@ depend on `compose-raven-foundation`, which brings `compose-raven-ui` with it.
   `org.jetbrains.kotlin.plugin.compose`. The dependency is `androidx.compose.runtime:runtime:1.12.1`
   from Google Maven; the JetBrains coordinates only redirect to it. Neither Compose UI nor the
   `org.jetbrains.compose` plugin is used.
-- **Targets**: `macosArm64` and `linuxX64`, plus `mingwX64` from phase 3. Each target builds and is
+- **Targets**: `macosArm64` and `linuxX64`, plus `mingwX64` from phase 4. Each target builds and is
   tested on its own host, with no cross-compilation. On Windows, libraven is built with Raven's
   `mingw` CMake preset under MSYS2 MINGW64. The implementation first verifies that it links with
   Kotlin/Native's `mingwX64` toolchain, and the fallback is Kotlin/Native's own clang.
@@ -77,10 +77,10 @@ depend on `compose-raven-foundation`, which brings `compose-raven-ui` with it.
   `RAVEN_LIBRARIES` in `CMakeLists.txt`.
 - **MoltenVK** is needed at run time only. Raven loads Vulkan dynamically, so nothing is linked.
   On macOS, users install it with `brew install molten-vk` or the Vulkan SDK.
-- **Publishing** (phase 3): every library module is published to Maven Central under the group
+- **Publishing** (phase 4): every library module is published to Maven Central under the group
   `io.github.psh`, at one shared version that follows its own semantic versioning (from 0.1.0).
   - Each target publishes from its own host: the macOS job publishes the root and metadata
-    modules plus `macosarm64`, the Linux job publishes `linuxx64`, and the Windows job (phase 3)
+    modules plus `macosarm64`, the Linux job publishes `linuxx64`, and the Windows job (phase 4)
     publishes `mingwx64`. A `compose-vX.Y.Z` tag triggers all of them, signed in CI.
   - Each release records the bundled Raven (fork commit and version, for example
     `0.2.1-psh.3`).
@@ -138,8 +138,9 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   false, so text scale, contrast and reduced motion follow the OS.
   - **In phase 1**, `application`, `ApplicationScope.exitApplication()` and `Window(onCloseRequest,
     title, width, height) { }` are already public, so `samples/hello`'s Quit button can end the app.
-    The rest of `Window`'s parameters, `WindowState` and windows that come and go arrive with
-    phase 3.
+    Phase 2 completes the single `Window`: `WindowState` and every parameter below but `icon`,
+    `island`, `onKeyEvent` and `backKeys`, which arrive with phase 3 as windows that come and go,
+    `Dialog` and the lifecycle owners do.
 - **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, minimumSize: DpSize? = null, background: Color = Color.Unspecified, opacity: Float = 1f, onExternalDrop: ((DragData) -> Unit)? = null, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
@@ -154,15 +155,15 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     names of Compose Desktop's `onExternalDrag`. A non-null handler accepts drops (Raven shows its
     "can drop here" cursor), a null one refuses them, and the handler runs only on the drop, not on
     enter, move or leave. The harness has `performExternalDrop(paths, text)` over
-    `Rwindow_inject_drop` (phase 2). Drop targets on widgets and drags inside the app are phase 4,
+    `Rwindow_inject_drop` (phase 2). Drop targets on widgets and drags inside the app are phase 5,
     with the gestures.
   - **`LocalWindowInfo.current.isTransparent`** is true when the window system really gave a
     see-through window (`RNativeWindow.transparent`), which `transparent = true` asks for but
     doesn't guarantee (phase 2). The raw native handle stays with phase 3's `NativeViewport`.
   - **`minimumSize`** uses `Rwindow_set_min_size`; `null` keeps Raven's default, and a change calls
     it again (phase 2, on `singleWindowApplication` too).
-  - **`WindowState`** holds `size: DpSize` (as Compose Desktop's, replacing phase 1's `width` and
-    `height`), `position`, `placement` (Floating or Maximized) and
+  - **`WindowState`** (phase 2) holds `size: DpSize` (as Compose Desktop's, replacing phase 1's
+    `width` and `height`), `position`, `placement` (Floating or Maximized) and
     `isMinimized`. Writes call Raven's setters, and Raven's resize and move callbacks write back.
   - **Composition**: a window emits no node into its parent. It has its own composition, with its
     own Overlay root and Applier, under the one Recomposer, linked with
@@ -700,7 +701,8 @@ Added for the `overlay` and `glass` ports:
   and inside a window it uses `Rwidget_set_font` on its subtree. The starting `LocalTextStyle` comes from the
   theme's font size metric.
 - **`MarkdownText(markdown, modifier, style, onLinkClick = null)`** uses `Rlabel_set_markdown` and
-  `Rlabel_set_link_callback`.
+  `Rlabel_set_link_callback`. It arrives early, in phase 2, for `samples/themes`; until phase 3's
+  `TextStyle`, it takes no `style`.
 
 ### Custom drawing, viewports and effects (phase 3)
 
@@ -786,7 +788,7 @@ Added for the `overlay` and `glass` ports:
 
 - **`Modifier.appearTransition(AppearTransition.Fade | Pop | Zoom | FlyUp | FlyDown | FlyLeft |
   FlyRight | Drop | SlideLeft | SlideRight, delay)`** plays Raven's transition each time the
-  widget appears.
+  widget appears. It arrives early, in phase 2, for `samples/components`.
 - **`AnimatedVisibility(visible, enter, exit) { }`**:
   - Enter specs map to the nearest Raven transition: `fadeIn` is Fade, `scaleIn` is Pop or
     Zoom, and `slideIn*` are the Fly transitions. Animation specs are ignored.
@@ -916,7 +918,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   - `RavenHost.isIdle()` checks for no queued dispatch, no pending snapshot apply, and no
     `Recomposer.hasPendingWork` while the composition frame clock is paused for the check, since
     pausing hides its awaiters.
-  - Until phase 3, the harness is internal test code: it lives in foundation's
+  - Until phase 4, the harness is internal test code: it lives in foundation's
     `src/testHarness/kotlin`, which foundation's tests and the samples' tests both compile. `RavenHost` and the
     single-window `Window` it hosts, and the binding layer foundation's composables are written
     on, are public in `compose-raven-ui` behind `@InternalComposeRavenApi`. Foundation opts in
@@ -951,13 +953,13 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 - **Pure logic** gets plain Kotlin unit tests, with no Raven: Modifier folding, move-index
   adjustment and mirror-list bookkeeping. There are no screenshot tests, because the null renderer
   draws nothing.
-- **CI**: a compose job in `.github/workflows/build.yml` on a macOS, a Linux and (from phase 3) a
+- **CI**: a compose job in `.github/workflows/build.yml` on a macOS, a Linux and (from phase 4) a
   Windows runner with MSYS2, running `./gradlew -p compose allTests`.
 - **What headless tests can't cover** gets a short manual checklist, run before each release on a
   real display: native, OpenGL and Metal viewports, `VulkanViewport`, dock panel tearing, the
   island notch, `native = true` dialogs, window transparency and backdrops, and IME input.
 
-### Public test module (phase 3)
+### Public test module (phase 4)
 
 The harness moves into `compose-raven-test`, which both apps and foundation's own tests use. What
 it needs from foundation is public behind `@InternalComposeRavenApi` (`@RequiresOptIn`).
@@ -1007,7 +1009,7 @@ This sample translates Raven XML into compose-raven source.
   - A `Text` below shows the warnings.
   - Translation reruns on every change.
 - **Parsing**: Raven's own parser, through `raven-native`'s `raven.cinterop`, which already
-  binds `raven_xml.h` (in `compose-raven-xml` from phase 3, in the sample before that, as an
+  binds `raven_xml.h` (in `compose-raven-xml` from phase 4, in the sample before that, as an
   `implementation` dependency, so no Raven type is in its API). A single adapter,
   `parseRavenXml(text)`, calls `Rxml_document_parse` (UI thread, Raven running) and copies the
   result into a Kotlin `XmlElement(tag, attributes, text, line, children)` tree, then destroys the
@@ -1135,7 +1137,7 @@ This sample translates Raven XML into compose-raven source.
     compiles them against foundation. The translator binary is an input, so a changed translator
     always translates again.
 
-### `compose-raven-xml` and `raven-xml2compose` (phase 3)
+### `compose-raven-xml` and `raven-xml2compose` (phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
 sample depends on it. The command-line tool `raven-xml2compose` is built on the module and starts
@@ -1291,6 +1293,7 @@ What gets built and in what order is in [`roadmap.md`](roadmap.md):
 - the fork changes
 - the phase 1 and phase 2 milestones
 - the phase 3 samples and the decisions each one needs
+- phase 4, the release: the public test module, the translator tool, publishing and Windows
 - what waits on fog
 
 ## 14. Out of scope

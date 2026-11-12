@@ -10,7 +10,7 @@ side. Spec: [10. Samples](../spec.md#10-samples),
 
 **Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
 [Modifier.material and BackgroundBlur](0067-material-and-backgroundblur.md),
-[Window transparency, opacity and backdrop](0068-window-transparency-opacity-and-backdrop.md).
+[Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md).
 
 ## Deliverables
 

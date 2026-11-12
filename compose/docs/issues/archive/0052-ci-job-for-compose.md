@@ -7,7 +7,7 @@ status: closed
 Add a compose job to `.github/workflows/build.yml` on a macOS and a Linux runner, running
 `./gradlew -p compose allTests`. Spec: [9. Testing](../../spec.md#9-testing).
 
-**Depends on:** [RavenHost and singleWindowApplication](archive/0044-ravenhost-and-singlewindowapplication.md),
+**Depends on:** [RavenHost and singleWindowApplication](0044-ravenhost-and-singlewindowapplication.md),
 so there are headless tests worth running.
 
 ## Deliverables

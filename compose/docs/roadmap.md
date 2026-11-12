@@ -6,7 +6,7 @@ links to the spec sections that define it. Phases 1 to 3 are fully designed. All
 maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
 settled the phase 2 samples), and the remaining fog, listed on
 [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
-for a phase 4 map.
+for a phase 5 map. The split between phases 2, 3 and 4 follows [ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
 
 ## Milestones at a glance
 
@@ -15,9 +15,10 @@ for a phase 4 map.
 | [0. Verify first](#0-verify-first) | answers to the open facts the spec depends on | none |
 | [1. Raven fork changes](#1-raven-fork-changes) | the changes compose-raven needs in `psh/Raven` | none |
 | [2. Phase 1](#2-phase-1) | the library (`compose-raven-ui` with the binding layer, then `compose-raven-foundation`), the host, the phase 1 vocabulary, tests and CI | `hello`, `xml-translator` |
-| [3. Phase 2](#3-phase-2) | menus, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass | `notepad`, `components`, `themes`, `overlay` |
-| [4. Phase 3](#4-phase-3) | windows, input, accessibility, fonts, drawing and graphics modules, lists, tabs and grids, images, transitions, docking, toolbar, test module, translator tool, publishing, Windows | `editor`, `workspace`, `music`, `animations`, `glass` |
-| [Later](#later) | waits on fog | `effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser` |
+| [3. Phase 2](#3-phase-2) | the finished single `Window` (`WindowState`), menus and the header bar, native dialogs, the CodeEditor extras, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass, `MarkdownText`, `appearTransition` | `notepad`, `components`, `themes`, `overlay` |
+| [4. Phase 3](#4-phase-3) | the app vocabulary: windows that come and go, dialogs, input, accessibility, fonts, drawing and graphics modules, lists, tabs and grids, images, transitions, docking, toolbar, navigation | `editor`, `workspace`, `music`, `animations`, `glass` |
+| [5. Phase 4](#5-phase-4-release) | the release: CI and the Linux build finished, the public test module, the translator tool, packaging and publishing, the Windows target | none new |
+| [Later](#later) | phase 5, waiting on fog | `effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser` |
 
 Not ported: `memory` (it demonstrates the C-level allocator), `languages` and `bevy_editor` (they
 show the other bindings and Bevy, not Raven UIs).
@@ -35,7 +36,7 @@ a Windows host or a real window:
 | A `Separator` inserted into a Menu acts as a menu separator | needed before the menus of phase 2 | [8](spec.md#8-component-vocabulary) | **Failed**, worked around: a MenuItem with `Separator = true` |
 | Raven derives hover and pressed shades from an overridden accent or control colour | compose-raven sets lighter and darker shades itself | [8](spec.md#8-component-vocabulary) | **Failed**: compose-raven sets them |
 | Compose can recompose safely inside the nested frames that Raven's blocking dialogs run (phase 3) | `native = true` dialogs are dropped (the default ones are already built on `Dialog` and FileBrowser) | [4](spec.md#4-application-host) | **Passed** (2026-11-11): recomposition, applies and controlled values stay correct and nothing re-enters the Applier. Calls waiting together return in reverse order, and Windows' own modal loop waits for a Windows host |
-| A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 3) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) | Waits for a Windows host |
+| A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain (phase 4) | build libraven with Kotlin/Native's own clang and sysroot | [2](spec.md#2-modules-and-build) | Waits for a Windows host |
 | Raven applies the accessibility text scale to explicit text sizes (`Rlabel_set_text_size`) too (phase 3) | compose-raven multiplies explicit sizes by the scale itself | [8](spec.md#8-component-vocabulary) | **Passed** |
 | Writing text back to a TextInput during IME composition (preedit) doesn't cancel the composition, and what Raven reports as the text during preedit (phase 1) | `TextField` defers write-backs while a composition is active, if Raven exposes that, or a fork change adds it | [7](spec.md#7-events-and-state) | **Passed**: Raven has no preedit on any backend and reports only committed text (checked in the platform code, 2026-11-11) |
 | Focusing the root clears focus in Raven, for `clearFocus()` (phase 3) | add "focus nothing" to the fork | [7](spec.md#7-events-and-state) | **Failed**: fork change 5, `Rwindow_clear_focus` (the flag toggle works until then) |
@@ -70,7 +71,8 @@ change once upstream has it.
 Broken into tickets, in dependency order. Each ticket's **Depends on** line names its blockers.
 **Done on macOS** but for two rows: CI ([CI job for compose](issues/archive/0052-ci-job-for-compose.md)) and
 the Linux build ([Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md)). Both are
-closed unfinished for now, to be revisited; Phase 1 is done when they are finished.
+closed unfinished for now and finish in [phase 4](#5-phase-4-release), the release; until then,
+every phase is checked on macOS only.
 
 | Part | Spec | Ticket |
 |---|---|---|
@@ -97,15 +99,17 @@ settled every one; nothing is left open before implementation.
 | Family | Spec | Needed by | Ticket |
 |---|---|---|---|
 | `Color`, `Shape`, `BorderStroke`, `Text(color)` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | every family below | [Color, Shape and BorderStroke](issues/0060-color-shape-and-borderstroke.md) |
-| Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` | [Menus and KeyShortcut](issues/0061-menus-and-keyshortcut.md), [HeaderBar and Window(customHeader)](issues/0062-headerbar-and-custom-header.md) |
+| The single `Window` finished: `WindowState`, `DpSize`, `minimumSize`, the flags, `background`, `opacity`, `WindowBackdrop`, `LocalWindowInfo.isTransparent` | [4](spec.md#4-application-host), [6](spec.md#6-layout-and-modifiers) | every phase 2 sample | [Window: WindowState and its parameters](issues/0086-window-windowstate-and-its-parameters.md) |
+| Menus and the header bar (`KeyShortcut`, `HeaderBar`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar) | `notepad` | [Menus and KeyShortcut](issues/0061-menus-and-keyshortcut.md), [HeaderBar](issues/0062-headerbar.md) |
 | Native message and file dialogs (`native = true` only) | [4](spec.md#4-application-host) | `notepad` | [Native message and file dialogs](issues/0080-native-message-and-file-dialogs.md) |
 | CodeEditor's editing extras: `CodeEditorState`, word wrap, completions, markers, registered languages | [8: CodeEditor](spec.md#phase-2-codeeditors-editing-extras) | `notepad` | [CodeEditorState, completions, markers and languages](issues/0081-codeeditorstate-completions-markers-and-languages.md) |
 | Files and text dropped on a window (`Window(onExternalDrop)`) | [4](spec.md#4-application-host) | `notepad` | [Files and text dropped on a window](issues/0082-files-and-text-dropped-on-a-window.md) |
-| `Window(minimumSize)` and `DpSize` | [4](spec.md#4-application-host), [6](spec.md#6-layout-and-modifiers) | `notepad`, `components` | [Window minimum size and DpSize](issues/0085-window-minimum-size-and-dpsize.md) |
 | ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/0063-combobox-spinbox-and-codeeditorlanguages.md) |
 | Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/0064-surface-flowrow-and-expander.md) |
 | Theming: `RavenTheme` (with `accent`), theme files, `saveTheme`, `themeNames`, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
-| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `opacity`, `WindowBackdrop`, `LocalWindowInfo.isTransparent` | [8: glass](spec.md#phase-2-glass-and-backgroundblur), [4](spec.md#4-application-host) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/0067-material-and-backgroundblur.md), [Window transparency, opacity and backdrop](issues/0068-window-transparency-opacity-and-backdrop.md) |
+| Glass: `Modifier.material`, `BackgroundBlur` | [8: glass](spec.md#phase-2-glass-and-backgroundblur) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/0067-material-and-backgroundblur.md) |
+| `MarkdownText` (early from phase 3, without `style`) | [8: fonts](spec.md#fonts-and-text-styling-phase-3) | `themes` | [MarkdownText](issues/0087-markdowntext.md) |
+| `Modifier.appearTransition` (early from phase 3) | [8: transitions](spec.md#transitions-and-island-phase-3) | `components` | [Modifier.appearTransition](issues/0088-modifier-appeartransition.md) |
 | Samples | [10](spec.md#10-samples) | | [notepad](issues/0069-samples-notepad.md), [components](issues/0070-samples-components.md), [themes](issues/0071-samples-themes.md), [overlay](issues/0072-samples-overlay.md) |
 
 ## 4. Phase 3
@@ -126,11 +130,10 @@ Phase 3 also completes what phase 2 builds as a foundation:
 - The default message and file dialogs, on `Dialog` and `FileBrowser`, and headless tests of
   dialog flows (`samples/notepad` included); phase 2 builds only `native = true`
   ([Notepad's file dialogs and discard prompt](issues/archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
-- `samples/themes`' `ListView` and its Markdown labels, with `ListView` and `MarkdownText`
+- `samples/themes`' `ListView`, with the lists
   ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
-- `samples/components`' card transitions (`Appear="Pop"`/`"Drop"`, `AppearDelay`), with
-  `Modifier.appearTransition`
-  ([The components sample's source pane](issues/archive/0078-the-components-samples-source-pane.md)).
+- `MarkdownText`'s `style` and the rest of transitions (`AnimatedVisibility`, `animate*AsState`,
+  `Island`); phase 2 brings `MarkdownText` and `Modifier.appearTransition` early ([ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md)).
 
 Decided for phase 3 so far (in the spec):
 
@@ -146,15 +149,6 @@ Decided for phase 3 so far (in the spec):
   `TextStyle`/`LocalTextStyle`, `RavenTheme(fontFamily)`, `MarkdownText`
 - [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md): `Canvas`, `Viewport`,
   `NativeViewport`, the `compose-raven-vulkan` and `compose-raven-opengl` modules, shader effects
-- [Public test module for apps](issues/archive/0029-app-testing-module.md): `compose-raven-test` with the one
-  harness, Compose-style finders, actions and assertions, `mainClock`, leak checks
-- [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
-  the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
-- [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md): Maven Central under `io.github.psh`,
-  one shared version with its own semantic versioning, a `compose-raven-bom`, each target published from its
-  own host by CI
-- [Windows (mingwX64) target](issues/archive/0032-windows-target.md): libraven through Raven's `mingw` preset,
-  Windows linker options kept in sync with CMake, WGL in the OpenGL module, a third CI and publishing job
 - [Lists and trees](issues/archive/0033-lists-and-trees.md): `LazyColumn`/`LazyRow` (composing every item for
   now), `ListView` and `TreeView` over Raven's virtualised widgets
 - [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md): controlled `TabView` with `Tab`
@@ -172,9 +166,30 @@ Decided for phase 3 so far (in the spec):
 - [Typography in RavenTheme](issues/archive/0040-typography-in-raventheme.md): eight roles sized by Raven's
   Markdown factors, `RavenTheme.typography`, component defaults, custom typographies
 
+## 5. Phase 4: release
+
+What makes compose-raven usable outside this repository, split from phase 3 by [ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
+It needs none of phase 3's vocabulary, so it can start as soon as phase 2 is done, beside phase 3.
+
+- Phase 1's unfinished CI and Linux build: [CI job for compose](issues/archive/0052-ci-job-for-compose.md)
+  and [Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md), both disabled or
+  deferred until a fuller codebase runs.
+
+Decided for phase 4 (in the spec):
+
+- [Public test module for apps](issues/archive/0029-app-testing-module.md): `compose-raven-test` with the one
+  harness, Compose-style finders, actions and assertions, `mainClock`, leak checks
+- [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
+  the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
+- [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md): Maven Central under `io.github.psh`,
+  one shared version with its own semantic versioning, a `compose-raven-bom`, each target published from its
+  own host by CI
+- [Windows (mingwX64) target](issues/archive/0032-windows-target.md): libraven through Raven's `mingw` preset,
+  Windows linker options kept in sync with CMake, WGL in the OpenGL module, a third CI and publishing job
+
 ## Later
 
-**Phase 4 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
+**Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
 virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,
 multi-window tests, build-time XML translation, app bundling, gestures (with drop targets on widgets and drags inside the app) and popups.

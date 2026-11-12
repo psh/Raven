@@ -38,7 +38,7 @@ All of them come into phase 2, so `overlay` has no gaps and `notepad` none from 
 - **The command line** is no gap: the port's `main(args)` passes the path to its composable.
 
 Opacity, the return value and `isTransparent` joined the renamed
-[Window transparency, opacity and backdrop](../0068-window-transparency-opacity-and-backdrop.md);
+[Window transparency, opacity and backdrop](0068-window-transparency-opacity-and-backdrop.md);
 drops are a new ticket, [Files and text dropped on a window](../0082-files-and-text-dropped-on-a-window.md).
 Spec section 4 has them, section 12 the two differences.
 

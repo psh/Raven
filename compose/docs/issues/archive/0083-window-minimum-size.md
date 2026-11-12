@@ -23,7 +23,7 @@ What is its compose-raven shape (a `Window` parameter like Compose Desktop's
 
 Phase 2, as a `Window` parameter, since compose-raven has no AWT window whose `minimumSize` an app
 could set as in Compose Desktop. New ticket:
-[Window minimum size and DpSize](../0085-window-minimum-size-and-dpsize.md).
+[Window minimum size and DpSize](0085-window-minimum-size-and-dpsize.md).
 
 - **`Window(minimumSize: DpSize? = null)`**, on `singleWindowApplication` too, through
   `Rwindow_set_min_size`; `null` keeps Raven's default, and a change calls it again.
