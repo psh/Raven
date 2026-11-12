@@ -530,7 +530,7 @@ Added for the `notepad` port:
 
 | Composable | Raven widget | Notes |
 |---|---|---|
-| `MenuBar { }` | MenuBar | a layout composable; `MenuBarScope` allows only `Menu` |
+| `MenuBar(modifier, native = false) { }` | MenuBar | a layout composable; `MenuBarScope` allows only `Menu`. `native = true` lets Raven show it in the system menu bar on macOS (`Rmenu_bar_set_native`), where it takes no room in the window; elsewhere it is drawn in the window either way. The default keeps it in the window everywhere |
 | `Menu(text) { }` | Menu | `MenuScope` allows `Item`, `CheckboxItem`, `Separator` and sub-`Menu` |
 | `Item(text, onClick, shortcut: KeyShortcut? = null, enabled = true)` | MenuItem | no children |
 | `CheckboxItem(text, checked, onCheckedChange, shortcut, enabled)` | MenuItem, checkable | controlled |
@@ -1164,8 +1164,8 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 
 ## 11. Required Raven changes
 
-These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5
-and 6 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
+These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
+6 and 7 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -1206,6 +1206,17 @@ for change 6, which only a real macOS window reaches.
    ended the app. Modifier keys are mapped by key code, so it now passes no characters. Found
    with [samples/hello](issues/archive/0051-samples-hello.md), and checked there by posting Cmd
    presses to the running app.
+7. **`Rborder_get_outline`, `Rborder_get_corner_radius` and `Rborder_get_shadow`** (required for
+   tests, phase 2): a Border had setters for its outline, corner radii and shadow but no getters,
+   so `Surface`'s tests couldn't read them back. Any pointer may be NULL; on a widget that isn't a
+   Border they report an error and read zeros; the corner radii are the ones drawn (the Border's
+   own, else a style's `R_METRIC_CORNER_RADIUS`). With a C test in `tests/test_layout.c` and the
+   language bindings regenerated. Found by
+   [Surface, FlowRow and Expander](issues/archive/0064-surface-flowrow-and-expander.md).
+8. **The reload callback for theme files** (proposed, phase 2): Raven reloads a changed theme file
+   without calling `Rxml_set_reload_callback`, which reports interface files only, so compose-raven
+   has to re-read the theme names and colours every frame while live reload is on. Decided in
+   [Raven reports theme file reloads](issues/0090-raven-reports-theme-file-reloads.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
@@ -1273,7 +1284,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | App-wide theme settings (`look`, `dark`, `material`, app-wide `theme`/`fontFamily`) only at `application` level | any `MaterialTheme` can set anything | [8](#8-component-vocabulary) |
 | A modifier a composable can't honour is ignored with a warning | modifiers always apply | [6](#6-layout-and-modifiers) |
 | Focus traversal is Raven's own; no `moveFocus` | `FocusManager.moveFocus` | [7](#7-events-and-state) |
-| `MenuBar` is a layout composable drawn in the window | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
+| `MenuBar` is a layout composable drawn in the window unless `native = true` | a window-level call, the system menu bar on macOS | [8](#8-component-vocabulary) |
 | Shortcuts have no automatic Ctrl-to-Cmd; apps write `meta = true` for macOS | the same in Compose Desktop, but its menus are native | [8](#8-component-vocabulary) |
 | `customHeader = true` keeps the OS's resizing and window behaviour; `undecorated = true` removes all decoration, as in Compose Desktop | only `undecorated` | [4](#4-application-host) |
 | `Modifier.material(...)` gives any widget a glass or solid surface | no counterpart | [6](#6-layout-and-modifiers) |

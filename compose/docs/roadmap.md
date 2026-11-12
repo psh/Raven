@@ -48,7 +48,7 @@ a Windows host or a real window:
 ## 1. Raven fork changes
 
 Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.md#11-required-raven-changes)).
-**Done** for 1, 3, 4, 5 and 6, one commit each on `fork/compose-raven`:
+**Done** for 1, 3, 4, 5, 6 and 7, one commit each on `fork/compose-raven`:
 
 1. `Rwidget_move_child(parent, from, to)`: required by the Applier (milestone 2).
 2. ~~A fix for repeated `Rinit`/`Rshutdown`~~: not needed, milestone 0 found it works.
@@ -57,6 +57,10 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 5. `Rwindow_clear_focus(window)`, which leaves no widget focused: needed by `clearFocus()` (phase 3).
 6. A macOS bug fix: a modifier key no longer ends the app (Cocoa `flagsChanged:`). Found by
    `samples/hello`; it has no C test, because only a real window reaches it.
+7. `Rborder_get_outline`, `_corner_radius` and `_shadow`, reading a Border back: needed by
+   `Surface`'s tests (phase 2).
+8. Proposed: Raven calls the reload callback for theme files too, so compose-raven needn't poll
+   them ([Raven reports theme file reloads](issues/0090-raven-reports-theme-file-reloads.md)).
 
 Noted for upstream, not a fork change: `raven_xml.h` says of `Rxml_check_files` that files are
 looked at "five per second", but the watcher in `src/xml/xml_watch.c` is event-driven, polling every
@@ -104,6 +108,8 @@ settled every one; nothing is left open before implementation.
 | Native message and file dialogs (`native = true` only) | [4](spec.md#4-application-host) | `notepad` | [Native message and file dialogs](issues/0080-native-message-and-file-dialogs.md) |
 | CodeEditor's editing extras: `CodeEditorState`, word wrap, completions, markers, registered languages | [8: CodeEditor](spec.md#phase-2-codeeditors-editing-extras) | `notepad` | [CodeEditorState, completions, markers and languages](issues/archive/0081-codeeditorstate-completions-markers-and-languages.md) |
 | Files and text dropped on a window (`Window(onExternalDrop)`) | [4](spec.md#4-application-host) | `notepad` | [Files and text dropped on a window](issues/0082-files-and-text-dropped-on-a-window.md) |
+| `MenuBar(native)`, a choice of the macOS system menu bar | [8: menus](spec.md#phase-2-menus-and-the-header-bar) | `notepad` | [MenuBar(native)](issues/0089-menubar-native-parameter.md) |
+| Theme file reloads reported by Raven (fork change 8) | [11](spec.md#11-required-raven-changes), [4](spec.md#4-application-host) | `themes` | [Raven reports theme file reloads](issues/0090-raven-reports-theme-file-reloads.md) |
 | ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/archive/0063-combobox-spinbox-and-codeeditorlanguages.md) |
 | Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/archive/0064-surface-flowrow-and-expander.md) |
 | Theming: `RavenTheme` (with `accent`), theme files, `saveTheme`, `themeNames`, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/archive/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
