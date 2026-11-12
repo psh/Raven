@@ -65,6 +65,9 @@ internal fun withRavenChecks(block: () -> Unit) {
     assertEquals(0, CallbackRegistry.liveCount, "widget references left after Rshutdown")
 }
 
+/** The errors Raven reported so far, which the checks then no longer count: for a test that expects them. */
+internal fun takeRavenErrors(): List<String> = ravenErrors.toList().also { ravenErrors.clear() }
+
 /** Runs [block] with Raven started headless, then stops it, with [withRavenChecks]. */
 internal fun withHeadlessRaven(block: () -> Unit) = withRavenChecks {
     memScoped {

@@ -8,18 +8,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
-import raven.cinterop.R_ROLE_NONE
-import raven.cinterop.R_WIDGET_OVERLAY
-import raven.cinterop.Rwidget_set_theme
-import raven.compose.ui.ChildKind
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.LocalRavenHost
-import raven.compose.ui.Modifier
-import raven.compose.ui.PanelLayout
-import raven.compose.ui.Property
-import raven.compose.ui.RavenWidget
-import raven.compose.ui.WidgetDescriptor
-import raven.compose.ui.bind
+import raven.compose.ui.LocalSubtreeSettings
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Material
 
@@ -60,7 +51,10 @@ public enum class Look {
  * links, and [material], what every widget without one of its own is made of. A look or theme
  * change resets Raven's accent and material, so they are applied again after one.
  *
- * Inside a window, [theme] gives the content its own theme, and the content goes in a Box. The
+ * Inside a window, [theme] gives the content its own theme. As `MaterialTheme`, it emits no node,
+ * so the content is laid out as if it were not there: every node of the content gives its own
+ * widget the theme, and Raven passes it on to the widgets inside. The innermost theme wins. A name
+ * Raven doesn't know is reported once, by Raven, and leaves the widgets' themes as they were. The
  * app-wide settings can't be made there: setting [look], [dark], [accent] or [material] logs an
  * error and does nothing.
  *
@@ -93,10 +87,9 @@ public fun RavenTheme(
                     onDispose { }
                 }
             }
-            RavenWidget(ThemeBoxWidget, Modifier, {
-                bind(PanelLayout.Box)
-                bind(theme, WidgetTheme)
-            }, content)
+            // Provided even when null, so changing the theme to or from null keeps the content's state.
+            val subtree = LocalSubtreeSettings.current
+            CompositionLocalProvider(LocalSubtreeSettings provides if (theme == null) subtree else subtree.copy(theme = theme), content = content)
         }
     }
 }
@@ -144,8 +137,3 @@ internal val LocalThemePlacement = staticCompositionLocalOf { ThemePlacement.App
 
 /** Where [RavenTheme]'s errors go. */
 internal var themeErrorSink: (String) -> Unit = { println("compose-raven: error: $it") }
-
-private val ThemeBoxWidget = WidgetDescriptor("RavenTheme", R_WIDGET_OVERLAY, ChildKind.Many, role = R_ROLE_NONE)
-
-/** The theme a widget and everything inside it is drawn with; null follows the parent. */
-private val WidgetTheme = Property<String?> { widget, name -> Rwidget_set_theme(widget, name) }

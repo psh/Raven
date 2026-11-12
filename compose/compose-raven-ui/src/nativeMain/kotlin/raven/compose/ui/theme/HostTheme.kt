@@ -11,6 +11,7 @@ import raven.cinterop.R_COLOR_LAST_
 import raven.cinterop.R_COLOR_WINDOW
 import raven.cinterop.R_LOOK_RAVEN_DARK
 import raven.cinterop.R_TRUE
+import raven.cinterop.Rid
 import raven.cinterop.Ris_ui_thread
 import raven.cinterop.Rlook_get
 import raven.cinterop.Rlook_set
@@ -21,6 +22,7 @@ import raven.cinterop.Rtheme_get_name_at
 import raven.cinterop.Rtheme_set_accent
 import raven.cinterop.Rtheme_set_material
 import raven.cinterop.Rtheme_use
+import raven.cinterop.Rwidget_set_theme
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.graphics.Color
@@ -48,6 +50,10 @@ internal class HostTheme {
     private var theme: String? = null
     private var accent: Color? = null
     private var material: Material? = null
+
+    // The subtree themes Raven refused, by name, so it reports each once and not once per widget.
+    // Forgotten when Raven's themes change, since the name can then be one.
+    private val refusedThemes = HashSet<String>()
 
     // The material the look and theme in use give, which Material.Default goes back to: read before
     // the first material is set over them, and again after each change of them.
@@ -93,7 +99,19 @@ internal class HostTheme {
         }
         if (read != colors) colors = read
         val names = List(Rtheme_get_count()) { Rtheme_get_name_at(it).toRavenString() }
-        if (names != themeNames) themeNames = names
+        if (names != themeNames) {
+            themeNames = names
+            refusedThemes.clear()
+        }
+    }
+
+    /**
+     * Gives [widget] and its descendants the theme [name], null following the parent again. A
+     * name Raven refused is not asked for again: the widget keeps its theme, as Raven would leave it.
+     */
+    fun setWidgetTheme(widget: Rid, name: String?) {
+        if (name != null && name in refusedThemes) return
+        if (Rwidget_set_theme(widget, name) != R_TRUE && name != null) refusedThemes += name
     }
 
     /** Sets [material] app-wide; [Material.Default] is the look's and theme's own. */

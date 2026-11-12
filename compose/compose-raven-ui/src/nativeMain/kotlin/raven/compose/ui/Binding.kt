@@ -7,6 +7,7 @@ import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.DisallowComposableCalls
 import androidx.compose.runtime.Updater
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
@@ -186,9 +187,21 @@ public fun <T> Updater<RavenNode>.bind(value: T, controlled: ControlledValue<T>)
 public fun Updater<RavenNode>.bind(layout: PanelLayout): Unit = set(layout) { panelLayout = it }
 
 /**
+ * What a subtree gives each of its nodes, which the node applies to its own outer widget when it
+ * changes, and Raven passes on to the widgets inside it (a content node among them): the [theme]
+ * of a window-level `RavenTheme`. Null follows the parent. A setting Raven gives a widget and its
+ * descendants (phase 3's `fontFamily`, `Rwidget_set_font`) is one more property here.
+ */
+internal data class SubtreeSettings(val theme: String? = null)
+
+/** The [SubtreeSettings] of the nodes emitted here. Each [RavenWidget] reads it. */
+internal val LocalSubtreeSettings = staticCompositionLocalOf { SubtreeSettings() }
+
+/**
  * Emits the widget [descriptor] describes, placed by [modifier], with [update] binding its
  * properties and events. A single-child widget's [content] goes into its content panel, so it may
- * emit any number of nodes.
+ * emit any number of nodes. The node applies the [SubtreeSettings] it is emitted in, so no
+ * composable handles them.
  */
 @InternalComposeRavenApi
 @Composable
@@ -200,8 +213,10 @@ public fun RavenWidget(
 ) {
     val host = LocalRavenHost.current
     val contentKind = descriptor.content
+    val subtree = LocalSubtreeSettings.current
     val updateWithModifier: Updater<RavenNode>.() -> Unit = {
         set(modifier) { setModifier(it) }
+        set(subtree) { setSubtreeSettings(it) }
         update()
     }
     if (contentKind == null) {

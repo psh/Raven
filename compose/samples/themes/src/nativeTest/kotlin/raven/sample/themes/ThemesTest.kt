@@ -2,9 +2,13 @@
 
 package raven.sample.themes
 
+import kotlinx.cinterop.FloatVar
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.cstr
 import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import kotlinx.cinterop.toKString
+import kotlinx.cinterop.value
 import platform.posix.fclose
 import platform.posix.fopen
 import platform.posix.fputs
@@ -22,7 +26,10 @@ import raven.cinterop.Rid
 import raven.cinterop.Rlook_get
 import raven.cinterop.Rtheme_get_color
 import raven.cinterop.Rtheme_get_name
+import raven.cinterop.Rwidget_get_child
 import raven.cinterop.Rwidget_get_color
+import raven.cinterop.Rwidget_get_parent
+import raven.cinterop.Rwidget_get_rect
 import raven.cinterop.Rwidget_get_theme
 import raven.compose.foundation.RavenTestScope
 import raven.compose.foundation.runRavenTest
@@ -139,6 +146,25 @@ class ThemesTest {
         onNodeWithTag("themes").performSelection(RavenTheme.themeNames.indexOf("Tweaks"))
         waitForIdle()
         assertEquals("Paper", Rwidget_get_theme(onNodeWithTag("paper card").fetchWidget()).toRavenString())
+    }
+
+    @Test
+    fun theThemedCardsFillTheColumnAsTheOthersDo() = runRavenTest {
+        startThemes()
+        val paper = onNodeWithTag("paper card").fetchWidget()
+        val glass = onNodeWithTag("glass card").fetchWidget()
+        // In the cards' column itself, as wide as the controls card above them.
+        val column = Rwidget_get_parent(paper)
+        assertEquals(column, Rwidget_get_parent(glass))
+        val width = width(Rwidget_get_child(column, 0))
+        assertEquals(width, width(paper))
+        assertEquals(width, width(glass))
+    }
+
+    private fun width(widget: Rid): Float = memScoped {
+        val width = alloc<FloatVar>()
+        Rwidget_get_rect(widget, null, null, width.ptr, null)
+        width.value
     }
 
     @Test

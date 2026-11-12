@@ -82,7 +82,9 @@ Done and run on macOS. `./gradlew build allTests` passes: 290 tests, 8 of them t
   - Inside a window, `RavenTheme(theme = ...)` puts its content in a Box that takes no Modifier.
     In a `Column`, the Box takes the Column's alignment, so the paper and glass cards are as wide
     as their content, where the C example's fill the column. A `modifier`, or a theme Box that
-    fills its slot, would fix it. The library is unchanged.
+    fills its slot, would fix it. The library is unchanged. Fixed by
+    [Subtree themes as a CompositionLocal](0093-subtree-themes-as-a-compositionlocal.md): the
+    theme Box is gone, and the cards fill the column.
   - A non-null `onLinkClick` replaces Raven's handling of every link of the label, so a web link
     added to `notes.md` would show a status line instead of opening. compose-raven has no
     `UriHandler` to open it.

@@ -79,6 +79,18 @@ public class RavenNode internal constructor(
         applyLayout()
     }
 
+    // The subtree settings this node last applied: none, outside a themed subtree.
+    private var subtreeSettings = SubtreeSettings()
+
+    /** Applies the [SubtreeSettings] that changed to the widget, which passes them on to its descendants. */
+    internal fun setSubtreeSettings(value: SubtreeSettings) {
+        val previous = subtreeSettings
+        subtreeSettings = value
+        if (value.theme != previous.theme) {
+            checkNotNull(host) { "a subtree setting needs a node made through the binding layer" }.theme.setWidgetTheme(widget, value.theme)
+        }
+    }
+
     /**
      * Raven plays a transition as soon as it is set. The first is set before the insert, which plays
      * it again as the widget appears; a later one, on a widget that has appeared, must not replay.
