@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.DisallowComposableCalls
 import androidx.compose.runtime.Updater
+import androidx.compose.runtime.remember
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
@@ -49,6 +50,7 @@ import raven.cinterop.Rspin_box_set_changed_callback
 import raven.cinterop.Rspin_box_set_value
 import raven.cinterop.Rtext_editor_get_text
 import raven.cinterop.Rtext_editor_set_changed_callback
+import raven.cinterop.Rtext_editor_set_completion_callback
 import raven.cinterop.Rtext_editor_set_text
 import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rtext_input_set_changed_callback
@@ -416,4 +418,48 @@ private val onMenuItemCheckedChanged = staticCFunction { item: Rid, userData: CO
 
 private val onExpanderChanged = staticCFunction { _: Rid, expanded: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, ExpanderChanged) { it(expanded == R_TRUE) }
+}
+
+// Following a widget once a frame, the text editor's completions, and what a host keeps.
+
+/**
+ * Follows a node's widget, for what Raven reports no change of (a text editor's cursor): [attach]
+ * when the node takes it, [follow] once a frame before the frame recomposes, and [detach] when the
+ * node lets it go or is released. A node holds one at most.
+ */
+@InternalComposeRavenApi
+public interface WidgetFollower {
+    public fun attach(widget: Rid)
+
+    public fun follow(widget: Rid)
+
+    public fun detach(widget: Rid)
+}
+
+/** Has [follower] follow the node's widget, when it changes; null stops the one there was. */
+@InternalComposeRavenApi
+public fun Updater<RavenNode>.bind(follower: WidgetFollower?): Unit = set(follower) { this.follower = it }
+
+/**
+ * A text editor gathering its proposals for the word being typed: the lambda gets the editor and
+ * the start of the word, and adds its own with `Rtext_editor_add_completion` before it returns.
+ */
+@InternalComposeRavenApi
+public val TextEditorCompletion: Event<(editor: Rid, prefix: String) -> Unit> = Event { widget, userData ->
+    Rtext_editor_set_completion_callback(widget, onTextEditorCompletion, userData)
+}
+
+private val onTextEditorCompletion = staticCFunction { editor: Rid, prefix: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, TextEditorCompletion) { it(editor, prefix.toRavenString()) }
+}
+
+/**
+ * What [create] makes once per host for [key], kept until the host closes: for what Raven keeps
+ * until it shuts down, such as a registered language.
+ */
+@InternalComposeRavenApi
+@Composable
+public fun <T : Any> rememberPerHost(key: Any, create: () -> T): T {
+    val host = LocalRavenHost.current
+    return remember(host, key) { host.caches.getOrPut(key, create) }
 }

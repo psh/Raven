@@ -179,6 +179,41 @@ class BindingTest {
         }
     }
 
+    @Test
+    fun aFollowerFollowsItsWidgetEachFrameWhileTheNodeHoldsIt() {
+        val events = mutableListOf<String>()
+        val follower = object : WidgetFollower {
+            override fun attach(widget: Rid) {
+                events += if (widget == widgets["label"]) "attach" else "attach elsewhere"
+            }
+
+            override fun follow(widget: Rid) {
+                events += "follow"
+            }
+
+            override fun detach(widget: Rid) {
+                events += "detach"
+            }
+        }
+        var shown by mutableStateOf(true)
+        withHost({
+            Window(onCloseRequest = {}) {
+                if (shown) RavenWidget(TestLabel, Modifier, { bind("label", Name); bind(follower) })
+            }
+        }) {
+            assertEquals("attach", events.first())
+            events.clear()
+            repeat(3) { check(frame()) }
+            assertEquals(listOf("follow", "follow", "follow"), events)
+            shown = false
+            runUntilIdle()
+            assertEquals("detach", events.last())
+            events.clear()
+            repeat(2) { check(frame()) }
+            assertEquals(emptyList(), events)
+        }
+    }
+
     /** A checkbox that shows [checked], with its widget passed to [block]. */
     private fun checkbox(
         checked: () -> Boolean = { false },

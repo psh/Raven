@@ -115,6 +115,9 @@ public class RavenHost(
     // Controlled values the user changed, waiting for the app's response to be composed.
     private val markedInputs = LinkedHashSet<ComposedValue<*>>()
 
+    /** The nodes whose widgets a [WidgetFollower] follows once a frame. */
+    internal val followedNodes: MutableSet<RavenNode> = LinkedHashSet()
+
     /** The windows open now, in the order they opened. */
     internal val windows: MutableList<RavenWindow> = mutableListOf()
 
@@ -245,6 +248,7 @@ public class RavenHost(
         dispatcher.drain()
         writeObserver?.dispose()
         markedInputs.clear()
+        followedNodes.clear()
         caches.clear()
         HostEpoch.advance()
         dispatcher.close()
@@ -288,6 +292,8 @@ public class RavenHost(
         try {
             // Raven reports no moves and no changes of placement: each window reads them here.
             windows.forEach { it.followRaven() }
+            // Nor a text editor's cursor: each follower reads what it follows here, before recomposing.
+            followedNodes.forEach { node -> node.follower?.follow(node.widget) }
             // Raven reloads a changed theme file in a task before this callback, without calling its
             // reload callback, which reports interface files only.
             if (theme.watchesFiles && Rxml_get_live_reload() == R_TRUE) theme.refresh()

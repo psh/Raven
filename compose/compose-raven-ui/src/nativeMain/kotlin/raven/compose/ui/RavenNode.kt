@@ -115,11 +115,23 @@ public class RavenNode internal constructor(
     private fun <T> composedValue(controlled: ControlledValue<T>): ComposedValue<T> =
         composedValues.getOrPut(controlled) { ComposedValue(widget, controlled) } as ComposedValue<T>
 
+    /** What follows the widget once a frame, attached while the node holds it. */
+    internal var follower: WidgetFollower? = null
+        set(value) {
+            if (value === field) return
+            val host = checkNotNull(host) { "a follower needs a node made through the binding layer" }
+            field?.detach(widget)
+            field = value
+            value?.attach(widget)
+            if (value == null) host.followedNodes -= this else host.followedNodes += this
+        }
+
     /** True when this node's widget is alive and attached to [parent]'s widget. */
     internal fun isAttachedTo(parent: RavenNode): Boolean =
         Rwidget_is_valid(widget) == R_TRUE && Rwidget_get_parent(widget) == parent.widget
 
     override fun onRelease() {
+        follower = null
         // Destroying an ancestor first has already destroyed this widget with it.
         if (Rwidget_is_valid(widget) == R_TRUE) Rwidget_destroy(widget)
     }
