@@ -1,0 +1,129 @@
+package raven.compose.foundation
+
+import androidx.compose.runtime.Composable
+import raven.cinterop.R_FALSE
+import raven.cinterop.R_ROLE_SEPARATOR
+import raven.cinterop.R_TRUE
+import raven.cinterop.R_WIDGET_MENU
+import raven.cinterop.R_WIDGET_MENU_BAR
+import raven.cinterop.R_WIDGET_MENU_ITEM
+import raven.cinterop.Rmenu_bar_set_native
+import raven.cinterop.Rmenu_item_set_checkable
+import raven.cinterop.Rmenu_item_set_text
+import raven.cinterop.Rmenu_set_title
+import raven.cinterop.Rwidget_set_attribute
+import raven.compose.ui.ChildKind
+import raven.compose.ui.MenuItemChecked
+import raven.compose.ui.MenuItemCheckedChanged
+import raven.compose.ui.MenuItemClicked
+import raven.compose.ui.MenuItemShortcut
+import raven.compose.ui.Modifier
+import raven.compose.ui.Property
+import raven.compose.ui.RavenWidget
+import raven.compose.ui.WidgetDescriptor
+import raven.compose.ui.bind
+import raven.compose.ui.input.key.KeyShortcut
+
+/** What a [MenuBar] holds: only [Menu]s. */
+public interface MenuBarScope
+
+/** What a [Menu] holds: [Item]s, [CheckboxItem]s, [Separator]s and sub-[Menu]s. */
+public interface MenuScope
+
+private object MenuBarScopeInstance : MenuBarScope
+private object MenuScopeInstance : MenuScope
+
+private val MenuBarWidget = WidgetDescriptor("MenuBar", R_WIDGET_MENU_BAR, ChildKind.Many)
+private val MenuWidget = WidgetDescriptor("Menu", R_WIDGET_MENU, ChildKind.Many)
+private val ItemWidget = WidgetDescriptor("Item", R_WIDGET_MENU_ITEM, events = listOf(MenuItemClicked))
+private val CheckboxItemWidget = WidgetDescriptor("CheckboxItem", R_WIDGET_MENU_ITEM, events = listOf(MenuItemCheckedChanged))
+private val SeparatorWidget = WidgetDescriptor("Separator", R_WIDGET_MENU_ITEM, role = R_ROLE_SEPARATOR)
+
+/** Raven's default puts the first MenuBar of a macOS window in the system's bar; compose-raven keeps it in the layout. */
+private val InWindow = Property<Boolean> { widget, inWindow -> Rmenu_bar_set_native(widget, if (inWindow) R_FALSE else R_TRUE) }
+private val MenuTitle = Property<String> { widget, title -> Rmenu_set_title(widget, title) }
+private val ItemText = Property<String> { widget, text -> Rmenu_item_set_text(widget, text) }
+private val Checkable = Property<Boolean> { widget, checkable -> Rmenu_item_set_checkable(widget, if (checkable) R_TRUE else R_FALSE) }
+
+/**
+ * Raven's menu separator is a MenuItem with its separator flag, which only the `Separator`
+ * attribute sets on an item made apart from its menu (a Separator widget is no menu separator).
+ */
+private val MenuSeparator = Property<Boolean> { widget, separator ->
+    Rwidget_set_attribute(widget, "Separator", if (separator) "true" else "false")
+}
+
+/**
+ * A bar of [Menu]s, each opened by its title. Unlike Compose Desktop's, it is a composable of the
+ * layout, drawn where the app places it (in a Column above the content, or in a header bar), and
+ * never moved to the macOS menu bar.
+ */
+@Composable
+public fun MenuBar(
+    modifier: Modifier = Modifier,
+    content: @Composable MenuBarScope.() -> Unit,
+) {
+    RavenWidget(MenuBarWidget, modifier, { bind(true, InWindow) }) { MenuBarScopeInstance.content() }
+}
+
+/** A menu of the bar, titled [text]. */
+@Composable
+public fun MenuBarScope.Menu(text: String, content: @Composable MenuScope.() -> Unit) {
+    RavenMenu(text, content)
+}
+
+/** A sub-menu, titled [text], opened from its entry in this menu. */
+@Composable
+public fun MenuScope.Menu(text: String, content: @Composable MenuScope.() -> Unit) {
+    RavenMenu(text, content)
+}
+
+@Composable
+private fun RavenMenu(text: String, content: @Composable MenuScope.() -> Unit) {
+    RavenWidget(MenuWidget, Modifier, { bind(text, MenuTitle) }) { MenuScopeInstance.content() }
+}
+
+/** An entry showing [text], which calls [onClick] when chosen, or when [shortcut] is pressed in its window. */
+@Composable
+public fun MenuScope.Item(
+    text: String,
+    onClick: () -> Unit,
+    shortcut: KeyShortcut? = null,
+    enabled: Boolean = true,
+) {
+    RavenWidget(ItemWidget, Modifier, {
+        bind(text, ItemText)
+        bind(shortcut, MenuItemShortcut)
+        bind(enabled, Enabled)
+        bind(onClick, MenuItemClicked)
+    })
+}
+
+/**
+ * An entry with a check mark showing [checked], controlled as [Checkbox] is: choosing it calls
+ * [onCheckedChange] with the new value, and if the app doesn't take it, the mark shows [checked]
+ * again.
+ */
+@Composable
+public fun MenuScope.CheckboxItem(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    shortcut: KeyShortcut? = null,
+    enabled: Boolean = true,
+) {
+    RavenWidget(CheckboxItemWidget, Modifier, {
+        bind(text, ItemText)
+        bind(true, Checkable)
+        bind(shortcut, MenuItemShortcut)
+        bind(enabled, Enabled)
+        bind(checked, MenuItemChecked)
+        bind(onCheckedChange, MenuItemCheckedChanged)
+    })
+}
+
+/** A line between groups of entries. */
+@Composable
+public fun MenuScope.Separator() {
+    RavenWidget(SeparatorWidget, Modifier, { bind(true, MenuSeparator) })
+}

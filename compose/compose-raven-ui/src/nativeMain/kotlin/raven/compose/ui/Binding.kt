@@ -25,10 +25,19 @@ import raven.cinterop.Rbutton_set_clicked_callback
 import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rcheckbox_set_changed_callback
 import raven.cinterop.Rcheckbox_set_checked
+import raven.cinterop.R_KEY_UNKNOWN
+import raven.cinterop.R_MOD_ALT
+import raven.cinterop.R_MOD_CTRL
+import raven.cinterop.R_MOD_SHIFT
+import raven.cinterop.R_MOD_SUPER
 import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rcombo_box_set_changed_callback
 import raven.cinterop.Rcombo_box_set_selected
 import raven.cinterop.Rid
+import raven.cinterop.Rmenu_item_is_checked
+import raven.cinterop.Rmenu_item_set_checked
+import raven.cinterop.Rmenu_item_set_clicked_callback
+import raven.cinterop.Rmenu_item_set_shortcut
 import raven.cinterop.Rslider_get_value
 import raven.cinterop.Rslider_set_changed_callback
 import raven.cinterop.Rslider_set_value
@@ -44,6 +53,7 @@ import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
+import raven.compose.ui.input.key.KeyShortcut
 import raven.native.callbackTarget
 import raven.native.toRavenString
 import kotlin.math.roundToInt
@@ -345,4 +355,46 @@ private val onSpinBoxChanged = staticCFunction { _: Rid, value: Double, userData
 
 private val onIntSpinBoxChanged = staticCFunction { _: Rid, value: Double, userData: COpaquePointer? ->
     dispatchEvent(userData, IntSpinBoxChanged) { it(value.roundToInt()) }
+}
+
+// The menus' event kinds, controlled value and shortcut.
+
+/** A checkable menu item's check mark. */
+@InternalComposeRavenApi
+public val MenuItemChecked: ControlledValue<Boolean> = ControlledValue(
+    read = { Rmenu_item_is_checked(it) == R_TRUE },
+    write = { widget, checked -> Rmenu_item_set_checked(widget, if (checked) R_TRUE else R_FALSE) },
+)
+
+/** A menu item chosen, by a click, the keyboard or its shortcut. */
+@InternalComposeRavenApi
+public val MenuItemClicked: Event<() -> Unit> = Event { widget, userData ->
+    Rmenu_item_set_clicked_callback(widget, onMenuItemClicked, userData)
+}
+
+/** A checkable menu item chosen: Raven has toggled its check mark already, and the lambda gets the new one. */
+@InternalComposeRavenApi
+public val MenuItemCheckedChanged: Event<(Boolean) -> Unit> = Event(marks = MenuItemChecked) { widget, userData ->
+    Rmenu_item_set_clicked_callback(widget, onMenuItemCheckedChanged, userData)
+}
+
+/** The shortcut a menu item shows and answers to in its window; null removes it. */
+@InternalComposeRavenApi
+public val MenuItemShortcut: Property<KeyShortcut?> = Property { widget, shortcut ->
+    var modifiers = 0u
+    if (shortcut != null) {
+        if (shortcut.ctrl) modifiers = modifiers or R_MOD_CTRL
+        if (shortcut.shift) modifiers = modifiers or R_MOD_SHIFT
+        if (shortcut.alt) modifiers = modifiers or R_MOD_ALT
+        if (shortcut.meta) modifiers = modifiers or R_MOD_SUPER
+    }
+    Rmenu_item_set_shortcut(widget, shortcut?.key?.code ?: R_KEY_UNKNOWN, modifiers)
+}
+
+private val onMenuItemClicked = staticCFunction { _: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, MenuItemClicked) { it() }
+}
+
+private val onMenuItemCheckedChanged = staticCFunction { item: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, MenuItemCheckedChanged) { it(Rmenu_item_is_checked(item) == R_TRUE) }
 }

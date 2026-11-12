@@ -25,22 +25,32 @@ import raven.cinterop.R_SEVERITY_FATAL
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_WIDGET_CHECKBOX
+import raven.cinterop.R_METRIC_ROW_HEIGHT
+import raven.cinterop.R_ROLE_SEPARATOR
 import raven.cinterop.R_WIDGET_COMBO_BOX
 import raven.cinterop.R_WIDGET_LABEL
+import raven.cinterop.R_WIDGET_MENU
+import raven.cinterop.R_WIDGET_MENU_ITEM
 import raven.cinterop.R_WIDGET_SPIN_BOX
 import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rcombo_box_get_item_count
 import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rid
 import raven.cinterop.Rlabel_get_text
+import raven.cinterop.Rmenu_item_get_text
+import raven.cinterop.Rmenu_item_is_checked
+import raven.cinterop.Rmenu_open
 import raven.cinterop.Rspin_box_get_value
 import raven.cinterop.Rwidget_get_accessible_name
+import raven.cinterop.Rwidget_get_accessible_role
+import raven.cinterop.Rwidget_get_metric
 import raven.cinterop.Rwidget_get_rect
 import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_key
 import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
+import raven.cinterop.Rwindow_close_popups
 import raven.cinterop.Rwindow_inject_text
 import raven.cinterop.Rwidget_is_focused
 import raven.cinterop.Rerror_set_callback
@@ -102,10 +112,10 @@ internal class RavenTestScope(val host: RavenHost) {
         if (!host.frame()) throw host.error ?: AssertionError("Raven quit")
     }
 
-    /** The Text showing [text], or a part of it with [substring]. */
+    /** The Text or the menu item showing [text], or a part of it with [substring]. */
     fun onNodeWithText(text: String, substring: Boolean = false): NodeInteraction =
         NodeInteraction(this, "text \"$text\"") { node ->
-            val shown = labelText(node) ?: return@NodeInteraction false
+            val shown = labelText(node) ?: menuItemText(node) ?: return@NodeInteraction false
             if (substring) text in shown else shown == text
         }
 
@@ -134,8 +144,22 @@ internal class RavenTestScope(val host: RavenHost) {
         return found
     }
 
+    /** The nodes from a window's root down to [node], both included. */
+    internal fun pathTo(node: RavenNode): List<RavenNode> {
+        fun search(from: RavenNode): List<RavenNode>? =
+            if (from === node) listOf(from) else from.children.firstNotNullOfOrNull { search(it) }?.let { listOf(from) + it }
+        return host.windowRoots.firstNotNullOfOrNull { search(it) } ?: fail("the node is in no window")
+    }
+
     private fun labelText(node: RavenNode): String? =
         if (Rwidget_get_type(node.widget) == R_WIDGET_LABEL) Rlabel_get_text(node.widget).toRavenString() else null
+
+    private fun menuItemText(node: RavenNode): String? =
+        if (Rwidget_get_type(node.widget) == R_WIDGET_MENU_ITEM && !isMenuSeparator(node.widget)) {
+            Rmenu_item_get_text(node.widget).toRavenString()
+        } else {
+            null
+        }
 }
 
 /** One node a finder selects. Every use waits for the UI to be idle, then finds it again. */
@@ -169,8 +193,11 @@ internal class NodeInteraction(
 
     private fun assertChecked(expected: Boolean) {
         val widget = fetchWidget()
-        if (Rwidget_get_type(widget) != R_WIDGET_CHECKBOX) fail("the node with $selector can't be checked")
-        val checked = Rcheckbox_is_checked(widget) == R_TRUE
+        val checked = when (Rwidget_get_type(widget)) {
+            R_WIDGET_CHECKBOX -> Rcheckbox_is_checked(widget) == R_TRUE
+            R_WIDGET_MENU_ITEM -> Rmenu_item_is_checked(widget) == R_TRUE
+            else -> fail("the node with $selector can't be checked")
+        }
         if (checked != expected) fail("the node with $selector is ${if (checked) "checked" else "not checked"}")
     }
 
@@ -218,8 +245,15 @@ internal class NodeInteraction(
         if (Rwidget_get_type(it) != R_WIDGET_COMBO_BOX) fail("the node with $selector is not a combo box")
     }
 
-    /** Presses and releases the left button at the centre of the node's widget, as the user would. */
-    fun performClick(): NodeInteraction = apply { click(fetchWidget()) }
+
+    /**
+     * Presses and releases the left button at the centre of the node's widget, as the user would.
+     * A menu item is chosen from its menu: see [chooseMenuItem].
+     */
+    fun performClick(): NodeInteraction = apply {
+        val node = fetchNode()
+        if (Rwidget_get_type(node.widget) == R_WIDGET_MENU_ITEM) chooseMenuItem(node) else click(node.widget)
+    }
 
     /**
      * Types [text] into the node's widget, one character at a time with no frame between them. It
@@ -244,7 +278,51 @@ internal class NodeInteraction(
         Rwindow_inject_key(window, key, R_TRUE, 0u)
         Rwindow_inject_key(window, key, R_FALSE, 0u)
     }
+
+    /**
+     * Opens the menus down to [item] and clicks it, as the user would, so Raven decides what a
+     * click on it does: a disabled item, or one in a disabled menu, does nothing. The menu of the
+     * bar opens with `Rmenu_open` below the bar, rather than by a click on its title, and each
+     * sub-menu opens as the pointer moves onto its entry. Any menu still open is closed at the end.
+     */
+    private fun chooseMenuItem(item: RavenNode) {
+        val path = scope.pathTo(item)
+        val menus = path.dropLast(1).takeLastWhile { Rwidget_get_type(it.widget) == R_WIDGET_MENU }
+        if (menus.isEmpty()) fail("the menu item with $selector is in no menu")
+        val bar = path[path.size - menus.size - 2]
+        val window = Rwidget_get_window(bar.widget)
+        val barRect = widgetRect(bar.widget)
+        Rmenu_open(menus.first().widget, window, barRect.x, barRect.y + barRect.height)
+        for ((i, menu) in menus.withIndex()) {
+            val entry = menus.getOrNull(i + 1) ?: item
+            val (x, y) = menuEntryCentre(menu, menu.children.indexOf(entry))
+            Rwindow_inject_mouse_move(window, x, y)
+        }
+        Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_TRUE)
+        Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_FALSE)
+        Rwindow_close_popups(window)
+    }
+
+    /**
+     * Where the entry at [index] of an open [menu] is, in its window. Raven doesn't report it, so
+     * this follows `src/widgets/menu.c`: the entries are stacked inside a padding, each a row
+     * high plus 2, and a separator is a fixed height.
+     */
+    private fun menuEntryCentre(menu: RavenNode, index: Int): Pair<Float, Float> {
+        val rect = widgetRect(menu.widget)
+        fun height(entry: RavenNode) =
+            if (isMenuSeparator(entry.widget)) MENU_SEPARATOR_HEIGHT else Rwidget_get_metric(menu.widget, R_METRIC_ROW_HEIGHT) + 2f
+        val top = MENU_PADDING + menu.children.take(index).sumOf { height(it).toDouble() }.toFloat()
+        return rect.x + rect.width / 2 to rect.y + top + height(menu.children[index]) / 2
+    }
 }
+
+/** A menu separator: compose-raven gives its MenuItem the separator's accessible role. */
+private fun isMenuSeparator(widget: Rid): Boolean = Rwidget_get_accessible_role(widget) == R_ROLE_SEPARATOR
+
+// The layout of an open menu, from src/widgets/menu.c.
+private const val MENU_PADDING = 4f
+private const val MENU_SEPARATOR_HEIGHT = 7f
 
 /** Where a widget is in its window, from `Rwidget_get_rect`. */
 internal data class WidgetRect(val x: Float, val y: Float, val width: Float, val height: Float)
