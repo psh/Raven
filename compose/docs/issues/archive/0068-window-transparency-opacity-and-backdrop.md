@@ -33,5 +33,5 @@ Opacity, the return value and `isTransparent` were decided in
 
 ## Resolution
 
-Not done as its own ticket: merged into [Window: WindowState and its parameters](../0086-window-windowstate-and-its-parameters.md)
+Not done as its own ticket: merged into [Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md)
 by [ADR 0001](../../adr/0001-phase-split-after-the-phase-2-sample-gaps.md), so the single `Window` is finished in one place.

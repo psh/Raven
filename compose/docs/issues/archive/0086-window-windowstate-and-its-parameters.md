@@ -8,17 +8,17 @@ The single `Window` completed in phase 2, so its signature is final before the p
 written against it: `WindowState` replaces phase 1's `width` and `height`, with every flag and
 parameter the phase 2 samples use. Phase 3 keeps windows that come and go, `Dialog`, the lifecycle
 owners, `icon`, `island`, `onKeyEvent` and `backKeys`. Spec:
-[4. Application host](../spec.md#4-application-host),
-[6. Layout and Modifiers](../spec.md#6-layout-and-modifiers),
-[8: glass and BackgroundBlur](../spec.md#phase-2-glass-and-backgroundblur). Decided in:
-[Window extras the samples use](archive/0076-window-extras-the-samples-use.md),
-[Window minimum size](archive/0083-window-minimum-size.md) and
-[ADR 0001](../adr/0001-phase-split-after-the-phase-2-sample-gaps.md), which merged
-[Window transparency, opacity and backdrop](archive/0068-window-transparency-opacity-and-backdrop.md)
-and [Window minimum size and DpSize](archive/0085-window-minimum-size-and-dpsize.md) into this
-ticket, with the `customHeader` flag from [HeaderBar](0062-headerbar.md).
+[4. Application host](../../spec.md#4-application-host),
+[6. Layout and Modifiers](../../spec.md#6-layout-and-modifiers),
+[8: glass and BackgroundBlur](../../spec.md#phase-2-glass-and-backgroundblur). Decided in:
+[Window extras the samples use](0076-window-extras-the-samples-use.md),
+[Window minimum size](0083-window-minimum-size.md) and
+[ADR 0001](../../adr/0001-phase-split-after-the-phase-2-sample-gaps.md), which merged
+[Window transparency, opacity and backdrop](0068-window-transparency-opacity-and-backdrop.md)
+and [Window minimum size and DpSize](0085-window-minimum-size-and-dpsize.md) into this
+ticket, with the `customHeader` flag from [HeaderBar](../0062-headerbar.md).
 
-**Depends on:** [Color, Shape and BorderStroke](archive/0060-color-shape-and-borderstroke.md) (`background`).
+**Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md) (`background`).
 
 ## Deliverables
 

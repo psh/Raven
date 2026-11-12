@@ -11,7 +11,7 @@ the release isn't held back by vocabulary it doesn't need:
 
 - **Phase 2 finishes the single `Window`**: `WindowState` (`size: DpSize`) replaces phase 1's
   `width`/`height` in phase 2, with every flag and parameter the phase 2 samples use, in one ticket
-  ([Window: WindowState and its parameters](../issues/0086-window-windowstate-and-its-parameters.md)),
+  ([Window: WindowState and its parameters](../issues/archive/0086-window-windowstate-and-its-parameters.md)),
   so `Window`'s signature changes once, before the samples are written against it. Phase 3 keeps
   windows that come and go, `Dialog`, the lifecycle owners, `icon`, `island`, `onKeyEvent` and
   `backKeys`.
