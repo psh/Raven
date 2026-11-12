@@ -15,6 +15,7 @@ class LayoutTest {
     private val box = PanelLayout(LayoutAxis.None, Alignment.End, Alignment.CenterVertically)
     private val verticalScroll = PanelLayout(LayoutAxis.Vertical, Alignment.CenterHorizontally, mainAxis = MainAxis.Scrolling)
     private val horizontalSplitter = PanelLayout(LayoutAxis.Horizontal, mainAxis = MainAxis.Panes)
+    private val headerBar = PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.CenterVertically, mainAxis = MainAxis.Packed)
 
     private fun padding(all: Dp) = PaddingElement(all, all, all, all)
     private val fillMaxWidth = FillElement(horizontal = true, vertical = false)
@@ -131,6 +132,21 @@ class LayoutTest {
         val inVertical = resolve(fold(Modifier then WeightElement(2f)), horizontalSplitter.copy(axis = LayoutAxis.Vertical)).slot
         assertEquals(2f, inVertical.fill)
         assertEquals(HAlign.Fill to VAlign.Fill, inVertical.halign to inVertical.valign)
+    }
+
+    @Test
+    fun aHeaderBarChildIsPackedAtTheStartOrTheEnd() {
+        val slot = resolve(fold(Modifier), headerBar).slot
+        assertEquals(HAlign.Start to VAlign.Center, slot.halign to slot.valign)
+        assertNull(slot.fill)
+        val atEnd = resolve(fold(Modifier then AlignElement(Alignment.End, null)), headerBar)
+        assertEquals(HAlign.End, atEnd.slot.halign)
+        assertTrue(atEnd.warnings.isEmpty())
+        assertEquals(1f, resolve(fold(Modifier then fillMaxWidth), headerBar).slot.fill)
+
+        val centred = resolve(fold(Modifier then AlignElement(Alignment.CenterHorizontally, null)), headerBar)
+        assertEquals(HAlign.Start, centred.slot.halign)
+        assertEquals(1, centred.warnings.size)
     }
 
     @Test

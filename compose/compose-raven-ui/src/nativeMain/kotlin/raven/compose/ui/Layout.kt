@@ -37,6 +37,12 @@ public enum class MainAxis {
 
     /** A splitter: each child fills a pane, whose relative size is its weight, 1 by default. */
     Panes,
+
+    /**
+     * A header bar: as [Weighted], and a child aligned to the end is packed at the end, so a
+     * child can be aligned to the start or the end, but not centred.
+     */
+    Packed,
 }
 
 /**
@@ -160,11 +166,18 @@ internal fun resolve(modifier: FoldedModifier, parent: PanelLayout): ResolvedLay
             valign = if (fill != null) VAlign.Fill else VAlign.Top
         }
         LayoutAxis.Horizontal -> {
-            if (modifier.horizontal != null && modifier.horizontal != HAlign.Fill) {
+            val packed = parent.mainAxis == MainAxis.Packed
+            if (packed && modifier.horizontal == HAlign.Center) {
+                warnings += "Modifier.align(Alignment.CenterHorizontally) has no place in a header bar, which packs its children at the start or the end"
+            } else if (!packed && modifier.horizontal != null && modifier.horizontal != HAlign.Fill) {
                 warnings += "Modifier.align(Alignment.Horizontal) works only in a Column"
             }
             fill = mainAxisFill(modifier.weight, modifier.horizontal == HAlign.Fill, parent.mainAxis, warnings)
-            halign = if (fill != null) HAlign.Fill else HAlign.Start
+            halign = when {
+                fill != null -> HAlign.Fill
+                packed && modifier.horizontal == HAlign.End -> HAlign.End
+                else -> HAlign.Start
+            }
         }
         LayoutAxis.None -> if (modifier.weight != null) warnings += "Modifier.weight works only in a Row or Column"
     }
@@ -189,7 +202,7 @@ internal fun resolve(modifier: FoldedModifier, parent: PanelLayout): ResolvedLay
 /** The fill coefficient of a child's slot along its parent's axis, or null for an auto slot. */
 private fun mainAxisFill(weight: Float?, fillMax: Boolean, mainAxis: MainAxis, warnings: MutableList<String>): Float? =
     when (mainAxis) {
-        MainAxis.Weighted -> weight ?: if (fillMax) 1f else null
+        MainAxis.Weighted, MainAxis.Packed -> weight ?: if (fillMax) 1f else null
         MainAxis.Scrolling -> {
             if (weight != null) warnings += "Modifier.weight has no space to share in a scroll container"
             null
@@ -258,8 +271,12 @@ internal class RavenSlotTarget(private val widget: Rid) : SlotTarget {
     override fun maxSize(width: Float, height: Float) = Rwidget_set_max_size(widget, width, height)
 }
 
-/** Where layout warnings go. Each is given once per process. */
-internal var layoutWarningSink: (String) -> Unit = { println("compose-raven: warning: $it") }
+/**
+ * Where layout and window warnings go. Layout warnings are given once per process ([warnOnce]);
+ * a window's or a `HeaderBar`'s, each time.
+ */
+@InternalComposeRavenApi
+public var layoutWarningSink: (String) -> Unit = { println("compose-raven: warning: $it") }
 
 private val warningsGiven = mutableSetOf<String>()
 

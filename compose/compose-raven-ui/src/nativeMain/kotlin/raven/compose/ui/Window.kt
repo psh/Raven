@@ -173,6 +173,11 @@ private class OpenedWindow {
 /** The window a composable is in, for [WindowBackdrop]. */
 internal val LocalRavenWindow = staticCompositionLocalOf<RavenWindow> { error("put it in a Window") }
 
+/** Whether the window the composable is in draws its own title bar (`customHeader`), for a `HeaderBar`. */
+@InternalComposeRavenApi
+@Composable
+public fun windowHasCustomHeader(): Boolean = LocalRavenWindow.current.flags.customHeader
+
 /**
  * A Raven window, its fixed Overlay root, and the composition that fills it. Raven reports
  * resizes, but no moves and no change of placement, so the host has the window [followRaven]
@@ -185,7 +190,8 @@ internal class RavenWindow(
     settings: WindowSettings,
     private val onCloseRequest: () -> Unit,
 ) {
-    private val flags = settings.flags
+    /** The flags the window opened with, which it keeps. */
+    val flags = settings.flags
 
     // Created hidden, so it shows at its position and minimum size.
     val window: Rid = windowCalls.create(
