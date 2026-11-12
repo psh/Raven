@@ -1000,7 +1000,8 @@ static int rvn_theme_watch(const char* path, void* user) {
 		rvn_free(text);
 		if (!parsed) return R_FALSE;
 	}
-	rvn_theme_load_file(path);
+	/* reported like an interface file, a mistake included */
+	rvn_live_reloaded(path, rvn_theme_load_file(path) != NULL);
 	return R_TRUE;
 }
 

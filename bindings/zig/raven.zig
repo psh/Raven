@@ -1299,9 +1299,12 @@ pub const RViewportDrawCallback = ?*const fn (info: ?*const RViewportDrawInfo, u
 pub const RViewportResizeCallback = ?*const fn (viewport: Rid, width: c_int, height: c_int, user_data: ?*anyopaque) callconv(.c) void;
 pub const RPaintCallback = ?*const fn (widget: Rid, painter: ?*RPainter, width: f32, height: f32, user_data: ?*anyopaque) callconv(.c) void;
 pub const RMeasureCallback = ?*const fn (widget: Rid, width: ?*f32, height: ?*f32, user_data: ?*anyopaque) callconv(.c) void;
-/// Called each time a file was loaded again.
-/// path The file given when the interface was created.
-/// ok   R_FALSE when the file could not be used (the interface is unchanged).
+/// Called each time a file was loaded again: an interface file
+/// or a theme file.
+/// path The file given when the interface was created, or the
+///             theme file (as given to Rtheme_load).
+/// ok   R_FALSE when the file could not be used (the interface,
+///             or the theme, is unchanged).
 ///
 /// Widgets that had to be built again have new handles: this is the
 /// place to look them up again (Rwidget_find).

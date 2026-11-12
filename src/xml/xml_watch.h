@@ -31,6 +31,8 @@ void rvn_live_dependency(const char* path);
  * (the caller must not free it). To call between rvn_live_begin and rvn_live_end.
  */
 void rvn_live_add(const char* path, int is_window, Rid target, rvn_xml_document_t* document);
+/** Tells the application's reload callback that a file was loaded again (`ok`: it could be used). */
+void rvn_live_reloaded(const char* path, int ok);
 /** Watches a file of <Widget> declarations (Rxml_register_widgets_from_file). */
 void rvn_live_watch_widgets(const char* path);
 void rvn_live_shutdown(void);

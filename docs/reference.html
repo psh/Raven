@@ -1579,9 +1579,9 @@ there; a Border eases them itself.</td></tr><tr><td><code>float press</code></td
 <p>Texts given from memory are not concerned.</p>
 <div class="d" id="Rxml_set_live_reload"><pre class="sig">void Rxml_set_live_reload(int enabled);</pre><p>Turns live reload on or off. It is on by default; the environment variable RAVEN_LIVE_RELOAD=0 turns it off without rebuilding. When off, files are never looked at again.</p></div>
 <div class="d" id="Rxml_get_live_reload"><pre class="sig">int Rxml_get_live_reload(void);</pre></div>
-<div class="d" id="RXmlReloadCallback"><pre class="sig">typedef void (*RXmlReloadCallback)(const char* path, int ok, void* user_data);</pre><p>Called each time a file was loaded again.</p>
+<div class="d" id="RXmlReloadCallback"><pre class="sig">typedef void (*RXmlReloadCallback)(const char* path, int ok, void* user_data);</pre><p>Called each time a file was loaded again: an interface file or a theme file.</p>
 <p>Widgets that had to be built again have new handles: this is the place to look them up again (<a href="#Rwidget_find">Rwidget_find</a>).</p>
-<dl><dt>path</dt><dd>The file given when the interface was created.</dd><dt>ok</dt><dd><a href="#R_FALSE">R_FALSE</a> when the file could not be used (the interface is unchanged).</dd></dl></div>
+<dl><dt>path</dt><dd>The file given when the interface was created, or the theme file (as given to <a href="#Rtheme_load">Rtheme_load</a>).</dd><dt>ok</dt><dd><a href="#R_FALSE">R_FALSE</a> when the file could not be used (the interface, or the theme, is unchanged).</dd></dl></div>
 <div class="d" id="Rxml_set_reload_callback"><pre class="sig">void Rxml_set_reload_callback(<a href="#RXmlReloadCallback">RXmlReloadCallback</a> callback, void* user_data);</pre></div>
 <div class="d" id="Rxml_check_files"><pre class="sig">int Rxml_check_files(void);</pre><p>Looks at the files now, without waiting for the next look (there are five per second), even when live reload is off.</p>
 <dl><dt>returns</dt><dd>The number of files found changed.</dd></dl></div>

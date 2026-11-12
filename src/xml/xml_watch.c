@@ -574,6 +574,17 @@ static int rvn_live_reload_widget(rvn_live_t* live, rvn_widget_t* widget, rvn_xm
 	return R_TRUE;
 }
 
+void rvn_live_reloaded(const char* path, int ok) {
+	char* copy;
+	if (!g_live.callback) return;
+	/* (the callback may load files, which can free the one the path belongs to) */
+	copy = rvn_strdup(path);
+	rvn_dispatch_begin();
+	g_live.callback(copy, ok, g_live.callback_user);
+	rvn_dispatch_end();
+	rvn_free(copy);
+}
+
 /* R_TRUE when the file was used (or will never be); R_FALSE to try again. */
 static int rvn_live_reload(rvn_live_t* live) {
 	rvn_xml_document_t document;
@@ -636,13 +647,7 @@ static int rvn_live_reload(rvn_live_t* live) {
 	rvn_xml_pop_file_dir(previous_dir);
 	rvn_free(text);
 
-	if (g_live.callback) {
-		char* path = rvn_strdup(live->path);
-		rvn_dispatch_begin();
-		g_live.callback(path, ok, g_live.callback_user);
-		rvn_dispatch_end();
-		rvn_free(path);
-	}
+	rvn_live_reloaded(live->path, ok);
 	/* (an error was reported: the file is left alone until it changes again) */
 	return R_TRUE;
 }

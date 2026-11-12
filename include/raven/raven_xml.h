@@ -216,9 +216,12 @@ extern "C" {
 	RAVEN_API int Rxml_get_live_reload(void);
 
 	/**
-	 * @brief Called each time a file was loaded again.
-	 * @param path The file given when the interface was created.
-	 * @param ok   R_FALSE when the file could not be used (the interface is unchanged).
+	 * @brief Called each time a file was loaded again: an interface file
+	 * or a theme file.
+	 * @param path The file given when the interface was created, or the
+	 *             theme file (as given to Rtheme_load).
+	 * @param ok   R_FALSE when the file could not be used (the interface,
+	 *             or the theme, is unchanged).
 	 *
 	 * Widgets that had to be built again have new handles: this is the
 	 * place to look them up again (Rwidget_find).

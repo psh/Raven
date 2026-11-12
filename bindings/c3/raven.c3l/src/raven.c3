@@ -1633,7 +1633,8 @@ alias ViewportResizeCallback = fn void(Id viewport, CInt width, CInt height, voi
 alias PaintCallback = fn void(Id widget, Painter* painter, float width, float height, void* user_data);
 alias MeasureCallback = fn void(Id widget, float* width, float* height, void* user_data);
 <*
- Called each time a file was loaded again.
+ Called each time a file was loaded again: an interface file
+ or a theme file.
 
  Widgets that had to be built again have new handles: this is the
  place to look them up again (Rwidget_find).

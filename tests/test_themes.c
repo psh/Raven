@@ -344,6 +344,67 @@ static void test_theme_files(void) {
 	Rwindow_destroy(window);
 }
 
+/* The names of the themes when the reload callback ran: what it sees is the theme as reloaded. */
+static int g_theme_seen;
+
+static void on_theme_reload(const char* path, int ok, void* user_data) {
+	int i;
+	on_reload(path, ok, user_data);
+	g_theme_seen = R_FALSE;
+	for (i = 0; i < Rtheme_get_count(); i++) {
+		if (strcmp(Rtheme_get_name_at(i), "Renamed") == 0) g_theme_seen = R_TRUE;
+	}
+}
+
+/* A theme file's reload is reported by the reload callback, as an interface file's is. */
+static void test_theme_reload_callback(void) {
+	char path[512];
+	snprintf(path, sizeof(path), "%s/raven_test_reported_theme.xml", temp_dir());
+	write_text(path, "<Theme Name=\"Reported\" Base=\"Light\" Accent=\"#00AA00\"/>");
+	CHECK_STR(Rtheme_load(path), "Reported");
+	Rxml_set_reload_callback(on_theme_reload, NULL);
+	g_reloads = 0;
+	g_reload_path[0] = 0;
+
+	/* nothing changed: nothing is reported */
+	CHECK(Rxml_check_files() == 0);
+	CHECK(g_reloads == 0);
+
+	/* saved under another name: reported once, after the theme was loaded again */
+	write_text(path, "<Theme Name=\"Renamed\" Base=\"Light\" Accent=\"#AA00AA\"/>");
+	CHECK(Rxml_check_files() >= 1);
+	CHECK(g_reloads == 1 && g_reload_ok);
+	CHECK_STR(g_reload_path, path);
+	CHECK(g_theme_seen);
+
+	/* a file with a mistake: reported once, not ok, when it is no longer tried again */
+	EXPECT_ERRORS_BEGIN();
+	write_text(path, "<Theme Name=\"Renamed\" Base=\"Light\" Accent=\"#00FFFF\"");
+	Rxml_check_files();
+	Rxml_check_files();
+	CHECK(g_reloads == 1);
+	Rxml_check_files();
+	Rxml_check_files();
+	EXPECT_ERRORS_END(1);
+	CHECK(g_reloads == 2 && !g_reload_ok);
+	CHECK_STR(g_reload_path, path);
+
+	/* mended: reported ok */
+	write_text(path, "<Theme Name=\"Renamed\" Base=\"Light\" Accent=\"#0000AA\"/>");
+	CHECK(Rxml_check_files() >= 1);
+	CHECK(g_reloads == 3 && g_reload_ok);
+
+	/* no callback: reloaded all the same */
+	Rxml_set_reload_callback(NULL, NULL);
+	write_text(path, "<Theme Name=\"Renamed\" Base=\"Light\" Accent=\"#AA0000\"/>");
+	CHECK(Rxml_check_files() >= 1);
+	CHECK(g_reloads == 3);
+	CHECK(Rtheme_use("Renamed"));
+	CHECK(theme_color(R_COLOR_ACCENT) == 0xAA0000FFu);
+	Rtheme_apply(R_THEME_DARK);
+	remove(path);
+}
+
 /* ---------------------------------------------------------------------------
  *  Live reload of interface files
  * ------------------------------------------------------------------------- */
@@ -832,6 +893,7 @@ int main(void) {
 	RUN(test_styles);
 	RUN(test_accent_and_scopes);
 	RUN(test_theme_files);
+	RUN(test_theme_reload_callback);
 	RUN(test_live_reload);
 	RUN(test_looks);
 	RUN(test_macos_glass);
