@@ -32,7 +32,8 @@ import raven.native.toRavenString
 /**
  * The app theme as one host sees it: the app-wide settings its application-level `RavenTheme`
  * made, and what Raven has from them, [colors] and [themeNames], as snapshot state. Raven's own
- * changes (a theme file loaded or reloaded) reach it through [refresh].
+ * changes (a theme file loaded, or reloaded and reported to the host's reload callback) reach it
+ * through [refresh].
  */
 internal class HostTheme {
     var colors: RavenColors by mutableStateOf(RavenColors(List(COLOR_COUNT) { Color.Unspecified }))
@@ -40,9 +41,6 @@ internal class HostTheme {
 
     var themeNames: List<String> by mutableStateOf(emptyList())
         private set
-
-    /** Whether a theme file was loaded, which Raven may reload while live reload is on. */
-    var watchesFiles: Boolean = false
 
     // What the application-level RavenTheme last asked for; null is "left as Raven has it".
     private var look: Look? = null

@@ -28,7 +28,6 @@ import raven.native.toRavenString
 public fun loadTheme(path: String): String {
     val host = runningHost("loadTheme")
     val name = loaded(Rtheme_load(path)) { "the theme file $path" }
-    host.theme.watchesFiles = true
     host.theme.refresh()
     return name
 }

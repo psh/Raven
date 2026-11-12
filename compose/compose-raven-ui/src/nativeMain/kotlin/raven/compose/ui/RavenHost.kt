@@ -46,7 +46,6 @@ import raven.cinterop.Rset_frame_callback
 import raven.cinterop.Rshutdown
 import raven.cinterop.Rwait_frame
 import raven.cinterop.Rxml_check_files
-import raven.cinterop.Rxml_get_live_reload
 import raven.cinterop.Rxml_set_live_reload
 import raven.cinterop.Rxml_set_reload_callback
 import raven.compose.ui.theme.HostTheme
@@ -161,12 +160,7 @@ public class RavenHost(
      * Looks at the files Raven loaded now, even with live reload off, and reloads those that
      * changed: how a test reloads a theme file. Returns how many changed.
      */
-    public fun checkFiles(): Int {
-        val changed = Rxml_check_files()
-        // Raven's reload callback reports interface files only, not theme files.
-        theme.refresh()
-        return changed
-    }
+    public fun checkFiles(): Int = Rxml_check_files()
 
     /** Draws one frame without waiting. False once Raven was asked to quit. */
     public fun frame(): Boolean = Rdraw_frame() == R_TRUE
@@ -294,9 +288,6 @@ public class RavenHost(
             windows.forEach { it.followRaven() }
             // Nor a text editor's cursor: each follower reads what it follows here, before recomposing.
             followedNodes.forEach { node -> node.follower?.follow(node.widget) }
-            // Raven reloads a changed theme file in a task before this callback, without calling its
-            // reload callback, which reports interface files only.
-            if (theme.watchesFiles && Rxml_get_live_reload() == R_TRUE) theme.refresh()
             // What was dispatched since the frame's tasks ran, a timer's state write say, joins this frame.
             dispatcher.drain()
             // Recomposes and applies, inside the frame callback, so layout and paint follow.
@@ -310,6 +301,7 @@ public class RavenHost(
         }
     }
 
+    /** Raven reloaded a file: a theme file can have been renamed, or the app theme's colours changed. */
     internal fun onReload() {
         try {
             theme.refresh()

@@ -278,9 +278,10 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
   executable follows its theme files and a release one never looks at them again; it calls
   `Rxml_set_live_reload` right after `Rinit`. When the `RAVEN_LIVE_RELOAD` environment variable is
   set, Raven's reading of it wins and `liveReload` is ignored. compose-raven owns
-  `Rxml_set_reload_callback`, uses it only to refresh `RavenTheme.themeNames`
-  ([section 8](#phase-2-theming)), and runs it inside the C-boundary catch; apps get no reload
-  event. `singleWindowApplication` takes `liveReload` too.
+  `Rxml_set_reload_callback`, which Raven calls for a reloaded theme file too
+  ([fork change 8](#11-required-raven-changes)), uses it only to refresh `RavenTheme.themeNames`
+  and `RavenTheme.colors` ([section 8](#phase-2-theming)), and runs it inside the C-boundary catch;
+  apps get no reload event. `singleWindowApplication` takes `liveReload` too.
 
 Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-threading.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
@@ -1169,7 +1170,7 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 ## 11. Required Raven changes
 
 These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
-6 and 7 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
+6, 7 and 8 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -1217,10 +1218,15 @@ for change 6, which only a real macOS window reaches.
    own, else a style's `R_METRIC_CORNER_RADIUS`). With a C test in `tests/test_layout.c` and the
    language bindings regenerated. Found by
    [Surface, FlowRow and Expander](issues/archive/0064-surface-flowrow-and-expander.md).
-8. **The reload callback for theme files** (proposed, phase 2): Raven reloads a changed theme file
-   without calling `Rxml_set_reload_callback`, which reports interface files only, so compose-raven
-   has to re-read the theme names and colours every frame while live reload is on. Decided in
-   [Raven reports theme file reloads](issues/0090-raven-reports-theme-file-reloads.md).
+8. **The reload callback for theme files** (required, phase 2): Raven reloaded a changed theme
+   file without calling `Rxml_set_reload_callback`, which reported interface files only, so
+   compose-raven had to re-read the theme names and colours every frame while live reload was on.
+   A theme file's reload now calls it with the file's path and whether it loaded, as an interface
+   file's does, after the theme was loaded again; a file with a mistake is reported once, not ok,
+   when Raven stops trying it again. No function changes, only the header's description of the
+   callback. With a C test in `tests/test_themes.c`. Found by
+   [RavenTheme and theme files](issues/archive/0065-raventheme-and-theme-files.md), made in
+   [Raven reports theme file reloads](issues/archive/0090-raven-reports-theme-file-reloads.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
