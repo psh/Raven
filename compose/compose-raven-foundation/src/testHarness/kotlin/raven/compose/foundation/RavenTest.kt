@@ -15,20 +15,30 @@ import kotlinx.cinterop.value
 import raven.cinterop.RError
 import raven.cinterop.RMemoryStats
 import raven.cinterop.RSeverity
+import raven.cinterop.RKey
+import raven.cinterop.R_KEY_DOWN
+import raven.cinterop.R_KEY_ENTER
+import raven.cinterop.R_KEY_HOME
 import raven.cinterop.R_SEVERITY_ERROR
 import raven.cinterop.R_MOUSE_LEFT
 import raven.cinterop.R_SEVERITY_FATAL
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_WIDGET_CHECKBOX
+import raven.cinterop.R_WIDGET_COMBO_BOX
 import raven.cinterop.R_WIDGET_LABEL
+import raven.cinterop.R_WIDGET_SPIN_BOX
 import raven.cinterop.Rcheckbox_is_checked
+import raven.cinterop.Rcombo_box_get_item_count
+import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rid
 import raven.cinterop.Rlabel_get_text
+import raven.cinterop.Rspin_box_get_value
 import raven.cinterop.Rwidget_get_accessible_name
 import raven.cinterop.Rwidget_get_rect
 import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_get_window
+import raven.cinterop.Rwindow_inject_key
 import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
 import raven.cinterop.Rwindow_inject_text
@@ -164,6 +174,50 @@ internal class NodeInteraction(
         if (checked != expected) fail("the node with $selector is ${if (checked) "checked" else "not checked"}")
     }
 
+    /** Fails unless the node is a combo box with the item at [expected] selected, or none at -1. */
+    fun assertSelectedIndex(expected: Int): NodeInteraction = apply {
+        val selected = Rcombo_box_get_selected(comboBox())
+        if (selected != expected) fail("the node with $selector has item $selected selected, expected $expected")
+    }
+
+    /** Fails unless the node is a spin box holding [expected]. */
+    fun assertValue(expected: Double): NodeInteraction = apply {
+        val widget = fetchWidget()
+        if (Rwidget_get_type(widget) != R_WIDGET_SPIN_BOX) fail("the node with $selector has no number value")
+        val value = Rspin_box_get_value(widget)
+        if (value != expected) fail("the node with $selector holds $value, expected $expected")
+    }
+
+    /**
+     * Picks the item at [index] of the node's combo box as the user would with the keyboard: a
+     * click opens its list, Home and Down move to the item, and Enter picks it.
+     */
+    fun performSelection(index: Int): NodeInteraction = apply {
+        val widget = comboBox()
+        val count = Rcombo_box_get_item_count(widget)
+        if (index !in 0 until count) fail("the node with $selector has $count items, so none at $index")
+        click(widget)
+        press(widget, R_KEY_HOME)
+        repeat(index) { press(widget, R_KEY_DOWN) }
+        press(widget, R_KEY_ENTER)
+    }
+
+    /**
+     * Types [value] into the node's spin box as the user would: a click starts typing over the
+     * value, and Enter takes what was typed.
+     */
+    fun performValueInput(value: Double): NodeInteraction = apply {
+        val widget = fetchWidget()
+        if (Rwidget_get_type(widget) != R_WIDGET_SPIN_BOX) fail("the node with $selector takes no number")
+        click(widget)
+        Rwindow_inject_text(Rwidget_get_window(widget), value.toString())
+        press(widget, R_KEY_ENTER)
+    }
+
+    private fun comboBox(): Rid = fetchWidget().also {
+        if (Rwidget_get_type(it) != R_WIDGET_COMBO_BOX) fail("the node with $selector is not a combo box")
+    }
+
     /** Presses and releases the left button at the centre of the node's widget, as the user would. */
     fun performClick(): NodeInteraction = apply { click(fetchWidget()) }
 
@@ -183,6 +237,12 @@ internal class NodeInteraction(
         Rwindow_inject_mouse_move(window, rect.x + rect.width / 2, rect.y + rect.height / 2)
         Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_TRUE)
         Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_FALSE)
+    }
+
+    private fun press(widget: Rid, key: RKey) {
+        val window = Rwidget_get_window(widget)
+        Rwindow_inject_key(window, key, R_TRUE, 0u)
+        Rwindow_inject_key(window, key, R_FALSE, 0u)
     }
 }
 

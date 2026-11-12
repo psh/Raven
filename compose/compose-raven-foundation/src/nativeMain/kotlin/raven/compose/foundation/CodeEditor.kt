@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_TEXT_EDITOR
+import raven.cinterop.Ris_ui_thread
+import raven.cinterop.Rlanguage_get_count
+import raven.cinterop.Rlanguage_get_name
 import raven.cinterop.Rtext_editor_set_language
 import raven.cinterop.Rtext_editor_set_line_numbers
 import raven.cinterop.Rtext_editor_set_read_only
@@ -14,6 +17,7 @@ import raven.compose.ui.TextEditorChanged
 import raven.compose.ui.TextEditorText
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
+import raven.native.toRavenString
 
 private val CodeEditorWidget = WidgetDescriptor("CodeEditor", R_WIDGET_TEXT_EDITOR, events = listOf(TextEditorChanged))
 
@@ -52,4 +56,13 @@ public fun CodeEditor(
         bind(value, TextEditorText)
         bind(onValueChange, TextEditorChanged)
     })
+}
+
+/**
+ * The names of Raven's editor languages, each one a [CodeEditor] `language`. Raven knows them
+ * only while it runs, so this is valid only inside the composition, on Raven's UI thread.
+ */
+public fun codeEditorLanguages(): List<String> {
+    check(Ris_ui_thread() == R_TRUE) { "codeEditorLanguages() is valid only inside the composition, on Raven's UI thread" }
+    return List(Rlanguage_get_count()) { Rlanguage_get_name(it).toRavenString() }
 }

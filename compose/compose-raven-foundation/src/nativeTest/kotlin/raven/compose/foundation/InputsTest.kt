@@ -7,7 +7,11 @@ import raven.cinterop.RKey
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_KEY_LEFT
 import raven.cinterop.R_TRUE
+import raven.cinterop.Rcombo_box_get_item_count
+import raven.cinterop.Rcombo_box_get_item_text
+import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rslider_get_value
+import raven.cinterop.Rspin_box_get_value
 import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_key
@@ -143,5 +147,112 @@ class InputsTest {
         // Two steps between 0 and 90 leave 0, 30, 60 and 90.
         setContent { Slider(40f, onValueChange = {}, Modifier.testTag("slider"), valueRange = 0f..90f, steps = 2) }
         assertEquals(30f, sliderValue("slider"), 0.001f)
+    }
+
+    private val fruit = listOf("Apple", "Banana", "Cherry")
+
+    @Test
+    fun aComboBoxFollowsTheApp() = runRavenTest {
+        var selected by mutableStateOf(-1)
+        val changes = mutableListOf<Int>()
+        setContent {
+            ComboBox(fruit, selected, onSelectedIndexChange = {
+                changes += it
+                selected = it
+            }, Modifier.testTag("combo"))
+        }
+        onNodeWithTag("combo").assertSelectedIndex(-1)
+        val combo = onNodeWithTag("combo").fetchWidget()
+        onNodeWithTag("combo").performSelection(2)
+        // Shown at once, then kept: the app's state now agrees, so nothing is written back.
+        assertEquals(2, Rcombo_box_get_selected(combo))
+        frame()
+        assertEquals(2, Rcombo_box_get_selected(combo))
+        assertEquals(listOf(2), changes)
+        onNodeWithTag("combo").assertSelectedIndex(2)
+        selected = 0
+        onNodeWithTag("combo").assertSelectedIndex(0)
+    }
+
+    @Test
+    fun aComboBoxWhoseAppIgnoresTheSelectionReverts() = runRavenTest {
+        val changes = mutableListOf<Int>()
+        setContent { ComboBox(fruit, 1, onSelectedIndexChange = { changes += it }, Modifier.testTag("combo")) }
+        onNodeWithTag("combo").performSelection(2)
+        onNodeWithTag("combo").assertSelectedIndex(1)
+        assertEquals(listOf(2), changes)
+    }
+
+    @Test
+    fun newItemsKeepTheSelectedIndex() = runRavenTest {
+        var items by mutableStateOf(fruit)
+        setContent { ComboBox(items, 1, onSelectedIndexChange = {}, Modifier.testTag("combo")) }
+        onNodeWithTag("combo").assertSelectedIndex(1)
+        items = listOf("Red", "Yellow", "Green", "Blue")
+        onNodeWithTag("combo").assertSelectedIndex(1)
+        val combo = onNodeWithTag("combo").fetchWidget()
+        assertEquals(4, Rcombo_box_get_item_count(combo))
+        assertEquals("Yellow", Rcombo_box_get_item_text(combo, 1).toRavenString())
+    }
+
+    @Test
+    fun aSpinBoxFollowsTheApp() = runRavenTest {
+        var value by mutableStateOf(10.0)
+        val changes = mutableListOf<Double>()
+        setContent {
+            SpinBox(value, onValueChange = {
+                changes += it
+                value = it
+            }, Modifier.testTag("spin"))
+        }
+        onNodeWithTag("spin").assertValue(10.0)
+        val spin = onNodeWithTag("spin").fetchWidget()
+        onNodeWithTag("spin").performValueInput(42.5)
+        // Shown at once, then kept, as an accepted selection is.
+        assertEquals(42.5, Rspin_box_get_value(spin))
+        frame()
+        assertEquals(42.5, Rspin_box_get_value(spin))
+        assertEquals(listOf(42.5), changes)
+        value = 7.0
+        onNodeWithTag("spin").assertValue(7.0)
+    }
+
+    @Test
+    fun aSpinBoxWhoseAppIgnoresTheValueReverts() = runRavenTest {
+        setContent { SpinBox(10.0, onValueChange = {}, Modifier.testTag("spin")) }
+        onNodeWithTag("spin").performValueInput(42.0)
+        onNodeWithTag("spin").assertValue(10.0)
+    }
+
+    @Test
+    fun aSpinBoxKeepsToItsRange() = runRavenTest {
+        var value by mutableStateOf(10.0)
+        setContent { SpinBox(value, onValueChange = { value = it }, Modifier.testTag("spin"), valueRange = 0.0..50.0) }
+        onNodeWithTag("spin").performValueInput(500.0)
+        assertEquals(50.0, value)
+        onNodeWithTag("spin").assertValue(50.0)
+    }
+
+    @Test
+    fun anIntSpinBoxRounds() = runRavenTest {
+        var value by mutableStateOf(1)
+        val changes = mutableListOf<Int>()
+        setContent {
+            SpinBox(value, onValueChange = {
+                changes += it
+                value = it
+            }, Modifier.testTag("spin"))
+        }
+        onNodeWithTag("spin").performValueInput(2.6)
+        assertEquals(listOf(3), changes)
+        // The fraction typed is written back as the whole number the app took.
+        onNodeWithTag("spin").assertValue(3.0)
+    }
+
+    @Test
+    fun anIntSpinBoxWhoseAppIgnoresTheValueReverts() = runRavenTest {
+        setContent { SpinBox(5, onValueChange = {}, Modifier.testTag("spin"), valueRange = 0..10) }
+        onNodeWithTag("spin").performValueInput(8.0)
+        onNodeWithTag("spin").assertValue(5.0)
     }
 }

@@ -14,6 +14,8 @@ import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class CodeEditorTest {
     private fun RavenTestScope.editorText(): String = Rtext_editor_get_text(onNodeWithTag("editor").fetchWidget()).toRavenString()
@@ -85,5 +87,17 @@ class CodeEditorTest {
         assertEquals("XML", editorLanguage())
         language = null
         assertEquals("", editorLanguage())
+    }
+
+    @Test
+    fun codeEditorLanguagesIncludesKotlin() = runRavenTest {
+        var languages = emptyList<String>()
+        setContent { languages = codeEditorLanguages() }
+        assertTrue("Kotlin" in languages, "Kotlin is not in $languages")
+    }
+
+    @Test
+    fun codeEditorLanguagesFailsOutsideTheComposition() {
+        assertFailsWith<IllegalStateException> { codeEditorLanguages() }
     }
 }

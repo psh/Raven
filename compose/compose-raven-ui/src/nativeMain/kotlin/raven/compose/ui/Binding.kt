@@ -25,10 +25,16 @@ import raven.cinterop.Rbutton_set_clicked_callback
 import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rcheckbox_set_changed_callback
 import raven.cinterop.Rcheckbox_set_checked
+import raven.cinterop.Rcombo_box_get_selected
+import raven.cinterop.Rcombo_box_set_changed_callback
+import raven.cinterop.Rcombo_box_set_selected
 import raven.cinterop.Rid
 import raven.cinterop.Rslider_get_value
 import raven.cinterop.Rslider_set_changed_callback
 import raven.cinterop.Rslider_set_value
+import raven.cinterop.Rspin_box_get_value
+import raven.cinterop.Rspin_box_set_changed_callback
+import raven.cinterop.Rspin_box_set_value
 import raven.cinterop.Rtext_editor_get_text
 import raven.cinterop.Rtext_editor_set_changed_callback
 import raven.cinterop.Rtext_editor_set_text
@@ -40,6 +46,7 @@ import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
 import raven.native.callbackTarget
 import raven.native.toRavenString
+import kotlin.math.roundToInt
 
 // The binding layer: composables are declarations over these few protocols.
 
@@ -236,6 +243,23 @@ public val SliderValue: ControlledValue<Float> = ControlledValue(
     write = { widget, value -> Rslider_set_value(widget, value) },
 )
 
+/** A combo box's selected index, -1 when nothing is selected. Raven selects nothing for an index it doesn't have. */
+@InternalComposeRavenApi
+public val ComboBoxSelected: ControlledValue<Int> = ControlledValue(
+    read = { Rcombo_box_get_selected(it) },
+    write = { widget, index -> Rcombo_box_set_selected(widget, index) },
+)
+
+/**
+ * A spin box's value. Raven clamps what is written to the spin box's range. The `Int` spin box
+ * composes whole numbers into it too, so a fraction the user typed is written back rounded.
+ */
+@InternalComposeRavenApi
+public val SpinBoxValue: ControlledValue<Double> = ControlledValue(
+    read = { Rspin_box_get_value(it) },
+    write = { widget, value -> Rspin_box_set_value(widget, value) },
+)
+
 @InternalComposeRavenApi
 public val ButtonClicked: Event<() -> Unit> = Event { widget, userData ->
     Rbutton_set_clicked_callback(widget, onButtonClicked, userData)
@@ -271,6 +295,22 @@ public val SliderChanged: Event<(Float) -> Unit> = Event(marks = SliderValue) { 
     Rslider_set_changed_callback(widget, onSliderChanged, userData)
 }
 
+@InternalComposeRavenApi
+public val ComboBoxChanged: Event<(Int) -> Unit> = Event(marks = ComboBoxSelected) { widget, userData ->
+    Rcombo_box_set_changed_callback(widget, onComboBoxChanged, userData)
+}
+
+@InternalComposeRavenApi
+public val SpinBoxChanged: Event<(Double) -> Unit> = Event(marks = SpinBoxValue) { widget, userData ->
+    Rspin_box_set_changed_callback(widget, onSpinBoxChanged, userData)
+}
+
+/** An `Int` spin box's change: the same callback, its value rounded with `roundToInt()`. */
+@InternalComposeRavenApi
+public val IntSpinBoxChanged: Event<(Int) -> Unit> = Event(marks = SpinBoxValue) { widget, userData ->
+    Rspin_box_set_changed_callback(widget, onIntSpinBoxChanged, userData)
+}
+
 private val onRadioChanged = staticCFunction { _: Rid, checked: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, RadioClicked) { if (checked == R_TRUE) it() }
 }
@@ -293,4 +333,16 @@ private val onTextEditorChanged = staticCFunction { editor: Rid, userData: COpaq
 
 private val onSliderChanged = staticCFunction { _: Rid, value: Float, userData: COpaquePointer? ->
     dispatchEvent(userData, SliderChanged) { it(value) }
+}
+
+private val onComboBoxChanged = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ComboBoxChanged) { it(index) }
+}
+
+private val onSpinBoxChanged = staticCFunction { _: Rid, value: Double, userData: COpaquePointer? ->
+    dispatchEvent(userData, SpinBoxChanged) { it(value) }
+}
+
+private val onIntSpinBoxChanged = staticCFunction { _: Rid, value: Double, userData: COpaquePointer? ->
+    dispatchEvent(userData, IntSpinBoxChanged) { it(value.roundToInt()) }
 }
