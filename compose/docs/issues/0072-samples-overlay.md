@@ -9,7 +9,7 @@ side. Spec: [10. Samples](../spec.md#10-samples),
 [8: glass and BackgroundBlur](../spec.md#phase-2-glass-and-backgroundblur).
 
 **Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
-[Modifier.material and BackgroundBlur](0067-material-and-backgroundblur.md),
+[Modifier.material and BackgroundBlur](archive/0067-material-and-backgroundblur.md),
 [Window: WindowState and its parameters](archive/0086-window-windowstate-and-its-parameters.md).
 
 ## Deliverables
