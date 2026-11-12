@@ -5,9 +5,9 @@ status: closed
 # MenuBar(native)
 
 `MenuBar` gains `native: Boolean = false`. Raven 0.2.3 shows a window's first MenuBar in the macOS
-system menu bar by default; [Menus and KeyShortcut](archive/0061-menus-and-keyshortcut.md) turned
+system menu bar by default; [Menus and KeyShortcut](0061-menus-and-keyshortcut.md) turned
 that off so menus are drawn in the window everywhere, and the app now chooses. Spec:
-[8: menus and the header bar](../spec.md#phase-2-menus-and-the-header-bar), section 12's MenuBar
+[8: menus and the header bar](../../spec.md#phase-2-menus-and-the-header-bar), section 12's MenuBar
 row. Decided on 2026-11-12, when the menus ticket reported the macOS default.
 
 **Depends on:** nothing open.
