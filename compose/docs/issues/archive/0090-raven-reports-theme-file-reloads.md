@@ -6,13 +6,13 @@ status: closed
 
 Raven reloads a changed theme file (`rvn_theme_watch` in `src/widget/theme.c`) without calling the
 reload callback (`Rxml_set_reload_callback`), which only reports interface files
-(`src/xml/xml_watch.c`). So [RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md)
+(`src/xml/xml_watch.c`). So [RavenTheme and theme files](0065-raventheme-and-theme-files.md)
 refreshes `RavenTheme.themeNames` and `RavenTheme.colors` by re-reading them every frame while
 live reload is on and a theme file is loaded, instead of when a reload happens, as
-[Raven's live reload under compose-raven](archive/0084-ravens-live-reload-under-compose-raven.md)
+[Raven's live reload under compose-raven](0084-ravens-live-reload-under-compose-raven.md)
 planned. This ticket makes it fork change 8 and drops the per-frame check. Spec:
-[11. Required Raven changes](../spec.md#11-required-raven-changes),
-[4. Application host](../spec.md#4-application-host) (live reload).
+[11. Required Raven changes](../../spec.md#11-required-raven-changes),
+[4. Application host](../../spec.md#4-application-host) (live reload).
 
 **Depends on:** nothing open.
 
