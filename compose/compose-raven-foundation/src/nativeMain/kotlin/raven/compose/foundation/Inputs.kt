@@ -1,6 +1,15 @@
 package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import raven.cinterop.R_COLOR_ACCENT
+import raven.cinterop.R_COLOR_FOCUS
+import raven.cinterop.R_COLOR_HANDLE
+import raven.cinterop.R_COLOR_INPUT
+import raven.cinterop.R_COLOR_SELECTION
+import raven.cinterop.R_COLOR_TEXT
+import raven.cinterop.R_COLOR_TEXT_PLACEHOLDER
+import raven.cinterop.R_COLOR_TRACK
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_COMBO_BOX
@@ -32,6 +41,8 @@ import raven.compose.ui.TextChanged
 import raven.compose.ui.TextInputText
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
+import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.Shape
 
 private val TextFieldWidget = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged))
 private val SliderWidget = WidgetDescriptor("Slider", R_WIDGET_SLIDER, events = listOf(SliderChanged))
@@ -59,11 +70,61 @@ private val SpinBoxRange = Property<ClosedFloatingPointRange<Double>> { widget, 
 private val SpinBoxStep = Property<Double> { widget, step -> Rspin_box_set_step(widget, step) }
 private val Decimals = Property<Int> { widget, decimals -> Rspin_box_set_decimals(widget, decimals) }
 
+private val TextFieldShape = cornerRadiusProperty("TextField")
+
+/** A [TextField]'s colours, from [TextFieldDefaults.colors]. [Color.Unspecified] keeps the theme's. */
+@Immutable
+public data class TextFieldColors(
+    /** The field's background. */
+    public val containerColor: Color,
+    public val textColor: Color,
+    public val placeholderColor: Color,
+    /** The outline of the focused field. */
+    public val focusedIndicatorColor: Color,
+    /** Selected text's background. */
+    public val selectionColor: Color,
+)
+
+public object TextFieldDefaults {
+    public fun colors(
+        containerColor: Color = Color.Unspecified,
+        textColor: Color = Color.Unspecified,
+        placeholderColor: Color = Color.Unspecified,
+        focusedIndicatorColor: Color = Color.Unspecified,
+        selectionColor: Color = Color.Unspecified,
+    ): TextFieldColors = TextFieldColors(containerColor, textColor, placeholderColor, focusedIndicatorColor, selectionColor)
+}
+
+/** A [Slider]'s colours, from [SliderDefaults.colors]. [Color.Unspecified] keeps the theme's. */
+@Immutable
+public data class SliderColors(
+    public val thumbColor: Color,
+    /** The track from the start to the thumb. */
+    public val activeTrackColor: Color,
+    /** The track from the thumb to the end. */
+    public val inactiveTrackColor: Color,
+)
+
+public object SliderDefaults {
+    /**
+     * An active track colour also gives the slider its hovered and pressed shades, derived as the
+     * look in use derives the accent's.
+     */
+    public fun colors(
+        thumbColor: Color = Color.Unspecified,
+        activeTrackColor: Color = Color.Unspecified,
+        inactiveTrackColor: Color = Color.Unspecified,
+    ): SliderColors = SliderColors(thumbColor, activeTrackColor, inactiveTrackColor)
+}
+
 /**
  * A single-line field showing [value], which only the app changes: each edit calls
  * [onValueChange] with the new text, and if the app doesn't take it, the field shows [value]
  * again. Text the app takes as typed leaves the caret where it is; text the app rewrites moves
  * the caret to the end. [placeholder] is shown, dimmed, while the field is empty.
+ *
+ * [shape] null is the theme's corner radius. Raven has one, so a shape with different corners
+ * uses its `topStart` and logs a warning.
  *
  * Only single-line fields exist: `CodeEditor` edits several lines.
  */
@@ -76,11 +137,22 @@ public fun TextField(
     readOnly: Boolean = false,
     placeholder: String = "",
     singleLine: Boolean = true,
+    shape: Shape? = null,
+    colors: TextFieldColors = TextFieldDefaults.colors(),
 ) {
     require(singleLine) { "TextField is single-line only; CodeEditor edits several lines" }
+    val roleColors = roleColors(
+        R_COLOR_INPUT to colors.containerColor,
+        R_COLOR_TEXT to colors.textColor,
+        R_COLOR_TEXT_PLACEHOLDER to colors.placeholderColor,
+        R_COLOR_FOCUS to colors.focusedIndicatorColor,
+        R_COLOR_SELECTION to colors.selectionColor,
+    )
     RavenWidget(TextFieldWidget, modifier, {
         bind(enabled, Enabled)
         bind(readOnly, ReadOnly)
+        bind(shape, TextFieldShape)
+        bind(roleColors, WidgetColors)
         bind(placeholder, Placeholder)
         bind(value, TextInputText)
         bind(onValueChange, TextChanged)
@@ -99,11 +171,18 @@ public fun Slider(
     enabled: Boolean = true,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
+    colors: SliderColors = SliderDefaults.colors(),
 ) {
     require(steps >= 0) { "steps must not be negative" }
     val step = if (steps == 0) 0f else (valueRange.endInclusive - valueRange.start) / (steps + 1)
+    val roleColors = roleColors(
+        R_COLOR_HANDLE to colors.thumbColor,
+        R_COLOR_ACCENT to colors.activeTrackColor,
+        R_COLOR_TRACK to colors.inactiveTrackColor,
+    )
     RavenWidget(SliderWidget, modifier, {
         bind(enabled, Enabled)
+        bind(roleColors, WidgetColors)
         // The range and step before the value: Raven snaps the value to them.
         bind(valueRange, SliderRange)
         bind(step, SliderStep)

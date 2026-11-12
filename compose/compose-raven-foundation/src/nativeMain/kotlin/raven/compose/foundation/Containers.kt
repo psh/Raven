@@ -3,6 +3,7 @@ package raven.compose.foundation
 import androidx.compose.runtime.Composable
 import raven.cinterop.R_COLOR_BORDER
 import raven.cinterop.R_COLOR_PANEL
+import raven.cinterop.R_COLOR_TEXT
 import raven.cinterop.R_WIDGET_BORDER
 import raven.cinterop.R_WIDGET_EXPANDER
 import raven.cinterop.Rborder_set_background
@@ -73,19 +74,24 @@ private val ExpanderTitle = Property<String> { widget, title -> Rexpander_set_ti
 /**
  * A panel in [color], cut to [shape], outlined by [border] and casting a shadow [shadowElevation]
  * high. [Color.Unspecified] is the theme's panel colour. Its [content] is stacked as in a Box;
- * inner padding is the content's own `Modifier.padding`.
+ * inner padding is the content's own `Modifier.padding`. [contentColor] is its children's text
+ * colour, unless they have their own; [Color.Unspecified] is the theme's.
  */
 @Composable
 public fun Surface(
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     color: Color = Color.Unspecified,
+    contentColor: Color = Color.Unspecified,
     border: BorderStroke? = null,
     shadowElevation: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
+    // Raven passes a widget's text colour down to its descendants.
+    val roleColors = roleColors(R_COLOR_TEXT to contentColor)
     RavenWidget(SurfaceWidget, modifier, {
         bind(color, SurfaceColor)
+        bind(roleColors, WidgetColors)
         bind(shape, SurfaceShape)
         bind(border, SurfaceBorder)
         bind(shadowElevation, SurfaceShadow)
