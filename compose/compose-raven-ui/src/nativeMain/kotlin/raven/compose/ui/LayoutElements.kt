@@ -1,5 +1,6 @@
 package raven.compose.ui
 
+import raven.compose.ui.graphics.Material
 import raven.compose.ui.unit.Dp
 
 // The layout elements of a Modifier chain. Foundation's modifier functions create them; the node
@@ -44,3 +45,13 @@ internal data class TooltipElement(val text: String) : Modifier.Element
 
 /** Shows [text] when the pointer rests on the widget. Text only: there is no composable tooltip. */
 public fun Modifier.tooltip(text: String): Modifier = this then TooltipElement(text)
+
+/** A material of the widget's own. The last one in the chain wins. */
+internal data class MaterialElement(val material: Material) : Modifier.Element
+
+/**
+ * Gives the widget [material] of its own, whatever the theme's: a widget that draws no surface gets
+ * one, so any widget can be a panel of glass. On a `Surface`, its `color` tints the glass.
+ * [Material.Default] follows the theme again.
+ */
+public fun Modifier.material(material: Material): Modifier = this then MaterialElement(material)

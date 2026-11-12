@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import raven.cinterop.RLook
+import raven.cinterop.RMaterial
 import raven.cinterop.R_COLOR_LAST_
 import raven.cinterop.R_COLOR_WINDOW
 import raven.cinterop.R_LOOK_RAVEN_DARK
@@ -15,12 +16,15 @@ import raven.cinterop.Rlook_get
 import raven.cinterop.Rlook_set
 import raven.cinterop.Rtheme_get_color
 import raven.cinterop.Rtheme_get_count
+import raven.cinterop.Rtheme_get_material
 import raven.cinterop.Rtheme_get_name_at
 import raven.cinterop.Rtheme_set_accent
+import raven.cinterop.Rtheme_set_material
 import raven.cinterop.Rtheme_use
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.Material
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.graphics.toRaven
 import raven.native.toRavenString
@@ -45,13 +49,18 @@ internal class HostTheme {
     private var dark: Boolean? = null
     private var theme: String? = null
     private var accent: Color? = null
+    private var material: Material? = null
+
+    // The material the look and theme in use give, which Material.Default goes back to: read before
+    // the first material is set over them, and again after each change of them.
+    private var themeMaterial: RMaterial? = null
 
     /**
      * Makes the app-wide settings that changed: [look] and [dark] as one `Rlook_set`, then
-     * [theme], then [accent], which Raven resets on every look or theme change, so it is applied
-     * again after one.
+     * [theme], then [material] and [accent], which Raven resets on every look or theme change, so
+     * they are applied again after one.
      */
-    fun apply(look: Look?, dark: Boolean?, theme: String?, accent: Color?) {
+    fun apply(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?) {
         val lookChanged = (look != null || dark != null) && (look != this.look || dark != this.dark)
         val themeChanged = theme != null && (theme != this.theme || lookChanged)
         this.look = look
@@ -59,28 +68,41 @@ internal class HostTheme {
         this.theme = theme
         val accentChanged = accent != null && (accent != this.accent || lookChanged || themeChanged)
         this.accent = accent
+        val materialChanged = material != null && (material != this.material || lookChanged || themeChanged)
+        this.material = material
         if (lookChanged) Rlook_set(resolve(look, dark))
         // A look change lays a theme file over the new look, or replaces a theme that names its own.
         if (themeChanged) Rtheme_use(theme)
+        if (lookChanged || themeChanged) themeMaterial = null
+        if (materialChanged) setMaterial()
         if (accentChanged) setAccent()
-        if (lookChanged || themeChanged || accentChanged) refresh(restoreAccent = false)
+        if (lookChanged || themeChanged || accentChanged || materialChanged) refresh(restoreAccent = false)
     }
 
     /**
      * Reads [colors] and [themeNames] from Raven again, and writes the state that changed. With
      * [restoreAccent], a change of the app theme's colours is taken for a theme Raven replaced (a
-     * theme file loaded or reloaded under the name in use), which reset the accent: it is applied
-     * again first.
+     * theme file loaded or reloaded under the name in use), which reset the accent and the
+     * material: they are applied again first.
      */
     fun refresh(restoreAccent: Boolean = true) {
         var read = readColors()
-        if (restoreAccent && accent != null && read != colors) {
+        if (restoreAccent && (accent != null || material != null) && read != colors) {
+            themeMaterial = null
+            setMaterial()
             setAccent()
             read = readColors()
         }
         if (read != colors) colors = read
         val names = List(Rtheme_get_count()) { Rtheme_get_name_at(it).toRavenString() }
         if (names != themeNames) themeNames = names
+    }
+
+    /** Sets [material] app-wide; [Material.Default] is the look's and theme's own. */
+    private fun setMaterial() {
+        val material = material ?: return
+        val own = themeMaterial ?: Rtheme_get_material().also { themeMaterial = it }
+        Rtheme_set_material(if (material == Material.Default) own else material.toRaven())
     }
 
     private fun setAccent() {

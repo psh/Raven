@@ -19,6 +19,7 @@ import raven.cinterop.Rslot_set_valign
 import raven.cinterop.Rwidget_set_max_size
 import raven.cinterop.Rwidget_set_min_size
 import raven.cinterop.Rwidget_set_size
+import raven.compose.ui.graphics.Material
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.isSpecified
 
@@ -82,6 +83,8 @@ internal data class FoldedModifier(
     val weight: Float? = null,
     val testTag: String? = null,
     val tooltip: String? = null,
+    /** The widget's own material; null is none, the theme's. */
+    val material: Material? = null,
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -113,6 +116,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         )
         is TestTagElement -> folded.copy(testTag = element.tag)
         is TooltipElement -> folded.copy(tooltip = element.text)
+        is MaterialElement -> folded.copy(material = element.material)
         else -> folded
     }
 }

@@ -1,5 +1,6 @@
 package raven.compose.ui
 
+import raven.compose.ui.graphics.Material
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.dp
 import kotlin.test.Test
@@ -49,6 +50,14 @@ class LayoutTest {
     fun theLastAlignmentOrFillWins() {
         assertEquals(HAlign.Center, fold(Modifier then fillMaxWidth then AlignElement(Alignment.CenterHorizontally, null)).horizontal)
         assertEquals(HAlign.Fill, fold(Modifier then AlignElement(Alignment.CenterHorizontally, null) then fillMaxWidth).horizontal)
+    }
+
+    @Test
+    fun theLastMaterialWinsAndLeavesTheSlotAsItIs() {
+        val folded = fold(Modifier.material(Material.Glass).material(Material.FrostedGlass))
+        assertEquals(Material.FrostedGlass, folded.material)
+        assertNull(fold(Modifier).material)
+        assertEquals(resolve(fold(Modifier), column).slot, resolve(folded, column).slot)
     }
 
     @Test

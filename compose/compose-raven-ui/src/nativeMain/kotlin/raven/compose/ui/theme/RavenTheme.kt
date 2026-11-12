@@ -21,6 +21,7 @@ import raven.compose.ui.RavenWidget
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.Material
 
 /** How every widget is drawn, app-wide: Raven's own looks and those that imitate a platform. */
 public enum class Look {
@@ -54,16 +55,18 @@ public enum class Look {
  *
  * At application level, around the windows (`application { RavenTheme(...) { Window(...) { } } }`,
  * or the outermost `RavenTheme` of `singleWindowApplication`'s content), it emits no node and makes
- * the app-wide settings: [look] and [dark] as one look, [theme] as the app theme, and [accent], from
+ * the app-wide settings: [look] and [dark] as one look, [theme] as the app theme, [accent], from
  * which Raven derives the hovered and pressed shades, the focus outline, the selection and the
- * links. A look or theme change resets Raven's accent, so the accent is applied again after one.
+ * links, and [material], what every widget without one of its own is made of. A look or theme
+ * change resets Raven's accent and material, so they are applied again after one.
  *
  * Inside a window, [theme] gives the content its own theme, and the content goes in a Box. The
- * app-wide settings can't be made there: setting [look], [dark] or [accent] logs an error and does
- * nothing.
+ * app-wide settings can't be made there: setting [look], [dark], [accent] or [material] logs an
+ * error and does nothing.
  *
  * A null setting leaves Raven's as it is. [theme] names a theme from [loadTheme], a built-in one or
- * a look ("WindowsLight").
+ * a look ("WindowsLight"). [Material.Default] is the material the look and theme give. Only Raven's
+ * own looks are made of glass: the others keep [Material.Solid], and Raven warns.
  */
 @Composable
 public fun RavenTheme(
@@ -71,21 +74,22 @@ public fun RavenTheme(
     dark: Boolean? = null,
     theme: String? = null,
     accent: Color? = null,
+    material: Material? = null,
     content: @Composable () -> Unit,
 ) {
     when (LocalThemePlacement.current) {
         ThemePlacement.Application -> {
-            ApplyAppTheme(look, dark, theme, accent)
+            ApplyAppTheme(look, dark, theme, accent, material)
             content()
         }
         ThemePlacement.TopOfSingleWindow -> {
-            ApplyAppTheme(look, dark, theme, accent)
+            ApplyAppTheme(look, dark, theme, accent, material)
             CompositionLocalProvider(LocalThemePlacement provides ThemePlacement.Window, content = content)
         }
         ThemePlacement.Window -> {
-            if (look != null || dark != null || accent != null) {
-                DisposableEffect(look, dark, accent) {
-                    themeErrorSink("RavenTheme: look, dark and accent are app-wide, and only an application-level RavenTheme may set them")
+            if (look != null || dark != null || accent != null || material != null) {
+                DisposableEffect(look, dark, accent, material) {
+                    themeErrorSink("RavenTheme: look, dark, accent and material are app-wide, and only an application-level RavenTheme may set them")
                     onDispose { }
                 }
             }
@@ -98,11 +102,11 @@ public fun RavenTheme(
 }
 
 @Composable
-private fun ApplyAppTheme(look: Look?, dark: Boolean?, theme: String?, accent: Color?) {
+private fun ApplyAppTheme(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?) {
     val host = LocalRavenHost.current
     // An effect, not a SideEffect: it runs before the windows' own effects create and fill them.
-    DisposableEffect(look, dark, theme, accent) {
-        host.theme.apply(look, dark, theme, accent)
+    DisposableEffect(look, dark, theme, accent, material) {
+        host.theme.apply(look, dark, theme, accent, material)
         onDispose { }
     }
 }

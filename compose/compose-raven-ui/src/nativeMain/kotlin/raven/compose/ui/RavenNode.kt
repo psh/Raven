@@ -7,7 +7,10 @@ import raven.cinterop.Rid
 import raven.cinterop.Rwidget_destroy
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_is_valid
+import raven.cinterop.Rwidget_set_material
 import raven.cinterop.Rwidget_set_tooltip
+import raven.compose.ui.graphics.Material
+import raven.compose.ui.graphics.toRaven
 import raven.native.CallbackRegistry
 
 /** What kind of children a widget takes. Raven keeps this in private flags, so each composable states it. */
@@ -67,6 +70,8 @@ public class RavenNode internal constructor(
         val previous = modifier
         modifier = fold(value)
         if (modifier.tooltip != previous.tooltip) Rwidget_set_tooltip(widget, modifier.tooltip)
+        // A material left out of the chain is the theme's again.
+        if (modifier.material != previous.material) Rwidget_set_material(widget, (modifier.material ?: Material.Default).toRaven())
         applyLayout()
     }
 

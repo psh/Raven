@@ -20,10 +20,16 @@ import raven.cinterop.R_LOOK_RAVEN_GLASS_DARK
 import raven.cinterop.R_LOOK_RAVEN_GLASS_LIGHT
 import raven.cinterop.R_LOOK_RAVEN_LIGHT
 import raven.cinterop.R_LOOK_WINDOWS_LIGHT
+import raven.cinterop.R_MATERIAL_FROSTED_GLASS
+import raven.cinterop.R_MATERIAL_GLASS
+import raven.cinterop.R_MATERIAL_SOLID
+import raven.cinterop.R_MATERIAL_TINTED_GLASS
 import raven.cinterop.Rid
 import raven.cinterop.Rlook_get
 import raven.cinterop.Rtheme_get_color
+import raven.cinterop.Rtheme_get_material
 import raven.cinterop.Rtheme_get_name
+import raven.cinterop.Rwidget_get_material
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_get_theme
 import raven.cinterop.Rwindow_get_content
@@ -33,6 +39,7 @@ import raven.compose.ui.RavenNode
 import raven.compose.ui.SingleWindowContent
 import raven.compose.ui.Window
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.Material
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.node
 import raven.compose.ui.runUntilIdle
@@ -223,6 +230,64 @@ class RavenThemeTest {
             remove(path)
             rmdir(directory)
         }
+    }
+
+    @Test
+    fun anApplicationLevelMaterialIsTheAppsAndSurvivesAChangeOfLook() {
+        var look by mutableStateOf(Look.Glass)
+        var material by mutableStateOf<Material?>(null)
+        withHost({
+            RavenTheme(look = look, material = material) { Window(onCloseRequest = {}) { Label("label") } }
+        }) {
+            // Unset, the look's is kept.
+            assertEquals(R_MATERIAL_FROSTED_GLASS, Rtheme_get_material())
+
+            for ((value, raven) in listOf(
+                Material.Solid to R_MATERIAL_SOLID,
+                Material.Glass to R_MATERIAL_GLASS,
+                Material.TintedGlass to R_MATERIAL_TINTED_GLASS,
+                Material.FrostedGlass to R_MATERIAL_FROSTED_GLASS,
+            )) {
+                material = value
+                runUntilIdle()
+                assertEquals(raven, Rtheme_get_material(), "$value")
+                assertEquals(raven, Rwidget_get_material(labels.getValue("label")), "$value")
+            }
+
+            // A look change resets Raven's material, so it is applied again.
+            material = Material.Glass
+            look = Look.Raven
+            runUntilIdle()
+            assertEquals(R_MATERIAL_GLASS, Rtheme_get_material())
+
+            // Default is the look's own.
+            material = Material.Default
+            runUntilIdle()
+            assertEquals(R_MATERIAL_SOLID, Rtheme_get_material())
+            look = Look.Glass
+            runUntilIdle()
+            assertEquals(R_MATERIAL_FROSTED_GLASS, Rtheme_get_material())
+        }
+    }
+
+    @Test
+    fun aMaterialInAWindowLogsAnErrorAndDoesNothing() {
+        val errors = mutableListOf<String>()
+        val sink = themeErrorSink
+        themeErrorSink = { errors += it }
+        try {
+            withHost({
+                Window(onCloseRequest = {}) {
+                    RavenTheme(material = Material.Glass) { Label("label") }
+                }
+            }) {
+                assertEquals(R_MATERIAL_SOLID, Rtheme_get_material())
+            }
+        } finally {
+            themeErrorSink = sink
+        }
+        assertEquals(1, errors.size)
+        assertTrue("material" in errors.single() && "only an application-level RavenTheme" in errors.single())
     }
 
     private fun appColor(role: UInt): Color = ravenColor { r, g, b, a -> Rtheme_get_color(role, r, g, b, a) }
