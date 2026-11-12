@@ -16,7 +16,7 @@ owners, `icon`, `island`, `onKeyEvent` and `backKeys`. Spec:
 [ADR 0001](../../adr/0001-phase-split-after-the-phase-2-sample-gaps.md), which merged
 [Window transparency, opacity and backdrop](0068-window-transparency-opacity-and-backdrop.md)
 and [Window minimum size and DpSize](0085-window-minimum-size-and-dpsize.md) into this
-ticket, with the `customHeader` flag from [HeaderBar](../0062-headerbar.md).
+ticket, with the `customHeader` flag from [HeaderBar](0062-headerbar.md).
 
 **Depends on:** [Color, Shape and BorderStroke](0060-color-shape-and-borderstroke.md) (`background`).
 
