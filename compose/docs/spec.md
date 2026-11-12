@@ -399,6 +399,8 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `clickable`, `combinedClickable`, `onPointerEvent`, `pointerHoverIcon`, `onKeyEvent`, `focusable`, `focusRequester`, `onFocusChanged` | any | Raven's event callback, focus and cursor calls ([section 7](#7-events-and-state)) |
 | `appearTransition(AppearTransition, delay)` | any | `Rwidget_set_transition`: plays each time the widget appears |
 | `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
+| `alpha(Float)` | any | `Rwidget_set_opacity` on the outer widget, 0 to 1, its children included; 1 when left out of the chain (phase 2) |
+| `clipToBounds()` | any | `Rwidget_set_clipping`: the widget's descendants are clipped to its bounds; off when left out (phase 2) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
   because phase 1 has no drawing modifiers.
@@ -553,6 +555,8 @@ Added for the `notepad` port. `CodeEditor` stays controlled by `value`/`onValueC
   - `cursor: TextPosition(line, column)`, zero-based and read-only, is snapshot state refreshed
     each frame from `Rtext_editor_get_cursor`, since Raven has no callback for it.
 - **`wordWrap: Boolean = false`**: `Rtext_editor_set_word_wrap`.
+- **`placeholder: String = ""`**: `Rtext_editor_set_placeholder`, shown while the text is empty, as
+  `TextField`'s `placeholder` is.
 - **`completions: ((prefix: String) -> List<Completion>)? = null`**, with `Completion(text, detail:
   String? = null)`: called synchronously inside Raven's completion callback, and each result goes
   to `Rtext_editor_add_completion`. It must be fast.
