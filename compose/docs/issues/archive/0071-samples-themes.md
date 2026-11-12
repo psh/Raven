@@ -5,13 +5,13 @@ status: closed
 # samples/themes
 
 Port Raven's `examples/themes`: a gallery of controls under a choice of look, theme and dark mode,
-with theme files loaded at start. Spec: [10. Samples](../spec.md#10-samples),
-[8: theming](../spec.md#phase-2-theming).
+with theme files loaded at start. Spec: [10. Samples](../../spec.md#10-samples),
+[8: theming](../../spec.md#phase-2-theming).
 
-**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
-[RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md),
-[Component colours, shapes and padding](archive/0066-component-colors-shapes-and-padding.md),
-[MarkdownText](archive/0087-markdowntext.md).
+**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
+[RavenTheme and theme files](0065-raventheme-and-theme-files.md),
+[Component colours, shapes and padding](0066-component-colors-shapes-and-padding.md),
+[MarkdownText](0087-markdowntext.md).
 
 ## Deliverables
 
@@ -32,14 +32,14 @@ with theme files loaded at start. Spec: [10. Samples](../spec.md#10-samples),
 
 ## Gaps
 
-- **Phase 3:** `ListView` ([Lists and trees](archive/0033-lists-and-trees.md)).
+- **Phase 3:** `ListView` ([Lists and trees](0033-lists-and-trees.md)).
 - **Phase 5** (the specialist widgets): `ColorPicker`, replacing the accent swatches.
-- **Phase 3** ([Fonts and text styling](archive/0027-fonts-and-text-styling.md)): `Text(softWrap)`
+- **Phase 3** ([Fonts and text styling](0027-fonts-and-text-styling.md)): `Text(softWrap)`
   for the wrapped status line, and `fontFamily` for the C example's monospace label. Found while
   porting; not yet on `roadmap.md`.
 
 The status line's "Loaded again" for interface files has no counterpart, since the interface is
-Kotlin, and is no gap ([Theme extras the themes sample uses](archive/0077-theme-extras-the-themes-sample-uses.md)).
+Kotlin, and is no gap ([Theme extras the themes sample uses](0077-theme-extras-the-themes-sample-uses.md)).
 
 ## Resolution
 
