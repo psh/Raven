@@ -27,6 +27,7 @@ import raven.compose.ui.Modifier
 import raven.compose.ui.Window
 import raven.compose.ui.WindowBackdrop
 import raven.compose.ui.application
+import raven.compose.ui.clipToBounds
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.RoundedCornerShape
 import raven.compose.ui.platform.LocalWindowInfo
@@ -118,7 +119,7 @@ fun Overlay(opacity: Float, onOpacityChange: (Float) -> Unit, onClose: () -> Uni
             }
             // The four ways to blur, over stripes drawn by the application.
             Box(Modifier.weight(1f)) {
-                Row(Modifier.fillMaxSize()) {
+                Row(Modifier.fillMaxSize().clipToBounds()) {
                     repeat(40) { Surface(Modifier.width(16.dp).fillMaxHeight(), color = stripeColors[it % 4]) {} }
                 }
                 Row(Modifier.fillMaxSize().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

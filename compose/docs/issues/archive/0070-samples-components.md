@@ -93,6 +93,8 @@ Done and run on macOS. `./gradlew build allTests` passes: 282 tests, 3 of them t
     `Modifier.alpha`, and the spec has opacity only for windows and phase 3's `fadeOut`. The muted
     labels use `Color.Gray`, which reads the same on light and dark themes. This isn't recorded
     as a gap, since the look is kept.
+    [0091](0091-modifier-alpha-and-cliptobounds.md) replaced the grey with `Modifier.alpha`
+    (0.6, and 0.7 for the status line, as in the C example) on the theme's text colour.
   - The button styles map as the translator maps them: `Style="Primary"` is `Button`, the default
     style is `OutlinedButton`, and `Flat` is `TextButton`.
   - `main.c` never loads `theme.xml`, so the port doesn't either.

@@ -46,8 +46,8 @@ import raven.compose.ui.Alignment
 import raven.compose.ui.DragData
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
+import raven.compose.ui.alpha
 import raven.compose.ui.application
-import raven.compose.ui.graphics.Color
 import raven.compose.ui.input.key.Key
 import raven.compose.ui.input.key.KeyShortcut
 import raven.compose.ui.rememberWindowState
@@ -248,15 +248,12 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
 /** What happened last, the notes in the text, and where the cursor is, in fainter text than the editor's. */
 @Composable
 private fun StatusLine(status: String, notes: String, position: String) {
-    val text = RavenTheme.colors.text
     Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(status, Modifier.weight(1f).testTag("status"), color = text.faded(0.8f))
-        Text(notes, Modifier.testTag("notes"), color = text.faded(0.6f))
-        Text(position, Modifier.testTag("position"), color = text.faded(0.6f))
+        Text(status, Modifier.weight(1f).alpha(0.8f).testTag("status"))
+        Text(notes, Modifier.alpha(0.6f).testTag("notes"))
+        Text(position, Modifier.alpha(0.6f).testTag("position"))
     }
 }
-
-private fun Color.faded(opacity: Float) = Color(red, green, blue, alpha * opacity)
 
 private const val PLAIN_TEXT = "Plain text"
 

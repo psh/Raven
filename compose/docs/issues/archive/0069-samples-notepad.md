@@ -116,6 +116,8 @@ Done and run on macOS. `./gradlew build allTests` passes: 272 tests, 6 of them t
 - **Look approximations**: the status labels' `Opacity` 0.8 and 0.6 are the theme's text colour
   (`RavenTheme.colors.text`) with that alpha, since there is no `Modifier.alpha` yet; it follows the
   look. The ComboBox's `Metric.ControlHeight="26"` is `Modifier.height(26.dp)`.
+  [0091](0091-modifier-alpha-and-cliptobounds.md) replaced the alpha colours with
+  `Modifier.alpha(0.8f)` and `alpha(0.6f)` on labels in the theme's text colour.
 - **Port gaps** (added to the Gaps above): the editor's placeholder, and focusing the editor after
   a choice or an open.
 - **Deviation from the deliverable's test wording**: the C example shows "modified" as ` *` in the

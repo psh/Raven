@@ -74,6 +74,8 @@ public class RavenNode internal constructor(
         // A material left out of the chain is the theme's again.
         if (modifier.material != previous.material) Rwidget_set_material(widget, (modifier.material ?: Material.Default).toRaven())
         if (modifier.appearTransition != previous.appearTransition) setAppearTransition(modifier.appearTransition)
+        if (modifier.alpha != previous.alpha) drawCalls.setAlpha(widget, modifier.alpha)
+        if (modifier.clipToBounds != previous.clipToBounds) drawCalls.setClipping(widget, modifier.clipToBounds)
         applyLayout()
     }
 

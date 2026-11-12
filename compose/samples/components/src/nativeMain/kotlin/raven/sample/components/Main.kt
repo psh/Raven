@@ -32,6 +32,7 @@ import raven.compose.ui.Alignment
 import raven.compose.ui.AppearTransition
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
+import raven.compose.ui.alpha
 import raven.compose.ui.appearTransition
 import raven.compose.ui.application
 import raven.compose.ui.graphics.CircleShape
@@ -112,9 +113,6 @@ private val Blue = Color(0xFF3B82F6)
 private val Purple = Color(0xFF8E4EC6)
 private val Cyan = Color(0xFF05A2C2)
 
-/** The C example's `Opacity="0.6"` labels: Raven's opacity has no counterpart, so a muted grey. */
-private val Muted = Color.Gray
-
 /** The window's content: the dashboard, its cards, the status line and the source pane. */
 @Composable
 fun Components() {
@@ -176,7 +174,7 @@ fun Components() {
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Regions:", color = Muted)
+                        Text("Regions:", Modifier.alpha(0.6f))
                         listOf("paris", "tokyo", "oslo").forEachIndexed { n, city ->
                             Badge(text = city, color = if (n % 2 == 0) Purple else Cyan)
                         }
@@ -202,7 +200,7 @@ fun Components() {
                 }
             }
 
-            Text(status, color = Muted)
+            Text(status, Modifier.alpha(0.7f))
             Expander(
                 title = "The Kotlin of the cards added",
                 expanded = sourceShown,
@@ -250,7 +248,7 @@ private fun Card(
 @Composable
 private fun Stat(label: String, value: String, trend: Int = 0) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, color = Muted, fontSize = 12.sp)
+        Text(label, Modifier.alpha(0.6f), fontSize = 12.sp)
         Text(value, color = if (trend > 0) Green else if (trend < 0) Red else Color.Gray, fontSize = 24.sp)
     }
 }
@@ -268,7 +266,7 @@ private fun Badge(text: String, color: Color = Blue) {
 private fun PersonRow(name: String, role: String, online: Boolean = false) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(name, Modifier.weight(1f))
-        Text(role, color = Muted)
+        Text(role, Modifier.alpha(0.6f))
         Badge(text = if (online) "online" else "away", color = if (online) Green else Color.Gray)
     }
 }

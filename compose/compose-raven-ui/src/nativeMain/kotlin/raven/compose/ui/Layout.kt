@@ -87,6 +87,10 @@ internal data class FoldedModifier(
     val material: Material? = null,
     /** How the widget appears when it is inserted; null is none. */
     val appearTransition: AppearTransitionElement? = null,
+    /** The widget's opacity, 1 when the chain gives none. */
+    val alpha: Float = 1f,
+    /** Whether the widget clips its children; off when the chain gives none. */
+    val clipToBounds: Boolean = false,
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -120,6 +124,8 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is TooltipElement -> folded.copy(tooltip = element.text)
         is MaterialElement -> folded.copy(material = element.material)
         is AppearTransitionElement -> folded.copy(appearTransition = element)
+        is AlphaElement -> folded.copy(alpha = element.alpha)
+        is ClipToBoundsElement -> folded.copy(clipToBounds = true)
         else -> folded
     }
 }

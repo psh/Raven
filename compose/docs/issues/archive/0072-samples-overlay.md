@@ -65,6 +65,8 @@ Done and run on macOS. `./gradlew build allTests` passes: 283 tests, 4 of them t
     phase 3, spec section 8, for `Image`). The 40 stripes (640 dp) are wider than the panel, so
     they run past its right padding to the window's edge, under the Native panel's rounding. Seen
     on the capture; the four blurs are unaffected.
+    [0091](0091-modifier-alpha-and-cliptobounds.md) gave the stripes' Row `clipToBounds()`, so
+    they stop at the panel's padding, as the C example's do.
   - **`Wrap="true"`** on the explanation: `Text` has no `softWrap` until phase 3's text styling.
     The see-through sentence fits on one line; the opaque one (a window system with no
     transparency) is wider than the panel and is cut off.
