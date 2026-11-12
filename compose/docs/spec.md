@@ -630,7 +630,7 @@ Added for the `themes` port:
     the parent again), through the binding layer, so no composable handles it itself.
     `fontFamily` (phase 3) follows the same pattern with `Rwidget_set_font`, and `typography` is a
     CompositionLocal. Setting an app-wide setting here logs an error. Decided in
-    [Subtree themes as a CompositionLocal](issues/0093-subtree-themes-as-a-compositionlocal.md),
+    [Subtree themes as a CompositionLocal](issues/archive/0093-subtree-themes-as-a-compositionlocal.md),
     replacing the internal Box of phase 2's first version.
   - `Look` is one of `Raven`, `Glass`, `HighContrast`, `Windows`, `Macos`, `Gnome`, `Native` or
     `MacosGlass`.

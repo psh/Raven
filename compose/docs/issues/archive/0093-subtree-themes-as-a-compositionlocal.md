@@ -9,9 +9,9 @@ with `Rwidget_set_theme`, so its children stack, it doesn't fill its slot, and i
 `Modifier`: `samples/themes`' Paper and GlassDark cards are only as wide as their content, where
 the C example's fill the column. Compose's `MaterialTheme` emits no node and only provides
 CompositionLocals. This ticket does the same for subtree themes. Spec:
-[8: theming](../spec.md#phase-2-theming). Decided on 2026-11-12, from the gap the themes port
-reported ([samples/themes](archive/0071-samples-themes.md)); it replaces the "internal Box" of
-[RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md).
+[8: theming](../../spec.md#phase-2-theming). Decided on 2026-11-12, from the gap the themes port
+reported ([samples/themes](0071-samples-themes.md)); it replaces the "internal Box" of
+[RavenTheme and theme files](0065-raventheme-and-theme-files.md).
 
 **Depends on:** nothing open.
 
@@ -55,7 +55,7 @@ Done and run on macOS. `./gradlew build allTests` passes: 313 tests, 5 of them n
   `themeNames` changes (a theme file loaded or renamed), since the name may then exist.
 - **`samples/themes`**: its source is unchanged, since its `Card` already has `fillMaxWidth()`.
   Without the Box, the Paper and GlassDark cards fill the column. The note in
-  [samples/themes](archive/0071-samples-themes.md) says this ticket fixed it.
+  [samples/themes](0071-samples-themes.md) says this ticket fixed it.
 - **Checked by eye** on macOS: in the release executable, the paper and glass cards are as wide as
   the controls card, as the C example's are.
 - **Harness**: ui's `TestSupport` has `takeRavenErrors()`, for a test that expects Raven to
