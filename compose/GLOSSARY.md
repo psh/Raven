@@ -48,3 +48,7 @@ _Avoid_: wrapper, inner box
 **Host epoch**:
 Which run of Raven an object belongs to. Raven starts and stops more than once in a process (every test does), and an object from an earlier run must never touch the current one.
 _Avoid_: session, generation (Raven's own word for its handle counters)
+
+**Port gap**:
+A part of a C example that its sample port leaves out because the phase it ports in doesn't provide it yet. Every port gap names the later phase that completes it; there is no gap without one.
+_Avoid_: missing feature, TODO (a TODO has no owner; a port gap always has a phase)

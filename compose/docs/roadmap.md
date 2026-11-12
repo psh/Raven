@@ -83,15 +83,21 @@ closed unfinished for now, to be revisited; Phase 1 is done when they are finish
 
 ## 3. Phase 2
 
-Each family is fully decided. The samples port when their families are done:
+Each family is fully decided. Broken into tickets, in dependency order; each ticket's **Depends
+on** line names its blockers. The samples port when their families are done, and each sample
+ticket lists what of its C example phase 2 doesn't cover. The map
+[compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md) settles each
+of those before the sample tickets start.
 
-| Family | Spec | Needed by |
-|---|---|---|
-| Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` |
-| ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) |
-| Surface, FlowRow, Expander; `Color`, `Shape`, `BorderStroke` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` |
-| Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding`, `Text(color, fontSize)` | [8: theming](spec.md#phase-2-theming) | `themes` |
-| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#phase-2-glass-and-backgroundblur) | `overlay` (and `glass` in phase 3) |
+| Family | Spec | Needed by | Ticket |
+|---|---|---|---|
+| `Color`, `Shape`, `BorderStroke`, `Text(color)` | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | every family below | [Color, Shape and BorderStroke](issues/0060-color-shape-and-borderstroke.md) |
+| Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` | [Menus and KeyShortcut](issues/0061-menus-and-keyshortcut.md), [HeaderBar and Window(customHeader)](issues/0062-headerbar-and-custom-header.md) |
+| ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/0063-combobox-spinbox-and-codeeditorlanguages.md) |
+| Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/0064-surface-flowrow-and-expander.md) |
+| Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
+| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#phase-2-glass-and-backgroundblur), [4](spec.md#4-application-host) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/0067-material-and-backgroundblur.md), [Transparent windows and WindowBackdrop](issues/0068-transparent-windows-and-windowbackdrop.md) |
+| Samples | [10](spec.md#10-samples) | | [notepad](issues/0069-samples-notepad.md), [components](issues/0070-samples-components.md), [themes](issues/0071-samples-themes.md), [overlay](issues/0072-samples-overlay.md) |
 
 ## 4. Phase 3
 
