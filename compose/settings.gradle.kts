@@ -21,6 +21,7 @@ include(
     ":compose-raven-ui",
     ":compose-raven-foundation",
     ":samples:hello",
+    ":samples:components",
     ":samples:xml-translator",
     ":spikes:nested-frames",
 )

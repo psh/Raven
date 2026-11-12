@@ -46,6 +46,10 @@ Each sample is an executable. Kotlin/Native's run tasks build and start it:
 The linked program is `samples/hello/build/bin/<target>/releaseExecutable/hello.kexe`, which can
 be started directly. `runDebugExecutable...` and `debugExecutable/` are the debug build.
 
+`samples/components`, the port of Raven's `examples/components` (cards of your own, added from
+code), runs the same way: `./gradlew :samples:components:runReleaseExecutableMacosArm64`, or
+`samples/components/build/bin/<target>/releaseExecutable/components.kexe`.
+
 Running an app (not the tests) needs a Vulkan driver:
 
 - **macOS**: MoltenVK, from `brew install molten-vk` or the Vulkan SDK. Raven loads it by name,
