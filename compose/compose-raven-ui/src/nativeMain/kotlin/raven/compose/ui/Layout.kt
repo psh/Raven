@@ -85,6 +85,8 @@ internal data class FoldedModifier(
     val tooltip: String? = null,
     /** The widget's own material; null is none, the theme's. */
     val material: Material? = null,
+    /** How the widget appears when it is inserted; null is none. */
+    val appearTransition: AppearTransitionElement? = null,
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -117,6 +119,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is TestTagElement -> folded.copy(testTag = element.tag)
         is TooltipElement -> folded.copy(tooltip = element.text)
         is MaterialElement -> folded.copy(material = element.material)
+        is AppearTransitionElement -> folded.copy(appearTransition = element)
         else -> folded
     }
 }

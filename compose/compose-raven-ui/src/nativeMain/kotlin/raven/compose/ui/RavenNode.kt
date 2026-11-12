@@ -12,6 +12,7 @@ import raven.cinterop.Rwidget_set_tooltip
 import raven.compose.ui.graphics.Material
 import raven.compose.ui.graphics.toRaven
 import raven.native.CallbackRegistry
+import kotlin.time.Duration
 
 /** What kind of children a widget takes. Raven keeps this in private flags, so each composable states it. */
 @InternalComposeRavenApi
@@ -72,7 +73,17 @@ public class RavenNode internal constructor(
         if (modifier.tooltip != previous.tooltip) Rwidget_set_tooltip(widget, modifier.tooltip)
         // A material left out of the chain is the theme's again.
         if (modifier.material != previous.material) Rwidget_set_material(widget, (modifier.material ?: Material.Default).toRaven())
+        if (modifier.appearTransition != previous.appearTransition) setAppearTransition(modifier.appearTransition)
         applyLayout()
+    }
+
+    /**
+     * Raven plays a transition as soon as it is set. The first is set before the insert, which plays
+     * it again as the widget appears; a later one, on a widget that has appeared, must not replay.
+     */
+    private fun setAppearTransition(appear: AppearTransitionElement?) {
+        appearCalls.set(widget, appear?.transition, appear?.delay ?: Duration.ZERO)
+        if (appear != null && parent != null) appearCalls.stop(widget)
     }
 
     /**
