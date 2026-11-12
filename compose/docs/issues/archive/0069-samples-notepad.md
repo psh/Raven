@@ -5,17 +5,17 @@ status: closed
 # samples/notepad
 
 Port Raven's `examples/notepad`: a text editor under a custom header bar with File, Edit and
-View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.md#10-samples),
-[8: menus and the header bar](../spec.md#phase-2-menus-and-the-header-bar).
+View menus, a language ComboBox, and a status line. Spec: [10. Samples](../../spec.md#10-samples),
+[8: menus and the header bar](../../spec.md#phase-2-menus-and-the-header-bar).
 
-**Depends on:** [Menus and KeyShortcut](archive/0061-menus-and-keyshortcut.md),
-[HeaderBar](archive/0062-headerbar.md),
-[ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
-[RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md) (the View menu's looks),
-[Native message and file dialogs](archive/0080-native-message-and-file-dialogs.md),
-[CodeEditorState, completions, markers and languages](archive/0081-codeeditorstate-completions-markers-and-languages.md),
-[Files and text dropped on a window](archive/0082-files-and-text-dropped-on-a-window.md),
-[Window: WindowState and its parameters](archive/0086-window-windowstate-and-its-parameters.md).
+**Depends on:** [Menus and KeyShortcut](0061-menus-and-keyshortcut.md),
+[HeaderBar](0062-headerbar.md),
+[ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
+[RavenTheme and theme files](0065-raventheme-and-theme-files.md) (the View menu's looks),
+[Native message and file dialogs](0080-native-message-and-file-dialogs.md),
+[CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md),
+[Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md),
+[Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md).
 
 ## Deliverables
 
@@ -48,7 +48,7 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 ## Gaps
 
 - **Phase 3:** headless tests of the dialog flows, with the dialogs' `Dialog`/`FileBrowser` default
-  ([Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
+  ([Notepad's file dialogs and discard prompt](0074-notepad-file-dialogs-and-discard-prompt.md)).
 - **Phase 3:** the C example focuses the editor after a language is chosen, after an Edit command,
   and after a file opens (`Rwidget_focus`); that needs `FocusRequester` (spec section 7, generic
   input and focus).
@@ -58,7 +58,7 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
   it needs a phase and a line in spec section 8.
 
 Everything else of the C example is in phase 2, settled by
-[compose-raven phase 2 sample gaps](0073-compose-raven-phase-2-sample-gaps.md).
+[compose-raven phase 2 sample gaps](../0073-compose-raven-phase-2-sample-gaps.md).
 
 ## Resolution
 
