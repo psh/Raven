@@ -55,7 +55,8 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../../sp
 - **No phase yet, found while porting:** the editor's `Placeholder` ("Type here, open a file
   (Ctrl+O), or drop one from the file manager."), shown after New. `CodeEditor` has no
   `placeholder` parameter, though Raven has `Rtext_editor_set_placeholder` and `TextField` has one;
-  it needs a phase and a line in spec section 8.
+  it needs a phase and a line in spec section 8. Filled by
+  [CodeEditor placeholder](0092-codeeditor-placeholder.md): the port passes it.
 
 Everything else of the C example is in phase 2, settled by
 [compose-raven phase 2 sample gaps](../0073-compose-raven-phase-2-sample-gaps.md).

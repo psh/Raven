@@ -226,6 +226,32 @@ class CodeEditorExtrasTest {
     }
 
     @Test
+    fun thePlaceholderReachesTheEditorAndFollowsAChange() {
+        val calls = mutableListOf<String>()
+        val setter = editorPlaceholderSetter
+        editorPlaceholderSetter = { widget, text ->
+            calls += text
+            setter(widget, text)
+        }
+        try {
+            runRavenTest {
+                var text by mutableStateOf("")
+                var placeholder by mutableStateOf("Type here")
+                setContent { CodeEditor(text, { text = it }, Modifier.testTag("editor"), placeholder = placeholder) }
+                assertEquals(listOf("Type here"), calls)
+                text = "typed"
+                waitForIdle()
+                assertEquals(listOf("Type here"), calls)
+                placeholder = "Open a file"
+                waitForIdle()
+                assertEquals(listOf("Type here", "Open a file"), calls)
+            }
+        } finally {
+            editorPlaceholderSetter = setter
+        }
+    }
+
+    @Test
     fun aRegisteredLanguageIsListedAndChosenForItsFiles() = runRavenTest {
         var name = ""
         var languages = emptyList<String>()

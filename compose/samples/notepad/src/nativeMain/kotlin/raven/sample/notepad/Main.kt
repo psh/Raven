@@ -234,6 +234,7 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
                     lineNumbers = lineNumbers,
                     state = editor,
                     wordWrap = wordWrap,
+                    placeholder = "Type here, open a file (Ctrl+O), or drop one from the file manager.",
                     completions = { completionsFor(language) },
                     markers = markers,
                 )

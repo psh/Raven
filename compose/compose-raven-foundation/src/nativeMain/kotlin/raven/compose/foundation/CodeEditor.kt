@@ -45,6 +45,7 @@ import raven.cinterop.Rtext_editor_redo
 import raven.cinterop.Rtext_editor_select_all
 import raven.cinterop.Rtext_editor_set_language
 import raven.cinterop.Rtext_editor_set_line_numbers
+import raven.cinterop.Rtext_editor_set_placeholder
 import raven.cinterop.Rtext_editor_set_read_only
 import raven.cinterop.Rtext_editor_set_word_wrap
 import raven.cinterop.Rtext_editor_show_completions
@@ -78,6 +79,10 @@ private val Language = Property<String?> { widget, name ->
 private val EditorReadOnly = Property<Boolean> { widget, readOnly -> Rtext_editor_set_read_only(widget, if (readOnly) R_TRUE else R_FALSE) }
 private val LineNumbers = Property<Boolean> { widget, shown -> Rtext_editor_set_line_numbers(widget, if (shown) R_TRUE else R_FALSE) }
 private val WordWrap = Property<Boolean> { widget, wrapped -> Rtext_editor_set_word_wrap(widget, if (wrapped) R_TRUE else R_FALSE) }
+private val EditorPlaceholder = Property<String> { widget, text -> editorPlaceholderSetter(widget, text) }
+
+/** Sets an editor's placeholder. Raven has no getter for it, so tests wrap this to record it. */
+internal var editorPlaceholderSetter: (Rid, String) -> Unit = ::Rtext_editor_set_placeholder
 
 /**
  * A multi-line editor showing [value], controlled as [TextField] is: each edit calls
@@ -89,8 +94,9 @@ private val WordWrap = Property<Boolean> { widget, wrapped -> Rtext_editor_set_w
  * plain text, and Raven warns.
  *
  * [state] runs the editor's commands and reports its cursor. Long lines continue on the next row
- * with [wordWrap]. [completions] adds the app's proposals for the start of the word being typed,
- * listed before Raven's own: it is called while Raven gathers them, so it must be fast.
+ * with [wordWrap]. [placeholder] is shown, dimmed, while the text is empty. [completions] adds the
+ * app's proposals for the start of the word being typed, listed before Raven's own: it is called
+ * while Raven gathers them, so it must be fast.
  *
  * [markers] underline parts of the text, and are controlled: Raven drops a marker whose line is
  * edited, and after each edit the editor shows the composed list again, so a marker stays where
@@ -106,6 +112,7 @@ public fun CodeEditor(
     lineNumbers: Boolean = true,
     state: CodeEditorState = rememberCodeEditorState(),
     wordWrap: Boolean = false,
+    placeholder: String = "",
     completions: ((prefix: String) -> List<Completion>)? = null,
     markers: List<EditorMarker> = emptyList(),
 ) {
@@ -117,6 +124,7 @@ public fun CodeEditor(
         bind(readOnly, EditorReadOnly)
         bind(lineNumbers, LineNumbers)
         bind(wordWrap, WordWrap)
+        bind(placeholder, EditorPlaceholder)
         bind(value, TextEditorText)
         // Writing the text drops every marker, so they are shown again after it.
         set(markers) { follower.markers = it }
