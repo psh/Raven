@@ -49,6 +49,26 @@ val buildRaven = tasks.register<Exec>("buildRaven") {
     )
 }
 
+// Linux: the newer glibc symbols libraven refers to, which Kotlin/Native's glibc 2.19 sysroot lacks
+// (src/nativeInterop/glibc/glibc_compat.c), as a static library the cinterop embeds beside libraven.
+
+val glibcCompatSource = layout.projectDirectory.file("src/nativeInterop/glibc/glibc_compat.c")
+val glibcCompatLibrary = ravenBuildDir.map { it.file("libraven_glibc_compat.a") }
+
+val buildGlibcCompat = tasks.register<Exec>("buildGlibcCompat") {
+    description = "Builds libraven_glibc_compat.a, the glibc symbols libraven needs on Linux."
+    onlyIf { hostTarget == KonanTarget.LINUX_X64 }
+    dependsOn(configureRaven)
+    inputs.file(glibcCompatSource)
+    outputs.file(glibcCompatLibrary)
+    val objectFile = ravenBuildDir.get().file("glibc_compat.o").asFile.absolutePath
+    commandLine(
+        "sh", "-c",
+        "cc -std=c11 -D_DEFAULT_SOURCE -O2 -fPIC -c \"${'$'}1\" -o \"${'$'}2\" && ar rcs \"${'$'}3\" \"${'$'}2\"",
+        "sh", glibcCompatSource.asFile.absolutePath, objectFile, glibcCompatLibrary.get().asFile.absolutePath,
+    )
+}
+
 // The linker options in raven.def must match the libraries CMake links into libraven.
 
 val checkRavenLinkerOpts = tasks.register("checkRavenLinkerOpts") {
@@ -102,10 +122,11 @@ kotlin {
             definitionFile.set(layout.projectDirectory.file("src/nativeInterop/cinterop/raven.def"))
             includeDirs(ravenRoot.dir("include").asFile)
             extraOpts("-libraryPath", ravenBuildDir.get().asFile.absolutePath)
+            if (hostTarget == KonanTarget.LINUX_X64) extraOpts("-staticLibrary", "libraven_glibc_compat.a")
             tasks.named(interopProcessingTaskName) {
-                dependsOn(buildRaven, checkRavenLinkerOpts)
+                dependsOn(buildRaven, buildGlibcCompat, checkRavenLinkerOpts)
                 // The klib embeds libraven.a (staticLibraries), so a rebuilt library must re-run it.
-                inputs.files(buildRaven)
+                inputs.files(buildRaven, buildGlibcCompat)
             }
         }
     }
