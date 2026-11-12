@@ -712,7 +712,15 @@ Added for the `overlay` and `glass` ports:
   theme's font size metric.
 - **`MarkdownText(markdown, modifier, style, onLinkClick = null)`** uses `Rlabel_set_markdown` and
   `Rlabel_set_link_callback`. It arrives early, in phase 2, for `samples/themes`; until phase 3's
-  `TextStyle`, it takes no `style`.
+  `TextStyle`, it takes no `style`. A clicked link goes to `onLinkClick`, or, when it is null, to
+  `LocalUriHandler.current.openUri(url)`, as Compose's links do. Raven's own link handling is never
+  used, so `action:` links are not Raven actions; an app that wants one handles it in `onLinkClick`
+  and passes the rest to the `UriHandler`.
+- **`LocalUriHandler`** provides a `UriHandler` (`openUri(uri)`), in `raven.compose.ui.platform`.
+  The host's default opens the URI with `Ropen_url` (the browser, the mail program, a file) and
+  throws `IllegalArgumentException` when Raven can't, as Compose's does. An app or a test provides
+  its own to change how links open (phase 2,
+  [LocalUriHandler](issues/0094-localurihandler.md)).
 
 ### Custom drawing, viewports and effects (phase 3)
 
@@ -1272,6 +1280,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `accessibleRole` and `accessibleDescription` reach Raven roles that Compose's `Role` lacks | `Role` has a fixed set | [7](#7-events-and-state) |
 | `FontWeight` has two steps (W100 to W500 regular, W600 to W900 bold) | any weight the font file has | [8](#8-component-vocabulary) |
 | No `AnnotatedString` or spans; `MarkdownText` for formatted text | `AnnotatedString`, `SpanStyle` | [8](#8-component-vocabulary) |
+| `MarkdownText`'s links go to `onLinkClick` or `LocalUriHandler`; Raven's `action:` links aren't special | `LinkAnnotation` listeners, then `LocalUriHandler` | [8](#8-component-vocabulary) |
 | `Typography` has eight compose-raven roles (`display` ... `code`), sized by Raven's Markdown factors; Raven-drawn text and Markdown headings don't follow a custom typography | Material's fifteen roles, applied to every component | [8](#8-component-vocabulary) |
 | `Canvas` has no `Path`, but has Raven's cubic curves, triangles, glass and shaders | `Path`, `DrawScope` on Skia | [8](#8-component-vocabulary) |
 | Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
