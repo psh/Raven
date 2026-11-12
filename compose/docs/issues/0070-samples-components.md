@@ -11,7 +11,7 @@ Port Raven's `examples/components`: cards, badges and stats, which the C example
 
 **Depends on:** [Surface, FlowRow and Expander](archive/0064-surface-flowrow-and-expander.md),
 [Window: WindowState and its parameters](archive/0086-window-windowstate-and-its-parameters.md),
-[Modifier.appearTransition](0088-modifier-appeartransition.md).
+[Modifier.appearTransition](archive/0088-modifier-appeartransition.md).
 
 ## Deliverables
 
@@ -39,7 +39,7 @@ Port Raven's `examples/components`: cards, badges and stats, which the C example
 
 ## Gaps
 
-None: the card transitions came into phase 2 with [Modifier.appearTransition](0088-modifier-appeartransition.md)
+None: the card transitions came into phase 2 with [Modifier.appearTransition](archive/0088-modifier-appeartransition.md)
 ([ADR 0001](../adr/0001-phase-split-after-the-phase-2-sample-gaps.md)).
 
 Building an XML document from code and the registry of declared `<Widget>` tags have no

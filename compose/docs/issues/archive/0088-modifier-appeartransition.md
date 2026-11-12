@@ -6,9 +6,9 @@ status: closed
 
 `Modifier.appearTransition` arrives early, in phase 2, for `samples/components`' cards.
 `AnimatedVisibility`, `animate*AsState` and `Island` stay in phase 3. Spec:
-[Transitions and Island](../spec.md#transitions-and-island-phase-3). Decided in:
-[Island and appear transitions](archive/0036-island-and-appear-transitions.md), and brought into
-phase 2 by [ADR 0001](../adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
+[Transitions and Island](../../spec.md#transitions-and-island-phase-3). Decided in:
+[Island and appear transitions](0036-island-and-appear-transitions.md), and brought into
+phase 2 by [ADR 0001](../../adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
 
 **Depends on:** nothing open.
 
