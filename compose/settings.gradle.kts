@@ -23,6 +23,7 @@ include(
     ":samples:hello",
     ":samples:components",
     ":samples:notepad",
+    ":samples:overlay",
     ":samples:xml-translator",
     ":spikes:nested-frames",
 )

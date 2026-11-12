@@ -57,6 +57,13 @@ program opens a file given on its command line:
 samples/notepad/build/bin/macosArm64/releaseExecutable/notepad.kexe README.md
 ```
 
+`samples/overlay` (`./gradlew :samples:overlay:runReleaseExecutableMacosArm64`, `overlay.kexe`)
+is a borderless window that is seen through, with an opacity slider, a backdrop to choose, and the
+four `BlurStyle`s over coloured stripes. What shows through is up to the window system, and the
+panel says what it obtained: Windows 10 and 11 blur the desktop, and Mica and Acrylic need Windows
+11; X11 needs a compositor (and KWin for the blur), and without one the window is opaque and says
+so; on macOS the desktop shows as it is, unblurred. Close it with its Close button.
+
 Running an app (not the tests) needs a Vulkan driver:
 
 - **macOS**: MoltenVK, from `brew install molten-vk` or the Vulkan SDK. Raven loads it by name,
