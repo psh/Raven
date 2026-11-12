@@ -14,8 +14,10 @@ Spec: [8: CodeEditor's editing extras](../spec.md#phase-2-codeeditors-editing-ex
 
 ## Deliverables
 
-- [ ] `rememberCodeEditorState()` and `CodeEditor(state = ...)`: `undo()`, `redo()`, `selectAll()`
-      and `showCompletions()`, doing nothing on a state not attached to an editor.
+- [ ] `rememberCodeEditorState()` and `CodeEditor(state = ...)`: `undo()`, `redo()`, `selectAll()`,
+      `showCompletions()` and `insertText(text)` (`Rtext_editor_insert_text`, decided in
+      [Window extras the samples use](archive/0076-window-extras-the-samples-use.md)), doing
+      nothing on a state not attached to an editor.
 - [ ] `CodeEditorState.cursor: TextPosition(line, column)`, zero-based snapshot state refreshed each
       frame from `Rtext_editor_get_cursor`; readers recompose only when it moves.
 - [ ] `CodeEditor(wordWrap = false)`.
@@ -27,7 +29,8 @@ Spec: [8: CodeEditor's editing extras](../spec.md#phase-2-codeeditors-editing-ex
 - [ ] `rememberCodeEditorLanguage(CodeEditorLanguage(...)): String`, registering once per host, with
       `CodeEditorLanguage` mirroring `RLanguageDesc` and `LanguageFlag`; and
       `codeEditorLanguageForFile(path): String?`, failing outside the composition.
-- [ ] Tests: undo after typing restores the text and calls `onValueChange`; the cursor follows a
+- [ ] Tests: undo after typing restores the text and calls `onValueChange`; `insertText` types at the
+      cursor and can be undone; the cursor follows a
       typed character; completions from the lambda are offered for a prefix; a marker on an edited
       line comes back after the edit; a registered language is listed by `codeEditorLanguages()`
       and chosen by `codeEditorLanguageForFile("x.ini")`.

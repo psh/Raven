@@ -13,7 +13,8 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
 [RavenTheme and theme files](0065-raventheme-and-theme-files.md) (the View menu's looks),
 [Native message and file dialogs](0080-native-message-and-file-dialogs.md),
-[CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md).
+[CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md),
+[Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md).
 
 ## Deliverables
 
@@ -33,9 +34,13 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
       a `CheckboxItem`; the C example's snippets, TODO and FIXME as `completions`.
 - [ ] TODO/FIXME `markers` and the notes count, rescanned 0.4 s after typing pauses, and the
       status line's position from `state.cursor`.
+- [ ] A file dropped on the window opens (after "Discard them?" when there are unsaved changes),
+      and dropped text is typed at the cursor with `CodeEditorState.insertText`, through
+      `Window(onExternalDrop)`.
+- [ ] A path given on the command line opens at start: `main(args)` passes it to the composable.
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`.
-- [ ] A headless test: typing marks the document modified in the status line, and choosing a
-      language reaches the editor.
+- [ ] A headless test: typing marks the document modified in the status line, choosing a
+      language reaches the editor, and a dropped text is inserted (`performExternalDrop`).
 - [ ] Each gap below is settled by [compose-raven phase 2 sample gaps](0073-compose-raven-phase-2-sample-gaps.md)
       before this ticket starts: brought into phase 2, or a port gap naming the phase that
       completes it.
@@ -44,8 +49,7 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 
 Phase 2 doesn't cover these parts of the C example:
 
-- **Phase 3:** the window's minimum size (`WindowState`); headless tests of the dialog flows,
+- **Not yet settled:** the window's minimum size ([Window minimum size](0083-window-minimum-size.md)).
+- **Phase 3:** headless tests of the dialog flows,
   with the dialogs' `Dialog`/`FileBrowser` default
   ([Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
-- **Not in the spec:** dropping a file on the window; opening a file given on the command line
-  ([Window extras the samples use](0076-window-extras-the-samples-use.md) settles both).

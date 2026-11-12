@@ -95,10 +95,11 @@ of those before the sample tickets start.
 | Menus and the header bar (`customHeader`, `KeyShortcut`) | [8: menus](spec.md#phase-2-menus-and-the-header-bar), [4](spec.md#4-application-host) | `notepad` | [Menus and KeyShortcut](issues/0061-menus-and-keyshortcut.md), [HeaderBar and Window(customHeader)](issues/0062-headerbar-and-custom-header.md) |
 | Native message and file dialogs (`native = true` only) | [4](spec.md#4-application-host) | `notepad` | [Native message and file dialogs](issues/0080-native-message-and-file-dialogs.md) |
 | CodeEditor's editing extras: `CodeEditorState`, word wrap, completions, markers, registered languages | [8: CodeEditor](spec.md#phase-2-codeeditors-editing-extras) | `notepad` | [CodeEditorState, completions, markers and languages](issues/0081-codeeditorstate-completions-markers-and-languages.md) |
+| Files and text dropped on a window (`Window(onExternalDrop)`) | [4](spec.md#4-application-host) | `notepad` | [Files and text dropped on a window](issues/0082-files-and-text-dropped-on-a-window.md) |
 | ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/0063-combobox-spinbox-and-codeeditorlanguages.md) |
 | Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/0064-surface-flowrow-and-expander.md) |
 | Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
-| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `WindowBackdrop` | [8: glass](spec.md#phase-2-glass-and-backgroundblur), [4](spec.md#4-application-host) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/0067-material-and-backgroundblur.md), [Transparent windows and WindowBackdrop](issues/0068-transparent-windows-and-windowbackdrop.md) |
+| Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `opacity`, `WindowBackdrop`, `LocalWindowInfo.isTransparent` | [8: glass](spec.md#phase-2-glass-and-backgroundblur), [4](spec.md#4-application-host) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/0067-material-and-backgroundblur.md), [Window transparency, opacity and backdrop](issues/0068-window-transparency-opacity-and-backdrop.md) |
 | Samples | [10](spec.md#10-samples) | | [notepad](issues/0069-samples-notepad.md), [components](issues/0070-samples-components.md), [themes](issues/0071-samples-themes.md), [overlay](issues/0072-samples-overlay.md) |
 
 ## 4. Phase 3
@@ -165,7 +166,7 @@ Decided for phase 3 so far (in the spec):
 **Phase 4 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
 virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,
-multi-window tests, build-time XML translation, app bundling, gestures and popups.
+multi-window tests, build-time XML translation, app bundling, gestures (with drop targets on widgets and drags inside the app) and popups.
 
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
   (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after

@@ -140,12 +140,25 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     title, width, height) { }` are already public, so `samples/hello`'s Quit button can end the app.
     The rest of `Window`'s parameters, `WindowState` and windows that come and go arrive with
     phase 3.
-- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
+- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, opacity: Float = 1f, onExternalDrop: ((DragData) -> Unit)? = null, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
   - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
     [section 8](#8-component-vocabulary)), `transparent` uses `R_WINDOW_TRANSPARENT`, and
     `undecorated` uses `R_WINDOW_BORDERLESS`. `background` uses `Rwindow_set_clear_color`.
+  - **`opacity`** (0 to 1, the frame included) uses `Rwindow_set_opacity`. When the window system
+    refuses, a warning is logged and the window stays opaque; the app's value stays the source of
+    truth (phase 2).
+  - **`onExternalDrop`** takes files or text dropped from other applications where no widget takes
+    them (`Rwindow_set_drop_callback`): `DragData.FilesList(paths)` or `DragData.Text(text)`, the
+    names of Compose Desktop's `onExternalDrag`. A non-null handler accepts drops (Raven shows its
+    "can drop here" cursor), a null one refuses them, and the handler runs only on the drop, not on
+    enter, move or leave. The harness has `performExternalDrop(paths, text)` over
+    `Rwindow_inject_drop` (phase 2). Drop targets on widgets and drags inside the app are phase 4,
+    with the gestures.
+  - **`LocalWindowInfo.current.isTransparent`** is true when the window system really gave a
+    see-through window (`RNativeWindow.transparent`), which `transparent = true` asks for but
+    doesn't guarantee (phase 2). The raw native handle stays with phase 3's `NativeViewport`.
   - **`WindowState`** holds `size`, `position`, `placement` (Floating or Maximized) and
     `isMinimized`. Writes call Raven's setters, and Raven's resize and move callbacks write back.
   - **Composition**: a window emits no node into its parent. It has its own composition, with its
@@ -156,9 +169,11 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     lifecycle follows Compose Desktop: **RESUMED** while the window is shown and active (focused),
     **STARTED** while shown but not active, **CREATED** while minimised or hidden, and
     **DESTROYED** when the window leaves the composition.
-  - **`WindowBackdrop(backdrop: Backdrop)`** inside a window calls `Rwindow_set_backdrop` for that
-    window. `Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning is
-    logged when the window isn't transparent or the system refuses.
+  - **`WindowBackdrop(backdrop: Backdrop): Backdrop`** inside a window calls `Rwindow_set_backdrop`
+    for that window. `Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning
+    is logged when the window isn't transparent or the system refuses. It returns the backdrop in
+    effect, read with `Rwindow_get_backdrop` after each apply, as snapshot state: `None` until the
+    first apply, then its readers recompose. `val obtained = WindowBackdrop(Backdrop.Mica)`.
 - **`Dialog(onDismissRequest, properties: DialogProperties = DialogProperties()) { }`** is a
   Raven sheet over its window.
   - Its content has its own composition, rooted in a panel given to `Rdialog_open`. When it leaves
@@ -515,7 +530,9 @@ Added for the `notepad` port. `CodeEditor` stays controlled by `value`/`onValueC
 
 - **`state: CodeEditorState = rememberCodeEditorState()`**, a holder in the manner of `ScrollState`:
   it holds no text, only commands and what it observes.
-  - Commands: `undo()`, `redo()`, `selectAll()` and `showCompletions()`. On a state not attached
+  - Commands: `undo()`, `redo()`, `selectAll()`, `showCompletions()`, and `insertText(text)`, which
+    types at the cursor as the user would (`Rtext_editor_insert_text`: undoable, and it calls
+    `onValueChange`). On a state not attached
     to an editor they do nothing.
   - `cursor: TextPosition(line, column)`, zero-based and read-only, is snapshot state refreshed
     each frame from `Rtext_editor_get_cursor`, since Raven has no callback for it.
@@ -1225,6 +1242,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `Modifier.material(...)` gives any widget a glass or solid surface | no counterpart | [6](#6-layout-and-modifiers) |
 | `BackgroundBlur` blurs what is behind it (backdrop blur) | `Modifier.blur` blurs the element itself | [8](#8-component-vocabulary) |
 | The backdrop is set with the `WindowBackdrop(...)` composable | no counterpart | [4](#4-application-host) |
+| External drops are a `Window(onExternalDrop)` handler for the whole window | `Modifier.dragAndDropTarget` on any element | [4](#4-application-host) |
+| `LocalWindowInfo` adds `isTransparent` | `WindowInfo` has focus, modifiers and size | [4](#4-application-host) |
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
 | `Dialog` is a sheet over its window, and a click outside it does nothing (no `dismissOnClickOutside`) | a separate window on desktop | [4](#4-application-host) |
 | No `Popup { }` | `Popup` | [4](#4-application-host) |

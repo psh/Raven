@@ -10,12 +10,15 @@ side. Spec: [10. Samples](../spec.md#10-samples),
 
 **Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
 [Modifier.material and BackgroundBlur](0067-material-and-backgroundblur.md),
-[Transparent windows and WindowBackdrop](0068-transparent-windows-and-windowbackdrop.md).
+[Window transparency, opacity and backdrop](0068-window-transparency-opacity-and-backdrop.md).
 
 ## Deliverables
 
 - [ ] `samples/overlay` as a transparent window with the C example's look: a `BackgroundBlur`
       per `BlurStyle` over coloured stripes, and a ComboBox choosing the `WindowBackdrop`.
+- [ ] The opacity slider as `Window(opacity)`; the backdrop obtained, from `WindowBackdrop`'s
+      return value; and the C example's two explanations, chosen by
+      `LocalWindowInfo.current.isTransparent`.
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`, with what each
       platform shows (a compositor on X11, Mica and Acrylic on Windows 11 only).
 - [ ] A headless test: choosing a backdrop reaches the window.
@@ -25,5 +28,5 @@ side. Spec: [10. Samples](../spec.md#10-samples),
 
 ## Gaps
 
-- **Not in the spec:** the window's opacity slider (`Rwindow_set_opacity`), reading back the
-  backdrop obtained (`Rwindow_get_backdrop`), and the native window handle. The C example shows the backdrop obtained; the port shows the one asked for until the spec adds a way to read it.
+None: [Window extras the samples use](archive/0076-window-extras-the-samples-use.md) brought the
+opacity, the backdrop obtained and the transparency check into phase 2.

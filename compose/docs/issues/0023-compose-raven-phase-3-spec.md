@@ -101,7 +101,9 @@ charted.
   calls `onBack`), list-detail scenes, and the ViewModel entry decorator
   (`lifecycle-viewmodel-navigation3`).
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
-  (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`.
+  (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`; drop targets on
+  widgets and drags inside the app (`Modifier.dragAndDropTarget`, `Rdrag_begin`), beyond phase 2's
+  `Window(onExternalDrop)`.
 - **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
   tooltip popups today.
 
