@@ -87,7 +87,8 @@ Done and run on macOS. `./gradlew build allTests` passes: 290 tests, 8 of them t
     theme Box is gone, and the cards fill the column.
   - A non-null `onLinkClick` replaces Raven's handling of every link of the label, so a web link
     added to `notes.md` would show a status line instead of opening. compose-raven has no
-    `UriHandler` to open it.
+    `UriHandler` to open it. Fixed by [LocalUriHandler](0094-localurihandler.md): the sample
+    handles its docs link and passes every other link to `LocalUriHandler`.
   - `Text` has no `softWrap` until phase 3, so the status line doesn't wrap (see Gaps).
 - **Checked by eye** on macOS: the release executable starts with Ocean over Raven dark, and
   shows the paper and glass cards, the rendered notes and the editor, laid out as the C example.

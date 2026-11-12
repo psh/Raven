@@ -46,6 +46,8 @@ import raven.compose.ui.application
 import raven.compose.ui.graphics.CircleShape
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.RoundedCornerShape
+import raven.compose.ui.platform.LocalUriHandler
+import raven.compose.ui.platform.UriHandler
 import raven.compose.ui.rememberWindowState
 import raven.compose.ui.testTag
 import raven.compose.ui.theme.Look
@@ -117,9 +119,19 @@ val accentSwatches: List<Color> = listOf(
 /** The link of notes.md that fires the C example's action. */
 const val DOCS_LINK: String = "action:themes.docs"
 
-/** The status line after a click on [link] in the Markdown text. */
-fun linkStatus(link: String): String =
-    if (link == DOCS_LINK) "A link of the Markdown text fired the action \"themes.docs\"." else "A link to $link."
+/** The status line after a click on [DOCS_LINK], as in the C example. */
+const val DOCS_STATUS: String = "A link of the Markdown text fired the action \"themes.docs\"."
+
+/**
+ * Follows a click on [link] in the notes. [DOCS_LINK] is the sample's own, and gives
+ * [DOCS_STATUS] back; any other link, a web page or a mailto:, [uriHandler] opens, and this
+ * gives null.
+ */
+fun followLink(link: String, uriHandler: UriHandler): String? {
+    if (link == DOCS_LINK) return DOCS_STATUS
+    uriHandler.openUri(link)
+    return null
+}
 
 /** What the Markdown editor starts with, as in the C example. */
 const val EDITOR_START: String = "## Try it\n\nType **bold**, *emphasis*, `code`,\n- a list\n- [a link](https://example.org)\n"
@@ -159,6 +171,7 @@ fun ThemesApp(
             minimumSize = DpSize(820.dp, 520.dp),
         ) {
             var status by remember { mutableStateOf("") }
+            val uriHandler = LocalUriHandler.current
             Row(Modifier.fillMaxSize()) {
                 Appearance(
                     lookIndex = lookIndex,
@@ -186,7 +199,7 @@ fun ThemesApp(
                     }
                 }
                 VerticalDivider()
-                Notes(notesPath, onLinkClick = { status = linkStatus(it) }, Modifier.width(400.dp).fillMaxHeight())
+                Notes(notesPath, onLinkClick = { link -> followLink(link, uriHandler)?.let { status = it } }, Modifier.width(400.dp).fillMaxHeight())
             }
         }
     }

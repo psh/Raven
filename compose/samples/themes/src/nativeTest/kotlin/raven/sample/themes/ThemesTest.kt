@@ -36,6 +36,7 @@ import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
+import raven.compose.ui.platform.UriHandler
 import raven.compose.ui.theme.Look
 import raven.compose.ui.theme.RavenTheme
 import raven.native.toRavenString
@@ -43,6 +44,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ThemesTest {
@@ -191,8 +193,17 @@ class ThemesTest {
     }
 
     @Test
-    fun theDocsLinkGivesTheCExamplesStatus() {
-        assertEquals("A link of the Markdown text fired the action \"themes.docs\".", linkStatus(DOCS_LINK))
+    fun theDocsLinkGivesTheCExamplesStatusAndOtherLinksOpen() {
+        val opened = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                opened += uri
+            }
+        }
+        assertEquals("A link of the Markdown text fired the action \"themes.docs\".", followLink(DOCS_LINK, uriHandler))
+        assertEquals(emptyList(), opened, "the docs link is the sample's own")
+        assertNull(followLink("https://example.org", uriHandler))
+        assertEquals(listOf("https://example.org"), opened)
         assertTrue(readTextFile("$EXAMPLE_DIR/notes.md")!!.contains("($DOCS_LINK)"))
     }
 

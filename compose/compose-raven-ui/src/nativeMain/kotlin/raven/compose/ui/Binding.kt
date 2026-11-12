@@ -439,8 +439,8 @@ private val onExpanderChanged = staticCFunction { _: Rid, expanded: Int, userDat
 // The links of a Markdown label.
 
 /**
- * A link of a Markdown label clicked: the lambda gets its address. Its callback is set only while
- * the node holds a lambda, through [bindLinkClick], so it is never in a descriptor's events.
+ * A link of a Markdown label clicked: the lambda gets its address. Its callback is set through
+ * [bindLinkClick], so it is never in a descriptor's events.
  */
 @InternalComposeRavenApi
 public val LabelLinkClicked: Event<(String) -> Unit> = Event { widget, userData ->
@@ -448,14 +448,14 @@ public val LabelLinkClicked: Event<(String) -> Unit> = Event { widget, userData 
 }
 
 /**
- * Points a Markdown label's link clicks at [onLinkClick], when it changes. Null clears Raven's
- * callback, so Raven follows the link itself: an `action:` link fires its action, and an http,
- * https or mailto link opens in the user's browser or mail program.
+ * Points a Markdown label's link clicks at [onLinkClick], when it changes. The callback replaces
+ * Raven's own handling of every link, so an `action:` link fires no action and a web link opens
+ * only if the lambda opens it.
  */
 @InternalComposeRavenApi
-public fun Updater<RavenNode>.bindLinkClick(onLinkClick: ((String) -> Unit)?): Unit = set(onLinkClick) {
+public fun Updater<RavenNode>.bindLinkClick(onLinkClick: (String) -> Unit): Unit = set(onLinkClick) {
     setHandler(LabelLinkClicked, it)
-    if (it == null) Rlabel_set_link_callback(widget, null, null) else LabelLinkClicked.register(this)
+    LabelLinkClicked.register(this)
 }
 
 private val onLabelLinkClicked = staticCFunction { _: Rid, url: CPointer<ByteVar>?, userData: COpaquePointer? ->

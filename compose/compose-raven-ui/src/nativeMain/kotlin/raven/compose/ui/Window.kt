@@ -73,7 +73,9 @@ import raven.cinterop.Rwindow_show
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
+import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
+import raven.compose.ui.platform.RavenUriHandler
 import raven.compose.ui.platform.WindowInfo
 import raven.compose.ui.theme.LocalThemePlacement
 import raven.compose.ui.theme.ThemePlacement
@@ -256,6 +258,7 @@ internal class RavenWindow(
         CompositionLocalProvider(
             LocalRavenWindow provides this,
             LocalWindowInfo provides info,
+            LocalUriHandler provides RavenUriHandler,
             LocalThemePlacement provides ThemePlacement.Window,
             content = content,
         )

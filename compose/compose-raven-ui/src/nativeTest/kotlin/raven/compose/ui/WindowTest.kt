@@ -38,13 +38,16 @@ import raven.cinterop.Rwindow_restore
 import raven.cinterop.Rwindow_set_position
 import raven.cinterop.Rwindow_set_size
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
+import raven.compose.ui.platform.UriHandler
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.DpSize
 import raven.compose.ui.unit.dp
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class WindowTest {
@@ -280,6 +283,15 @@ class WindowTest {
         assertEquals(false, opaque)
         // The headless window system gives every window that asks a see-through one.
         assertEquals(true, seeThrough)
+    }
+
+    @Test
+    fun theHostsUriHandlerThrowsWhenRavenCantOpenTheUri() {
+        var handler: UriHandler? = null
+        withHost({ Window(onCloseRequest = {}) { handler = LocalUriHandler.current } })
+        // Raven refuses an empty URI before asking the OS, so nothing opens; a real one would.
+        val thrown = assertFailsWith<IllegalArgumentException> { handler!!.openUri("") }
+        assertEquals("Raven can't open \"\"", thrown.message)
     }
 
     @Test

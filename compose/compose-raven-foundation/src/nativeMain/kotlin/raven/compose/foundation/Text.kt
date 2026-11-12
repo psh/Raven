@@ -1,6 +1,8 @@
 package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import raven.cinterop.R_COLOR_TEXT
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_LABEL
@@ -18,6 +20,7 @@ import raven.compose.ui.bindLinkClick
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
+import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.unit.TextUnit
 import raven.compose.ui.unit.isSpecified
 
@@ -62,9 +65,10 @@ private val LabelMarkdown = Property<String> { widget, markdown ->
 /**
  * Shows [markdown] drawn as Raven draws Markdown: headings, emphasis, code, lists, quotes, tables
  * and links, in the theme's colours, wrapped on the label's width. A link clicked calls
- * [onLinkClick] with its address; without one, Raven follows it: an `action:` link fires its
- * action, and an http, https or mailto link opens in the user's browser or mail program. The
- * `style` arrives with `TextStyle` (phase 3); until then the text has the theme's.
+ * [onLinkClick] with its address; without one, [LocalUriHandler] opens it, by default in the
+ * user's browser or mail program. Raven's own link handling is never used, so an `action:` link is
+ * not a Raven action: an app that wants one handles it in [onLinkClick]. The `style` arrives with
+ * `TextStyle` (phase 3); until then the text has the theme's.
  */
 @Composable
 public fun MarkdownText(
@@ -72,8 +76,11 @@ public fun MarkdownText(
     modifier: Modifier = Modifier,
     onLinkClick: ((String) -> Unit)? = null,
 ) {
+    // The handler is read when a link is clicked, so the label's callback stays the same lambda.
+    val uriHandler = rememberUpdatedState(LocalUriHandler.current)
+    val openUri = remember { { url: String -> uriHandler.value.openUri(url) } }
     RavenWidget(MarkdownTextWidget, modifier, {
         bind(markdown, LabelMarkdown)
-        bindLinkClick(onLinkClick)
+        bindLinkClick(onLinkClick ?: openUri)
     })
 }
