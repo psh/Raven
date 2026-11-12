@@ -11,7 +11,7 @@ with theme files loaded at start. Spec: [10. Samples](../spec.md#10-samples),
 **Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
 [RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md),
 [Component colours, shapes and padding](archive/0066-component-colors-shapes-and-padding.md),
-[MarkdownText](0087-markdowntext.md).
+[MarkdownText](archive/0087-markdowntext.md).
 
 ## Deliverables
 
