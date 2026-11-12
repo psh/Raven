@@ -11,11 +11,13 @@ import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
+import raven.cinterop.R_COLOR_TEXT
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_BUTTON
 import raven.cinterop.Rid
 import raven.cinterop.Rprogress_bar_get_value
+import raven.cinterop.Rwidget_get_color
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_get_rect
 import raven.cinterop.Rwidget_get_type
@@ -29,6 +31,8 @@ import raven.compose.foundation.layout.height
 import raven.compose.foundation.layout.padding
 import raven.compose.foundation.layout.width
 import raven.compose.ui.Modifier
+import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import raven.native.CallbackRegistry
@@ -155,5 +159,24 @@ class ComponentsTest {
         onNodeWithContentDescription("dd", substring = true).assertExists()
         onNodeWithContentDescription("Remove").assertDoesNotExist()
         assertTrue(onNodeWithText("A", substring = true).fetchWidget() != onNodeWithContentDescription("Add").fetchWidget())
+    }
+
+    @Test
+    fun aTextFollowsItsColourAndUnspecifiedRestoresTheThemes() = runRavenTest {
+        var color by mutableStateOf(Color.Unspecified)
+        setContent { Text("Tinted", color = color) }
+        val label = onNodeWithText("Tinted").fetchWidget()
+        fun shown() = ravenColor { r, g, b, a -> Rwidget_get_color(label, R_COLOR_TEXT, r, g, b, a) }
+        val themes = shown()
+
+        color = Color.Red
+        waitForIdle()
+        assertEquals(Color.Red, shown())
+        color = Color(0x803B82F6)
+        waitForIdle()
+        assertEquals(Color(0x803B82F6), shown())
+        color = Color.Unspecified
+        waitForIdle()
+        assertEquals(themes, shown())
     }
 }
