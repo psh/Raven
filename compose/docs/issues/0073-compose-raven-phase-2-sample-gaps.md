@@ -8,7 +8,7 @@ wayfinder: map
 ## Destination
 
 Every [port gap](../../GLOSSARY.md) listed on the phase 2 sample tickets
-([samples/notepad](0069-samples-notepad.md), [samples/components](0070-samples-components.md),
+([samples/notepad](0069-samples-notepad.md), [samples/components](archive/0070-samples-components.md),
 [samples/themes](0071-samples-themes.md), [samples/overlay](0072-samples-overlay.md)) is settled:
 either decided into phase 2 (written into `compose/docs/spec.md` and owned by a phase 2 ticket), or
 left as a port gap that names the phase completing it, with that phase's part of the spec or

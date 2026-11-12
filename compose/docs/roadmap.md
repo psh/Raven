@@ -116,7 +116,7 @@ settled every one; nothing is left open before implementation.
 | Glass: `Modifier.material`, `BackgroundBlur` | [8: glass](spec.md#phase-2-glass-and-backgroundblur) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/archive/0067-material-and-backgroundblur.md) |
 | `MarkdownText` (early from phase 3, without `style`) | [8: fonts](spec.md#fonts-and-text-styling-phase-3) | `themes` | [MarkdownText](issues/archive/0087-markdowntext.md) |
 | `Modifier.appearTransition` (early from phase 3) | [8: transitions](spec.md#transitions-and-island-phase-3) | `components` | [Modifier.appearTransition](issues/archive/0088-modifier-appeartransition.md) |
-| Samples | [10](spec.md#10-samples) | | [notepad](issues/0069-samples-notepad.md), [components](issues/0070-samples-components.md), [themes](issues/0071-samples-themes.md), [overlay](issues/0072-samples-overlay.md) |
+| Samples | [10](spec.md#10-samples) | | [notepad](issues/0069-samples-notepad.md), [components](issues/archive/0070-samples-components.md), [themes](issues/0071-samples-themes.md), [overlay](issues/0072-samples-overlay.md) |
 
 ## 4. Phase 3
 
