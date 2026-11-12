@@ -5,7 +5,7 @@ status: closed
 # Menus and KeyShortcut
 
 `MenuBar`, `Menu`, `Item`, `CheckboxItem` and the menu `Separator`, with `KeyShortcut` and `Key`,
-for the `notepad` port. Spec: [8: menus and the header bar](../spec.md#phase-2-menus-and-the-header-bar).
+for the `notepad` port. Spec: [8: menus and the header bar](../../spec.md#phase-2-menus-and-the-header-bar).
 
 **Depends on:** nothing open.
 
@@ -18,7 +18,7 @@ for the `notepad` port. Spec: [8: menus and the header bar](../spec.md#phase-2-m
 - [x] `CheckboxItem(text, checked, onCheckedChange, shortcut, enabled)` over a checkable MenuItem,
       controlled through `ControlledValue` as `Checkbox` is.
 - [x] `Separator()` in `MenuScope`: a MenuItem with `Separator = true` set through
-      `Rwidget_set_attribute`, as the [spikes](../../spikes/README.md) found.
+      `Rwidget_set_attribute`, as the [spikes](../../../spikes/README.md) found.
 - [x] `KeyShortcut(key, ctrl, shift, alt, meta)` through `Rmenu_item_set_shortcut`, `meta` being
       Super (Cmd on macOS), and `Key` mirroring `RKey`: letters, digits, F1 to F12 and the named keys.
 - [x] Harness: finding a menu item by its text and activating it, the way `performClick` does for

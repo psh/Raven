@@ -8,7 +8,7 @@ Port Raven's `examples/notepad`: a text editor under a custom header bar with Fi
 View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.md#10-samples),
 [8: menus and the header bar](../spec.md#phase-2-menus-and-the-header-bar).
 
-**Depends on:** [Menus and KeyShortcut](0061-menus-and-keyshortcut.md),
+**Depends on:** [Menus and KeyShortcut](archive/0061-menus-and-keyshortcut.md),
 [HeaderBar](0062-headerbar.md),
 [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
 [RavenTheme and theme files](0065-raventheme-and-theme-files.md) (the View menu's looks),
