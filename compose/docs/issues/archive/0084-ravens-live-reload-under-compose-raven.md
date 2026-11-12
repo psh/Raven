@@ -1,9 +1,9 @@
 ---
-status: open
+status: closed
 wayfinder: grilling
 parent: 0073
 blocked_by: []
-assignee: null
+assignee: Paul Hawke
 ---
 
 # Raven's live reload under compose-raven
@@ -35,3 +35,25 @@ Decide:
 
 Then correct spec section 8's theming wording and [RavenTheme and theme files](0065-raventheme-and-theme-files.md)
 to match. Surfaced on 2026-11-11, after the theme extras ticket closed.
+
+## Resolution
+
+Live reload is a development convenience, on in debug executables only, with compose-raven owning
+Raven's reload callback. It joins [RavenTheme and theme files](../0065-raventheme-and-theme-files.md),
+the first ticket to load a file.
+
+- **Default**: `Platform.isDebugBinary`. A shipped app never changes because a file on disk did, as
+  Compose Hot Reload is a development tool. `RAVEN_LIVE_RELOAD`, when set, wins.
+- **Switch**: `application(liveReload = Platform.isDebugBinary)` and the same on
+  `singleWindowApplication`, phase 2, calling `Rxml_set_live_reload` right after `Rinit`.
+- **The callback slot**: compose-raven owns `Rxml_set_reload_callback` outright, as it owns the
+  frame callback, uses it only to refresh `RavenTheme.themeNames`, and runs it inside the
+  C-boundary catch. Apps get no reload event.
+- **Tests**: the harness's host runs with live reload off. A reload test writes the file and calls
+  an internal `checkFiles()` over `Rxml_check_files`, which works with live reload off, so it is
+  deterministic. `Rshutdown` stops the watcher thread, so leak checks need nothing new.
+- **Upstream**: `raven_xml.h`'s "five per second" is stale (the watcher is event-driven); noted in
+  `roadmap.md`'s fork section as a doc fix to offer, not a fork change.
+
+Spec section 4 has the live reload bullet and the `application` parameter, section 8's theming
+wording follows it, and section 9 has the harness rule.

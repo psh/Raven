@@ -130,7 +130,7 @@ fun main() = application {                        // this: ApplicationScope
 fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600) { ... }
 ```
 
-- **`application(followSystemAccessibility = true) { }`** blocks, and it must be called from `main()` on the main thread, which
+- **`application(followSystemAccessibility = true, liveReload = Platform.isDebugBinary) { }`** blocks, and it must be called from `main()` on the main thread, which
   becomes the **UI thread** (AppKit requires this). It ends when its content has no `Window` left,
   or when `ApplicationScope.exitApplication()` is called. `singleWindowApplication(title, width,
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
@@ -224,7 +224,8 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
   - After shutdown it drops dispatches instead of calling Raven. The drain task still posted runs
     in `Rshutdown`'s last run of the task queue and finds nothing.
 - **Frame clock**: a `BroadcastFrameClock`. Its `onNewAwaiters` calls `Rwake_up()`.
-  compose-raven owns the single `Rset_frame_callback` slot outright. The callback drains the
+  compose-raven owns the single `Rset_frame_callback` slot outright, and the single
+  `Rxml_set_reload_callback` slot too (see live reload below). The callback drains the
   dispatcher, calls `sendFrame((Rget_time() * 1e9).toLong())`, then drains again.
   - The Recomposer recomposes and applies inside `sendFrame`, and the frame callback runs after
     tasks and before layout, so a recomposition is laid out and painted in the same frame.
@@ -270,6 +271,15 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
   rethrows the first throwable.
 - **Exit**: `ApplicationScope.exitApplication()` calls `Rquit()`, which is thread-safe. The loop
   also ends when no `Window` is left.
+- **Live reload** (phase 2): Raven reloads what it built from files when they change on disk (theme
+  files, and the interface and locale files compose-raven doesn't use), through a native watcher
+  thread that `Rshutdown` stops. `liveReload` defaults to `Platform.isDebugBinary`, so a debug
+  executable follows its theme files and a release one never looks at them again; it calls
+  `Rxml_set_live_reload` right after `Rinit`. When the `RAVEN_LIVE_RELOAD` environment variable is
+  set, Raven's reading of it wins and `liveReload` is ignored. compose-raven owns
+  `Rxml_set_reload_callback`, uses it only to refresh `RavenTheme.themeNames`
+  ([section 8](#phase-2-theming)), and runs it inside the C-boundary catch; apps get no reload
+  event. `singleWindowApplication` takes `liveReload` too.
 
 Decided in: [Frame loop and threading](issues/archive/0008-frame-loop-and-threading.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
@@ -617,14 +627,15 @@ Added for the `themes` port:
   pressed shades, the focus outline, the selection, the links. Changing the look or the theme
   resets Raven's accent, so compose-raven applies it again after each change.
 - **`loadTheme(path): String`** and **`loadThemeFromString(xml): String`** load theme files and
-  return the name for `theme =`. They are valid only while Raven runs. Raven watches a loaded file
-  and reloads it when it is saved, updating every widget that uses the theme; compose-raven offers
-  no reload callback of its own.
+  return the name for `theme =`. They are valid only while Raven runs. While live reload is on
+  ([section 4](#4-application-host)), Raven reloads a loaded file when it is saved, updating every
+  widget that uses the theme. Apps see no reload event.
 - **`saveTheme(path, name: String? = null): Boolean`** writes the theme in use, the accent
   included, with `Rtheme_save`. It is valid only while Raven runs.
 - **`RavenTheme.themeNames: List<String>`** is read-only snapshot state listing every named theme
   (`Rtheme_get_count`/`_name_at`), the built-in ones included. It is refreshed after `loadTheme`,
-  after a look change, and when Raven reloads a theme file, which can rename it.
+  after a look change, and when Raven reloads a theme file, which can rename it (through
+  compose-raven's own reload callback).
 - **`RavenTheme.colors`** is a CompositionLocal with one `Color` per Raven colour role, read from
   the app theme with `Rtheme_get_color`. It doesn't see subtree themes.
 - **Colour parameters** follow Material: `XxxDefaults.colors(...)` returns `XxxColors`, passed as
@@ -930,6 +941,11 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
     `raven-native` getters.
 - **Leak checks after every test**: after `close()`/`Rshutdown`, `Rmemory_get_stats` must report
   zero blocks held, and the `raven.native` registry must report zero live `StableRef`s.
+- **Live reload is off in tests**: the harness's host runs with `liveReload = false`, so no test
+  reacts to the disk by itself. A test of reloading writes the file, then calls an internal
+  `checkFiles()` over `Rxml_check_files`, which looks at the files even with live reload off. The
+  watcher thread a loaded theme file starts is stopped by `Rshutdown`, so leak checks need nothing
+  more (phase 2).
 - **Isolation**: Raven starts fresh for every test. `Rinit`/`Rshutdown` can be repeated in one
   process with no memory left held ([verified](../spikes/README.md)).
 - **Pure logic** gets plain Kotlin unit tests, with no Raven: Modifier folding, move-index

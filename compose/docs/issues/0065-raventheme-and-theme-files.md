@@ -29,10 +29,18 @@ The accent, `saveTheme` and `themeNames` were decided in
       after each look or theme change, which resets it.
 - [ ] `saveTheme(path, name): Boolean` through `Rtheme_save`, valid only while Raven runs.
 - [ ] `RavenTheme.themeNames`, snapshot state from `Rtheme_get_count`/`_name_at`, refreshed after
-      `loadTheme`, a look change, and Raven's reload of a theme file (its reload callback, kept
-      internal).
+      `loadTheme`, a look change, and Raven's reload of a theme file.
+- [ ] Live reload, decided in [Raven's live reload under compose-raven](archive/0084-ravens-live-reload-under-compose-raven.md):
+      `application(liveReload = Platform.isDebugBinary)` and the same on `singleWindowApplication`,
+      calling `Rxml_set_live_reload` after `Rinit` unless `RAVEN_LIVE_RELOAD` is set;
+      compose-raven owns `Rxml_set_reload_callback` (inside the C-boundary catch), with no public
+      reload event.
+- [ ] Harness: the host runs with live reload off, and an internal `checkFiles()` over
+      `Rxml_check_files` lets a test trigger a reload.
 - [ ] `RavenTheme.colors`: one `Color` per Raven colour role, read from the app theme with
       `Rtheme_get_color`, and recomposing readers when the look or theme changes.
 - [ ] Tests: changing `look`, `dark` or `theme` changes Raven's; a subtree theme affects only its
       subtree; `RavenTheme.colors` follows an app-level change; the window-level error is logged; an accent survives a
-      change of look; a saved theme loads back with its accent; `themeNames` lists a loaded theme.
+      change of look; a saved theme loads back with its accent; `themeNames` lists a loaded theme and follows it when
+      the file is rewritten under a new name and `checkFiles()` runs; a test host never reloads by
+      itself.

@@ -56,6 +56,10 @@ Made in the `psh/Raven` fork and offered upstream later ([spec section 11](spec.
 6. A macOS bug fix: a modifier key no longer ends the app (Cocoa `flagsChanged:`). Found by
    `samples/hello`; it has no C test, because only a real window reaches it.
 
+Noted for upstream, not a fork change: `raven_xml.h` says of `Rxml_check_files` that files are
+looked at "five per second", but the watcher in `src/xml/xml_watch.c` is event-driven, polling every
+0.2 s only as a fallback ([Raven's live reload under compose-raven](issues/archive/0084-ravens-live-reload-under-compose-raven.md)).
+
 Each change is **one isolated commit** in the fork, with a C test in Raven's own `tests/`, and is
 offered upstream as its own pull request, so the fork rebases on upstream cheaply and drops each
 change once upstream has it.
