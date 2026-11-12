@@ -1417,6 +1417,14 @@ func WindowHide(window ID) {
 	C.Rwindow_hide(C.Rid(window))
 }
 
+// WindowFocus: Shows the window in front of the others with the keyboard, and makes the application the
+// active one. Rwindow_show alone does not take the keyboard from another application (a prompt that appears
+// while the user types elsewhere); this is for a window the user just asked for (a card opened from a tray
+// icon). Where the system has no such request, the same as Rwindow_show.
+func WindowFocus(window ID) {
+	C.Rwindow_focus(C.Rid(window))
+}
+
 func WindowMaximize(window ID) {
 	C.Rwindow_maximize(C.Rid(window))
 }
@@ -5462,6 +5470,23 @@ func NodeGraphGetSelectedNode(graph ID, index int) int {
 	return int(C.Rnode_graph_get_selected_node(C.Rid(graph), C.int(index)))
 }
 
+// NodeGraphGetNodeAt: The node under a point of the widget (x, y as in the events: Rnode_graph_to_canvas), or
+// 0.
+func NodeGraphGetNodeAt(graph ID, x float32, y float32) int {
+	return int(C.Rnode_graph_get_node_at(C.Rid(graph), C.float(x), C.float(y)))
+}
+
+// NodeGraphGetPinAt: The pin near a point of the widget (or whose tag is under it: Rnode_graph_set_pin_tag),
+// or 0 (a menu for a pin).
+func NodeGraphGetPinAt(graph ID, x float32, y float32) int {
+	return int(C.Rnode_graph_get_pin_at(C.Rid(graph), C.float(x), C.float(y)))
+}
+
+// NodeGraphGetLinkAt: The link under a point of the widget, or 0 (hidden links are never under it).
+func NodeGraphGetLinkAt(graph ID, x float32, y float32) int {
+	return int(C.Rnode_graph_get_link_at(C.Rid(graph), C.float(x), C.float(y)))
+}
+
 // NodeGraphSetPinMultiple: R_TRUE: this input keeps every link made to it (a state that several transitions
 // enter) instead of one. Pulling a wire from it starts a new one.
 func NodeGraphSetPinMultiple(graph ID, pin int, multiple int) {
@@ -5484,12 +5509,52 @@ func NodeGraphSetNodeDeletable(graph ID, node int, deletable int) {
 	C.Rnode_graph_set_node_deletable(C.Rid(graph), C.int(node), C.int(deletable))
 }
 
+// NodeGraphSetNodeShown: Shows a node at once, without the animation a node added to a shown graph pops in
+// with (an application that rebuilds its graph).
+func NodeGraphSetNodeShown(graph ID, node int) {
+	C.Rnode_graph_set_node_shown(C.Rid(graph), C.int(node))
+}
+
+// NodeGraphSetLinkShown: The same for a link made with Rnode_graph_connect: drawn whole at once instead of
+// growing from its output.
+func NodeGraphSetLinkShown(graph ID, link int) {
+	C.Rnode_graph_set_link_shown(C.Rid(graph), C.int(link))
+}
+
+// NodeGraphSetNodeIcon: An icon before the title: a texture of the application, shared by many nodes and not
+// deleted with them (the "Icon" style loads one per node from a file). R_INVALID_ID removes it.
+func NodeGraphSetNodeIcon(graph ID, node int, texture ID) {
+	C.Rnode_graph_set_node_icon(C.Rid(graph), C.int(node), C.Rid(texture))
+}
+
 // NodeGraphSetNodeBadge: A short text in a pill on the top right corner of the node ("1", "!"...); NULL or ""
 // removes it.
 func NodeGraphSetNodeBadge(graph ID, node int, text string) {
 	text_ := C.CString(text)
 	defer C.free(unsafe.Pointer(text_))
 	C.Rnode_graph_set_node_badge(C.Rid(graph), C.int(node), text_)
+}
+
+// NodeGraphSetPinTag: A short text in a chip of the pin's color outside the node, beside the pin (left of an
+// input, right of an output): the name of what goes out or comes in there, as a net label of a schematic.
+// NULL or "" removes it.
+func NodeGraphSetPinTag(graph ID, pin int, text string) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rnode_graph_set_pin_tag(C.Rid(graph), C.int(pin), text_)
+}
+
+// NodeGraphSetLinkHidden: R_TRUE: the link stays (its pins are linked, the application keeps it) but is not
+// drawn and not picked: its two ends are shown otherwise (pin tags naming it, as the labels of a schematic
+// stand for a wire).
+func NodeGraphSetLinkHidden(graph ID, link int, hidden int) {
+	C.Rnode_graph_set_link_hidden(C.Rid(graph), C.int(link), C.int(hidden))
+}
+
+// NodeGraphSetPinEmphasis: How much a pin stands out, as while a wire is pulled: 1 shows it as a pin to go
+// to, -1 steps it back, 0 as usual (an application that links in two clicks).
+func NodeGraphSetPinEmphasis(graph ID, pin int, emphasis int) {
+	C.Rnode_graph_set_pin_emphasis(C.Rid(graph), C.int(pin), C.int(emphasis))
 }
 
 func BlockEditorCreate() ID {
@@ -5700,6 +5765,16 @@ func DialogClose(widget ID, result int) {
 // DialogRun: Shows a dialog and waits until it closes. Returns its result.
 func DialogRun(window ID, content ID) int {
 	return int(C.Rdialog_run(C.Rid(window), C.Rid(content)))
+}
+
+// PopupClose: Closes the popup that contains a widget (the content or anything inside it).
+func PopupClose(widget ID, result int) {
+	C.Rpopup_close(C.Rid(widget), C.int(result))
+}
+
+// PopupIsOpen: Returns: R_TRUE while the widget is shown as a popup.
+func PopupIsOpen(content ID) int {
+	return int(C.Rpopup_is_open(C.Rid(content)))
 }
 
 // WindowHasDialog: Returns: R_TRUE while a dialog is shown in the window.
@@ -6607,15 +6682,16 @@ func HostInjectClose(window ID) {
 // Rnode_graph_set_node_user_data, Rnode_graph_get_node_user_data, Rnode_graph_set_connect_callback
 // Rnode_graph_set_linked_callback, Rnode_graph_set_unlinked_callback, Rnode_graph_set_moved_callback
 // Rnode_graph_set_selection_callback, Rnode_graph_set_removed_callback, Rnode_graph_set_activated_callback
-// Rnode_graph_set_context_callback, Rblock_editor_set_changed_callback, Rblock_editor_set_clicked_callback
-// Rblock_editor_set_context_callback, Rdialog_open, Rfile_dialog_open, Rfile_dialog_save
-// Rfile_dialog_select_folder, Rfile_read, Rfile_browser_set_filters, Rfile_browser_set_accepted_callback
-// Rfile_browser_set_cancelled_callback, Rfile_browser_set_selection_changed_callback
-// Rnotification_set_fallback, Rnotification_set_clicked_callback, Rviewport_set_draw_callback
-// Rviewport_get_native_handle, Rviewport_set_resize_callback, Rcustom_set_paint_callback
-// Rcustom_set_measure_callback, Rdraw_rect, Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_curve
-// Rdraw_triangle, Rdraw_image, Rdraw_text, Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set
-// Rdraw_push_clip_rect, Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults
-// Rdraw_shader, Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse
-// Rxml_get_attribute_info, Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings
-// Rhost_platform_register
+// Rnode_graph_set_context_callback, Rnode_graph_set_canvas_activated_callback
+// Rnode_graph_set_wire_dropped_callback, Rnode_graph_set_pin_clicked_callback
+// Rblock_editor_set_changed_callback, Rblock_editor_set_clicked_callback, Rblock_editor_set_context_callback
+// Rdialog_open, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save, Rfile_dialog_select_folder, Rfile_read
+// Rfile_browser_set_filters, Rfile_browser_set_accepted_callback, Rfile_browser_set_cancelled_callback
+// Rfile_browser_set_selection_changed_callback, Rnotification_set_fallback
+// Rnotification_set_clicked_callback, Rviewport_set_draw_callback, Rviewport_get_native_handle
+// Rviewport_set_resize_callback, Rcustom_set_paint_callback, Rcustom_set_measure_callback, Rdraw_rect
+// Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_curve, Rdraw_triangle, Rdraw_image, Rdraw_text
+// Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set, Rdraw_push_clip_rect, Rdraw_pop_clip_rect
+// Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults, Rdraw_shader, Rborder_set_effect
+// Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse, Rxml_get_attribute_info
+// Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings, Rhost_platform_register

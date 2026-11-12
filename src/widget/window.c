@@ -559,6 +559,11 @@ void rvn_window_close_popup(rvn_window_t* window, rvn_widget_t* root) {
 			rvn_widget_set_window(closed, NULL);
 		}
 		if (closed->cls->popup_closed) closed->cls->popup_closed(closed);
+		if (!dialog && popup.closed) {
+			/* a popup of the application (Rpopup_open): it keeps the content */
+			popup.closed(closed->id, popup.result, popup.closed_user);
+			if (window->dead) break;
+		}
 		if (dialog) {
 			Rid owner = popup.focus_back;
 			Rid closed_id = closed->id;
@@ -2398,6 +2403,12 @@ void Rwindow_show(Rid id) {
 	window->needs_paint = R_TRUE;
 	g_rvn.platform->window_show(window->platform, R_TRUE);
 	rvn_window_notch_update(window);
+}
+
+void Rwindow_focus(Rid id) {
+	RVN_WINDOW_VOID(window, id);
+	if (!window->visible) Rwindow_show(id);
+	if (g_rvn.platform->window_focus) g_rvn.platform->window_focus(window->platform);
 }
 
 void Rwindow_hide(Rid id) {

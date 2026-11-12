@@ -4946,6 +4946,28 @@ public final class R {
     }
 
     /**
+     * Something happened at a point of the canvas: `item` depends on the
+     * function the callback was given to; x, y are in canvas units (as node positions).
+     */
+    @FunctionalInterface
+    public interface RNodeGraphPointCallback {
+        void invoke(int graph, int item, float x, float y, MemorySegment user_data);
+    }
+
+    private static void RNodeGraphPointCallback$raw(RNodeGraphPointCallback f, int graph, int item, float x, float y, MemorySegment user_data) {
+        try {
+            f.invoke(graph, item, x, y, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RNodeGraphPointCallback f) {
+        return stub(f, RNodeGraphPointCallback.class, "RNodeGraphPointCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, ADDRESS));
+    }
+
+    /**
      * A block changed (0: several, or one was deleted), or a script was clicked (its top block).
      */
     @FunctionalInterface
@@ -6433,6 +6455,26 @@ public final class R {
     public static void Rwindow_hide(int window) {
         MethodHandle $h = Rwindow_hide$;
         if ($h == null) Rwindow_hide$ = $h = find("Rwindow_hide", FunctionDescriptor.ofVoid(JAVA_INT));
+        try {
+            $h.invokeExact(window);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rwindow_focus$;
+
+    /**
+     * Shows the window in front of the others with the keyboard, and
+     * makes the application the active one. Rwindow_show alone does not take
+     * the keyboard from another application (a prompt that appears while the
+     * user types elsewhere); this is for a window the user just asked for (a
+     * card opened from a tray icon). Where the system has no such request,
+     * the same as Rwindow_show.
+     */
+    public static void Rwindow_focus(int window) {
+        MethodHandle $h = Rwindow_focus$;
+        if ($h == null) Rwindow_focus$ = $h = find("Rwindow_focus", FunctionDescriptor.ofVoid(JAVA_INT));
         try {
             $h.invokeExact(window);
         } catch (Throwable $t) {
@@ -18870,6 +18912,132 @@ public final class R {
         Rnode_graph_set_context_callback(graph, callback, (MemorySegment) null);
     }
 
+    private static MethodHandle Rnode_graph_set_canvas_activated_callback$;
+
+    /**
+     * Double click on the empty canvas (`item` 0): the application acts
+     * there (a search to add a node...). Without this callback it frames all nodes.
+     */
+    public static void Rnode_graph_set_canvas_activated_callback(int graph, RNodeGraphPointCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rnode_graph_set_canvas_activated_callback$;
+        if ($h == null) Rnode_graph_set_canvas_activated_callback$ = $h = find("Rnode_graph_set_canvas_activated_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(graph, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Double click on the empty canvas (`item` 0): the application acts
+     * there (a search to add a node...). Without this callback it frames all nodes.
+     */
+    public static void Rnode_graph_set_canvas_activated_callback(int graph, RNodeGraphPointCallback callback) {
+        Rnode_graph_set_canvas_activated_callback(graph, callback, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rnode_graph_set_wire_dropped_callback$;
+
+    /**
+     * A wire the user pulled from a pin was released on nothing: `item` is
+     * that pin, x, y where it was dropped (to offer a node to connect it to). The
+     * wire draws back as usual.
+     */
+    public static void Rnode_graph_set_wire_dropped_callback(int graph, RNodeGraphPointCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rnode_graph_set_wire_dropped_callback$;
+        if ($h == null) Rnode_graph_set_wire_dropped_callback$ = $h = find("Rnode_graph_set_wire_dropped_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(graph, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * A wire the user pulled from a pin was released on nothing: `item` is
+     * that pin, x, y where it was dropped (to offer a node to connect it to). The
+     * wire draws back as usual.
+     */
+    public static void Rnode_graph_set_wire_dropped_callback(int graph, RNodeGraphPointCallback callback) {
+        Rnode_graph_set_wire_dropped_callback(graph, callback, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rnode_graph_set_pin_clicked_callback$;
+
+    /**
+     * A pin was clicked, not dragged (`item` is the pin, x, y on the canvas):
+     * the application may link in two clicks (Rnode_graph_set_pin_emphasis shows where
+     * the second may go). With this callback such a click neither detaches the wire
+     * of an input nor counts as a wire dropped on nothing.
+     */
+    public static void Rnode_graph_set_pin_clicked_callback(int graph, RNodeGraphPointCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rnode_graph_set_pin_clicked_callback$;
+        if ($h == null) Rnode_graph_set_pin_clicked_callback$ = $h = find("Rnode_graph_set_pin_clicked_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(graph, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * A pin was clicked, not dragged (`item` is the pin, x, y on the canvas):
+     * the application may link in two clicks (Rnode_graph_set_pin_emphasis shows where
+     * the second may go). With this callback such a click neither detaches the wire
+     * of an input nor counts as a wire dropped on nothing.
+     */
+    public static void Rnode_graph_set_pin_clicked_callback(int graph, RNodeGraphPointCallback callback) {
+        Rnode_graph_set_pin_clicked_callback(graph, callback, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rnode_graph_get_node_at$;
+
+    /**
+     * The node under a point of the widget (x, y as in the events: Rnode_graph_to_canvas), or 0.
+     */
+    public static int Rnode_graph_get_node_at(int graph, float x, float y) {
+        MethodHandle $h = Rnode_graph_get_node_at$;
+        if ($h == null) Rnode_graph_get_node_at$ = $h = find("Rnode_graph_get_node_at", FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            int $r = (int) $h.invokeExact(graph, x, y);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_get_pin_at$;
+
+    /**
+     * The pin near a point of the widget (or whose tag is under it: Rnode_graph_set_pin_tag), or 0 (a menu for a pin).
+     */
+    public static int Rnode_graph_get_pin_at(int graph, float x, float y) {
+        MethodHandle $h = Rnode_graph_get_pin_at$;
+        if ($h == null) Rnode_graph_get_pin_at$ = $h = find("Rnode_graph_get_pin_at", FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            int $r = (int) $h.invokeExact(graph, x, y);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_get_link_at$;
+
+    /**
+     * The link under a point of the widget, or 0 (hidden links are never under it).
+     */
+    public static int Rnode_graph_get_link_at(int graph, float x, float y) {
+        MethodHandle $h = Rnode_graph_get_link_at$;
+        if ($h == null) Rnode_graph_get_link_at$ = $h = find("Rnode_graph_get_link_at", FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            int $r = (int) $h.invokeExact(graph, x, y);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rnode_graph_set_pin_multiple$;
 
     /**
@@ -18931,6 +19099,51 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rnode_graph_set_node_shown$;
+
+    /**
+     * Shows a node at once, without the animation a node added to a shown graph pops in with (an application that rebuilds its graph).
+     */
+    public static void Rnode_graph_set_node_shown(int graph, int node) {
+        MethodHandle $h = Rnode_graph_set_node_shown$;
+        if ($h == null) Rnode_graph_set_node_shown$ = $h = find("Rnode_graph_set_node_shown", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(graph, node);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_set_link_shown$;
+
+    /**
+     * The same for a link made with Rnode_graph_connect: drawn whole at once instead of growing from its output.
+     */
+    public static void Rnode_graph_set_link_shown(int graph, int link) {
+        MethodHandle $h = Rnode_graph_set_link_shown$;
+        if ($h == null) Rnode_graph_set_link_shown$ = $h = find("Rnode_graph_set_link_shown", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(graph, link);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_set_node_icon$;
+
+    /**
+     * An icon before the title: a texture of the application, shared by many nodes and not deleted with them (the "Icon" style loads one per node from a file). R_INVALID_ID removes it.
+     */
+    public static void Rnode_graph_set_node_icon(int graph, int node, int texture) {
+        MethodHandle $h = Rnode_graph_set_node_icon$;
+        if ($h == null) Rnode_graph_set_node_icon$ = $h = find("Rnode_graph_set_node_icon", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(graph, node, texture);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rnode_graph_set_node_badge$;
 
     /**
@@ -18942,6 +19155,57 @@ public final class R {
         try (Arena $a = Arena.ofConfined()) {
             MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
             $h.invokeExact(graph, node, text$);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_set_pin_tag$;
+
+    /**
+     * A short text in a chip of the pin's color outside the node, beside the pin
+     * (left of an input, right of an output): the name of what goes out or comes in
+     * there, as a net label of a schematic. NULL or "" removes it.
+     */
+    public static void Rnode_graph_set_pin_tag(int graph, int pin, String text) {
+        MethodHandle $h = Rnode_graph_set_pin_tag$;
+        if ($h == null) Rnode_graph_set_pin_tag$ = $h = find("Rnode_graph_set_pin_tag", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
+            $h.invokeExact(graph, pin, text$);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_set_link_hidden$;
+
+    /**
+     * R_TRUE: the link stays (its pins are linked, the application keeps
+     * it) but is not drawn and not picked: its two ends are shown otherwise (pin
+     * tags naming it, as the labels of a schematic stand for a wire).
+     */
+    public static void Rnode_graph_set_link_hidden(int graph, int link, int hidden) {
+        MethodHandle $h = Rnode_graph_set_link_hidden$;
+        if ($h == null) Rnode_graph_set_link_hidden$ = $h = find("Rnode_graph_set_link_hidden", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(graph, link, hidden);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rnode_graph_set_pin_emphasis$;
+
+    /**
+     * How much a pin stands out, as while a wire is pulled: 1 shows it as a pin
+     * to go to, -1 steps it back, 0 as usual (an application that links in two clicks).
+     */
+    public static void Rnode_graph_set_pin_emphasis(int graph, int pin, int emphasis) {
+        MethodHandle $h = Rnode_graph_set_pin_emphasis$;
+        if ($h == null) Rnode_graph_set_pin_emphasis$ = $h = find("Rnode_graph_set_pin_emphasis", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(graph, pin, emphasis);
         } catch (Throwable $t) {
             throw fail($t);
         }
@@ -19555,6 +19819,71 @@ public final class R {
         if ($h == null) Rdialog_run$ = $h = find("Rdialog_run", FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT));
         try {
             int $r = (int) $h.invokeExact(window, content);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rpopup_open$;
+
+    /**
+     * Shows a widget as a popup over the window, its top-left corner at
+     * x, y (window coordinates; moved to stay inside the window): a search box,
+     * a palette, a picker. Unlike a dialog it does not block the window: a click
+     * outside it, or Escape, closes it. The application keeps the content (it is
+     * not deleted on close) and can open it again. `closed` (may be NULL) is
+     * called when it closes, with the result given to Rpopup_close (0 when dismissed).
+     * The content draws its own background (a Border with a Background...).
+     */
+    public static void Rpopup_open(int window, int content, float x, float y, RDialogClosedCallback closed, MemorySegment user_data) {
+        MethodHandle $h = Rpopup_open$;
+        if ($h == null) Rpopup_open$ = $h = find("Rpopup_open", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(window, content, x, y, upcall(closed), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Shows a widget as a popup over the window, its top-left corner at
+     * x, y (window coordinates; moved to stay inside the window): a search box,
+     * a palette, a picker. Unlike a dialog it does not block the window: a click
+     * outside it, or Escape, closes it. The application keeps the content (it is
+     * not deleted on close) and can open it again. `closed` (may be NULL) is
+     * called when it closes, with the result given to Rpopup_close (0 when dismissed).
+     * The content draws its own background (a Border with a Background...).
+     */
+    public static void Rpopup_open(int window, int content, float x, float y, RDialogClosedCallback closed) {
+        Rpopup_open(window, content, x, y, closed, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rpopup_close$;
+
+    /**
+     * Closes the popup that contains a widget (the content or anything inside it).
+     */
+    public static void Rpopup_close(int widget, int result) {
+        MethodHandle $h = Rpopup_close$;
+        if ($h == null) Rpopup_close$ = $h = find("Rpopup_close", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(widget, result);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rpopup_is_open$;
+
+    /**
+     * Returns: R_TRUE while the widget is shown as a popup.
+     */
+    public static int Rpopup_is_open(int content) {
+        MethodHandle $h = Rpopup_is_open$;
+        if ($h == null) Rpopup_is_open$ = $h = find("Rpopup_is_open", FunctionDescriptor.of(JAVA_INT, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(content);
             return $r;
         } catch (Throwable $t) {
             throw fail($t);

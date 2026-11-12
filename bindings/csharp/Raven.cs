@@ -2939,6 +2939,13 @@ namespace Raven
     public delegate void RNodeGraphContextCallback(uint graph, int node, float x, float y, IntPtr user_data);
 
     /// <summary>
+    /// Something happened at a point of the canvas: `item` depends on the
+    /// function the callback was given to; x, y are in canvas units (as node positions).
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RNodeGraphPointCallback(uint graph, int item, float x, float y, IntPtr user_data);
+
+    /// <summary>
     /// A block changed (0: several, or one was deleted), or a script was clicked (its top block).
     /// </summary>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -3531,6 +3538,17 @@ namespace Raven
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rwindow_hide(uint window);
+
+        /// <summary>
+        /// Shows the window in front of the others with the keyboard, and
+        /// makes the application the active one. Rwindow_show alone does not take
+        /// the keyboard from another application (a prompt that appears while the
+        /// user types elsewhere); this is for a window the user just asked for (a
+        /// card opened from a tray icon). Where the system has no such request,
+        /// the same as Rwindow_show.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rwindow_focus(uint window);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rwindow_maximize(uint window);
@@ -7848,6 +7866,48 @@ namespace Raven
         public static extern void Rnode_graph_set_context_callback(uint graph, RNodeGraphContextCallback callback, IntPtr user_data);
 
         /// <summary>
+        /// Double click on the empty canvas (`item` 0): the application acts
+        /// there (a search to add a node...). Without this callback it frames all nodes.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_canvas_activated_callback(uint graph, RNodeGraphPointCallback callback, IntPtr user_data);
+
+        /// <summary>
+        /// A wire the user pulled from a pin was released on nothing: `item` is
+        /// that pin, x, y where it was dropped (to offer a node to connect it to). The
+        /// wire draws back as usual.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_wire_dropped_callback(uint graph, RNodeGraphPointCallback callback, IntPtr user_data);
+
+        /// <summary>
+        /// A pin was clicked, not dragged (`item` is the pin, x, y on the canvas):
+        /// the application may link in two clicks (Rnode_graph_set_pin_emphasis shows where
+        /// the second may go). With this callback such a click neither detaches the wire
+        /// of an input nor counts as a wire dropped on nothing.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_pin_clicked_callback(uint graph, RNodeGraphPointCallback callback, IntPtr user_data);
+
+        /// <summary>
+        /// The node under a point of the widget (x, y as in the events: Rnode_graph_to_canvas), or 0.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rnode_graph_get_node_at(uint graph, float x, float y);
+
+        /// <summary>
+        /// The pin near a point of the widget (or whose tag is under it: Rnode_graph_set_pin_tag), or 0 (a menu for a pin).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rnode_graph_get_pin_at(uint graph, float x, float y);
+
+        /// <summary>
+        /// The link under a point of the widget, or 0 (hidden links are never under it).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rnode_graph_get_link_at(uint graph, float x, float y);
+
+        /// <summary>
         /// R_TRUE: this input keeps every link made to it (a state that several
         /// transitions enter) instead of one. Pulling a wire from it starts a new one.
         /// </summary>
@@ -7873,10 +7933,51 @@ namespace Raven
         public static extern void Rnode_graph_set_node_deletable(uint graph, int node, int deletable);
 
         /// <summary>
+        /// Shows a node at once, without the animation a node added to a shown graph pops in with (an application that rebuilds its graph).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_node_shown(uint graph, int node);
+
+        /// <summary>
+        /// The same for a link made with Rnode_graph_connect: drawn whole at once instead of growing from its output.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_link_shown(uint graph, int link);
+
+        /// <summary>
+        /// An icon before the title: a texture of the application, shared by many nodes and not deleted with them (the "Icon" style loads one per node from a file). R_INVALID_ID removes it.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_node_icon(uint graph, int node, uint texture);
+
+        /// <summary>
         /// A short text in a pill on the top right corner of the node ("1", "!"...); NULL or "" removes it.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rnode_graph_set_node_badge(uint graph, int node, [MarshalAs(Utf8.Str)] string text);
+
+        /// <summary>
+        /// A short text in a chip of the pin's color outside the node, beside the pin
+        /// (left of an input, right of an output): the name of what goes out or comes in
+        /// there, as a net label of a schematic. NULL or "" removes it.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_pin_tag(uint graph, int pin, [MarshalAs(Utf8.Str)] string text);
+
+        /// <summary>
+        /// R_TRUE: the link stays (its pins are linked, the application keeps
+        /// it) but is not drawn and not picked: its two ends are shown otherwise (pin
+        /// tags naming it, as the labels of a schematic stand for a wire).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_link_hidden(uint graph, int link, int hidden);
+
+        /// <summary>
+        /// How much a pin stands out, as while a wire is pulled: 1 shows it as a pin
+        /// to go to, -1 steps it back, 0 as usual (an application that links in two clicks).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rnode_graph_set_pin_emphasis(uint graph, int pin, int emphasis);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint Rblock_editor_create();
@@ -8075,6 +8176,30 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Rdialog_run(uint window, uint content);
+
+        /// <summary>
+        /// Shows a widget as a popup over the window, its top-left corner at
+        /// x, y (window coordinates; moved to stay inside the window): a search box,
+        /// a palette, a picker. Unlike a dialog it does not block the window: a click
+        /// outside it, or Escape, closes it. The application keeps the content (it is
+        /// not deleted on close) and can open it again. `closed` (may be NULL) is
+        /// called when it closes, with the result given to Rpopup_close (0 when dismissed).
+        /// The content draws its own background (a Border with a Background...).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rpopup_open(uint window, uint content, float x, float y, RDialogClosedCallback closed, IntPtr user_data);
+
+        /// <summary>
+        /// Closes the popup that contains a widget (the content or anything inside it).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rpopup_close(uint widget, int result);
+
+        /// <summary>
+        /// Returns: R_TRUE while the widget is shown as a popup.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rpopup_is_open(uint content);
 
         /// <summary>
         /// Returns: R_TRUE while a dialog is shown in the window.
