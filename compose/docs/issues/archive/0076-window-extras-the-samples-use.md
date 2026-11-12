@@ -34,7 +34,7 @@ All of them come into phase 2, so `overlay` has no gaps and `notepad` none from 
   drop. The harness gains `performExternalDrop` over `Rwindow_inject_drop`. Drop targets on widgets
   and drags inside the app are phase 4, named in the roadmap's gestures fog.
 - **`CodeEditorState.insertText(text)`**, for dropped text: typed at the cursor, undoable, calling
-  `onValueChange`. Added to [CodeEditorState, completions, markers and languages](../0081-codeeditorstate-completions-markers-and-languages.md).
+  `onValueChange`. Added to [CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md).
 - **The command line** is no gap: the port's `main(args)` passes the path to its composable.
 
 Opacity, the return value and `isTransparent` joined the renamed

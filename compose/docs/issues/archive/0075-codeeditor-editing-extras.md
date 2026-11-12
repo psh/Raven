@@ -22,7 +22,7 @@ phase? Read `examples/notepad/main.c` and `include/raven/` for what Raven offers
 
 All of them come into phase 2, so `notepad` has no editor gaps. Each is a thin wrapper over
 Raven's TextEditor, and `notepad` needs every one. New ticket:
-[CodeEditorState, completions, markers and languages](../0081-codeeditorstate-completions-markers-and-languages.md).
+[CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md).
 
 - **Commands and the cursor**: `rememberCodeEditorState()`, passed as `CodeEditor(state = ...)`,
   in the manner of `ScrollState`: no text, only `undo()`, `redo()`, `selectAll()`,

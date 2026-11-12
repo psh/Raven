@@ -6,17 +6,17 @@ status: closed
 
 `CodeEditor`'s editing extras for the `notepad` port: commands and the cursor through
 `CodeEditorState`, word wrap, completions, controlled markers, and languages the app registers.
-Spec: [8: CodeEditor's editing extras](../spec.md#phase-2-codeeditors-editing-extras). Decided in:
-[CodeEditor's editing extras](archive/0075-codeeditor-editing-extras.md).
+Spec: [8: CodeEditor's editing extras](../../spec.md#phase-2-codeeditors-editing-extras). Decided in:
+[CodeEditor's editing extras](0075-codeeditor-editing-extras.md).
 
-**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md)
+**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md)
 (`codeEditorLanguages()`, which registered languages join).
 
 ## Deliverables
 
 - [x] `rememberCodeEditorState()` and `CodeEditor(state = ...)`: `undo()`, `redo()`, `selectAll()`,
       `showCompletions()` and `insertText(text)` (`Rtext_editor_insert_text`, decided in
-      [Window extras the samples use](archive/0076-window-extras-the-samples-use.md)), doing
+      [Window extras the samples use](0076-window-extras-the-samples-use.md)), doing
       nothing on a state not attached to an editor.
 - [x] `CodeEditorState.cursor: TextPosition(line, column)`, zero-based snapshot state refreshed each
       frame from `Rtext_editor_get_cursor`; readers recompose only when it moves.
