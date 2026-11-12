@@ -14,7 +14,7 @@ class TranslatorUiTest {
         setContent { TranslatorUi() }
         assertEquals(xmlExample, Rtext_editor_get_text(onNodeWithTag("xml").fetchWidget()).toRavenString())
         val code = Rtext_editor_get_text(onNodeWithTag("code").fetchWidget()).toRavenString()
-        assertTrue("fun TranslatedUi()" in code && "fun main() = singleWindowApplication(title = \"Tool\"" in code, code)
+        assertTrue("fun TranslatedUi()" in code && "fun main() = singleWindowApplication(state = WindowState(size = DpSize(800.dp, 500.dp)), title = \"Tool\"" in code, code)
         assertEquals(
             "2 warnings:\nline 2: <Shortcut> has no composable yet\nline 9: <ListView> has no composable yet",
             Rlabel_get_text(onNodeWithTag("warnings").fetchWidget()).toRavenString(),

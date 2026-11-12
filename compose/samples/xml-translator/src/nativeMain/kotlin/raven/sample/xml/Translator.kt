@@ -130,8 +130,11 @@ private val imports = mapOf(
     "widthIn" to "raven.compose.foundation.layout",
     "Alignment" to "raven.compose.ui",
     "Modifier" to "raven.compose.ui",
+    "WindowState" to "raven.compose.ui",
     "singleWindowApplication" to "raven.compose.ui",
     "tooltip" to "raven.compose.ui",
+    "Dp" to "raven.compose.ui.unit",
+    "DpSize" to "raven.compose.ui.unit",
     "dp" to "raven.compose.ui.unit",
     "sp" to "raven.compose.ui.unit",
 )
@@ -341,9 +344,8 @@ private class Translator {
     private fun window(window: XmlElement): String {
         val attrs = Attrs(window)
         val args = listOfNotNull(
+            windowState(attrs.num("Width")?.constant, attrs.num("Height")?.constant)?.let { "state = $it" },
             attrs.raw("Title")?.let { "title = ${kotlinString(it)}" },
-            attrs.num("Width")?.constant?.let { "width = ${it.toInt()}" },
-            attrs.num("Height")?.constant?.let { "height = ${it.toInt()}" },
         )
         attrs.reportUnused("singleWindowApplication")
         var content = false
@@ -363,6 +365,14 @@ private class Translator {
         use("singleWindowApplication")
         val call = if (args.isEmpty()) "singleWindowApplication" else "singleWindowApplication(${args.joinToString(", ")})"
         return "fun main() = $call {\n    TranslatedUi()\n}\n"
+    }
+
+    /** The window's size as a `WindowState`, or null without one; a side left out keeps the default. */
+    private fun windowState(width: Float?, height: Float?): String? {
+        if (width == null && height == null) return null
+        use("WindowState", "DpSize")
+        fun side(value: Float?) = if (value == null) "Dp.Unspecified".also { use("Dp") } else "${value.toInt()}.dp".also { use("dp") }
+        return "WindowState(size = DpSize(${side(width)}, ${side(height)}))"
     }
 
     // ---- elements ----

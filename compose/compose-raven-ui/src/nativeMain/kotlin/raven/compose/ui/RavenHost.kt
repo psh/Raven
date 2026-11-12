@@ -250,6 +250,8 @@ public class RavenHost(
 
     internal fun sendFrame() {
         try {
+            // Raven reports no moves and no changes of placement: each window reads them here.
+            windows.forEach { it.followRaven() }
             // What was dispatched since the frame's tasks ran, a timer's state write say, joins this frame.
             dispatcher.drain()
             // Recomposes and applies, inside the frame callback, so layout and paint follow.

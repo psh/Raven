@@ -47,7 +47,9 @@ class TranslatorTest {
             import raven.compose.foundation.layout.fillMaxWidth
             import raven.compose.foundation.layout.padding
             import raven.compose.ui.Modifier
+            import raven.compose.ui.WindowState
             import raven.compose.ui.singleWindowApplication
+            import raven.compose.ui.unit.DpSize
             import raven.compose.ui.unit.dp
             import raven.compose.ui.unit.sp
 
@@ -70,7 +72,7 @@ class TranslatorTest {
                 }
             }
 
-            fun main() = singleWindowApplication(title = "Tool", width = 800, height = 500) {
+            fun main() = singleWindowApplication(state = WindowState(size = DpSize(800.dp, 500.dp)), title = "Tool") {
                 TranslatedUi()
             }
 
@@ -306,6 +308,13 @@ class TranslatorTest {
             code,
         )
         assertTrue("fun main() = singleWindowApplication {\n    TranslatedUi()\n}" in code, code)
+    }
+
+    @Test
+    fun aWindowSizeBecomesItsStateAndASideLeftOutKeepsTheDefault() {
+        val code = translate(el("Window", "Width" to "640", children = listOf(el("Label", text = "Hi")))).code
+        assertTrue("fun main() = singleWindowApplication(state = WindowState(size = DpSize(640.dp, Dp.Unspecified))) {" in code, code)
+        assertTrue("import raven.compose.ui.unit.Dp\nimport raven.compose.ui.unit.DpSize\n" in code, code)
     }
 
     @Test

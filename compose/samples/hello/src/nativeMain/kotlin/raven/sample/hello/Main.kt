@@ -17,14 +17,16 @@ import raven.compose.ui.Alignment
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
 import raven.compose.ui.application
+import raven.compose.ui.rememberWindowState
 import raven.compose.ui.tooltip
+import raven.compose.ui.unit.DpSize
 import raven.compose.ui.unit.dp
 import raven.compose.ui.unit.sp
 
 // A port of Raven's examples/hello: a title, a click counter and two buttons.
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication, title = "Hello Raven", width = 420, height = 220) {
+    Window(onCloseRequest = ::exitApplication, state = rememberWindowState(size = DpSize(420.dp, 220.dp)), title = "Hello Raven") {
         Hello(onQuit = ::exitApplication)
     }
 }

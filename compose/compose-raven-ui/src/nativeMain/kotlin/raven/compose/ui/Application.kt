@@ -4,6 +4,8 @@ package raven.compose.ui
 
 import androidx.compose.runtime.Composable
 import raven.cinterop.Rquit
+import raven.compose.ui.graphics.Color
+import raven.compose.ui.unit.DpSize
 
 /** What an [application]'s content can do to the application as a whole. */
 public interface ApplicationScope {
@@ -32,16 +34,37 @@ public fun application(
     runApplication(RavenHost(followSystemAccessibility = followSystemAccessibility)) { RavenApplicationScope.content() }
 }
 
-/** One window with [content], closed by its close button: shorthand for [application] with one [Window]. */
+/**
+ * One window with [content], closed by its close button: shorthand for [application] with one
+ * [Window], which takes [state] and the other parameters as they are.
+ */
 public fun singleWindowApplication(
+    state: WindowState = WindowState(),
     title: String = "Untitled",
-    width: Int = 800,
-    height: Int = 600,
+    customHeader: Boolean = false,
+    transparent: Boolean = false,
+    undecorated: Boolean = false,
+    resizable: Boolean = true,
+    minimumSize: DpSize? = null,
+    background: Color = Color.Unspecified,
+    opacity: Float = 1f,
     followSystemAccessibility: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     application(followSystemAccessibility) {
-        Window(onCloseRequest = ::exitApplication, title = title, width = width, height = height, content = content)
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = state,
+            title = title,
+            customHeader = customHeader,
+            transparent = transparent,
+            undecorated = undecorated,
+            resizable = resizable,
+            minimumSize = minimumSize,
+            background = background,
+            opacity = opacity,
+            content = content,
+        )
     }
 }
 

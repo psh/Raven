@@ -13,13 +13,15 @@ import raven.compose.foundation.layout.fillMaxSize
 import raven.compose.foundation.layout.fillMaxWidth
 import raven.compose.foundation.layout.padding
 import raven.compose.ui.Modifier
+import raven.compose.ui.WindowState
 import raven.compose.ui.singleWindowApplication
 import raven.compose.ui.testTag
+import raven.compose.ui.unit.DpSize
 import raven.compose.ui.unit.dp
 
 // Raven XML on the left, the compose-raven code it translates to on the right, live.
 
-fun main() = singleWindowApplication(title = "Raven XML to Compose", width = 1200, height = 760) {
+fun main() = singleWindowApplication(state = WindowState(size = DpSize(1200.dp, 760.dp)), title = "Raven XML to Compose") {
     TranslatorUi()
 }
 
