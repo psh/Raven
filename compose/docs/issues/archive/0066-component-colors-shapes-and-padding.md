@@ -6,10 +6,10 @@ status: closed
 
 `XxxDefaults.colors()` on the phase 1 components and `Surface`, the hover and pressed shades they
 imply, and `shape` and `contentPadding` on buttons and `TextField`. Spec:
-[8: theming](../spec.md#phase-2-theming).
+[8: theming](../../spec.md#phase-2-theming).
 
-**Depends on:** [Surface, FlowRow and Expander](archive/0064-surface-flowrow-and-expander.md),
-[RavenTheme and theme files](archive/0065-raventheme-and-theme-files.md).
+**Depends on:** [Surface, FlowRow and Expander](0064-surface-flowrow-and-expander.md),
+[RavenTheme and theme files](0065-raventheme-and-theme-files.md).
 
 ## Deliverables
 
@@ -22,7 +22,7 @@ imply, and `shape` and `contentPadding` on buttons and `TextField`. Spec:
       `contentColor` on `Surface`, passed down to its children as their `TEXT`.
 - [x] Setting `ACCENT` or `CONTROL` also sets the hovered and pressed roles, following the per-look
       rules of Raven's `rvn_theme_set_accent`, since Raven derives them only for a theme's accent
-      ([verified](../../spikes/README.md)).
+      ([verified](../../../spikes/README.md)).
 - [x] `shape` on the buttons and `TextField` through `R_METRIC_CORNER_RADIUS`; a non-uniform shape
       uses `topStart` and logs a warning.
 - [x] `contentPadding: PaddingValues` on the buttons through `R_METRIC_PADDING_X`/`_Y`;
@@ -59,7 +59,7 @@ Done on macOS. 79 tests pass in foundation, 213 in all.
   composable, every time it is set.
 - **`PaddingValues`** is new in `raven.compose.ui`, as the theming decision says, with Compose's
   `PaddingValues(all)`, `(horizontal, vertical)` and `(start, top, end, bottom)` forms.
-- **Warnings**: the binding layer exposes the layout warnings' sink as `parameterWarningSink`
+- **Warnings**: the binding layer exposes the layout warnings' sink as `layoutWarningSink` (the alias `parameterWarningSink` was dropped at merge, since HeaderBar had already made `layoutWarningSink` shared internal API)
   (internal API), so foundation logs to it and its tests collect from it.
 - **Tests**:
   - every composable's colours, set and then unset, return to the theme's;
