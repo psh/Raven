@@ -6,7 +6,7 @@ status: closed
 
 Three controlled inputs and the list of editor languages, for the `notepad`, `themes` and
 `overlay` ports (and `glass` in phase 3). Spec:
-[8: ComboBox and SpinBox](../spec.md#phase-2-combobox-and-spinbox).
+[8: ComboBox and SpinBox](../../spec.md#phase-2-combobox-and-spinbox).
 
 **Depends on:** nothing open.
 
@@ -45,7 +45,7 @@ Done on macOS. `./gradlew build allTests` passes: 164 tests, 55 of them in found
 - **SpinBox**: range, step and decimals are bound before the value, which is coerced into
   `valueRange` as `Slider`'s is. Raven's own default range is unbounded (±1e30); the composables
   default to `0.0..100.0` and `0..100`, as the spec says.
-- **Int SpinBox, a deviation from [ComboBox and SpinBox](archive/0019-combobox-and-spinbox.md)**:
+- **Int SpinBox, a deviation from [ComboBox and SpinBox](0019-combobox-and-spinbox.md)**:
   that decision has the controlled check compare `Int`s. The `Int` overload instead composes
   `value.toDouble()` into the same `SpinBoxValue` and rounds only the callback's value, so the
   check compares the widget's raw value with the whole number composed. Comparing rounded `Int`s

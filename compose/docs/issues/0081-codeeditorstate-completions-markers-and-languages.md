@@ -9,7 +9,7 @@ status: open
 Spec: [8: CodeEditor's editing extras](../spec.md#phase-2-codeeditors-editing-extras). Decided in:
 [CodeEditor's editing extras](archive/0075-codeeditor-editing-extras.md).
 
-**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md)
+**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md)
 (`codeEditorLanguages()`, which registered languages join).
 
 ## Deliverables

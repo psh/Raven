@@ -66,7 +66,7 @@ The one patch of fog cleared with no new ticket. The samples' tests need finders
 phase 2 tickets already plan: finding and activating a menu item by its text (in
 [Menus and KeyShortcut](0061-menus-and-keyshortcut.md), wherever the menu sits),
 `performExternalDrop` (in [Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md)),
-ComboBox selection (in [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md)),
+ComboBox selection (in [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md)),
 `checkFiles()` (in [RavenTheme and theme files](0065-raventheme-and-theme-files.md)), and phase 1's
 clicks and text input.
 

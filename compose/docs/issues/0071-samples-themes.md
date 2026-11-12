@@ -8,7 +8,7 @@ Port Raven's `examples/themes`: a gallery of controls under a choice of look, th
 with theme files loaded at start. Spec: [10. Samples](../spec.md#10-samples),
 [8: theming](../spec.md#phase-2-theming).
 
-**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
+**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
 [RavenTheme and theme files](0065-raventheme-and-theme-files.md),
 [Component colours, shapes and padding](0066-component-colors-shapes-and-padding.md),
 [MarkdownText](0087-markdowntext.md).
