@@ -46,6 +46,7 @@ so implementation starts with nothing open. This map plans; it builds nothing.
 <!-- one line per closed ticket: [title](file): gist -->
 
 - [Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md): the four suspend dialogs come into phase 2 with their final signatures but only `native = true`, in a new ticket, [Native message and file dialogs](0080-native-message-and-file-dialogs.md); `notepad` asks before discarding and opens and saves through them; phase 3 completes the `Dialog`/`FileBrowser` default and dialog tests with no API change.
+- [CodeEditor's editing extras](archive/0075-codeeditor-editing-extras.md): all into phase 2 in a new ticket, [CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md): a `ScrollState`-like `CodeEditorState` with commands and the polled cursor, `wordWrap`, synchronous `completions`, controlled `markers`, and `rememberCodeEditorLanguage`/`codeEditorLanguageForFile`.
 
 ## Not yet specified
 

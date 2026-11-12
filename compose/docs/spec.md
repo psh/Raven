@@ -509,6 +509,37 @@ Added for the `notepad` port:
 `KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
 Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the named keys.
 
+### Phase 2: CodeEditor's editing extras
+
+Added for the `notepad` port. `CodeEditor` stays controlled by `value`/`onValueChange`, and gains:
+
+- **`state: CodeEditorState = rememberCodeEditorState()`**, a holder in the manner of `ScrollState`:
+  it holds no text, only commands and what it observes.
+  - Commands: `undo()`, `redo()`, `selectAll()` and `showCompletions()`. On a state not attached
+    to an editor they do nothing.
+  - `cursor: TextPosition(line, column)`, zero-based and read-only, is snapshot state refreshed
+    each frame from `Rtext_editor_get_cursor`, since Raven has no callback for it.
+- **`wordWrap: Boolean = false`**: `Rtext_editor_set_word_wrap`.
+- **`completions: ((prefix: String) -> List<Completion>)? = null`**, with `Completion(text, detail:
+  String? = null)`: called synchronously inside Raven's completion callback, and each result goes
+  to `Rtext_editor_add_completion`. It must be fast.
+- **`markers: List<EditorMarker> = emptyList()`**, with `EditorMarker(line, fromColumn, toColumn:
+  Int? = null, kind: MarkerKind, message)`; `null` is the end of the line, and `MarkerKind` is
+  `Error`, `Warning` or `Info`. Markers are controlled: Raven drops a marker whose line is edited,
+  and after each edit the node puts the composed list back, so the editor always shows exactly
+  what the app composed. A marker on an edited line keeps its columns until the app sends a new
+  list.
+
+Languages:
+
+- **`rememberCodeEditorLanguage(CodeEditorLanguage(...)): String`** registers a language with
+  `Rlanguage_register` once per host and returns its name. Raven can't unregister one, so it lasts
+  until shutdown. `CodeEditorLanguage` mirrors every field of `RLanguageDesc` with Kotlin names,
+  its flags a `Set<LanguageFlag>`. A language registered in the composition is in
+  `codeEditorLanguages()` read after it.
+- **`codeEditorLanguageForFile(path): String?`** is `Rlanguage_for_file`, valid only inside the
+  composition.
+
 ### Phase 2: ComboBox and SpinBox
 
 Added for the `notepad`, `themes` and `overlay` ports (and `glass` in phase 3). All three are controlled.
@@ -1140,6 +1171,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-component-vocabulary) |
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
+| `CodeEditor(completions)` is a synchronous `(prefix) -> List<Completion>`, called inside Raven's completion callback | no code editor; completions come from the app's own popup | [8](#phase-2-codeeditors-editing-extras) |
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
 | Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-component-vocabulary) |
 | `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter`, `ComboBox`, `SpinBox` | no counterpart in Compose Foundation | [8](#8-component-vocabulary) |
