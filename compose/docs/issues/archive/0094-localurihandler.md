@@ -8,10 +8,10 @@ Compose opens links through `LocalUriHandler`; compose-raven's `MarkdownText` in
 Raven's own link handling in place when `onLinkClick` is null, and a non-null `onLinkClick` takes
 over every link, so `samples/themes`' web links would never open. This ticket adds `UriHandler` and
 `LocalUriHandler` and sends `MarkdownText`'s default through it. Spec:
-[Fonts and text styling](../spec.md#fonts-and-text-styling-phase-3) (the `MarkdownText` and
+[Fonts and text styling](../../spec.md#fonts-and-text-styling-phase-3) (the `MarkdownText` and
 `LocalUriHandler` bullets) and section 12. Decided on 2026-11-12, from the limit the themes port
-reported ([samples/themes](archive/0071-samples-themes.md),
-[MarkdownText](archive/0087-markdowntext.md)).
+reported ([samples/themes](0071-samples-themes.md),
+[MarkdownText](0087-markdowntext.md)).
 
 **Depends on:** nothing open.
 

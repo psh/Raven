@@ -720,7 +720,7 @@ Added for the `overlay` and `glass` ports:
   The host's default opens the URI with `Ropen_url` (the browser, the mail program, a file) and
   throws `IllegalArgumentException` when Raven can't, as Compose's does. An app or a test provides
   its own to change how links open (phase 2,
-  [LocalUriHandler](issues/0094-localurihandler.md)).
+  [LocalUriHandler](issues/archive/0094-localurihandler.md)).
 
 ### Custom drawing, viewports and effects (phase 3)
 
