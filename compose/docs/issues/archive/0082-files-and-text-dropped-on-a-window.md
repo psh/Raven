@@ -5,10 +5,10 @@ status: closed
 # Files and text dropped on a window
 
 `Window(onExternalDrop)` for files and text dropped from other applications, for the `notepad`
-port, and the harness action that tests it. Spec: [4. Application host](../spec.md#4-application-host).
-Decided in: [Window extras the samples use](archive/0076-window-extras-the-samples-use.md).
+port, and the harness action that tests it. Spec: [4. Application host](../../spec.md#4-application-host).
+Decided in: [Window extras the samples use](0076-window-extras-the-samples-use.md).
 
-**Depends on:** [Window: WindowState and its parameters](archive/0086-window-windowstate-and-its-parameters.md) (the `Window` it adds a parameter to).
+**Depends on:** [Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md) (the `Window` it adds a parameter to).
 
 ## Deliverables
 
