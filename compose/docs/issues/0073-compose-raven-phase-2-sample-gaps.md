@@ -40,6 +40,9 @@ so implementation starts with nothing open. This map plans; it builds nothing.
 - Closing a ticket also updates `compose/docs/spec.md` and `compose/docs/roadmap.md`, and the
   sample tickets whose gaps it settled.
 - Ticket conventions: `ISSUES-FORMAT.md` in this directory.
+- **After this map closes** (asked 2026-11-11): assess whether a better split of work between
+  phase 2 and phase 3 exists, given what the gap tickets brought into phase 2. Not a ticket of this
+  map; it starts once the map is finished.
 
 ## Decisions so far
 
@@ -48,6 +51,7 @@ so implementation starts with nothing open. This map plans; it builds nothing.
 - [Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md): the four suspend dialogs come into phase 2 with their final signatures but only `native = true`, in a new ticket, [Native message and file dialogs](0080-native-message-and-file-dialogs.md); `notepad` asks before discarding and opens and saves through them; phase 3 completes the `Dialog`/`FileBrowser` default and dialog tests with no API change.
 - [CodeEditor's editing extras](archive/0075-codeeditor-editing-extras.md): all into phase 2 in a new ticket, [CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md): a `ScrollState`-like `CodeEditorState` with commands and the polled cursor, `wordWrap`, synchronous `completions`, controlled `markers`, and `rememberCodeEditorLanguage`/`codeEditorLanguageForFile`.
 - [Window extras the samples use](archive/0076-window-extras-the-samples-use.md): all into phase 2: `Window(opacity)`, `WindowBackdrop` returning the backdrop obtained and `LocalWindowInfo.isTransparent` (in the renamed [Window transparency, opacity and backdrop](0068-window-transparency-opacity-and-backdrop.md)); `Window(onExternalDrop)` in a new ticket, [Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md); `CodeEditorState.insertText`; the command line is no gap; widget drop targets go to phase 4's gestures. Surfaced [Window minimum size](0083-window-minimum-size.md).
+- [Theme extras the themes sample uses](archive/0077-theme-extras-the-themes-sample-uses.md): `RavenTheme(accent)`, `saveTheme` and `RavenTheme.themeNames` join [RavenTheme and theme files](0065-raventheme-and-theme-files.md); accent swatches until phase 4's `ColorPicker`; theme files reload through Raven, interface reload has no counterpart; classes stay unexposed; the Markdown editor is a `CodeEditor` language.
 
 ## Not yet specified
 

@@ -98,7 +98,7 @@ of those before the sample tickets start.
 | Files and text dropped on a window (`Window(onExternalDrop)`) | [4](spec.md#4-application-host) | `notepad` | [Files and text dropped on a window](issues/0082-files-and-text-dropped-on-a-window.md) |
 | ComboBox, SpinBox, `codeEditorLanguages()` | [8: ComboBox](spec.md#phase-2-combobox-and-spinbox) | `notepad`, `themes`, `overlay` (and `glass` in phase 3) | [ComboBox, SpinBox and codeEditorLanguages](issues/0063-combobox-spinbox-and-codeeditorlanguages.md) |
 | Surface, FlowRow, Expander | [8: Surface](spec.md#phase-2-surface-flowrow-and-expander) | `components` | [Surface, FlowRow and Expander](issues/0064-surface-flowrow-and-expander.md) |
-| Theming: `RavenTheme`, theme files, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
+| Theming: `RavenTheme` (with `accent`), theme files, `saveTheme`, `themeNames`, `XxxDefaults.colors()`, `shape`/`contentPadding` | [8: theming](spec.md#phase-2-theming) | `themes`, `notepad` | [RavenTheme and theme files](issues/0065-raventheme-and-theme-files.md), [Component colours, shapes and padding](issues/0066-component-colors-shapes-and-padding.md) |
 | Glass: `Modifier.material`, `BackgroundBlur`, `transparent`/`undecorated`, `opacity`, `WindowBackdrop`, `LocalWindowInfo.isTransparent` | [8: glass](spec.md#phase-2-glass-and-backgroundblur), [4](spec.md#4-application-host) | `overlay` (and `glass` in phase 3) | [Modifier.material and BackgroundBlur](issues/0067-material-and-backgroundblur.md), [Window transparency, opacity and backdrop](issues/0068-window-transparency-opacity-and-backdrop.md) |
 | Samples | [10](spec.md#10-samples) | | [notepad](issues/0069-samples-notepad.md), [components](issues/0070-samples-components.md), [themes](issues/0071-samples-themes.md), [overlay](issues/0072-samples-overlay.md) |
 
@@ -120,6 +120,8 @@ Phase 3 also completes what phase 2 builds as a foundation:
 - The default message and file dialogs, on `Dialog` and `FileBrowser`, and headless tests of
   dialog flows (`samples/notepad` included); phase 2 builds only `native = true`
   ([Notepad's file dialogs and discard prompt](issues/archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
+- `samples/themes`' `ListView` and its Markdown label, with `ListView` and `MarkdownText`
+  ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
 
 Decided for phase 3 so far (in the spec):
 
@@ -171,5 +173,8 @@ multi-window tests, build-time XML translation, app bundling, gestures (with dro
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
   (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after
   phase 3, once the modules exist.
+- `ColorPicker`, one of the specialist widgets, also completes `samples/themes`: it replaces the
+  row of accent swatches the phase 2 port uses
+  ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
 - `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, ColorPicker, WebView,
   BlockEditor), which are still fog on the phase 3 map.

@@ -594,13 +594,13 @@ Graphics types live in `raven.compose.ui.graphics`:
 
 Added for the `themes` port:
 
-- **`RavenTheme(look: Look? = null, dark: Boolean? = null, theme: String? = null) { }`**, in two
+- **`RavenTheme(look: Look? = null, dark: Boolean? = null, theme: String? = null, accent: Color? = null) { }`**, in two
   places:
   - **App-wide, at `application` level**: `application { RavenTheme(look = ..., theme = ...) {
     Window(...) { } } }`. There it emits no node. `look` and `dark` become one `Rlook_set`, `theme`
     uses `Rtheme_use`, and its CompositionLocals reach every window's composition through
     `rememberCompositionContext`. Only this placement may set app-wide settings (`look`, `dark`,
-    `material`, an app-wide `theme` or `fontFamily`), so two windows can never disagree about
+    `accent`, `material`, an app-wide `theme` or `fontFamily`), so two windows can never disagree about
     them. In `singleWindowApplication`, the `RavenTheme` at the top of its content counts as
     application level.
   - **Inside a window**: a subtree setting. `theme` gives the subtree its own theme through an
@@ -608,8 +608,18 @@ Added for the `themes` port:
     is a CompositionLocal. Setting an app-wide setting here logs an error.
   - `Look` is one of `Raven`, `Glass`, `HighContrast`, `Windows`, `Macos`, `Gnome`, `Native` or
     `MacosGlass`.
+- **`accent`** uses `Rtheme_set_accent`, and Raven derives the rest from it: the hovered and
+  pressed shades, the focus outline, the selection, the links. Changing the look or the theme
+  resets Raven's accent, so compose-raven applies it again after each change.
 - **`loadTheme(path): String`** and **`loadThemeFromString(xml): String`** load theme files and
-  return the name for `theme =`. They are valid only while Raven runs.
+  return the name for `theme =`. They are valid only while Raven runs. Raven watches a loaded file
+  and reloads it when it is saved, updating every widget that uses the theme; compose-raven offers
+  no reload callback of its own.
+- **`saveTheme(path, name: String? = null): Boolean`** writes the theme in use, the accent
+  included, with `Rtheme_save`. It is valid only while Raven runs.
+- **`RavenTheme.themeNames: List<String>`** is read-only snapshot state listing every named theme
+  (`Rtheme_get_count`/`_name_at`), the built-in ones included. It is refreshed after `loadTheme`,
+  after a look change, and when Raven reloads a theme file, which can rename it.
 - **`RavenTheme.colors`** is a CompositionLocal with one `Color` per Raven colour role, read from
   the app theme with `Rtheme_get_color`. It doesn't see subtree themes.
 - **Colour parameters** follow Material: `XxxDefaults.colors(...)` returns `XxxColors`, passed as
