@@ -33,6 +33,9 @@ import raven.cinterop.R_MOD_SUPER
 import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rcombo_box_set_changed_callback
 import raven.cinterop.Rcombo_box_set_selected
+import raven.cinterop.Rexpander_is_expanded
+import raven.cinterop.Rexpander_set_changed_callback
+import raven.cinterop.Rexpander_set_expanded
 import raven.cinterop.Rid
 import raven.cinterop.Rmenu_item_is_checked
 import raven.cinterop.Rmenu_item_set_checked
@@ -270,6 +273,13 @@ public val SpinBoxValue: ControlledValue<Double> = ControlledValue(
     write = { widget, value -> Rspin_box_set_value(widget, value) },
 )
 
+/** Whether an expander shows its content. Raven animates the content open or closed when it is written. */
+@InternalComposeRavenApi
+public val ExpanderExpanded: ControlledValue<Boolean> = ControlledValue(
+    read = { Rexpander_is_expanded(it) == R_TRUE },
+    write = { widget, expanded -> Rexpander_set_expanded(widget, if (expanded) R_TRUE else R_FALSE) },
+)
+
 @InternalComposeRavenApi
 public val ButtonClicked: Event<() -> Unit> = Event { widget, userData ->
     Rbutton_set_clicked_callback(widget, onButtonClicked, userData)
@@ -319,6 +329,11 @@ public val SpinBoxChanged: Event<(Double) -> Unit> = Event(marks = SpinBoxValue)
 @InternalComposeRavenApi
 public val IntSpinBoxChanged: Event<(Int) -> Unit> = Event(marks = SpinBoxValue) { widget, userData ->
     Rspin_box_set_changed_callback(widget, onIntSpinBoxChanged, userData)
+}
+
+@InternalComposeRavenApi
+public val ExpanderChanged: Event<(Boolean) -> Unit> = Event(marks = ExpanderExpanded) { widget, userData ->
+    Rexpander_set_changed_callback(widget, onExpanderChanged, userData)
 }
 
 private val onRadioChanged = staticCFunction { _: Rid, checked: Int, userData: COpaquePointer? ->
@@ -397,4 +412,8 @@ private val onMenuItemClicked = staticCFunction { _: Rid, userData: COpaquePoint
 
 private val onMenuItemCheckedChanged = staticCFunction { item: Rid, userData: COpaquePointer? ->
     dispatchEvent(userData, MenuItemCheckedChanged) { it(Rmenu_item_is_checked(item) == R_TRUE) }
+}
+
+private val onExpanderChanged = staticCFunction { _: Rid, expanded: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ExpanderChanged) { it(expanded == R_TRUE) }
 }

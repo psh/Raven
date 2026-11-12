@@ -18,7 +18,7 @@ import raven.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Column, Row and Box, read back from Raven's layout. */
+/** Column, Row, Box and FlowRow, read back from Raven's layout. */
 class LayoutsTest {
     /** The laid-out bounds of the widget tagged [tag], as x, y, width, height. */
     private fun RavenTestScope.rect(tag: String): List<Float> = memScoped {
@@ -115,5 +115,26 @@ class LayoutsTest {
         wide = true
         waitForIdle()
         assertEquals(listOf(0f, 0f, 200f, 10f), rect("box"))
+    }
+
+    @Test
+    fun aFlowRowWrapsOntoASecondLineWhenNarrow() = runRavenTest {
+        var width by mutableStateOf(200.dp)
+        setContent {
+            FlowRow(Modifier.width(width), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.size(40.dp, 20.dp).testTag("a"))
+                Box(Modifier.size(40.dp, 30.dp).testTag("b"))
+                Box(Modifier.size(40.dp, 20.dp).testTag("c"))
+            }
+        }
+        assertEquals(listOf(0f, 0f, 40f, 20f), rect("a"))
+        assertEquals(listOf(48f, 0f, 40f, 30f), rect("b"))
+        assertEquals(listOf(96f, 0f, 40f, 20f), rect("c"))
+
+        // Too narrow for the third: it starts a line under the tallest of the first, the same gap down.
+        width = 100.dp
+        waitForIdle()
+        assertEquals(listOf(48f, 0f, 40f, 30f), rect("b"))
+        assertEquals(listOf(0f, 38f, 40f, 20f), rect("c"))
     }
 }

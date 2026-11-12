@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import raven.cinterop.R_WIDGET_HBOX
 import raven.cinterop.R_WIDGET_OVERLAY
 import raven.cinterop.R_WIDGET_VBOX
+import raven.cinterop.R_WIDGET_WRAP_BOX
 import raven.cinterop.Rpanel_set_spacing
 import raven.compose.ui.AlignElement
 import raven.compose.ui.Alignment
@@ -49,6 +50,7 @@ private object BoxScopeInstance : BoxScope
 private val ColumnWidget = WidgetDescriptor("Column", R_WIDGET_VBOX, ChildKind.Many)
 private val RowWidget = WidgetDescriptor("Row", R_WIDGET_HBOX, ChildKind.Many)
 private val BoxWidget = WidgetDescriptor("Box", R_WIDGET_OVERLAY, ChildKind.Many)
+private val FlowRowWidget = WidgetDescriptor("FlowRow", R_WIDGET_WRAP_BOX, ChildKind.Many)
 
 internal val PanelSpacing = Property<Dp> { widget, spacing -> Rpanel_set_spacing(widget, spacing.value) }
 
@@ -96,4 +98,20 @@ public fun Box(
     RavenWidget(BoxWidget, modifier, {
         bind(PanelLayout(LayoutAxis.None, contentAlignment.horizontal, contentAlignment.vertical))
     }) { BoxScopeInstance.content() }
+}
+
+/**
+ * Places its children left to right, each at its own size, and goes on to a new line when the
+ * width runs out. Raven has one gap for both: [horizontalArrangement]'s spacing is the gap between
+ * items and the gap between lines, so there is no `verticalArrangement`.
+ */
+@Composable
+public fun FlowRow(
+    modifier: Modifier = Modifier,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    content: @Composable () -> Unit,
+) {
+    RavenWidget(FlowRowWidget, modifier, {
+        bind(horizontalArrangement.spacing, PanelSpacing)
+    }, content)
 }
