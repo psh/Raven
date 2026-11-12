@@ -1,0 +1,23 @@
+#!/bin/sh
+# Builds a compose-raven sample for this machine with Gradle, then runs it. Each sample's
+# launch-<name> calls it: launch-sample <name> [arguments for the sample...]
+#
+# The sample runs in the caller's directory, so a relative path given to it (notepad's file,
+# themes' folder) means what it says. Running it needs a Vulkan driver: see compose/README.md.
+set -e
+
+name=$1
+shift
+compose=$(cd "$(dirname "$0")/.." && pwd)
+
+case "$(uname -s) $(uname -m)" in
+    "Darwin arm64") target=MacosArm64 bin=macosArm64 ;;
+    "Linux x86_64") target=LinuxX64 bin=linuxX64 ;;
+    *)
+        echo "launch-$name: compose-raven has no target for $(uname -s) $(uname -m)" >&2
+        exit 1
+        ;;
+esac
+
+"$compose/gradlew" -p "$compose" --quiet ":samples:$name:linkReleaseExecutable$target"
+exec "$compose/samples/$name/build/bin/$bin/releaseExecutable/$name.kexe" "$@"

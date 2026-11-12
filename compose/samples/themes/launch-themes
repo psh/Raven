@@ -1,0 +1,4 @@
+#!/bin/sh
+# Builds samples/themes for this machine and runs it; arguments go to the sample.
+# A folder given to it replaces Raven's examples/themes as the place it reads its files.
+exec "$(dirname "$0")/../launch-sample" themes "$@"

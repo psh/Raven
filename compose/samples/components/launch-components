@@ -1,0 +1,3 @@
+#!/bin/sh
+# Builds samples/components for this machine and runs it; arguments go to the sample.
+exec "$(dirname "$0")/../launch-sample" components "$@"

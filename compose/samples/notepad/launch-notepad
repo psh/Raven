@@ -1,0 +1,4 @@
+#!/bin/sh
+# Builds samples/notepad for this machine and runs it; arguments go to the sample.
+# A file given to it opens: launch-notepad README.md
+exec "$(dirname "$0")/../launch-sample" notepad "$@"

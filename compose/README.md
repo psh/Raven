@@ -36,7 +36,20 @@ From the repository root, use `./compose/gradlew -p compose allTests`.
 
 ## Running the samples
 
-Each sample is an executable. Kotlin/Native's run tasks build and start it:
+Each sample folder has a launch script that builds the sample for this machine and runs it, from
+any directory, passing its arguments on:
+
+```sh
+samples/hello/launch-hello
+samples/notepad/launch-notepad README.md
+```
+
+The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-overlay`,
+`launch-themes` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the
+target (`macosArm64` on an Apple silicon Mac, `linuxX64` on Linux), links the release executable
+with Gradle and starts it.
+
+Each sample is an executable. Kotlin/Native's run tasks also build and start it:
 
 ```sh
 ./gradlew :samples:hello:runReleaseExecutableMacosArm64   # macOS (Apple silicon)
