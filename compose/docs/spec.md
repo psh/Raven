@@ -140,7 +140,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     title, width, height) { }` are already public, so `samples/hello`'s Quit button can end the app.
     The rest of `Window`'s parameters, `WindowState` and windows that come and go arrive with
     phase 3.
-- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, background: Color = Color.Unspecified, opacity: Float = 1f, onExternalDrop: ((DragData) -> Unit)? = null, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
+- **`Window(onCloseRequest, state: WindowState = rememberWindowState(), title, customHeader = false, transparent = false, undecorated = false, resizable = true, minimumSize: DpSize? = null, background: Color = Color.Unspecified, opacity: Float = 1f, onExternalDrop: ((DragData) -> Unit)? = null, onKeyEvent: (KeyEvent) -> Boolean = { false }, icon: Painter? = null, island: (@Composable () -> Unit)? = null, backKeys: BackKeys = BackKeys.Default) { }`**:
   - **Closing** is controlled: Raven's close callback always refuses and calls `onCloseRequest`,
     and the window is destroyed when the app removes `Window` from the composition.
   - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
@@ -159,7 +159,10 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   - **`LocalWindowInfo.current.isTransparent`** is true when the window system really gave a
     see-through window (`RNativeWindow.transparent`), which `transparent = true` asks for but
     doesn't guarantee (phase 2). The raw native handle stays with phase 3's `NativeViewport`.
-  - **`WindowState`** holds `size`, `position`, `placement` (Floating or Maximized) and
+  - **`minimumSize`** uses `Rwindow_set_min_size`; `null` keeps Raven's default, and a change calls
+    it again (phase 2, on `singleWindowApplication` too).
+  - **`WindowState`** holds `size: DpSize` (as Compose Desktop's, replacing phase 1's `width` and
+    `height`), `position`, `placement` (Floating or Maximized) and
     `isMinimized`. Writes call Raven's setters, and Raven's resize and move callbacks write back.
   - **Composition**: a window emits no node into its parent. It has its own composition, with its
     own Overlay root and Applier, under the one Recomposer, linked with
@@ -353,6 +356,8 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   composable parameters.
 - **`Dp`**: a value class in `raven.compose.ui.unit` (`16.dp`). 1.dp is one Raven logical unit
   and is passed through unchanged.
+- **`DpSize(width: Dp, height: Dp)`**, in the same package, is a window's size and minimum size
+  (phase 2), rounded to whole logical units for Raven.
 - **Packages follow Compose's**: `Modifier`, `Alignment` and `testTag` are in `raven.compose.ui`.
   The modifier functions (`padding`, `size`, `fillMaxWidth`, ...), `Arrangement`, the scopes and
   `Column`/`Row`/`Box` are in `raven.compose.foundation.layout`. The elements they create, and the

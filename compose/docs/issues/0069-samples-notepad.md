@@ -14,7 +14,8 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 [RavenTheme and theme files](0065-raventheme-and-theme-files.md) (the View menu's looks),
 [Native message and file dialogs](0080-native-message-and-file-dialogs.md),
 [CodeEditorState, completions, markers and languages](0081-codeeditorstate-completions-markers-and-languages.md),
-[Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md).
+[Files and text dropped on a window](0082-files-and-text-dropped-on-a-window.md),
+[Window minimum size and DpSize](0085-window-minimum-size-and-dpsize.md).
 
 ## Deliverables
 
@@ -38,6 +39,7 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
       and dropped text is typed at the cursor with `CodeEditorState.insertText`, through
       `Window(onExternalDrop)`.
 - [ ] A path given on the command line opens at start: `main(args)` passes it to the composable.
+- [ ] The C example's minimum window size, as `minimumSize`.
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`.
 - [ ] A headless test: typing marks the document modified in the status line, choosing a
       language reaches the editor, and a dropped text is inserted (`performExternalDrop`).
@@ -49,7 +51,6 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../spec.
 
 Phase 2 doesn't cover these parts of the C example:
 
-- **Not yet settled:** the window's minimum size ([Window minimum size](0083-window-minimum-size.md)).
 - **Phase 3:** headless tests of the dialog flows,
   with the dialogs' `Dialog`/`FileBrowser` default
   ([Notepad's file dialogs and discard prompt](archive/0074-notepad-file-dialogs-and-discard-prompt.md)).

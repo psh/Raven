@@ -43,4 +43,4 @@ drops are a new ticket, [Files and text dropped on a window](../0082-files-and-t
 Spec section 4 has them, section 12 the two differences.
 
 Surfaced: `notepad`'s minimum window size has no phase (phase 3's `WindowState` has no minimum), so
-it became [Window minimum size](../0083-window-minimum-size.md).
+it became [Window minimum size](0083-window-minimum-size.md).

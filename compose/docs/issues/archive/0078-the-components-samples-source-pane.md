@@ -32,4 +32,4 @@ of your own is a composable and building interface from code is all there is.
 - **The "Declared tags" status** has no counterpart, since Compose has no tag registry, and is no
   gap; the status line gives a hint and reports adds and removes.
 - **Port gaps left**: the appear transitions (phase 3's `Modifier.appearTransition`) and the
-  minimum window size, added to [Window minimum size](../0083-window-minimum-size.md).
+  minimum window size, added to [Window minimum size](0083-window-minimum-size.md).

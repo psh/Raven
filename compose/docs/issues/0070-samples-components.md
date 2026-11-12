@@ -9,7 +9,8 @@ Port Raven's `examples/components`: cards, badges and stats, which the C example
 [10. Samples](../spec.md#10-samples),
 [8: Surface, FlowRow and Expander](../spec.md#phase-2-surface-flowrow-and-expander).
 
-**Depends on:** [Surface, FlowRow and Expander](0064-surface-flowrow-and-expander.md).
+**Depends on:** [Surface, FlowRow and Expander](0064-surface-flowrow-and-expander.md),
+[Window minimum size and DpSize](0085-window-minimum-size-and-dpsize.md).
 
 ## Deliverables
 
@@ -28,6 +29,7 @@ Port Raven's `examples/components`: cards, badges and stats, which the C example
       sample from its `CardData`, in a read-only `CodeEditor(language = "Kotlin")` under "The Kotlin
       of the cards added".
 - [ ] The status line starts with a hint and reports each add and remove.
+- [ ] The C example's minimum window size, as `minimumSize`.
 - [ ] Runs from Gradle like `samples/hello`, documented in `compose/README.md`.
 - [ ] A headless test: "Add a card" adds a card with the next title and shows its Kotlin, and its
       "Remove" takes it away.
@@ -36,7 +38,6 @@ Port Raven's `examples/components`: cards, badges and stats, which the C example
 
 - **Phase 3:** the cards' `Appear="Pop"`/`"Drop"` transitions and `AppearDelay`
   (`Modifier.appearTransition`, [Island and appear transitions](archive/0036-island-and-appear-transitions.md)).
-- **Not yet settled:** the window's minimum size ([Window minimum size](0083-window-minimum-size.md)).
 
 Building an XML document from code and the registry of declared `<Widget>` tags have no
 counterpart, since a card is data and a composable, and are no gaps
