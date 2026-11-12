@@ -21,7 +21,7 @@ with its timer as a `LaunchedEffect`. The first app a person can run. Spec:
 ## Resolution
 
 Done and run on macOS. Linux is documented but not run: it waits for
-[Linux build and libraven](../0058-linux-build-and-libraven.md). 102 tests pass, 3 of them the
+[Linux build and libraven](0058-linux-build-and-libraven.md). 102 tests pass, 3 of them the
 sample's.
 
 - **No timer**: Raven's `examples/hello` has none; that came from the planning ticket. The port has

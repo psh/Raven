@@ -63,20 +63,20 @@ change once upstream has it.
 ## 2. Phase 1
 
 Broken into tickets, in dependency order. Each ticket's **Depends on** line names its blockers.
-**Done on macOS** but for two rows: CI ([CI job for compose](issues/0052-ci-job-for-compose.md)) and
-the Linux build ([Linux build and libraven](issues/0058-linux-build-and-libraven.md)). Phase 1 is
-done when they close.
+**Done on macOS** but for two rows: CI ([CI job for compose](issues/archive/0052-ci-job-for-compose.md)) and
+the Linux build ([Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md)). Both are
+closed unfinished for now, to be revisited; Phase 1 is done when they are finished.
 
 | Part | Spec | Ticket |
 |---|---|---|
-| Gradle build: `raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/archive/0041-gradle-build-and-libraven.md) (macOS), [Linux build and libraven](issues/0058-linux-build-and-libraven.md) |
+| Gradle build: `raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/archive/0041-gradle-build-and-libraven.md) (macOS), [Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md) |
 | `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) | [raven.native helpers](issues/archive/0042-raven-native-helpers.md) |
 | `RavenNode` and `RavenApplier` | [5](spec.md#5-node-model-and-applier) | [RavenNode and RavenApplier](issues/archive/0043-ravennode-and-ravenapplier.md) |
 | `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, host epoch and per-host caches, ownership and shutdown order, errors; the harness core | [4](spec.md#4-application-host), [9](spec.md#9-testing) | [RavenHost and singleWindowApplication](issues/archive/0044-ravenhost-and-singlewindowapplication.md) |
 | The binding layer in `compose-raven-ui`, **before any composable**: widget descriptors, property and event binding, the content node, `ControlledValue<T>` | [5](spec.md#the-binding-layer), [7](spec.md#7-events-and-state) | [The binding layer](issues/archive/0045-binding-layer.md) |
 | `Modifier`, `Dp`, `Column`/`Row`/`Box`, `Arrangement` | [6](spec.md#6-layout-and-modifiers) | [Modifier, Dp and the layout containers](issues/archive/0046-modifier-dp-and-layout-containers.md) |
 | The phase 1 vocabulary table, with the harness's finders, actions and assertions | [8](spec.md#8-component-vocabulary), [9](spec.md#9-testing) | [Text, buttons and the first finders](issues/archive/0047-text-buttons-and-first-finders.md), [Checkbox, Switch and RadioButton](issues/archive/0048-checkbox-switch-and-radiobutton.md), [TextField and Slider](issues/archive/0049-textfield-and-slider.md) (with the IME check), [Scroll containers, splitters and CodeEditor](issues/archive/0050-scroll-containers-splitters-and-codeeditor.md) |
-| CI on macOS and Linux | [9](spec.md#9-testing) | [CI job for compose](issues/0052-ci-job-for-compose.md) |
+| CI on macOS and Linux | [9](spec.md#9-testing) | [CI job for compose](issues/archive/0052-ci-job-for-compose.md) |
 | `samples/hello` | [10](spec.md#10-samples) | [samples/hello](issues/archive/0051-samples-hello.md) |
 | `samples/xml-translator`, including templates (needs fork change 3) | [10](spec.md#10-samples) | [parsing](issues/archive/0054-xml-translator-parsing.md), [mapping the phase 1 vocabulary](issues/archive/0055-xml-translator-mapping.md), [templates and expressions](issues/archive/0056-xml-translator-templates-and-expressions.md), [the sample UI and the examples check](issues/archive/0057-xml-translator-sample-ui-and-examples-check.md) |
 | Verify first: recomposition inside nested frames, now that the host exists | [4](spec.md#4-application-host) | [Verify recomposition inside nested frames](issues/archive/0053-verify-recomposition-in-nested-frames.md) |

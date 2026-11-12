@@ -13,7 +13,7 @@ test that translates Raven's `examples/*.xml` and compiles the output against th
 [Checkbox, Switch and RadioButton](0048-checkbox-switch-and-radiobutton.md),
 [TextField and Slider](0049-textfield-and-slider.md),
 [Scroll containers, splitters and CodeEditor](0050-scroll-containers-splitters-and-codeeditor.md),
-[CI job for compose](../0052-ci-job-for-compose.md).
+[CI job for compose](0052-ci-job-for-compose.md).
 
 ## Deliverables
 

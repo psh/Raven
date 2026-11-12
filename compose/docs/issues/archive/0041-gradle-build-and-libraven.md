@@ -46,4 +46,4 @@ lists shown. `buildRaven` is up to date on a second run.
   `~/.konan`. They are toolchain noise, not from libraven, and release links have none.
 
 The `linuxX64` target is untested. That work, with its two risks (finding libX11 and Kotlin/Native's
-older glibc), moved to [Linux build and libraven](../0058-linux-build-and-libraven.md).
+older glibc), moved to [Linux build and libraven](0058-linux-build-and-libraven.md).

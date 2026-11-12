@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 ---
 
 # Linux build and libraven
@@ -7,7 +7,7 @@ status: open
 Make the build from [Gradle build and libraven](archive/0041-gradle-build-and-libraven.md) work on
 the `linuxX64` target: build `libraven.a`, link it through `raven.def`, and pass the headless
 tests on a Linux (x64) host. That ticket was done and checked on macOS only. Spec:
-[2. Modules and build](../spec.md#2-modules-and-build).
+[2. Modules and build](../../spec.md#2-modules-and-build).
 
 **Depends on:** [Gradle build and libraven](archive/0041-gradle-build-and-libraven.md) (closed).
 
@@ -29,3 +29,14 @@ tests on a Linux (x64) host. That ticket was done and checked on macOS only. Spe
 
 Verify on a Linux machine, a container, or through [CI job for compose](0052-ci-job-for-compose.md),
 whichever comes first.
+
+## Resolution
+
+Closed unfinished, to be revisited with [CI job for compose](0052-ci-job-for-compose.md). On
+ubuntu-latest, libraven built and the link failed on symbols newer than Kotlin/Native's glibc 2.19
+sysroot: `__isoc23_sscanf`, `__isoc23_strtol`, `__isoc23_strtoll`, `__isoc23_strtoull` and
+`memfd_create`. Defining them in `raven.def` didn't help, since Kotlin/Native internalizes that
+code. The last change, untested, builds them from `raven-native/src/nativeInterop/glibc/glibc_compat.c`
+into `libraven_glibc_compat.a`, which the cinterop embeds beside libraven. The other deliverables
+were never reached on Linux; building libraven with Kotlin/Native's own clang and sysroot is still
+the alternative.
