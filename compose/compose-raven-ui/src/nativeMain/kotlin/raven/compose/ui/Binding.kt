@@ -38,6 +38,7 @@ import raven.cinterop.Rexpander_is_expanded
 import raven.cinterop.Rexpander_set_changed_callback
 import raven.cinterop.Rexpander_set_expanded
 import raven.cinterop.Rid
+import raven.cinterop.Rlabel_set_link_callback
 import raven.cinterop.Rmenu_item_is_checked
 import raven.cinterop.Rmenu_item_set_checked
 import raven.cinterop.Rmenu_item_set_clicked_callback
@@ -418,6 +419,32 @@ private val onMenuItemCheckedChanged = staticCFunction { item: Rid, userData: CO
 
 private val onExpanderChanged = staticCFunction { _: Rid, expanded: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, ExpanderChanged) { it(expanded == R_TRUE) }
+}
+
+// The links of a Markdown label.
+
+/**
+ * A link of a Markdown label clicked: the lambda gets its address. Its callback is set only while
+ * the node holds a lambda, through [bindLinkClick], so it is never in a descriptor's events.
+ */
+@InternalComposeRavenApi
+public val LabelLinkClicked: Event<(String) -> Unit> = Event { widget, userData ->
+    Rlabel_set_link_callback(widget, onLabelLinkClicked, userData)
+}
+
+/**
+ * Points a Markdown label's link clicks at [onLinkClick], when it changes. Null clears Raven's
+ * callback, so Raven follows the link itself: an `action:` link fires its action, and an http,
+ * https or mailto link opens in the user's browser or mail program.
+ */
+@InternalComposeRavenApi
+public fun Updater<RavenNode>.bindLinkClick(onLinkClick: ((String) -> Unit)?): Unit = set(onLinkClick) {
+    setHandler(LabelLinkClicked, it)
+    if (it == null) Rlabel_set_link_callback(widget, null, null) else LabelLinkClicked.register(this)
+}
+
+private val onLabelLinkClicked = staticCFunction { _: Rid, url: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, LabelLinkClicked) { it(url.toRavenString()) }
 }
 
 // Following a widget once a frame, the text editor's completions, and what a host keeps.
