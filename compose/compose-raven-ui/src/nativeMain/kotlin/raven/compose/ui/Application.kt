@@ -1,11 +1,15 @@
-@file:OptIn(InternalComposeRavenApi::class)
+@file:OptIn(InternalComposeRavenApi::class, ExperimentalNativeApi::class)
 
 package raven.compose.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import raven.cinterop.Rquit
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.theme.LocalThemePlacement
+import raven.compose.ui.theme.ThemePlacement
 import raven.compose.ui.unit.DpSize
+import kotlin.experimental.ExperimentalNativeApi
 
 /** What an [application]'s content can do to the application as a whole. */
 public interface ApplicationScope {
@@ -25,18 +29,23 @@ private object RavenApplicationScope : ApplicationScope {
  * Raven's UI thread, as AppKit requires. A throwable from composition, an effect or a callback
  * ends the application, which shuts down normally and then rethrows it.
  *
- * With [followSystemAccessibility], text scale, contrast and reduced motion follow the OS.
+ * With [followSystemAccessibility], text scale, contrast and reduced motion follow the OS. With
+ * [liveReload], on in debug executables, Raven reloads the theme files the app loaded when they
+ * change on disk; the `RAVEN_LIVE_RELOAD` environment variable, when set, decides instead.
  */
 public fun application(
     followSystemAccessibility: Boolean = true,
+    liveReload: Boolean = Platform.isDebugBinary,
     content: @Composable ApplicationScope.() -> Unit,
 ) {
-    runApplication(RavenHost(followSystemAccessibility = followSystemAccessibility)) { RavenApplicationScope.content() }
+    val host = RavenHost(followSystemAccessibility = followSystemAccessibility, liveReload = liveReload)
+    runApplication(host) { RavenApplicationScope.content() }
 }
 
 /**
  * One window with [content], closed by its close button: shorthand for [application] with one
- * [Window], which takes [state] and the other parameters as they are.
+ * [Window], which takes [state] and the other parameters as they are. The outermost `RavenTheme`
+ * of [content] counts as application level.
  */
 public fun singleWindowApplication(
     state: WindowState = WindowState(),
@@ -49,9 +58,10 @@ public fun singleWindowApplication(
     background: Color = Color.Unspecified,
     opacity: Float = 1f,
     followSystemAccessibility: Boolean = true,
+    liveReload: Boolean = Platform.isDebugBinary,
     content: @Composable () -> Unit,
 ) {
-    application(followSystemAccessibility) {
+    application(followSystemAccessibility, liveReload) {
         Window(
             onCloseRequest = ::exitApplication,
             state = state,
@@ -63,9 +73,16 @@ public fun singleWindowApplication(
             minimumSize = minimumSize,
             background = background,
             opacity = opacity,
-            content = content,
-        )
+        ) {
+            SingleWindowContent(content)
+        }
     }
+}
+
+/** The content of `singleWindowApplication`'s window, whose outermost `RavenTheme` is application level. */
+@Composable
+internal fun SingleWindowContent(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalThemePlacement provides ThemePlacement.TopOfSingleWindow, content = content)
 }
 
 /** Ends the application, as [ApplicationScope.exitApplication] does. */

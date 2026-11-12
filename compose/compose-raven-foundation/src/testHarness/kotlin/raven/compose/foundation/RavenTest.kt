@@ -65,14 +65,14 @@ import kotlin.test.assertEquals
 import kotlin.test.fail
 
 /**
- * Runs [block] against a fresh headless Raven, with a fixed animation time step, then shuts it
- * down. The test fails if Raven reported an error, if the host recorded one, or if anything leaked:
+ * Runs [block] against a fresh headless Raven, with a fixed animation time step and live reload
+ * off, so nothing reacts to the disk by itself, then shuts it down. The test fails if Raven reported an error, if the host recorded one, or if anything leaked:
  * a block Raven still holds, or a widget reference still alive.
  */
 internal fun runRavenTest(block: RavenTestScope.() -> Unit) {
     ravenErrors.clear()
     Rerror_set_callback(collectRavenError)
-    val host = RavenHost(headless = true, animationTimeStep = ANIMATION_TIME_STEP)
+    val host = RavenHost(headless = true, animationTimeStep = ANIMATION_TIME_STEP, liveReload = false)
     try {
         try {
             RavenTestScope(host).block()
@@ -106,6 +106,12 @@ internal class RavenTestScope(val host: RavenHost) {
         }
         fail("not idle after $MAX_IDLE_FRAMES frames")
     }
+
+    /**
+     * Reloads the files Raven loaded (theme files) that changed on disk, as live reload would, and
+     * returns how many changed. Live reload is off in tests, so this is the only way they reload.
+     */
+    fun checkFiles(): Int = host.checkFiles()
 
     /** Draws one frame. Throws what ended the host, if a failure asked Raven to quit. */
     fun frame() {

@@ -68,6 +68,8 @@ import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.WindowInfo
+import raven.compose.ui.theme.LocalThemePlacement
+import raven.compose.ui.theme.ThemePlacement
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.DpSize
 import raven.compose.ui.unit.dp
@@ -231,7 +233,12 @@ internal class RavenWindow(
     }
 
     fun setContent(content: @Composable () -> Unit) = composition.setContent {
-        CompositionLocalProvider(LocalRavenWindow provides this, LocalWindowInfo provides info, content = content)
+        CompositionLocalProvider(
+            LocalRavenWindow provides this,
+            LocalWindowInfo provides info,
+            LocalThemePlacement provides ThemePlacement.Window,
+            content = content,
+        )
     }
 
     /** Gives Raven what changed in [settings], and follows [state] from now on. */

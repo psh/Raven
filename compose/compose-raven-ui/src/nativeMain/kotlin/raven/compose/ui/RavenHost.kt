@@ -13,6 +13,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.StableRef
 import kotlinx.cinterop.alloc
@@ -27,6 +28,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import platform.posix.getenv
 import raven.cinterop.RInitDesc
 import raven.cinterop.R_BACKEND_NULL
 import raven.cinterop.R_BACKEND_VULKAN
@@ -43,6 +45,12 @@ import raven.cinterop.Rset_animation_time_step
 import raven.cinterop.Rset_frame_callback
 import raven.cinterop.Rshutdown
 import raven.cinterop.Rwait_frame
+import raven.cinterop.Rxml_check_files
+import raven.cinterop.Rxml_get_live_reload
+import raven.cinterop.Rxml_set_live_reload
+import raven.cinterop.Rxml_set_reload_callback
+import raven.compose.ui.theme.HostTheme
+import raven.compose.ui.theme.LocalRavenColors
 import raven.native.toRavenString
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicReference
@@ -57,6 +65,9 @@ import kotlin.concurrent.atomics.incrementAndFetch
  * The application composition emits no nodes. Each [Window] in it has its own composition, root
  * and Applier, under the one [Recomposer].
  *
+ * With [liveReload], Raven reloads the theme files it loaded when they change on disk, unless the
+ * `RAVEN_LIVE_RELOAD` environment variable is set, which Raven reads instead.
+ *
  * Every function but [reportError] must be called on the thread that called [start], which becomes
  * Raven's UI thread.
  */
@@ -65,6 +76,7 @@ public class RavenHost(
     private val headless: Boolean = false,
     private val followSystemAccessibility: Boolean = true,
     private val animationTimeStep: Double = 0.0,
+    private val liveReload: Boolean = false,
 ) {
     private enum class State { New, Started, Closed }
 
@@ -93,6 +105,9 @@ public class RavenHost(
     /** Caches of Raven handles, cleared when the host closes. */
     internal val caches: HostCaches = HostCaches()
 
+    /** The app theme, as `RavenTheme` set it and Raven has it. */
+    internal val theme: HostTheme = HostTheme()
+
     /** Advances each time a window's composition has applied a batch of changes. */
     internal var applyGeneration: Long = 0L
         private set
@@ -114,8 +129,14 @@ public class RavenHost(
         epoch = HostEpoch.current
         if (animationTimeStep > 0.0) Rset_animation_time_step(animationTimeStep)
         if (followSystemAccessibility && !headless) Raccessibility_follow_system()
+        if (getenv("RAVEN_LIVE_RELOAD") == null) Rxml_set_live_reload(if (liveReload) R_TRUE else R_FALSE)
+        running = this
+        theme.refresh()
 
-        selfRef = StableRef.create(this).also { Rset_frame_callback(onFrame, it.asCPointer()) }
+        selfRef = StableRef.create(this).also {
+            Rset_frame_callback(onFrame, it.asCPointer())
+            Rxml_set_reload_callback(onReload, it.asCPointer())
+        }
         scope.launch { recomposer.runRecomposeAndApplyChanges() }
         writeObserver = Snapshot.registerGlobalWriteObserver {
             // One apply per burst of writes, from any thread: the posted task wakes Raven's loop.
@@ -128,7 +149,20 @@ public class RavenHost(
         }
         // Kept before composing, so close() disposes what a failed first composition created.
         val composition = Composition(ApplicationApplier(), recomposer).also { composition = it }
-        composition.setContent { CompositionLocalProvider(LocalRavenHost provides this, content = content) }
+        composition.setContent {
+            CompositionLocalProvider(LocalRavenHost provides this, LocalRavenColors provides theme.colors, content = content)
+        }
+    }
+
+    /**
+     * Looks at the files Raven loaded now, even with live reload off, and reloads those that
+     * changed: how a test reloads a theme file. Returns how many changed.
+     */
+    public fun checkFiles(): Int {
+        val changed = Rxml_check_files()
+        // Raven's reload callback reports interface files only, not theme files.
+        theme.refresh()
+        return changed
     }
 
     /** Draws one frame without waiting. False once Raven was asked to quit. */
@@ -215,6 +249,8 @@ public class RavenHost(
         HostEpoch.advance()
         dispatcher.close()
         Rset_frame_callback(null, null)
+        Rxml_set_reload_callback(null, null)
+        running = null
         Rshutdown()
         dispatcher.release()
         selfRef?.dispose()
@@ -252,6 +288,9 @@ public class RavenHost(
         try {
             // Raven reports no moves and no changes of placement: each window reads them here.
             windows.forEach { it.followRaven() }
+            // Raven reloads a changed theme file in a task before this callback, without calling its
+            // reload callback, which reports interface files only.
+            if (theme.watchesFiles && Rxml_get_live_reload() == R_TRUE) theme.refresh()
             // What was dispatched since the frame's tasks ran, a timer's state write say, joins this frame.
             dispatcher.drain()
             // Recomposes and applies, inside the frame callback, so layout and paint follow.
@@ -263,6 +302,20 @@ public class RavenHost(
         } catch (t: Throwable) {
             reportError(t)
         }
+    }
+
+    internal fun onReload() {
+        try {
+            theme.refresh()
+        } catch (t: Throwable) {
+            reportError(t)
+        }
+    }
+
+    internal companion object {
+        /** The host Raven runs under now, if any, for what is valid only while it runs. */
+        var running: RavenHost? = null
+            private set
     }
 }
 
@@ -315,4 +368,9 @@ private class ApplicationApplier : AbstractApplier<Unit>(Unit) {
 @OptIn(InternalComposeRavenApi::class)
 private val onFrame = staticCFunction { _: Double, userData: COpaquePointer? ->
     userData!!.asStableRef<RavenHost>().get().sendFrame()
+}
+
+@OptIn(InternalComposeRavenApi::class)
+private val onReload = staticCFunction { _: CPointer<ByteVar>?, _: Int, userData: COpaquePointer? ->
+    userData!!.asStableRef<RavenHost>().get().onReload()
 }
