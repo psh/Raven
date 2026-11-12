@@ -5,12 +5,12 @@ status: closed
 # samples/overlay
 
 Port Raven's `examples/overlay`: a transparent window with a backdrop, and the blur styles side by
-side. Spec: [10. Samples](../spec.md#10-samples),
-[8: glass and BackgroundBlur](../spec.md#phase-2-glass-and-backgroundblur).
+side. Spec: [10. Samples](../../spec.md#10-samples),
+[8: glass and BackgroundBlur](../../spec.md#phase-2-glass-and-backgroundblur).
 
-**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](archive/0063-combobox-spinbox-and-codeeditorlanguages.md),
-[Modifier.material and BackgroundBlur](archive/0067-material-and-backgroundblur.md),
-[Window: WindowState and its parameters](archive/0086-window-windowstate-and-its-parameters.md).
+**Depends on:** [ComboBox, SpinBox and codeEditorLanguages](0063-combobox-spinbox-and-codeeditorlanguages.md),
+[Modifier.material and BackgroundBlur](0067-material-and-backgroundblur.md),
+[Window: WindowState and its parameters](0086-window-windowstate-and-its-parameters.md).
 
 ## Deliverables
 
@@ -25,7 +25,7 @@ side. Spec: [10. Samples](../spec.md#10-samples),
 
 ## Gaps
 
-None: [Window extras the samples use](archive/0076-window-extras-the-samples-use.md) brought the
+None: [Window extras the samples use](0076-window-extras-the-samples-use.md) brought the
 opacity, the backdrop obtained and the transparency check into phase 2.
 
 Found while porting (see the Resolution): the stripes' `Clip="true"` and the explanation's
