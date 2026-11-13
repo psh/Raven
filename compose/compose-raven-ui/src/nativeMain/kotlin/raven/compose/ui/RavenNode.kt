@@ -55,6 +55,13 @@ public enum class ChildKind {
 
     /** Panels: VBox, HBox, Overlay, ... */
     Many,
+
+    /**
+     * A DockArea: each child is added at the end and docked as its slot says, its place Raven's
+     * from then on, so the order of the children means nothing; and a panel torn off into a window
+     * of its own leaves the area's children until it is docked again.
+     */
+    Docked,
 }
 
 /**

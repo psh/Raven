@@ -147,6 +147,7 @@ private fun typeFor(kind: ChildKind): RWidgetType = when (kind) {
     ChildKind.None -> raven.cinterop.R_WIDGET_LABEL
     ChildKind.Single -> raven.cinterop.R_WIDGET_BORDER
     ChildKind.Many -> raven.cinterop.R_WIDGET_VBOX
+    ChildKind.Docked -> raven.cinterop.R_WIDGET_DOCK_AREA
 }
 
 /** The names of [widget]'s Raven children, in Raven's order. */

@@ -1,8 +1,10 @@
 package raven.compose.ui
 
 import androidx.compose.runtime.AbstractApplier
+import raven.cinterop.Rwidget_add_child
 import raven.cinterop.Rwidget_get_child
 import raven.cinterop.Rwidget_get_child_count
+import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_insert_child
 import raven.cinterop.Rwidget_move_child
@@ -64,6 +66,7 @@ internal class RavenApplier(
                 changedSingleParents += parent
             }
             ChildKind.Many -> Rwidget_insert_child(parent.widget, instance.widget, ravenIndex(parent, index))
+            ChildKind.Docked -> Rwidget_add_child(parent.widget, instance.widget)
         }
         parent.children.add(index, instance)
         instance.parent = parent
@@ -83,6 +86,8 @@ internal class RavenApplier(
             if (child.isPopup) continue
             when (parent.childKind) {
                 ChildKind.Many -> Rwidget_remove_child(parent.widget, child.widget)
+                // A torn-off panel is in a window of its own: it goes when the node is released.
+                ChildKind.Docked -> if (Rwidget_get_parent(child.widget) == parent.widget) Rwidget_remove_child(parent.widget, child.widget)
                 // A child that an insert has detached since is no longer in Raven's tree.
                 else -> if (child.isAttachedTo(parent)) Rwidget_remove_child(parent.widget, child.widget)
             }

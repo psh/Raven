@@ -88,6 +88,13 @@ import raven.cinterop.Rtab_view_get_active
 import raven.cinterop.Rtab_view_set_active
 import raven.cinterop.Rtab_view_set_changed_callback
 import raven.cinterop.Rtab_view_set_close_callback
+import raven.cinterop.Rdock_area_set_changed_callback
+import raven.cinterop.Rdock_area_set_close_callback
+import raven.cinterop.Rfile_browser_get_selection
+import raven.cinterop.Rfile_browser_get_selection_count
+import raven.cinterop.Rfile_browser_set_accepted_callback
+import raven.cinterop.Rfile_browser_set_cancelled_callback
+import raven.cinterop.Rfile_browser_set_selection_changed_callback
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.graphics.toRaven
@@ -727,4 +734,67 @@ private val onTabViewChanged = staticCFunction { _: Rid, index: Int, userData: C
 private val onTabViewClose = staticCFunction { _: Rid, _: Int, page: Rid, userData: COpaquePointer? ->
     dispatchEvent(userData, TabViewClose) { it(page) }
     R_FALSE
+}
+
+// The dock area's and the file browser's event kinds.
+
+/**
+ * The user closing a panel, by its tab's button: the panel. Raven keeps it, so it goes only as the
+ * app says, through the panel's `open`.
+ */
+@InternalComposeRavenApi
+public val DockAreaClose: Event<(panel: Rid) -> Unit> = Event { widget, userData ->
+    Rdock_area_set_close_callback(widget, onDockAreaClose, userData)
+}
+
+/** The user moved, resized, showed or closed a panel. */
+@InternalComposeRavenApi
+public val DockAreaChanged: Event<() -> Unit> = Event { widget, userData ->
+    Rdock_area_set_changed_callback(widget, onDockAreaChanged, userData)
+}
+
+/** The user chose: the paths chosen, the first being Raven's `path`. */
+@InternalComposeRavenApi
+public val FileBrowserAccepted: Event<(List<String>) -> Unit> = Event { widget, userData ->
+    Rfile_browser_set_accepted_callback(widget, onFileBrowserAccepted, userData)
+}
+
+@InternalComposeRavenApi
+public val FileBrowserCancelled: Event<() -> Unit> = Event { widget, userData ->
+    Rfile_browser_set_cancelled_callback(widget, onFileBrowserCancelled, userData)
+}
+
+/** The selection changed: the paths selected now. */
+@InternalComposeRavenApi
+public val FileBrowserSelectionChanged: Event<(List<String>) -> Unit> = Event { widget, userData ->
+    Rfile_browser_set_selection_changed_callback(widget, onFileBrowserSelectionChanged, userData)
+}
+
+private fun fileBrowserSelection(browser: Rid): List<String> =
+    List(Rfile_browser_get_selection_count(browser)) { Rfile_browser_get_selection(browser, it).toRavenString() }
+
+private val onDockAreaClose = staticCFunction { _: Rid, panel: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, DockAreaClose) { it(panel) }
+    R_FALSE
+}
+
+private val onDockAreaChanged = staticCFunction { _: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, DockAreaChanged) { it() }
+}
+
+private val onFileBrowserAccepted = staticCFunction { browser: Rid, path: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, FileBrowserAccepted) {
+        // A name typed to save is the path alone; several files chosen are the selection.
+        val chosen = path.toRavenString()
+        val selection = fileBrowserSelection(browser)
+        it(if (selection.size > 1 && chosen in selection) listOf(chosen) + (selection - chosen) else listOf(chosen))
+    }
+}
+
+private val onFileBrowserCancelled = staticCFunction { _: Rid, _: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, FileBrowserCancelled) { it() }
+}
+
+private val onFileBrowserSelectionChanged = staticCFunction { browser: Rid, _: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, FileBrowserSelectionChanged) { it(fileBrowserSelection(browser)) }
 }
