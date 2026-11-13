@@ -156,14 +156,14 @@ internal class RavenTestScope(val host: RavenHost) {
             if (substring) description in name else name == description
         }
 
-    /** The nodes of every open window that [matches] accepts, content nodes left out. */
+    /** The nodes of every open window and its island that [matches] accepts, content nodes left out. */
     internal fun findNodes(matches: (RavenNode) -> Boolean): List<RavenNode> {
         val found = mutableListOf<RavenNode>()
         fun visit(node: RavenNode) {
             if (!node.isContentNode && matches(node)) found += node
             node.children.forEach(::visit)
         }
-        host.windowRoots.forEach(::visit)
+        (host.windowRoots + host.islandRoots).forEach(::visit)
         return found
     }
 
@@ -171,7 +171,7 @@ internal class RavenTestScope(val host: RavenHost) {
     internal fun pathTo(node: RavenNode): List<RavenNode> {
         fun search(from: RavenNode): List<RavenNode>? =
             if (from === node) listOf(from) else from.children.firstNotNullOfOrNull { search(it) }?.let { listOf(from) + it }
-        return host.windowRoots.firstNotNullOfOrNull { search(it) } ?: fail("the node is in no window")
+        return (host.windowRoots + host.islandRoots).firstNotNullOfOrNull { search(it) } ?: fail("the node is in no window")
     }
 
     private fun labelText(node: RavenNode): String? =
