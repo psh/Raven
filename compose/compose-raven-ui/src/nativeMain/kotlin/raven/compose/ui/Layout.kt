@@ -13,6 +13,8 @@ import raven.cinterop.R_VALIGN_TOP
 import raven.cinterop.Rid
 import raven.cinterop.Rslot_set_auto
 import raven.cinterop.Rslot_set_fill
+import raven.cinterop.Rslot_set_grid
+import raven.cinterop.Rslot_set_grid_span
 import raven.cinterop.Rslot_set_halign
 import raven.cinterop.Rslot_set_padding
 import raven.cinterop.Rslot_set_valign
@@ -52,6 +54,12 @@ public enum class MainAxis {
      * child can be aligned to the start or the end, but not centred.
      */
     Packed,
+
+    /**
+     * A grid: each child is in a cell, which it fills unless its Modifier aligns it; a Grid's
+     * child says which cell with `Modifier.cell`, and a uniform grid places its children itself.
+     */
+    Cells,
 }
 
 /**
@@ -89,6 +97,8 @@ internal data class FoldedModifier(
     /** An alignment, or [VAlign.Fill] for `fillMaxHeight`. */
     val vertical: VAlign? = null,
     val weight: Float? = null,
+    /** The child's cell in a Grid; null when the chain gives none. */
+    val gridCell: GridCellElement? = null,
     val testTag: String? = null,
     val tooltip: String? = null,
     /** The widget's own material; null is none, the theme's. */
@@ -144,6 +154,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
             vertical = if (element.vertical) VAlign.Fill else folded.vertical,
         )
         is WeightElement -> folded.copy(weight = element.weight)
+        is GridCellElement -> folded.copy(gridCell = element)
         is AlignElement -> folded.copy(
             horizontal = element.horizontal?.align ?: folded.horizontal,
             vertical = element.vertical?.align ?: folded.vertical,
@@ -185,6 +196,10 @@ internal data class SlotLayout(
     val minHeight: Float = -1f,
     val maxWidth: Float = -1f,
     val maxHeight: Float = -1f,
+    val gridColumn: Int = 0,
+    val gridRow: Int = 0,
+    val columnSpan: Int = 1,
+    val rowSpan: Int = 1,
 ) {
     companion object {
         /** What Raven gives a new widget: fill alignment, an auto slot, no constraints. */
@@ -201,7 +216,8 @@ internal class ResolvedLayout(val slot: SlotLayout, val warnings: List<String>)
  */
 internal fun resolve(modifier: FoldedModifier, parent: PanelLayout): ResolvedLayout {
     val warnings = mutableListOf<String>()
-    val panes = parent.mainAxis == MainAxis.Panes
+    val panes = parent.mainAxis == MainAxis.Panes || parent.mainAxis == MainAxis.Cells
+    if (modifier.gridCell != null && parent.mainAxis != MainAxis.Cells) warnings += "Modifier.cell works only in a Grid"
     var halign = modifier.horizontal ?: if (panes) HAlign.Fill else parent.horizontal.align
     var valign = modifier.vertical ?: if (panes) VAlign.Fill else parent.vertical.align
     var fill: Float? = null
@@ -243,6 +259,10 @@ internal fun resolve(modifier: FoldedModifier, parent: PanelLayout): ResolvedLay
         minHeight = modifier.minHeight.orNone(),
         maxWidth = modifier.maxWidth.orNone(),
         maxHeight = modifier.maxHeight.orNone(),
+        gridColumn = modifier.gridCell?.column ?: 0,
+        gridRow = modifier.gridCell?.row ?: 0,
+        columnSpan = modifier.gridCell?.columnSpan ?: 1,
+        rowSpan = modifier.gridCell?.rowSpan ?: 1,
     )
     return ResolvedLayout(slot, warnings)
 }
@@ -256,6 +276,7 @@ private fun mainAxisFill(weight: Float?, fillMax: Boolean, mainAxis: MainAxis, w
             null
         }
         MainAxis.Panes -> weight ?: 1f
+        MainAxis.Cells -> null
     }
 
 private fun Dp.orNone(): Float = if (isSpecified) value else -1f
@@ -269,6 +290,7 @@ internal interface SlotTarget {
     fun size(width: Float, height: Float)
     fun minSize(width: Float, height: Float)
     fun maxSize(width: Float, height: Float)
+    fun grid(column: Int, row: Int, columnSpan: Int, rowSpan: Int)
 }
 
 /** Calls only the setters of [target] whose values differ from [previous]. */
@@ -284,6 +306,9 @@ internal fun SlotLayout.applyChanges(previous: SlotLayout, target: SlotTarget) {
     if (width != previous.width || height != previous.height) target.size(width, height)
     if (minWidth != previous.minWidth || minHeight != previous.minHeight) target.minSize(minWidth, minHeight)
     if (maxWidth != previous.maxWidth || maxHeight != previous.maxHeight) target.maxSize(maxWidth, maxHeight)
+    if (gridColumn != previous.gridColumn || gridRow != previous.gridRow || columnSpan != previous.columnSpan || rowSpan != previous.rowSpan) {
+        target.grid(gridColumn, gridRow, columnSpan, rowSpan)
+    }
 }
 
 /** The slot and size setters of one Raven widget. */
@@ -317,6 +342,11 @@ internal class RavenSlotTarget(private val widget: Rid) : SlotTarget {
     override fun minSize(width: Float, height: Float) = Rwidget_set_min_size(widget, width, height)
 
     override fun maxSize(width: Float, height: Float) = Rwidget_set_max_size(widget, width, height)
+
+    override fun grid(column: Int, row: Int, columnSpan: Int, rowSpan: Int) {
+        Rslot_set_grid(widget, column, row)
+        Rslot_set_grid_span(widget, columnSpan, rowSpan)
+    }
 }
 
 /**

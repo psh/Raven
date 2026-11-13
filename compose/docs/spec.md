@@ -843,8 +843,9 @@ Added for the `overlay` and `glass` ports:
 - **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, state, onActivate)`** uses
   Raven's virtualised ListView in virtual mode, for text rows. Selection is controlled.
 - **`TreeView(roots, children, itemText, key, selection, onSelectionChange, multiSelect,
-  initiallyExpanded, onActivate, contextMenuItems, modifier)`** uses Raven's virtualised TreeView,
-  diffed by key onto Raven item handles.
+  initiallyExpanded, onActivate, contextMenuItems, itemIcon, modifier)`** uses Raven's virtualised
+  TreeView, diffed by key onto Raven item handles. Raven only appends items, so from the first item
+  out of place among siblings the rest are destroyed and added again, keeping their expansion.
   - Selection is a controlled set of keys.
   - Expansion stays Raven's, because Raven reports no expansion. `initiallyExpanded` applies to
     new items only.
@@ -884,8 +885,9 @@ is.
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
-  closable, onClose) { page } }`** puts each `Tab` page in an internal Box, titled through its slot.
+  closable, onClose, icon) { page } }`** puts each `Tab` page in an internal Box, titled through its slot.
   Selection and closing are controlled: Raven's close callback keeps the tab and calls `onClose`.
+  Raven closes tabs, and shows icons, only in the documents form.
 - **No Switcher**: use `when (page) { }`.
 - **`LazyVerticalGrid(columns = GridCells.Fixed(n), minCellSize: DpSize? = null, ...) { items(...) }`**
   uses UniformGrid, and composes every item in phase 3. It has one spacing for both directions.

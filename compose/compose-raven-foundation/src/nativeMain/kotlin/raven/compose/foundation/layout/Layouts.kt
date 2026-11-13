@@ -45,7 +45,7 @@ public interface BoxScope {
 
 internal object ColumnScopeInstance : ColumnScope
 internal object RowScopeInstance : RowScope
-private object BoxScopeInstance : BoxScope
+internal object BoxScopeInstance : BoxScope
 
 private val ColumnWidget = WidgetDescriptor("Column", R_WIDGET_VBOX, ChildKind.Many)
 private val RowWidget = WidgetDescriptor("Row", R_WIDGET_HBOX, ChildKind.Many)

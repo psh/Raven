@@ -12,6 +12,10 @@ import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.nativeHeap
+import kotlinx.cinterop.set
+import kotlinx.cinterop.free
 import raven.cinterop.RAccessibleRole
 import raven.cinterop.RWidgetType
 import raven.cinterop.R_FALSE
@@ -67,6 +71,30 @@ import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
+import raven.cinterop.Rlist_view_get_selected
+import raven.cinterop.Rlist_view_set_activated_callback
+import raven.cinterop.Rlist_view_set_selected
+import raven.cinterop.Rlist_view_set_selection_changed_callback
+import raven.cinterop.Rlist_view_set_virtual_items
+import raven.cinterop.Rtree_item_set_selected
+import raven.cinterop.Rtree_view_clear_selection
+import raven.cinterop.Rtree_view_get_selection
+import raven.cinterop.Rtree_view_get_selection_count
+import raven.cinterop.Rtree_view_set_activated_callback
+import raven.cinterop.Rtree_view_set_context_callback
+import raven.cinterop.Rtree_view_set_selection_changed_callback
+import raven.cinterop.Rwidget_get_user_handle
+import raven.cinterop.Rtab_view_get_active
+import raven.cinterop.Rtab_view_set_active
+import raven.cinterop.Rtab_view_set_changed_callback
+import raven.cinterop.Rtab_view_set_close_callback
+import raven.cinterop.Rdock_area_set_changed_callback
+import raven.cinterop.Rdock_area_set_close_callback
+import raven.cinterop.Rfile_browser_get_selection
+import raven.cinterop.Rfile_browser_get_selection_count
+import raven.cinterop.Rfile_browser_set_accepted_callback
+import raven.cinterop.Rfile_browser_set_cancelled_callback
+import raven.cinterop.Rfile_browser_set_selection_changed_callback
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.graphics.toRaven
@@ -570,4 +598,203 @@ public val ColorPickerChanged: Event<(Color) -> Unit> = Event(marks = ColorPicke
 
 private val onColorPickerChanged = staticCFunction { _: Rid, r: Float, g: Float, b: Float, a: Float, userData: COpaquePointer? ->
     dispatchEvent(userData, ColorPickerChanged) { it(Color(r, g, b, a)) }
+}
+
+// The list view's and the tree view's controlled values and event kinds.
+
+/** A list view's selected row, -1 for none. Raven selects nothing for a row it doesn't have. */
+@InternalComposeRavenApi
+public val ListViewSelected: ControlledValue<Int> = ControlledValue(
+    read = { Rlist_view_get_selected(it) },
+    write = { widget, index -> Rlist_view_set_selected(widget, index) },
+)
+
+/** A list view's rows, in virtual mode: their count, each row's text asked of [ListViewItemText]. */
+@InternalComposeRavenApi
+public val ListViewItems: Property<List<*>> = Property { widget, items ->
+    // Set again, the rows are asked for again; Raven keeps the selection and the scroll position.
+    Rlist_view_set_virtual_items(widget, items.size, onListViewItemText, Rwidget_get_user_handle(widget))
+}
+
+/** The text of a list view's row, asked as Raven paints it. */
+@InternalComposeRavenApi
+public val ListViewItemText: Event<(Int) -> String> = Event { _, _ -> }
+
+@InternalComposeRavenApi
+public val ListViewSelectionChanged: Event<(Int) -> Unit> = Event(marks = ListViewSelected) { widget, userData ->
+    Rlist_view_set_selection_changed_callback(widget, onListViewSelectionChanged, userData)
+}
+
+/** A row activated: double-clicked, or Enter pressed on it. */
+@InternalComposeRavenApi
+public val ListViewActivated: Event<(Int) -> Unit> = Event { widget, userData ->
+    Rlist_view_set_activated_callback(widget, onListViewActivated, userData)
+}
+
+/**
+ * A tree view's selected items, as Raven's item handles: one at most unless it is multi-select.
+ * Raven calls no callback when it is written.
+ */
+@InternalComposeRavenApi
+public val TreeViewSelection: ControlledValue<Set<Rid>> = ControlledValue(
+    read = { treeSelection(it) },
+    write = { widget, items ->
+        Rtree_view_clear_selection(widget)
+        items.forEach { Rtree_item_set_selected(it, R_TRUE) }
+    },
+)
+
+/** The user changed a tree view's selection: the items selected now. */
+@InternalComposeRavenApi
+public val TreeViewSelectionChanged: Event<(Set<Rid>) -> Unit> = Event(marks = TreeViewSelection) { widget, userData ->
+    Rtree_view_set_selection_changed_callback(widget, onTreeViewSelectionChanged, userData)
+}
+
+/** An item activated: double-clicked, or Enter pressed on it. */
+@InternalComposeRavenApi
+public val TreeViewActivated: Event<(Rid) -> Unit> = Event { widget, userData ->
+    Rtree_view_set_activated_callback(widget, onTreeViewActivated, userData)
+}
+
+/**
+ * A right click on a tree view: the item under the pointer, selected first, or `R_INVALID_ID` in the
+ * empty space, and where in the window, for `Rmenu_open`.
+ */
+@InternalComposeRavenApi
+public val TreeViewContext: Event<(item: Rid, x: Float, y: Float) -> Unit> = Event { widget, userData ->
+    Rtree_view_set_context_callback(widget, onTreeViewContext, userData)
+}
+
+private fun treeSelection(tree: Rid): Set<Rid> = (0 until Rtree_view_get_selection_count(tree)).mapTo(LinkedHashSet()) { Rtree_view_get_selection(tree, it) }
+
+// The text a list view asked for last: Raven draws it at once, so it lives until the next row's.
+private var lastItemText: CPointer<ByteVar>? = null
+
+private val onListViewItemText = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? -> listViewItemText(index, userData) }
+
+private fun listViewItemText(index: Int, userData: COpaquePointer?): CPointer<ByteVar>? {
+    var text = ""
+    dispatchEvent(userData, ListViewItemText) { text = it(index) }
+    lastItemText?.let { nativeHeap.free(it) }
+    val bytes = text.encodeToByteArray()
+    val copy = nativeHeap.allocArray<ByteVar>(bytes.size + 1)
+    bytes.forEachIndexed { i, byte -> copy[i] = byte }
+    copy[bytes.size] = 0
+    lastItemText = copy
+    return copy
+}
+
+private val onListViewSelectionChanged = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ListViewSelectionChanged) { it(index) }
+}
+
+private val onListViewActivated = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ListViewActivated) { it(index) }
+}
+
+private val onTreeViewSelectionChanged = staticCFunction { tree: Rid, _: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewSelectionChanged) { it(treeSelection(tree)) }
+}
+
+private val onTreeViewActivated = staticCFunction { _: Rid, item: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewActivated) { it(item) }
+}
+
+private val onTreeViewContext = staticCFunction { _: Rid, item: Rid, x: Float, y: Float, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewContext) { it(item, x, y) }
+}
+
+// The tab view's controlled value and event kinds.
+
+/** A tab view's active tab. Raven calls no callback when it is written. */
+@InternalComposeRavenApi
+public val TabViewActive: ControlledValue<Int> = ControlledValue(
+    read = { Rtab_view_get_active(it) },
+    write = { widget, index -> Rtab_view_set_active(widget, index) },
+)
+
+@InternalComposeRavenApi
+public val TabViewChanged: Event<(Int) -> Unit> = Event(marks = TabViewActive) { widget, userData ->
+    Rtab_view_set_changed_callback(widget, onTabViewChanged, userData)
+}
+
+/**
+ * The user closing a tab, by its button or a middle click: the page of the tab. Raven keeps the
+ * tab, so it goes only when the app leaves it out of the composition.
+ */
+@InternalComposeRavenApi
+public val TabViewClose: Event<(page: Rid) -> Unit> = Event { widget, userData ->
+    Rtab_view_set_close_callback(widget, onTabViewClose, userData)
+}
+
+private val onTabViewChanged = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TabViewChanged) { it(index) }
+}
+
+private val onTabViewClose = staticCFunction { _: Rid, _: Int, page: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TabViewClose) { it(page) }
+    R_FALSE
+}
+
+// The dock area's and the file browser's event kinds.
+
+/**
+ * The user closing a panel, by its tab's button: the panel. Raven keeps it, so it goes only as the
+ * app says, through the panel's `open`.
+ */
+@InternalComposeRavenApi
+public val DockAreaClose: Event<(panel: Rid) -> Unit> = Event { widget, userData ->
+    Rdock_area_set_close_callback(widget, onDockAreaClose, userData)
+}
+
+/** The user moved, resized, showed or closed a panel. */
+@InternalComposeRavenApi
+public val DockAreaChanged: Event<() -> Unit> = Event { widget, userData ->
+    Rdock_area_set_changed_callback(widget, onDockAreaChanged, userData)
+}
+
+/** The user chose: the paths chosen, the first being Raven's `path`. */
+@InternalComposeRavenApi
+public val FileBrowserAccepted: Event<(List<String>) -> Unit> = Event { widget, userData ->
+    Rfile_browser_set_accepted_callback(widget, onFileBrowserAccepted, userData)
+}
+
+@InternalComposeRavenApi
+public val FileBrowserCancelled: Event<() -> Unit> = Event { widget, userData ->
+    Rfile_browser_set_cancelled_callback(widget, onFileBrowserCancelled, userData)
+}
+
+/** The selection changed: the paths selected now. */
+@InternalComposeRavenApi
+public val FileBrowserSelectionChanged: Event<(List<String>) -> Unit> = Event { widget, userData ->
+    Rfile_browser_set_selection_changed_callback(widget, onFileBrowserSelectionChanged, userData)
+}
+
+private fun fileBrowserSelection(browser: Rid): List<String> =
+    List(Rfile_browser_get_selection_count(browser)) { Rfile_browser_get_selection(browser, it).toRavenString() }
+
+private val onDockAreaClose = staticCFunction { _: Rid, panel: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, DockAreaClose) { it(panel) }
+    R_FALSE
+}
+
+private val onDockAreaChanged = staticCFunction { _: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, DockAreaChanged) { it() }
+}
+
+private val onFileBrowserAccepted = staticCFunction { browser: Rid, path: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, FileBrowserAccepted) {
+        // A name typed to save is the path alone; several files chosen are the selection.
+        val chosen = path.toRavenString()
+        val selection = fileBrowserSelection(browser)
+        it(if (selection.size > 1 && chosen in selection) listOf(chosen) + (selection - chosen) else listOf(chosen))
+    }
+}
+
+private val onFileBrowserCancelled = staticCFunction { _: Rid, _: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, FileBrowserCancelled) { it() }
+}
+
+private val onFileBrowserSelectionChanged = staticCFunction { browser: Rid, _: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, FileBrowserSelectionChanged) { it(fileBrowserSelection(browser)) }
 }

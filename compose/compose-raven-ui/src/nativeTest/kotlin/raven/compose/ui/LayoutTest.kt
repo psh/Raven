@@ -17,6 +17,7 @@ class LayoutTest {
     private val verticalScroll = PanelLayout(LayoutAxis.Vertical, Alignment.CenterHorizontally, mainAxis = MainAxis.Scrolling)
     private val horizontalSplitter = PanelLayout(LayoutAxis.Horizontal, mainAxis = MainAxis.Panes)
     private val headerBar = PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.CenterVertically, mainAxis = MainAxis.Packed)
+    private val grid = PanelLayout(LayoutAxis.None, mainAxis = MainAxis.Cells)
 
     private fun padding(all: Dp) = PaddingElement(all, all, all, all)
     private val fillMaxWidth = FillElement(horizontal = true, vertical = false)
@@ -167,6 +168,19 @@ class LayoutTest {
     }
 
     @Test
+    fun aGridChildFillsTheCellItIsGiven() {
+        val slot = resolve(fold(Modifier then GridCellElement(2, 1, 3, 1)), grid)
+        assertEquals(HAlign.Fill to VAlign.Fill, slot.slot.halign to slot.slot.valign)
+        assertNull(slot.slot.fill)
+        assertTrue(slot.warnings.isEmpty())
+        assertEquals(listOf("grid 2 1 3 1"), calls(slot.slot.copy(halign = HAlign.Fill, valign = VAlign.Fill), SlotLayout.RavenDefault))
+        assertEquals(VAlign.Center, resolve(fold(Modifier then AlignElement(null, Alignment.CenterVertically)), grid).slot.valign)
+
+        val outside = resolve(fold(Modifier then GridCellElement(1, 0, 1, 1)), column)
+        assertEquals(listOf("Modifier.cell works only in a Grid"), outside.warnings)
+    }
+
+    @Test
     fun onlyChangedSettersAreCalled() {
         val first = resolve(fold(Modifier), column).slot
         assertEquals(listOf("halign Center", "valign Top"), calls(first, SlotLayout.RavenDefault))
@@ -209,6 +223,9 @@ class LayoutTest {
                 }
                 override fun maxSize(width: Float, height: Float) {
                     calls += "maxSize $width $height"
+                }
+                override fun grid(column: Int, row: Int, columnSpan: Int, rowSpan: Int) {
+                    calls += "grid $column $row $columnSpan $rowSpan"
                 }
             },
         )

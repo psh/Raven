@@ -72,7 +72,7 @@ private data class OpenContextMenuElement(
  * last is kept until the next click or until the area leaves the composition, since Raven reports
  * no close.
  */
-private class ContextMenu(private val reportError: (Throwable) -> Unit) {
+internal class ContextMenu(private val reportError: (Throwable) -> Unit) {
     private var menu: Rid? = null
 
     fun open(items: List<ContextMenuItem>, window: Rid, x: Float, y: Float) {

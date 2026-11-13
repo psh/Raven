@@ -14,6 +14,7 @@ import raven.compose.foundation.Checkbox
 import raven.compose.foundation.CodeEditor
 import raven.compose.foundation.ComboBox
 import raven.compose.foundation.LinearProgressIndicator
+import raven.compose.foundation.ListView
 import raven.compose.foundation.MarkdownText
 import raven.compose.foundation.OutlinedButton
 import raven.compose.foundation.RadioButton
@@ -35,6 +36,7 @@ import raven.compose.foundation.layout.VerticalSplitter
 import raven.compose.foundation.layout.fillMaxHeight
 import raven.compose.foundation.layout.fillMaxSize
 import raven.compose.foundation.layout.fillMaxWidth
+import raven.compose.foundation.layout.height
 import raven.compose.foundation.layout.padding
 import raven.compose.foundation.layout.size
 import raven.compose.foundation.layout.width
@@ -79,8 +81,7 @@ import kotlin.time.Duration.Companion.milliseconds
 //
 // Raven reloads the theme files when they change (live reload is on here, whatever the build), and
 // notes.md is read again every half second. The interface is Kotlin, so the C example's reload of
-// themes.xml, and its "Loaded again" status, have no counterpart. Its ListView arrives with the
-// lists (phase 3).
+// themes.xml, and its "Loaded again" status, have no counterpart.
 
 fun main(args: Array<String>) {
     // The folder of the theme files and notes.md: Raven's examples/themes, or the one given.
@@ -298,6 +299,7 @@ private fun ControlsCard() {
     var text by remember { mutableStateOf("") }
     var choice by remember { mutableIntStateOf(0) }
     var number by remember { mutableIntStateOf(42) }
+    var listed by remember { mutableIntStateOf(-1) }
     val danger = RavenTheme.colors.danger
 
     Card(corner = 18) {
@@ -324,7 +326,7 @@ private fun ControlsCard() {
         }
         Slider(slider, { slider = it }, Modifier.fillMaxWidth())
         LinearProgressIndicator(0.4f, Modifier.fillMaxWidth())
-        // The C example's ListView (First, Second, Third) arrives with the lists, in phase 3.
+        ListView(listOf("First", "Second", "Third"), { it }, listed, { listed = it }, Modifier.fillMaxWidth().height(110.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextField(text, { text = it }, Modifier.weight(1f), placeholder = "Text")
             ComboBox(listOf("One", "Two", "Three"), choice, { choice = it }, Modifier.width(120.dp))
