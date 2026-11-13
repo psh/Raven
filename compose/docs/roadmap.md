@@ -142,7 +142,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | Accessibility semantics | [7](spec.md#accessibility-phase-3) | `music` | [Accessibility semantics](issues/0114-accessibility-semantics.md) |
 | Images and resources, `ImageBitmap`, icons | [8](spec.md#images-and-resources-phase-3) | `music`, `glass`, and the rows below | [Images and resources](issues/archive/0115-images-and-resources.md) |
 | Fonts and text styling (completes `Text(softWrap/fontFamily)`) | [8](spec.md#fonts-and-text-styling-phase-3) | `music`, `workspace`, `themes`, `overlay` | [Fonts and text styling](issues/archive/0116-fonts-and-text-styling.md) |
-| Typography | [8](spec.md#typography-phase-3) | every sample | [Typography in RavenTheme](issues/0117-typography-in-raventheme.md) |
+| Typography | [8](spec.md#typography-phase-3) | every sample | [Typography in RavenTheme](issues/archive/0117-typography-in-raventheme.md) |
 | `Modifier.offset`, `LocalDensity` | [6](spec.md#6-layout-and-modifiers) | `music`, `editor` | [Modifier.offset and LocalDensity](issues/0118-layout-offset-and-density.md) |
 | Theming extras: hovered and pressed colours, `unfocusedIndicatorColor`, `metrics`, `HeaderBar(background)` | [8](spec.md#phase-2-theming) | `music`, `editor`, `workspace` | [Theming extras](issues/0119-theming-extras.md) |
 | Lists and trees (completes `themes`' `ListView`) | [8](spec.md#lists-and-trees-phase-3) | `editor`, `workspace`, `music`, `glass`, `themes` | [Lists and trees](issues/0120-lists-and-trees.md) |

@@ -6,7 +6,7 @@ status: open
 
 The colour, metric and header additions this map decided. Spec: [8: theming](../spec.md#phase-2-theming), [8: menus and the header bar](../spec.md#phase-2-menus-and-the-header-bar).
 
-**Depends on:** [Typography in RavenTheme](0117-typography-in-raventheme.md).
+**Depends on:** [Typography in RavenTheme](archive/0117-typography-in-raventheme.md).
 
 ## Deliverables
 
