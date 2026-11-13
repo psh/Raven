@@ -84,6 +84,10 @@ import raven.cinterop.Rtree_view_set_activated_callback
 import raven.cinterop.Rtree_view_set_context_callback
 import raven.cinterop.Rtree_view_set_selection_changed_callback
 import raven.cinterop.Rwidget_get_user_handle
+import raven.cinterop.Rtab_view_get_active
+import raven.cinterop.Rtab_view_set_active
+import raven.cinterop.Rtab_view_set_changed_callback
+import raven.cinterop.Rtab_view_set_close_callback
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.graphics.toRaven
@@ -691,4 +695,36 @@ private val onTreeViewActivated = staticCFunction { _: Rid, item: Rid, userData:
 
 private val onTreeViewContext = staticCFunction { _: Rid, item: Rid, x: Float, y: Float, userData: COpaquePointer? ->
     dispatchEvent(userData, TreeViewContext) { it(item, x, y) }
+}
+
+// The tab view's controlled value and event kinds.
+
+/** A tab view's active tab. Raven calls no callback when it is written. */
+@InternalComposeRavenApi
+public val TabViewActive: ControlledValue<Int> = ControlledValue(
+    read = { Rtab_view_get_active(it) },
+    write = { widget, index -> Rtab_view_set_active(widget, index) },
+)
+
+@InternalComposeRavenApi
+public val TabViewChanged: Event<(Int) -> Unit> = Event(marks = TabViewActive) { widget, userData ->
+    Rtab_view_set_changed_callback(widget, onTabViewChanged, userData)
+}
+
+/**
+ * The user closing a tab, by its button or a middle click: the page of the tab. Raven keeps the
+ * tab, so it goes only when the app leaves it out of the composition.
+ */
+@InternalComposeRavenApi
+public val TabViewClose: Event<(page: Rid) -> Unit> = Event { widget, userData ->
+    Rtab_view_set_close_callback(widget, onTabViewClose, userData)
+}
+
+private val onTabViewChanged = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TabViewChanged) { it(index) }
+}
+
+private val onTabViewClose = staticCFunction { _: Rid, _: Int, page: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TabViewClose) { it(page) }
+    R_FALSE
 }

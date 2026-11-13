@@ -885,8 +885,9 @@ is.
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
-  closable, onClose) { page } }`** puts each `Tab` page in an internal Box, titled through its slot.
+  closable, onClose, icon) { page } }`** puts each `Tab` page in an internal Box, titled through its slot.
   Selection and closing are controlled: Raven's close callback keeps the tab and calls `onClose`.
+  Raven closes tabs, and shows icons, only in the documents form.
 - **No Switcher**: use `when (page) { }`.
 - **`LazyVerticalGrid(columns = GridCells.Fixed(n), minCellSize: DpSize? = null, ...) { items(...) }`**
   uses UniformGrid, and composes every item in phase 3. It has one spacing for both directions.

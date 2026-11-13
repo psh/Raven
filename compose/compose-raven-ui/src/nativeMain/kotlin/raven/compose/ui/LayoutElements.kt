@@ -43,6 +43,15 @@ public data class WeightElement(val weight: Float) : Modifier.Element {
     }
 }
 
+/** The cell of a Grid's child: its column and row, from 0, and how many of each it spans. */
+@InternalComposeRavenApi
+public data class GridCellElement(val column: Int, val row: Int, val columnSpan: Int, val rowSpan: Int) : Modifier.Element {
+    init {
+        require(column >= 0 && row >= 0) { "a cell's column and row must not be negative, not $column and $row" }
+        require(columnSpan >= 1 && rowSpan >= 1) { "a cell spans one column and one row at least, not $columnSpan and $rowSpan" }
+    }
+}
+
 /** Alignment in the parent: both axes in a Box, the cross axis in a Row or Column. */
 @InternalComposeRavenApi
 public data class AlignElement(val horizontal: Alignment.Horizontal?, val vertical: Alignment.Vertical?) : Modifier.Element
