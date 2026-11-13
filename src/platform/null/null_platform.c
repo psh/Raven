@@ -23,6 +23,12 @@ struct rvn_pwindow_t {
 	char* title;
 	rvn_pwindow_state_t state;
 	int transparent;
+	/* an overlay of the camera housing (RVN_PWINDOW_OVERLAY): its keyboard follows overlay_set_key */
+	int overlay;
+	/* has the keyboard: every window has it from its creation, as the core takes it, until another is focused */
+	int focused;
+	/* the next of the windows (not overlays), for Rwindow_focus to take the keyboard from the others */
+	rvn_pwindow_t* next;
 	/* picture in picture, and what to come back to */
 	int pip;
 	int pip_x, pip_y, pip_width, pip_height;
@@ -40,6 +46,8 @@ static struct {
 	/* the taskbar, as a system would keep it */
 	uint32_t icon_menu_count;
 	int jump_tasks;
+	/* the windows that are not overlays, the last created first */
+	rvn_pwindow_t* windows;
 } g_null;
 
 static int rvn_null_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t regions) {
@@ -74,10 +82,19 @@ static rvn_pwindow_t* rvn_null_window_create(const rvn_pwindow_desc_t* desc) {
 	window->title = rvn_strdup(desc->title);
 	/* (nothing is shown, so nothing prevents a window from being seen through: the tests can ask for it) */
 	window->transparent = (desc->flags & R_WINDOW_TRANSPARENT) != 0;
+	window->overlay = (desc->flags & RVN_PWINDOW_OVERLAY) != 0;
+	if (!window->overlay) {
+		window->focused = R_TRUE;
+		window->next = g_null.windows;
+		g_null.windows = window;
+	}
 	return window;
 }
 
 static void rvn_null_window_destroy(rvn_pwindow_t* window) {
+	rvn_pwindow_t** link = &g_null.windows;
+	while (*link && *link != window) link = &(*link)->next;
+	if (*link) *link = window->next;
 	rvn_free(window->title);
 	rvn_free(window);
 }
@@ -260,6 +277,19 @@ static void rvn_null_focus_event(rvn_pwindow_t* window, int focused) {
 	g_null.handler(&event);
 }
 
+/* Rwindow_focus, as a window system does: the window takes the keyboard, and the one that had it is told it lost it. */
+static void rvn_null_window_focus(rvn_pwindow_t* window) {
+	rvn_pwindow_t* other;
+	for (other = g_null.windows; other; other = other->next) {
+		if (other == window || !other->focused) continue;
+		other->focused = R_FALSE;
+		rvn_null_focus_event(other, R_FALSE);
+	}
+	if (window->overlay || window->focused) return;
+	window->focused = R_TRUE;
+	rvn_null_focus_event(window, R_TRUE);
+}
+
 /* Centered on the same work area of 1920 x 1080 pixels. */
 static void rvn_null_window_center(rvn_pwindow_t* window) {
 	window->x = (1920 - window->width) / 2;
@@ -365,6 +395,7 @@ static void rvn_null_tray_set_menu(rvn_ptray_t* tray, const rvn_pmenu_t* items, 
 
 /* As a window system does: the one that takes the keyboard says so, the one that loses it too. */
 static void rvn_null_overlay_set_key(rvn_pwindow_t* overlay, rvn_pwindow_t* owner, int key) {
+	owner->focused = !key;
 	rvn_null_focus_event(key ? owner : overlay, R_FALSE);
 	rvn_null_focus_event(key ? overlay : owner, R_TRUE);
 }
@@ -386,6 +417,7 @@ const rvn_platform_t* rvn_platform_null(void) {
 		.window_get_position = rvn_null_window_get_position,
 		.window_get_scale = rvn_null_window_get_scale,
 		.window_show = rvn_null_window_show,
+		.window_focus = rvn_null_window_focus,
 		.window_set_state = rvn_null_window_set_state,
 		.window_get_state = rvn_null_window_get_state,
 		.window_begin_move = rvn_null_window_begin_move,
