@@ -52,7 +52,7 @@ class MarkdownTextTest {
     fun aLinkClickReachesOnLinkClick() = runRavenTest {
         val clicked = mutableListOf<String>()
         var onLinkClick: ((String) -> Unit)? by mutableStateOf({ url: String -> clicked += "first $url" })
-        setContent { MarkdownText("[Docs](https://example.com/docs)", Modifier.testTag("md"), onLinkClick) }
+        setContent { MarkdownText("[Docs](https://example.com/docs)", Modifier.testTag("md"), onLinkClick = onLinkClick) }
         clickFirstLink(onNodeWithTag("md").fetchWidget())
         assertEquals(listOf("first https://example.com/docs"), clicked)
 
@@ -69,7 +69,7 @@ class MarkdownTextTest {
         var onLinkClick: ((String) -> Unit)? by mutableStateOf({ _: String -> actionsFired += "lambda" })
         setContent {
             CompositionLocalProvider(LocalUriHandler provides opened) {
-                MarkdownText("[Run](action:markdown.test)", Modifier.testTag("md"), onLinkClick)
+                MarkdownText("[Run](action:markdown.test)", Modifier.testTag("md"), onLinkClick = onLinkClick)
             }
         }
         Raction_bind("markdown.test", onAction, null)

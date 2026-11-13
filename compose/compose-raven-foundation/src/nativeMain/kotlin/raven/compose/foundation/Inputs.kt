@@ -3,6 +3,10 @@ package raven.compose.foundation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import raven.cinterop.R_COLOR_ACCENT
+import raven.cinterop.R_COLOR_ACCENT_HOVERED
+import raven.cinterop.R_COLOR_ACCENT_PRESSED
+import raven.cinterop.R_COLOR_BORDER
+import raven.cinterop.R_COLOR_CONTROL_BORDER
 import raven.cinterop.R_COLOR_FOCUS
 import raven.cinterop.R_COLOR_HANDLE
 import raven.cinterop.R_COLOR_INPUT
@@ -11,6 +15,7 @@ import raven.cinterop.R_COLOR_TEXT
 import raven.cinterop.R_COLOR_TEXT_PLACEHOLDER
 import raven.cinterop.R_COLOR_TRACK
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_METRIC_FONT_SIZE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_COMBO_BOX
 import raven.cinterop.R_WIDGET_SLIDER
@@ -27,6 +32,8 @@ import raven.cinterop.Rspin_box_set_range
 import raven.cinterop.Rspin_box_set_step
 import raven.cinterop.Rtext_input_set_placeholder
 import raven.cinterop.Rtext_input_set_read_only
+import raven.cinterop.Rwidget_clear_metric
+import raven.cinterop.Rwidget_set_metric
 import raven.compose.ui.ComboBoxChanged
 import raven.compose.ui.ComboBoxSelected
 import raven.compose.ui.IntSpinBoxChanged
@@ -43,6 +50,12 @@ import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Shape
+import raven.compose.ui.graphics.isSpecified
+import raven.compose.ui.text.LocalTextStyle
+import raven.compose.ui.text.TextStyle
+import raven.compose.ui.text.font.rememberRavenFont
+import raven.compose.ui.unit.TextUnit
+import raven.compose.ui.unit.isSpecified
 
 private val TextFieldWidget = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged))
 private val SliderWidget = WidgetDescriptor("Slider", R_WIDGET_SLIDER, events = listOf(SliderChanged))
@@ -83,6 +96,8 @@ public data class TextFieldColors(
     public val focusedIndicatorColor: Color,
     /** Selected text's background. */
     public val selectionColor: Color,
+    /** The outline of the field without the focus: transparent for a field with no frame. */
+    public val unfocusedIndicatorColor: Color = Color.Unspecified,
 )
 
 public object TextFieldDefaults {
@@ -92,7 +107,8 @@ public object TextFieldDefaults {
         placeholderColor: Color = Color.Unspecified,
         focusedIndicatorColor: Color = Color.Unspecified,
         selectionColor: Color = Color.Unspecified,
-    ): TextFieldColors = TextFieldColors(containerColor, textColor, placeholderColor, focusedIndicatorColor, selectionColor)
+        unfocusedIndicatorColor: Color = Color.Unspecified,
+    ): TextFieldColors = TextFieldColors(containerColor, textColor, placeholderColor, focusedIndicatorColor, selectionColor, unfocusedIndicatorColor)
 }
 
 /** A [Slider]'s colours, from [SliderDefaults.colors]. [Color.Unspecified] keeps the theme's. */
@@ -103,18 +119,31 @@ public data class SliderColors(
     public val activeTrackColor: Color,
     /** The track from the thumb to the end. */
     public val inactiveTrackColor: Color,
+    /** The active track under the pointer; unspecified derives it from [activeTrackColor]. */
+    public val hoveredActiveTrackColor: Color = Color.Unspecified,
+    /** The active track while pressed; unspecified derives it from [activeTrackColor]. */
+    public val pressedActiveTrackColor: Color = Color.Unspecified,
 )
 
 public object SliderDefaults {
     /**
      * An active track colour also gives the slider its hovered and pressed shades, derived as the
      * look in use derives the accent's.
+     * A hovered or pressed colour given is used as it is instead, each on its own, even without
+     * the base colour.
      */
     public fun colors(
         thumbColor: Color = Color.Unspecified,
         activeTrackColor: Color = Color.Unspecified,
         inactiveTrackColor: Color = Color.Unspecified,
-    ): SliderColors = SliderColors(thumbColor, activeTrackColor, inactiveTrackColor)
+        hoveredActiveTrackColor: Color = Color.Unspecified,
+        pressedActiveTrackColor: Color = Color.Unspecified,
+    ): SliderColors = SliderColors(thumbColor, activeTrackColor, inactiveTrackColor, hoveredActiveTrackColor, pressedActiveTrackColor)
+}
+
+/** A widget's own text size, for one without a size setter; unspecified is the theme's. */
+private val FontSizeMetric = Property<TextUnit> { widget, size ->
+    if (size.isSpecified) Rwidget_set_metric(widget, R_METRIC_FONT_SIZE, size.value) else Rwidget_clear_metric(widget, R_METRIC_FONT_SIZE)
 }
 
 /**
@@ -126,6 +155,9 @@ public object SliderDefaults {
  * [shape] null is the theme's corner radius. Raven has one, so a shape with different corners
  * uses its `topStart` and logs a warning.
  *
+ * [textStyle] gives the text its font, size and colour; its colour wins over [colors]'
+ * `textColor`. Raven's field has no alignment, so `textAlign` is ignored.
+ *
  * Only single-line fields exist: `CodeEditor` edits several lines.
  */
 @Composable
@@ -135,6 +167,7 @@ public fun TextField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     readOnly: Boolean = false,
+    textStyle: TextStyle = LocalTextStyle.current,
     placeholder: String = "",
     singleLine: Boolean = true,
     shape: Shape? = null,
@@ -143,12 +176,20 @@ public fun TextField(
     require(singleLine) { "TextField is single-line only; CodeEditor edits several lines" }
     val roleColors = roleColors(
         R_COLOR_INPUT to colors.containerColor,
-        R_COLOR_TEXT to colors.textColor,
+        R_COLOR_TEXT to if (textStyle.color.isSpecified) textStyle.color else colors.textColor,
         R_COLOR_TEXT_PLACEHOLDER to colors.placeholderColor,
         R_COLOR_FOCUS to colors.focusedIndicatorColor,
         R_COLOR_SELECTION to colors.selectionColor,
+        // Raven's looks draw a field's frame in one or the other.
+        R_COLOR_CONTROL_BORDER to colors.unfocusedIndicatorColor,
+        R_COLOR_BORDER to colors.unfocusedIndicatorColor,
     )
+    val font = rememberRavenFont(textStyle.fontFamily, textStyle.fontWeight, textStyle.fontStyle)
     RavenWidget(TextFieldWidget, modifier, {
+        // Raven's field has no font setter of its own: the widget's font, which a subtree font
+        // also sets, is its font.
+        set(font) { setOwnFont(it) }
+        bind(textStyle.fontSize, FontSizeMetric)
         bind(enabled, Enabled)
         bind(readOnly, ReadOnly)
         bind(shape, TextFieldShape)
@@ -179,6 +220,8 @@ public fun Slider(
         R_COLOR_HANDLE to colors.thumbColor,
         R_COLOR_ACCENT to colors.activeTrackColor,
         R_COLOR_TRACK to colors.inactiveTrackColor,
+        R_COLOR_ACCENT_HOVERED to colors.hoveredActiveTrackColor,
+        R_COLOR_ACCENT_PRESSED to colors.pressedActiveTrackColor,
     )
     RavenWidget(SliderWidget, modifier, {
         bind(enabled, Enabled)

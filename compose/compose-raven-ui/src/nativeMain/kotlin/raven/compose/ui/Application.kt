@@ -32,13 +32,17 @@ private object RavenApplicationScope : ApplicationScope {
  * With [followSystemAccessibility], text scale, contrast and reduced motion follow the OS. With
  * [liveReload], on in debug executables, Raven reloads the theme files the app loaded when they
  * change on disk; the `RAVEN_LIVE_RELOAD` environment variable, when set, decides instead.
+ *
+ * Relative resource paths (`painterResource`, fonts) resolve against [resourceRoot], by default
+ * `resources/` beside the executable, after the files given to `registerResource`.
  */
 public fun application(
     followSystemAccessibility: Boolean = true,
     liveReload: Boolean = Platform.isDebugBinary,
+    resourceRoot: String? = null,
     content: @Composable ApplicationScope.() -> Unit,
 ) {
-    val host = RavenHost(followSystemAccessibility = followSystemAccessibility, liveReload = liveReload)
+    val host = RavenHost(followSystemAccessibility = followSystemAccessibility, liveReload = liveReload, resourceRoot = resourceRoot)
     runApplication(host) { RavenApplicationScope.content() }
 }
 
@@ -60,9 +64,10 @@ public fun singleWindowApplication(
     onExternalDrop: ((DragData) -> Unit)? = null,
     followSystemAccessibility: Boolean = true,
     liveReload: Boolean = Platform.isDebugBinary,
+    resourceRoot: String? = null,
     content: @Composable () -> Unit,
 ) {
-    application(followSystemAccessibility, liveReload) {
+    application(followSystemAccessibility, liveReload, resourceRoot) {
         Window(
             onCloseRequest = ::exitApplication,
             state = state,

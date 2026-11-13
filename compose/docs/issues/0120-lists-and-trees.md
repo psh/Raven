@@ -6,7 +6,7 @@ status: open
 
 Composable lists, and Raven's virtualised list and tree; completes `samples/themes`' `ListView`. Spec: [8: Lists and trees](../spec.md#lists-and-trees-phase-3).
 
-**Depends on:** [Generic input, focus and menus](archive/0113-generic-input-focus-and-menus.md), [Images and resources](0115-images-and-resources.md).
+**Depends on:** [Generic input, focus and menus](archive/0113-generic-input-focus-and-menus.md), [Images and resources](archive/0115-images-and-resources.md).
 
 ## Deliverables
 

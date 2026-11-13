@@ -5,6 +5,7 @@ import raven.cinterop.R_TRUE
 import raven.cinterop.Rid
 import raven.cinterop.Rwidget_set_clipping
 import raven.cinterop.Rwidget_set_opacity
+import raven.compose.ui.graphics.Shape
 
 // How the widget is drawn, whatever it is: its opacity and whether it clips its children. The node
 // folds them with the rest of the Modifier (Layout.kt) and sets them on its outer widget.
@@ -27,6 +28,20 @@ internal data object ClipToBoundsElement : Modifier.Element
 
 /** Clips the widget's descendants to its bounds, so a child larger than it is cut at its edges. */
 public fun Modifier.clipToBounds(): Modifier = this then ClipToBoundsElement
+
+/** Clipping to a shape. The last one in the chain gives the shape. */
+internal data class ClipElement(val shape: Shape) : Modifier.Element
+
+/**
+ * Clips the widget to [shape]. Raven clips children only to a widget's bounds, so on most widgets
+ * this is [clipToBounds], corners square; an `Image` rounds its own corners to a
+ * [RoundedCornerShape][raven.compose.ui.graphics.RoundedCornerShape] (`Rimage_set_corner_radius`).
+ */
+public fun Modifier.clip(shape: Shape): Modifier = this then ClipElement(shape)
+
+/** The shape of the last `clip` in the chain, null when there is none: for an `Image`'s corners. */
+@InternalComposeRavenApi
+public fun Modifier.clipShape(): Shape? = foldIn<Shape?>(null) { shape, element -> if (element is ClipElement) element.shape else shape }
 
 /** The Raven calls of `Modifier.alpha` and `clipToBounds`. Raven has no getter, so tests replace them to see them. */
 internal open class DrawCalls {

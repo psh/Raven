@@ -65,6 +65,7 @@ import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
 import raven.compose.ui.input.key.KeyShortcut
+import raven.compose.ui.text.font.FontFamily
 import raven.native.callbackTarget
 import raven.native.toRavenString
 import kotlin.math.roundToInt
@@ -195,10 +196,10 @@ public fun Updater<RavenNode>.bind(layout: PanelLayout): Unit = set(layout) { pa
 /**
  * What a subtree gives each of its nodes, which the node applies to its own outer widget when it
  * changes, and Raven passes on to the widgets inside it (a content node among them): the [theme]
- * of a window-level `RavenTheme`. Null follows the parent. A setting Raven gives a widget and its
- * descendants (phase 3's `fontFamily`, `Rwidget_set_font`) is one more property here.
+ * and the [font] family of a window-level `RavenTheme` (`Rwidget_set_theme`, `Rwidget_set_font`).
+ * Null follows the parent.
  */
-internal data class SubtreeSettings(val theme: String? = null)
+internal data class SubtreeSettings(val theme: String? = null, val font: FontFamily? = null)
 
 /** The [SubtreeSettings] of the nodes emitted here. Each [RavenWidget] reads it. */
 internal val LocalSubtreeSettings = staticCompositionLocalOf { SubtreeSettings() }

@@ -90,9 +90,12 @@ internal fun withHeadlessRaven(block: () -> Unit) = withRavenChecks {
     }
 }
 
-/** Starts a headless host with [content], runs [block] once it is idle, then closes it. */
-internal fun withHost(content: @Composable () -> Unit, block: RavenHost.() -> Unit = {}) = withRavenChecks {
-    val host = RavenHost(headless = true)
+/**
+ * Starts a headless host with [content], resolving relative resources in [resourceRoot], runs
+ * [block] once it is idle, then closes it.
+ */
+internal fun withHost(content: @Composable () -> Unit, resourceRoot: String? = null, block: RavenHost.() -> Unit = {}) = withRavenChecks {
+    val host = RavenHost(headless = true, resourceRoot = resourceRoot)
     try {
         host.start(content)
         host.runUntilIdle()

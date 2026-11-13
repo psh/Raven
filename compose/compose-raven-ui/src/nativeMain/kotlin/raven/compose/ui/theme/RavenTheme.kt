@@ -13,6 +13,10 @@ import raven.compose.ui.LocalRavenHost
 import raven.compose.ui.LocalSubtreeSettings
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Material
+import raven.compose.ui.text.LocalTextStyle
+import raven.compose.ui.text.font.FontFamily
+import raven.compose.ui.text.font.LocalFontFamily
+import raven.compose.ui.text.font.font
 
 /** How every widget is drawn, app-wide: Raven's own looks and those that imitate a platform. */
 public enum class Look {
@@ -48,15 +52,23 @@ public enum class Look {
  * or the outermost `RavenTheme` of `singleWindowApplication`'s content), it emits no node and makes
  * the app-wide settings: [look] and [dark] as one look, [theme] as the app theme, [accent], from
  * which Raven derives the hovered and pressed shades, the focus outline, the selection and the
- * links, and [material], what every widget without one of its own is made of. A look or theme
- * change resets Raven's accent and material, so they are applied again after one.
+ * links, [material], what every widget without one of its own is made of, [fontFamily], the font
+ * of every text that has none of its own (`Rtheme_set_font`), and [metrics], Raven's theme metrics
+ * (a compact density, larger text), a metric left out going back to the look's. A look or theme
+ * change resets Raven's accent, material and metrics, so they and the font are applied again after
+ * one. A changed [ThemeMetric.FontSize] resizes [Typography.fromTheme]'s roles.
  *
  * Inside a window, [theme] gives the content its own theme. As `MaterialTheme`, it emits no node,
  * so the content is laid out as if it were not there: every node of the content gives its own
- * widget the theme, and Raven passes it on to the widgets inside. The innermost theme wins. A name
+ * widget the theme, and Raven passes it on to the widgets inside. [fontFamily] goes to the content
+ * the same way (`Rwidget_set_font`), for its texts that have no font of their own; Raven-drawn text
+ * such as menus opened from the content follows it. The innermost theme and family win. A name
  * Raven doesn't know is reported once, by Raven, and leaves the widgets' themes as they were. The
- * app-wide settings can't be made there: setting [look], [dark], [accent] or [material] logs an
- * error and does nothing.
+ * app-wide settings can't be made there: setting [look], [dark], [accent], [material] or [metrics]
+ * logs an error and does nothing.
+ *
+ * In either place, [typography] gives the content its text roles, `RavenTheme.typography`, and its
+ * `body` as the text style; null keeps the outer one, or [Typography.fromTheme].
  *
  * A null setting leaves Raven's as it is. [theme] names a theme from [loadTheme], a built-in one or
  * a look ("WindowsLight"). [Material.Default] is the material the look and theme give. Only Raven's
@@ -69,37 +81,57 @@ public fun RavenTheme(
     theme: String? = null,
     accent: Color? = null,
     material: Material? = null,
+    fontFamily: FontFamily? = null,
+    typography: Typography? = null,
+    metrics: Map<ThemeMetric, Float> = emptyMap(),
     content: @Composable () -> Unit,
 ) {
+    // Bold and italic text without a family of its own follows the innermost family given.
+    val family = fontFamily ?: LocalFontFamily.current
+    val typographyLocals = if (typography == null) emptyArray() else arrayOf(
+        LocalTypography provides typography,
+        LocalTextStyle provides LocalTextStyle.current.merge(typography.body),
+    )
     when (LocalThemePlacement.current) {
         ThemePlacement.Application -> {
-            ApplyAppTheme(look, dark, theme, accent, material)
-            content()
+            ApplyAppTheme(look, dark, theme, accent, material, fontFamily, metrics)
+            CompositionLocalProvider(LocalFontFamily provides family, *typographyLocals, content = content)
         }
         ThemePlacement.TopOfSingleWindow -> {
-            ApplyAppTheme(look, dark, theme, accent, material)
-            CompositionLocalProvider(LocalThemePlacement provides ThemePlacement.Window, content = content)
+            ApplyAppTheme(look, dark, theme, accent, material, fontFamily, metrics)
+            CompositionLocalProvider(
+                LocalThemePlacement provides ThemePlacement.Window, LocalFontFamily provides family, *typographyLocals, content = content,
+            )
         }
         ThemePlacement.Window -> {
-            if (look != null || dark != null || accent != null || material != null) {
-                DisposableEffect(look, dark, accent, material) {
-                    themeErrorSink("RavenTheme: look, dark, accent and material are app-wide, and only an application-level RavenTheme may set them")
+            if (look != null || dark != null || accent != null || material != null || metrics.isNotEmpty()) {
+                DisposableEffect(look, dark, accent, material, metrics) {
+                    themeErrorSink("RavenTheme: look, dark, accent, material and metrics are app-wide, and only an application-level RavenTheme may set them")
                     onDispose { }
                 }
             }
             // Provided even when null, so changing the theme to or from null keeps the content's state.
             val subtree = LocalSubtreeSettings.current
-            CompositionLocalProvider(LocalSubtreeSettings provides if (theme == null) subtree else subtree.copy(theme = theme), content = content)
+            val settings = subtree.copy(theme = theme ?: subtree.theme, font = fontFamily ?: subtree.font)
+            CompositionLocalProvider(LocalSubtreeSettings provides settings, LocalFontFamily provides family, *typographyLocals, content = content)
         }
     }
 }
 
 @Composable
-private fun ApplyAppTheme(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?) {
+private fun ApplyAppTheme(
+    look: Look?,
+    dark: Boolean?,
+    theme: String?,
+    accent: Color?,
+    material: Material?,
+    fontFamily: FontFamily?,
+    metrics: Map<ThemeMetric, Float>,
+) {
     val host = LocalRavenHost.current
     // An effect, not a SideEffect: it runs before the windows' own effects create and fill them.
-    DisposableEffect(look, dark, theme, accent, material) {
-        host.theme.apply(look, dark, theme, accent, material)
+    DisposableEffect(look, dark, theme, accent, material, fontFamily, metrics) {
+        host.theme.apply(look, dark, theme, accent, material, fontFamily?.let { host.font(it) }, metrics)
         onDispose { }
     }
 }
@@ -122,6 +154,12 @@ public object RavenTheme {
      */
     public val themeNames: List<String>
         get() = runningHost("RavenTheme.themeNames").theme.themeNames
+
+    /** The text roles the innermost `RavenTheme(typography)` gives, or else [Typography.fromTheme]. */
+    public val typography: Typography
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalTypography.current ?: Typography.fromTheme()
 }
 
 /** The app theme's colours, provided by the host to the application composition and every window. */

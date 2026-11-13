@@ -6,7 +6,7 @@ status: open
 
 Controlled tabs, Raven's Grid, and the uniform lazy grid. Spec: [8: Tabs and grids](../spec.md#tabs-and-grids-phase-3).
 
-**Depends on:** [Images and resources](0115-images-and-resources.md), [Lists and trees](0120-lists-and-trees.md).
+**Depends on:** [Images and resources](archive/0115-images-and-resources.md), [Lists and trees](0120-lists-and-trees.md).
 
 ## Deliverables
 

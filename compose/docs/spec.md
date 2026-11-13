@@ -692,7 +692,8 @@ Added for the `themes` port:
 - **`RavenTheme(metrics: Map<ThemeMetric, Float> = emptyMap())`** (phase 3) sets theme metrics at
   run time with `Rtheme_set_metric`, for example a compact or comfortable density. Only an
   application-level `RavenTheme` may set it, as with `accent`, and compose-raven applies it again
-  after each look or theme change, which resets it. `ThemeMetric` mirrors every Raven metric, the
+  after each look or theme change, which resets it. A metric left out of the map again goes back to
+  the value Raven had before compose-raven set it, since Raven can't reset one. `ThemeMetric` mirrors every Raven metric, the
   glass ones included, in Raven's own values (logical units, fractions for glass). A changed
   `FontSize` moves `Typography.fromTheme()`'s base ([The editor's run-time extras](issues/archive/0102-the-editors-run-time-extras.md)).
 - **Colour parameters** follow Material: `XxxDefaults.colors(...)` returns `XxxColors`, passed as
@@ -755,8 +756,18 @@ Added for the `overlay` and `glass` ports:
 - **Weight and style**: `FontWeight` W100 to W500 mean Regular and W600 to W900 mean Bold.
   `FontStyle` is Normal or Italic. Raven synthesises the styles that have no file.
 - **`TextStyle(color, fontSize, fontFamily, fontWeight, fontStyle, textAlign)`** is read from
-  `LocalTextStyle` and changed for a subtree with `ProvideTextStyle(style) { }`. `TextField` and
-  `CodeEditor` take a `textStyle`.
+  `LocalTextStyle` and changed for a subtree with `ProvideTextStyle(style) { }`, which merges with
+  the outer style. `TextField` and `CodeEditor` take a `textStyle`:
+  - `TextField(textStyle)`'s font is the widget's own `Rwidget_set_font`, winning over a subtree's,
+    and its size the widget's `R_METRIC_FONT_SIZE`: Raven's field has no font setter. The field keeps
+    the theme's control height, and has no alignment. A `textStyle` colour wins over `colors`.
+  - `CodeEditor(textStyle)` uses `Rtext_editor_set_font`; its default is the theme's, in the
+    fixed-width font.
+- **`Text(softWrap = false)`** by default: a Raven label keeps to one line unless told to wrap,
+  so `softWrap = true` wraps it on the width its parent gives it. `TextAlign` is `Left`, `Right`,
+  `Center`, and `Start`/`End` as left and right.
+- **Bold or italic without a family** is that style of the family a `RavenTheme` gives, else of the
+  theme's font, read once.
 - **`RavenTheme(fontFamily: FontFamily? = null)`**: at application level it sets `Rtheme_set_font`,
   and inside a window it uses `Rwidget_set_font` on its subtree. The starting `LocalTextStyle` comes from the
   theme's font size metric.
@@ -885,7 +896,9 @@ is.
 
 - **Resource root**: relative paths resolve against `resources/` next to the executable, which
   `application(resourceRoot = ...)` overrides. `registerResource(path, bytes)` embeds a file
-  (`Rfile_register_memory`), and Raven then finds it first everywhere.
+  (`Rfile_register_memory`), and Raven then finds it first everywhere. It may be called before
+  `application`: the files are kept for the process and given to each run of Raven as it starts,
+  since `Rshutdown` forgets them.
 - **`ImageBitmap`** wraps a Raven texture: `ImageBitmap(width, height, rgba)` with
   `update(width, height, rgba)`, which may change its size (`width` and `height` follow) and
   invalidates every `Viewport` showing it, since Raven doesn't redraw for a texture update. `update` is
@@ -895,20 +908,31 @@ is.
   is why it lives on the bitmap and not on `Image`: `None` is nearest, `Low` linear (the default of
   bitmaps made from pixels), `Medium` and `High` mipmapped (`Rtexture_set_filter`); `painterResource`
   images keep Raven's mipmapped default ([Small port gaps](issues/archive/0107-small-port-gaps.md)). Others
-  come from `decodeToImageBitmap(bytes)` and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
+  come from `bytes.decodeToImageBitmap()` (Compose Multiplatform's form; mipmapped, as Raven makes
+  textures from files, so `Medium`) and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
+  The widgets showing it register with it (`addViewer`, internal API, for `Image`, menu items and
+  `Viewport`), and `update` calls `Rwidget_invalidate` on each.
   App-made ones are freed by a `Cleaner` or by `close()`, both of which do nothing once the
   Raven instance that made it has shut down (the host epoch, [section 4](#4-application-host)).
 - **`Image(painter, contentDescription, modifier, contentScale = ContentScale.Fit, colorFilter)`**:
   - `painterResource(path)` decodes asynchronously and is cached in the `RavenHost`.
   - `BitmapPainter(image, srcOffset, srcSize)` shows part of an image (a source region).
   - `ContentScale` is `Fit`, `Crop`, `FillBounds` or `None`.
-  - `ColorFilter.tint(color)` tints it. `ColorFilter.textColor()` (a compose-raven extension,
+  - `Image(bitmap: ImageBitmap, ...)` is shorthand for a `BitmapPainter` of the whole bitmap.
+  - `ColorFilter.tint(color)` tints it: Raven multiplies the pixels by the colour, so a white or
+    monochrome icon takes it (Compose's default blend, `SrcIn`, would replace them).
+    `ColorFilter.textColor()` (a compose-raven extension,
     `Rimage_set_tint_text`) tints it with the text colour where it sits, so an icon follows the
     theme, a button's content colour or a hover colour without recomposing.
-  - `Modifier.clip(RoundedCornerShape(r))` rounds its corners.
-  - Formats are PNG, JPEG, BMP, TGA, GIF and PSD.
+  - `Modifier.clip(RoundedCornerShape(r))` rounds its corners. On other widgets `clip` is
+    `clipToBounds`, corners square, since Raven clips children only to a widget's bounds.
+  - Formats are PNG, JPEG, BMP, TGA, GIF and PSD, and SVG, which Raven now rasterises into a
+    texture (`Rtexture_create_from_svg`) at the size it is shown.
 - **Icons** (`Painter?`): `Item(icon)`, `Tab(icon)`, `TreeView(itemIcon)`, `Window(icon)`, and
-  `DrawScope.drawImage(...)`.
+  `DrawScope.drawImage(...)`. A menu item's icon is drawn as it is, untinted. A window icon is
+  pixels (`Rwindow_set_icon`, Windows and X11), and a texture can't be read back, so it is read
+  again from the image file: only a `painterResource` can be one, and another painter logs a
+  warning.
 
 ### Transitions and Island (phase 3)
 
@@ -1044,7 +1068,9 @@ sized from Raven's base font size *B* using Raven's own Markdown heading factors
 - **Raven's own sizes**: `body`, `label` and `code` leave the size to Raven, so theme files still
   set them. The scaled roles are recalculated when the theme or look changes.
 - **Custom typography**: `Typography.fromTheme().copy(...)`. A nested `RavenTheme(typography)`
-  changes it for a subtree.
+  changes it for a subtree, at application level or in a window, and gives the subtree its `body`
+  as the text style; `typography = null`, the default, keeps the outer one.
+- **Button content** gets `label` merged over the text style around it, as Material's buttons do.
 - **Raven-drawn text** (menus, tabs, list and tree rows, header and dock titles) keeps Raven's
   theme font.
 - **`MarkdownText` headings** use Raven's factors.
@@ -1419,6 +1445,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
+| `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
 | `CodeEditor(completions)` is a synchronous `(prefix) -> List<Completion>`, called inside Raven's completion callback | no code editor; completions come from the app's own popup | [8](#phase-2-codeeditors-editing-extras) |
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
@@ -1459,7 +1486,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `filterQuality` is a property of `ImageBitmap`, not a parameter of `Image` | `Image(filterQuality)` | [8](#images-and-resources-phase-3) |
 | `Grid` with tracks and `Modifier.cell` | no explicit grid in Foundation | [8](#8-component-vocabulary) |
 | `ImageBitmap` lives on the GPU and can't be read back | a CPU bitmap with `readPixels` | [8](#8-component-vocabulary) |
-| No SVG, `ImageVector` or vector icons | `ImageVector`, `painterResource` for vectors | [8](#8-component-vocabulary) |
+| No `ImageVector` or vector drawing; an SVG file is rasterised into a texture | `ImageVector`, `painterResource` for vectors | [8](#images-and-resources-phase-3) |
+| `ColorFilter.tint` multiplies; `ColorFilter.textColor()` follows the text colour | `tint` blends `SrcIn` | [8](#images-and-resources-phase-3) |
+| `Window(icon)` is a `painterResource` only | any `Painter` | [8](#images-and-resources-phase-3) |
 | `ContentScale` has `Fit`, `Crop`, `FillBounds` and `None` only | also `Inside`, `FillWidth`, `FillHeight` | [8](#8-component-vocabulary) |
 | Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
 | `AnimatedVisibility` enter specs map to Raven's spring transitions and ignore `animationSpec`; exit is `fadeOut` only | any enter and exit spec, timed by the spec | [8](#8-component-vocabulary) |

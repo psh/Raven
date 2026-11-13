@@ -9,6 +9,7 @@ import raven.cinterop.REvent
 import raven.cinterop.RCursor
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_ROLE_AUTO
+import raven.cinterop.R_INVALID_ID
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_CHECKBOX
 import raven.cinterop.R_WIDGET_COMBO_BOX
@@ -30,6 +31,7 @@ import raven.cinterop.Rwidget_set_accessible_role
 import raven.cinterop.Rwidget_set_cursor
 import raven.cinterop.Rwidget_set_event_callback
 import raven.cinterop.Rwidget_set_focusable
+import raven.cinterop.Rwidget_set_font
 import raven.cinterop.Rwidget_set_hit_testable
 import raven.cinterop.Rwidget_set_material
 import raven.cinterop.Rwidget_set_tooltip
@@ -38,6 +40,7 @@ import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.input.pointer.PointerButton
 import raven.compose.ui.semantics.SemanticsElement
 import raven.compose.ui.semantics.accessibilityCalls
+import raven.compose.ui.text.font.font
 import raven.native.CallbackRegistry
 import kotlin.time.Duration
 
@@ -220,6 +223,37 @@ public class RavenNode internal constructor(
         if (value.theme != previous.theme) {
             checkNotNull(host) { "a subtree setting needs a node made through the binding layer" }.theme.setWidgetTheme(widget, value.theme)
         }
+        if (value.font != previous.font) applyFont()
+    }
+
+    // The font the composable gives the widget itself (a TextField's textStyle), or R_INVALID_ID.
+    private var ownFont: Rid = R_INVALID_ID
+
+    // The font Raven was last given for the widget: R_INVALID_ID, the parent's, at first.
+    private var appliedFont: Rid = R_INVALID_ID
+
+    /**
+     * Gives the widget a font of its own, which wins over its subtree's; [R_INVALID_ID] takes it
+     * back. For a widget that has no font setter but `Rwidget_set_font`, which a subtree font uses
+     * too.
+     */
+    @InternalComposeRavenApi
+    public fun setOwnFont(font: Rid) {
+        ownFont = font
+        applyFont()
+    }
+
+    /** Gives Raven the widget's own font, else its subtree's, else none (the parent's), when it changed. */
+    private fun applyFont() {
+        val subtreeFont = subtreeSettings.font
+        val font = when {
+            ownFont != R_INVALID_ID -> ownFont
+            subtreeFont != null -> checkNotNull(host) { "a subtree setting needs a node made through the binding layer" }.font(subtreeFont)
+            else -> R_INVALID_ID
+        }
+        if (font == appliedFont) return
+        Rwidget_set_font(widget, font)
+        appliedFont = font
     }
 
     /**

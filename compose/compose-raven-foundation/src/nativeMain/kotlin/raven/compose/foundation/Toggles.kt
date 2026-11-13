@@ -7,6 +7,8 @@ import raven.cinterop.R_CHECKBOX_CHECK
 import raven.cinterop.R_CHECKBOX_RADIO
 import raven.cinterop.R_CHECKBOX_SWITCH
 import raven.cinterop.R_COLOR_ACCENT
+import raven.cinterop.R_COLOR_ACCENT_HOVERED
+import raven.cinterop.R_COLOR_ACCENT_PRESSED
 import raven.cinterop.R_COLOR_ACCENT_TEXT
 import raven.cinterop.R_COLOR_CONTROL_BORDER
 import raven.cinterop.R_COLOR_HANDLE
@@ -40,18 +42,26 @@ public data class CheckboxColors(
     /** The outline of an unchecked box. */
     public val uncheckedColor: Color,
     public val checkmarkColor: Color,
+    /** The fill of a checked box under the pointer; unspecified derives it from [checkedColor]. */
+    public val hoveredCheckedColor: Color = Color.Unspecified,
+    /** The fill of a checked box while pressed; unspecified derives it from [checkedColor]. */
+    public val pressedCheckedColor: Color = Color.Unspecified,
 )
 
 public object CheckboxDefaults {
     /**
      * A checked colour also gives the box its hovered and pressed shades, derived as the look in
      * use derives the accent's.
+     * A hovered or pressed colour given is used as it is instead, each on its own, even without
+     * the base colour.
      */
     public fun colors(
         checkedColor: Color = Color.Unspecified,
         uncheckedColor: Color = Color.Unspecified,
         checkmarkColor: Color = Color.Unspecified,
-    ): CheckboxColors = CheckboxColors(checkedColor, uncheckedColor, checkmarkColor)
+        hoveredCheckedColor: Color = Color.Unspecified,
+        pressedCheckedColor: Color = Color.Unspecified,
+    ): CheckboxColors = CheckboxColors(checkedColor, uncheckedColor, checkmarkColor, hoveredCheckedColor, pressedCheckedColor)
 }
 
 /** A [Switch]'s colours, from [SwitchDefaults.colors]. [Color.Unspecified] keeps the theme's. */
@@ -77,14 +87,23 @@ public data class RadioButtonColors(
     public val selectedColor: Color,
     /** The ring of an unselected one. */
     public val unselectedColor: Color,
+    /** The dot and ring of a selected radio under the pointer; unspecified derives it from [selectedColor]. */
+    public val hoveredSelectedColor: Color = Color.Unspecified,
+    /** The dot and ring of a selected radio while pressed; unspecified derives it from [selectedColor]. */
+    public val pressedSelectedColor: Color = Color.Unspecified,
 )
 
 public object RadioButtonDefaults {
-    /** A selected colour also gives the radio its hovered and pressed shades, as [CheckboxDefaults.colors] does. */
+    /**
+     * A selected colour also gives the radio its hovered and pressed shades, and a hovered or
+     * pressed colour given is used as it is, as [CheckboxDefaults.colors] does.
+     */
     public fun colors(
         selectedColor: Color = Color.Unspecified,
         unselectedColor: Color = Color.Unspecified,
-    ): RadioButtonColors = RadioButtonColors(selectedColor, unselectedColor)
+        hoveredSelectedColor: Color = Color.Unspecified,
+        pressedSelectedColor: Color = Color.Unspecified,
+    ): RadioButtonColors = RadioButtonColors(selectedColor, unselectedColor, hoveredSelectedColor, pressedSelectedColor)
 }
 
 /**
@@ -103,6 +122,8 @@ public fun Checkbox(
         R_COLOR_ACCENT to colors.checkedColor,
         R_COLOR_CONTROL_BORDER to colors.uncheckedColor,
         R_COLOR_ACCENT_TEXT to colors.checkmarkColor,
+        R_COLOR_ACCENT_HOVERED to colors.hoveredCheckedColor,
+        R_COLOR_ACCENT_PRESSED to colors.pressedCheckedColor,
     )
     Toggle(CheckboxWidget, R_CHECKBOX_CHECK, checked, onCheckedChange, modifier, enabled, roleColors)
 }
@@ -155,7 +176,12 @@ public fun RadioButton(
     enabled: Boolean = true,
     colors: RadioButtonColors = RadioButtonDefaults.colors(),
 ) {
-    val roleColors = roleColors(R_COLOR_ACCENT to colors.selectedColor, R_COLOR_CONTROL_BORDER to colors.unselectedColor)
+    val roleColors = roleColors(
+        R_COLOR_ACCENT to colors.selectedColor,
+        R_COLOR_CONTROL_BORDER to colors.unselectedColor,
+        R_COLOR_ACCENT_HOVERED to colors.hoveredSelectedColor,
+        R_COLOR_ACCENT_PRESSED to colors.pressedSelectedColor,
+    )
     RavenWidget(RadioButtonWidget, modifier, {
         bind(R_CHECKBOX_RADIO, CheckboxStyle)
         bind(enabled, Enabled)

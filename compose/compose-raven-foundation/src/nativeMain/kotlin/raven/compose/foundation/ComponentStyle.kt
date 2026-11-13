@@ -51,31 +51,35 @@ internal fun roleColors(vararg roles: Pair<RColorRole, Color>): RoleColors = Rol
 /**
  * Sets each role's colour, or clears the widget's own when it is Unspecified, so the theme's shows
  * again. Raven derives the hovered and pressed shades only for a theme's accent, so an `ACCENT` or
- * `CONTROL` colour sets them too, as the look in use derives the accent's.
+ * `CONTROL` colour sets them too, as the look in use derives the accent's. A hovered or pressed
+ * role given with them is used as given instead, each on its own, even without its base colour.
  */
 internal val WidgetColors = Property<RoleColors> { widget, colors ->
     val shades = Shades.ofLookInUse()
     val dark = Rtheme_is_dark() == R_TRUE
+    val given = colors.roles.toMap()
+    // A shade given with its base colour is set with the base, below.
+    val shadesWithBase = ShadedRoles.filterKeys { it in given }.values.flatMap { it.toList() }.toSet()
     colors.roles.forEach { (role, color) ->
-        val shaded = ShadedRoles[role]
-        if (color.isSpecified) {
-            setColor(widget, role, color)
-            shaded?.let { (hovered, pressed) ->
-                setColor(widget, hovered, shades.hovered(color, dark))
-                setColor(widget, pressed, shades.pressed(color, dark))
-            }
-        } else {
-            Rwidget_clear_color(widget, role)
-            shaded?.let { (hovered, pressed) ->
-                Rwidget_clear_color(widget, hovered)
-                Rwidget_clear_color(widget, pressed)
-            }
+        if (role in shadesWithBase) return@forEach
+        setOrClear(widget, role, color)
+        ShadedRoles[role]?.let { (hovered, pressed) ->
+            setOrClear(widget, hovered, given[hovered].orUnspecified().ifUnspecified { if (color.isSpecified) shades.hovered(color, dark) else color })
+            setOrClear(widget, pressed, given[pressed].orUnspecified().ifUnspecified { if (color.isSpecified) shades.pressed(color, dark) else color })
         }
     }
 }
 
-/** The roles whose hovered and pressed shades compose-raven derives. */
-private val ShadedRoles: Map<RColorRole, Pair<RColorRole, RColorRole>> = mapOf(
+private fun Color?.orUnspecified(): Color = this ?: Color.Unspecified
+
+private inline fun Color.ifUnspecified(other: () -> Color): Color = if (isSpecified) this else other()
+
+private fun setOrClear(widget: Rid, role: RColorRole, color: Color) {
+    if (color.isSpecified) setColor(widget, role, color) else Rwidget_clear_color(widget, role)
+}
+
+/** The hovered and pressed roles of an `ACCENT` or `CONTROL` colour, whose shades compose-raven derives. */
+internal val ShadedRoles: Map<RColorRole, Pair<RColorRole, RColorRole>> = mapOf(
     R_COLOR_ACCENT to (R_COLOR_ACCENT_HOVERED to R_COLOR_ACCENT_PRESSED),
     R_COLOR_CONTROL to (R_COLOR_CONTROL_HOVERED to R_COLOR_CONTROL_PRESSED),
 )

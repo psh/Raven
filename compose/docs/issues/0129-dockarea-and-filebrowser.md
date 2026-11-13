@@ -6,7 +6,7 @@ status: open
 
 Docked panels and the file browser widget. Spec: [8: Docking and the file browser](../spec.md#docking-and-the-file-browser-phase-3).
 
-**Depends on:** [Images and resources](0115-images-and-resources.md).
+**Depends on:** [Images and resources](archive/0115-images-and-resources.md).
 
 ## Deliverables
 

@@ -48,6 +48,8 @@ import raven.cinterop.Rwait_frame
 import raven.cinterop.Rxml_check_files
 import raven.cinterop.Rxml_set_live_reload
 import raven.cinterop.Rxml_set_reload_callback
+import raven.compose.ui.res.defaultResourceRoot
+import raven.compose.ui.res.registerEmbeddedResources
 import raven.compose.ui.theme.HostTheme
 import raven.compose.ui.theme.LocalRavenColors
 import raven.native.toRavenString
@@ -65,7 +67,8 @@ import kotlin.concurrent.atomics.incrementAndFetch
  * and Applier, under the one [Recomposer].
  *
  * With [liveReload], Raven reloads the theme files it loaded when they change on disk, unless the
- * `RAVEN_LIVE_RELOAD` environment variable is set, which Raven reads instead.
+ * `RAVEN_LIVE_RELOAD` environment variable is set, which Raven reads instead. Relative resource
+ * paths resolve against [resourceRoot], by default `resources/` beside the executable.
  *
  * Every function but [reportError] must be called on the thread that called [start], which becomes
  * Raven's UI thread.
@@ -76,6 +79,7 @@ public class RavenHost(
     private val followSystemAccessibility: Boolean = true,
     private val animationTimeStep: Double = 0.0,
     private val liveReload: Boolean = false,
+    resourceRoot: String? = null,
 ) {
     private enum class State { New, Started, Closed }
 
@@ -100,6 +104,9 @@ public class RavenHost(
     /** The epoch this host's Raven handles belong to. */
     public var epoch: Int = HostEpoch.current
         private set
+
+    /** Where relative resource paths resolve: `painterResource`, fonts. */
+    public val resourceRoot: String = resourceRoot ?: defaultResourceRoot()
 
     /** Caches of Raven handles, cleared when the host closes. */
     internal val caches: HostCaches = HostCaches()
@@ -136,6 +143,7 @@ public class RavenHost(
         if (followSystemAccessibility && !headless) Raccessibility_follow_system()
         if (getenv("RAVEN_LIVE_RELOAD") == null) Rxml_set_live_reload(if (liveReload) R_TRUE else R_FALSE)
         running = this
+        registerEmbeddedResources()
         theme.refresh()
 
         selfRef = StableRef.create(this).also {

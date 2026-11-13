@@ -147,6 +147,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is FocusableElement -> folded.copy(focusable = element.enabled)
         is FocusRequesterElement -> folded.copy(focusRequesters = folded.focusRequesters + element.requester)
         is SemanticsElement -> folded.copy(semantics = folded.semantics?.then(element) ?: element)
+        is ClipElement -> folded.copy(clipToBounds = true)
         else -> folded
     }
 }

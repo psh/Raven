@@ -10,6 +10,7 @@ import raven.cinterop.RMaterial
 import raven.cinterop.R_COLOR_LAST_
 import raven.cinterop.R_COLOR_WINDOW
 import raven.cinterop.R_LOOK_RAVEN_DARK
+import raven.cinterop.R_METRIC_FONT_SIZE
 import raven.cinterop.R_TRUE
 import raven.cinterop.Rid
 import raven.cinterop.Ris_ui_thread
@@ -18,9 +19,12 @@ import raven.cinterop.Rlook_set
 import raven.cinterop.Rtheme_get_color
 import raven.cinterop.Rtheme_get_count
 import raven.cinterop.Rtheme_get_material
+import raven.cinterop.Rtheme_get_metric
 import raven.cinterop.Rtheme_get_name_at
 import raven.cinterop.Rtheme_set_accent
+import raven.cinterop.Rtheme_set_font
 import raven.cinterop.Rtheme_set_material
+import raven.cinterop.Rtheme_set_metric
 import raven.cinterop.Rtheme_use
 import raven.cinterop.Rwidget_set_theme
 import raven.compose.ui.InternalComposeRavenApi
@@ -44,12 +48,23 @@ internal class HostTheme {
     var themeNames: List<String> by mutableStateOf(emptyList())
         private set
 
+    /** The app theme's font size (`R_METRIC_FONT_SIZE`), which `Typography.fromTheme()` sizes its roles from. */
+    var baseFontSize: Float by mutableStateOf(0f)
+        private set
+
     // What the application-level RavenTheme last asked for; null is "left as Raven has it".
     private var look: Look? = null
     private var dark: Boolean? = null
     private var theme: String? = null
     private var accent: Color? = null
     private var material: Material? = null
+    private var font: Rid? = null
+    private var metrics: Map<ThemeMetric, Float> = emptyMap()
+
+    // Raven's own value of each metric the app has set, read before it was first set over it, which
+    // a metric the app leaves out again goes back to. Forgotten on a look or theme change, which
+    // resets the metrics.
+    private val ownMetrics = HashMap<ThemeMetric, Float>()
 
     // The subtree themes Raven refused, by name, so it reports each once and not once per widget.
     // Forgotten when Raven's themes change, since the name can then be one.
@@ -61,10 +76,19 @@ internal class HostTheme {
 
     /**
      * Makes the app-wide settings that changed: [look] and [dark] as one `Rlook_set`, then
-     * [theme], then [material] and [accent], which Raven resets on every look or theme change, so
-     * they are applied again after one.
+     * [theme], then [material], [accent], [font] and [metrics], which Raven resets on every look or
+     * theme change, so they are applied again after one. A metric left out of [metrics] goes back
+     * to the look's and theme's.
      */
-    fun apply(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?) {
+    fun apply(
+        look: Look?,
+        dark: Boolean?,
+        theme: String?,
+        accent: Color?,
+        material: Material?,
+        font: Rid? = null,
+        metrics: Map<ThemeMetric, Float> = emptyMap(),
+    ) {
         val lookChanged = (look != null || dark != null) && (look != this.look || dark != this.dark)
         val themeChanged = theme != null && (theme != this.theme || lookChanged)
         this.look = look
@@ -74,13 +98,23 @@ internal class HostTheme {
         this.accent = accent
         val materialChanged = material != null && (material != this.material || lookChanged || themeChanged)
         this.material = material
+        val fontChanged = font != null && (font != this.font || lookChanged || themeChanged)
+        this.font = font
+        val previousMetrics = if (lookChanged || themeChanged) emptyMap() else this.metrics
+        val metricsChanged = metrics != previousMetrics
+        this.metrics = metrics
         if (lookChanged) Rlook_set(resolve(look, dark))
         // A look change lays a theme file over the new look, or replaces a theme that names its own.
         if (themeChanged) Rtheme_use(theme)
-        if (lookChanged || themeChanged) themeMaterial = null
+        if (lookChanged || themeChanged) {
+            themeMaterial = null
+            ownMetrics.clear()
+        }
+        if (metricsChanged) setMetrics(previousMetrics)
         if (materialChanged) setMaterial()
         if (accentChanged) setAccent()
-        if (lookChanged || themeChanged || accentChanged || materialChanged) refresh(restoreAccent = false)
+        if (fontChanged) Rtheme_set_font(font!!)
+        if (lookChanged || themeChanged || accentChanged || materialChanged || fontChanged || metricsChanged) refresh(restoreAccent = false)
     }
 
     /**
@@ -98,6 +132,8 @@ internal class HostTheme {
             read = readColors()
         }
         if (read != colors) colors = read
+        val size = Rtheme_get_metric(R_METRIC_FONT_SIZE)
+        if (size != baseFontSize) baseFontSize = size
         val names = List(Rtheme_get_count()) { Rtheme_get_name_at(it).toRavenString() }
         if (names != themeNames) {
             themeNames = names
@@ -119,6 +155,18 @@ internal class HostTheme {
         val material = material ?: return
         val own = themeMaterial ?: Rtheme_get_material().also { themeMaterial = it }
         Rtheme_set_material(if (material == Material.Default) own else material.toRaven())
+    }
+
+    /** Sets the metrics that changed from [previous], and gives those left out Raven's own back. */
+    private fun setMetrics(previous: Map<ThemeMetric, Float>) {
+        for ((metric, value) in metrics) {
+            if (previous[metric] == value) continue
+            ownMetrics.getOrPut(metric) { Rtheme_get_metric(metric.raven) }
+            Rtheme_set_metric(metric.raven, value)
+        }
+        for (metric in previous.keys - metrics.keys) {
+            ownMetrics.remove(metric)?.let { Rtheme_set_metric(metric.raven, it) }
+        }
     }
 
     private fun setAccent() {
