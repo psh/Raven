@@ -152,7 +152,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | Custom drawing, viewports and effects | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `editor`, `music`, `animations` | [Custom drawing, viewports and effects](issues/0124-custom-drawing-viewports-and-effects.md) |
 | `compose-raven-vulkan` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_vulkan` (phase 5) | [compose-raven-vulkan](issues/0125-compose-raven-vulkan.md) |
 | `compose-raven-opengl` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_opengl` (phase 5) | [compose-raven-opengl](issues/0126-compose-raven-opengl.md) |
-| Animation: `animate*AsState`, `Animatable`, `RavenMotion`, `RavenAnimation`, `AnimatedVisibility`, `TransitionRequester` | [8](spec.md#transitions-and-island-phase-3) | `animations`, `music` | [Animation](issues/0127-animation.md) |
+| Animation: `animate*AsState`, `Animatable`, `RavenMotion`, `RavenAnimation`, `AnimatedVisibility`, `TransitionRequester` | [8](spec.md#transitions-and-island-phase-3) | `animations`, `music` | [Animation](issues/archive/0127-animation.md) |
 | Island | [8](spec.md#transitions-and-island-phase-3) | `workspace`, `music`, `animations` | [Island](issues/0128-island.md) |
 | DockArea and FileBrowser | [8](spec.md#docking-and-the-file-browser-phase-3) | `workspace` | [DockArea and FileBrowser](issues/0129-dockarea-and-filebrowser.md) |
 | `Dialog` and the default message and file dialogs | [4](spec.md#4-application-host) | `notepad`, navigation's dialog destinations | [Dialog and the default dialogs](issues/0130-dialog-and-the-default-dialogs.md) |
