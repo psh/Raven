@@ -818,10 +818,14 @@ Added for the `overlay` and `glass` ports:
     `requiredDeviceExtensions`.
   - The app brings its own Vulkan bindings.
 - **`compose-raven-opengl`**:
-  - `OpenGLViewport(modifier, realtime = false, onInit, onDraw, onDispose)` runs on the UI thread
-    in a context the module creates on a native child window. It sits above the UI.
-  - `OpenGLTexture(width, height)` renders to an FBO read back into an `ImageBitmap`, for GL under the
-    UI.
+  - `OpenGLViewport(modifier, realtime = false, onInit, onDraw: (width, height) -> Unit, onDispose)`
+    runs on the UI thread in a context the module creates on a native child window
+    (`NSOpenGLContext` on the child's `NSView` on macOS). It sits above the UI. `onDraw` gets the
+    size in pixels and runs again when state it read changes, on a resize, and every frame with
+    `realtime`. GLX on Linux waits for the Linux build (phase 4): Kotlin/Native has no GL platform
+    library there, and until then no context is made, with a warning.
+  - `OpenGLTexture(width, height)` renders to an FBO in a context of its own, read back into an
+    `ImageBitmap` (`image`, top row first) by `render { }`, for GL under the UI.
   - The app brings its own GL bindings.
 - **Shader effects**:
   - `ShaderEffect.builtin(Effect.Aurora | ...)`, `fromFile(spirv path)` and `fromBytes(...)`,

@@ -21,6 +21,7 @@ include(
     ":compose-raven-ui",
     ":compose-raven-foundation",
     ":compose-raven-vulkan",
+    ":compose-raven-opengl",
     ":samples:hello",
     ":samples:components",
     ":samples:notepad",
