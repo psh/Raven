@@ -17,7 +17,7 @@ Snappy, Smooth, Bouncy and Wobbly `RMotion`s) and kicks them with a velocity (`R
 where the spec says only that `animate*AsState` and `Animatable` are "compose-raven's own small
 set". And it changes animation speed and turns animations off app-wide (`Rset_animation_speed`,
 `Rset_animations_enabled`), beside the host following the system's reduced motion
-([Accessibility semantics](archive/0026-accessibility-semantics.md)). Decide an on-demand
+([Accessibility semantics](0026-accessibility-semantics.md)). Decide an on-demand
 transition, the contents of that small set (specs, the Raven motions as spring specs, an initial
 velocity), and the app-wide animation settings.
 
