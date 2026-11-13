@@ -81,7 +81,10 @@ import raven.cinterop.Rwindow_show
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
+import raven.compose.ui.focus.WindowFocusManager
+import raven.compose.ui.input.key.KeyEvent
 import raven.compose.ui.platform.FrameStats
+import raven.compose.ui.platform.LocalFocusManager
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.RavenUriHandler
@@ -118,6 +121,9 @@ import kotlin.math.roundToInt
  * The content has the window's `LocalLifecycleOwner` and `LocalSavedStateRegistryOwner`: the
  * lifecycle is RESUMED while the window is shown and active, STARTED while it is shown but another
  * window is active, CREATED while it is minimised, and DESTROYED once it has left the composition.
+ *
+ * [onKeyEvent] sees the keys nothing in the window consumed: those the focused widget and its
+ * ancestors left, and every key while nothing has the focus. Returning true consumes the key.
  */
 @Composable
 public fun Window(
@@ -133,6 +139,7 @@ public fun Window(
     opacity: Float = 1f,
     onExternalDrop: ((DragData) -> Unit)? = null,
     island: (@Composable () -> Unit)? = null,
+    onKeyEvent: ((KeyEvent) -> Boolean)? = null,
     content: @Composable () -> Unit,
 ) {
     val host = LocalRavenHost.current
@@ -140,6 +147,7 @@ public fun Window(
     val currentOnCloseRequest by rememberUpdatedState(onCloseRequest)
     val currentContent by rememberUpdatedState(content)
     val currentIsland by rememberUpdatedState(island)
+    val currentOnKeyEvent by rememberUpdatedState(onKeyEvent)
     // Read here, the state recomposes the Window when the app or the user changes it.
     val settings = WindowSettings(
         title, WindowFlags(customHeader, transparent, undecorated, resizable), minimumSize, background, opacity,
@@ -149,6 +157,7 @@ public fun Window(
     val opened = remember { OpenedWindow() }
     DisposableEffect(Unit) {
         val window = RavenWindow(host, parent, state, settings, island = { currentIsland?.invoke() }) { currentOnCloseRequest() }
+        window.onKeyEvent = { event -> currentOnKeyEvent?.invoke(event) ?: false }
         window.setContent { currentContent() }
         opened.window = window
         onDispose {
@@ -240,6 +249,9 @@ internal class RavenWindow(
     private val composition = Composition(RavenApplier(root, host::onChangesApplied), parent)
     private val selfRef = StableRef.create(this)
     private val owners = WindowOwners()
+
+    /** What `Window(onKeyEvent)` is given: the keys nothing in the window consumed (WindowKeys.kt). */
+    var onKeyEvent: (KeyEvent) -> Boolean = { false }
     private val info = object : WindowInfo {
         override val isTransparent: Boolean = memScoped {
             val native = alloc<RNativeWindow>()
@@ -279,6 +291,7 @@ internal class RavenWindow(
         Rwindow_set_content(window, root.widget)
         Rwindow_set_close_callback(window, onClose, selfRef.asCPointer())
         Rwindow_set_resize_callback(window, onResize, selfRef.asCPointer())
+        listenForKeys(selfRef.asCPointer())
         host.windows += this
         update(state, settings)
         Rwindow_show(window)
@@ -300,6 +313,7 @@ internal class RavenWindow(
             LocalUriHandler provides RavenUriHandler,
             LocalLifecycleOwner provides owners,
             LocalSavedStateRegistryOwner provides owners,
+            LocalFocusManager provides WindowFocusManager(window),
             LocalThemePlacement provides ThemePlacement.Window,
             content = content,
         )
@@ -440,6 +454,9 @@ internal class RavenWindow(
         Rwindow_destroy(window)
         selfRef.dispose()
     }
+
+    /** Reports [t], thrown by a callback of the window, to the host's error path. */
+    fun reportError(t: Throwable) = host.reportError(t)
 
     fun requestClose() {
         try {

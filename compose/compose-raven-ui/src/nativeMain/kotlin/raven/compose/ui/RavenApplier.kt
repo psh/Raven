@@ -18,6 +18,9 @@ import raven.cinterop.Rwidget_remove_child
  *
  * With a [rootSlot], the root's widget is only a placeholder: the root's children go to the slot
  * instead (a window's island), and only the mirror list holds them.
+ *
+ * A [popup][RavenNode.isPopup] is kept in its parent's mirror list only: Raven's index of a child
+ * counts the children before it that aren't popups.
  */
 @OptIn(InternalComposeRavenApi::class)
 internal class RavenApplier(
@@ -28,14 +31,25 @@ internal class RavenApplier(
     /** Single-child parents changed in this batch, to reattach their child in [onEndChanges]. */
     private val changedSingleParents = mutableSetOf<RavenNode>()
 
+    /** Parents whose children changed in this batch, to label their inputs again in [onEndChanges]. */
+    private val changedParents = mutableSetOf<RavenNode>()
+
     override fun insertTopDown(index: Int, instance: RavenNode) {
         // Bottom-up only: a subtree is built before it joins the tree.
     }
 
     override fun insertBottomUp(index: Int, instance: RavenNode) {
         val parent = current
+        changedParents += parent
         if (parent === root && rootSlot != null) {
             rootSlot.attach(instance)
+            parent.children.add(index, instance)
+            instance.parent = parent
+            instance.applyLayout()
+            return
+        }
+        if (instance.isPopup) {
+            if (parent.childKind == ChildKind.None) error("a ${Rwidget_get_type(parent.widget)} widget takes no children")
             parent.children.add(index, instance)
             instance.parent = parent
             instance.applyLayout()
@@ -49,7 +63,7 @@ internal class RavenApplier(
                 Rwidget_insert_child(parent.widget, instance.widget, 0)
                 changedSingleParents += parent
             }
-            ChildKind.Many -> Rwidget_insert_child(parent.widget, instance.widget, index)
+            ChildKind.Many -> Rwidget_insert_child(parent.widget, instance.widget, ravenIndex(parent, index))
         }
         parent.children.add(index, instance)
         instance.parent = parent
@@ -58,6 +72,7 @@ internal class RavenApplier(
 
     override fun remove(index: Int, count: Int) {
         val parent = current
+        changedParents += parent
         for (i in index until index + count) {
             val child = parent.children[i]
             child.parent = null
@@ -65,6 +80,7 @@ internal class RavenApplier(
                 rootSlot.detach(child)
                 continue
             }
+            if (child.isPopup) continue
             when (parent.childKind) {
                 ChildKind.Many -> Rwidget_remove_child(parent.widget, child.widget)
                 // A child that an insert has detached since is no longer in Raven's tree.
@@ -77,13 +93,32 @@ internal class RavenApplier(
 
     override fun move(from: Int, to: Int, count: Int) {
         val parent = current
-        // A single-child parent shows one child at most, so only the mirror list changes.
-        if (parent.childKind == ChildKind.Many && !(parent === root && rootSlot != null)) {
+        changedParents += parent
+        // A single-child parent shows one child at most, and an island's root holds only a
+        // placeholder widget, so only the mirror list changes.
+        if (parent.childKind != ChildKind.Many || (parent === root && rootSlot != null)) {
+            parent.children.move(from, to, count)
+        } else if (parent.children.none { it.isPopup }) {
             for ((moveFrom, moveTo) in ravenMoves(from, to, count)) {
                 Rwidget_move_child(parent.widget, moveFrom, moveTo)
             }
+            parent.children.move(from, to, count)
+        } else {
+            parent.children.move(from, to, count)
+            reorderRavenChildren(parent)
         }
-        parent.children.move(from, to, count)
+    }
+
+    /** Raven's index for a child inserted at [index] of [parent]'s mirror list: popups aren't in Raven. */
+    private fun ravenIndex(parent: RavenNode, index: Int): Int = (0 until index).count { !parent.children[it].isPopup }
+
+    /** Moves [parent]'s Raven children, one at a time, into the order of its mirror list without the popups. */
+    private fun reorderRavenChildren(parent: RavenNode) {
+        parent.children.filterNot { it.isPopup }.forEachIndexed { wanted, child ->
+            // The children before `wanted` are in place already, so this one is at `wanted` or after.
+            val at = (wanted until Rwidget_get_child_count(parent.widget)).first { Rwidget_get_child(parent.widget, it) == child.widget }
+            if (at != wanted) Rwidget_move_child(parent.widget, at, wanted)
+        }
     }
 
     override fun onClear() {
@@ -102,10 +137,12 @@ internal class RavenApplier(
         // Once a batch is applied, a single-child parent shows its one remaining child, which an
         // insert that has since been removed may have detached.
         for (parent in changedSingleParents) {
-            val only = parent.children.singleOrNull() ?: continue
+            val only = parent.children.filterNot { it.isPopup }.singleOrNull() ?: continue
             if (!only.isAttachedTo(parent)) Rwidget_insert_child(parent.widget, only.widget, 0)
         }
         changedSingleParents.clear()
+        changedParents.forEach { it.labelInputs() }
+        changedParents.clear()
         onChangesApplied()
     }
 

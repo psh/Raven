@@ -19,7 +19,13 @@ import raven.cinterop.Rslot_set_valign
 import raven.cinterop.Rwidget_set_max_size
 import raven.cinterop.Rwidget_set_min_size
 import raven.cinterop.Rwidget_set_size
+import raven.compose.ui.focus.FocusRequester
+import raven.compose.ui.focus.FocusRequesterElement
+import raven.compose.ui.focus.FocusableElement
 import raven.compose.ui.graphics.Material
+import raven.compose.ui.input.pointer.PointerHoverIconElement
+import raven.compose.ui.input.pointer.PointerIcon
+import raven.compose.ui.semantics.SemanticsElement
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.isSpecified
 
@@ -91,6 +97,16 @@ internal data class FoldedModifier(
     val alpha: Float = 1f,
     /** Whether the widget clips its children; off when the chain gives none. */
     val clipToBounds: Boolean = false,
+    /** The input elements, in chain order: the order they see each event in. */
+    val inputs: List<InputElement> = emptyList(),
+    /** The pointer icon over the widget; null leaves it to the widget. */
+    val pointerIcon: PointerIcon? = null,
+    /** Whether `focusable` lets the widget take the focus; null when the chain has none. */
+    val focusable: Boolean? = null,
+    /** The focus requesters that can focus the widget. */
+    val focusRequesters: List<FocusRequester> = emptyList(),
+    /** What the chain's `semantics` blocks set, together; null when it has none. */
+    val semantics: SemanticsElement? = null,
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -126,6 +142,11 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is AppearTransitionElement -> folded.copy(appearTransition = element)
         is AlphaElement -> folded.copy(alpha = element.alpha)
         is ClipToBoundsElement -> folded.copy(clipToBounds = true)
+        is InputElement -> folded.copy(inputs = folded.inputs + element)
+        is PointerHoverIconElement -> folded.copy(pointerIcon = element.icon)
+        is FocusableElement -> folded.copy(focusable = element.enabled)
+        is FocusRequesterElement -> folded.copy(focusRequesters = folded.focusRequesters + element.requester)
+        is SemanticsElement -> folded.copy(semantics = folded.semantics?.then(element) ?: element)
         else -> folded
     }
 }
