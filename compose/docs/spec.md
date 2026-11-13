@@ -112,6 +112,8 @@ Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runti
   - **UI-thread check**.
 - There are no handle value classes and no wrappers per widget. Nodes call `raven.cinterop`
   directly for everything else.
+- **`RavenInfo.version`** (phase 3), in `compose-raven-ui`, is Raven's version (`Rget_version`),
+  read-only ([The editor's run-time extras](issues/archive/0102-the-editors-run-time-extras.md)).
 - No Raven type appears in the public API of `compose-raven-ui` or `compose-raven-foundation`. Raven enums get Kotlin
   counterparts (such as `TextAlign`) only where a composable needs them, and they are mapped
   internally.
@@ -160,6 +162,11 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   - **`LocalWindowInfo.current.isTransparent`** is true when the window system really gave a
     see-through window (`RNativeWindow.transparent`), which `transparent = true` asks for but
     doesn't guarantee (phase 2). The raw native handle stays with phase 3's `NativeViewport`.
+  - **`LocalWindowInfo.current.frameStats(): FrameStats`** (phase 3) returns the window's last
+    frame as Raven measured it (`Rwindow_get_frame_stats`): `layoutMs`, `paintMs`, `renderMs`,
+    `widgetCount`, `primitiveCount`, `drawCallCount`, `backdropCount`, `paintJobCount` and
+    `frameIndex`. It is a plain call, not snapshot state, since the numbers change every frame:
+    an app samples it from its own loop ([The editor's run-time extras](issues/archive/0102-the-editors-run-time-extras.md)).
   - **`minimumSize`** uses `Rwindow_set_min_size`; `null` keeps Raven's default, and a change calls
     it again (phase 2, on `singleWindowApplication` too).
   - **`WindowState`** (phase 2) holds `size: DpSize` (as Compose Desktop's, replacing phase 1's
@@ -373,6 +380,10 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   and is passed through unchanged.
 - **`DpSize(width: Dp, height: Dp)`**, in the same package, is a window's size and minimum size
   (phase 2), rounded to whole logical units for Raven.
+- **`LocalDensity`** (phase 3), in `raven.compose.ui.platform`, provides a minimal `Density`: its
+  `density` is the window's scale (`Rwindow_get_scale`), with `Dp.toPx()` and `Int.toDp()` in its
+  scope, for turning dp (pointer positions) into pixels (a viewport's size) and back
+  ([The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md)).
 - **Packages follow Compose's**: `Modifier`, `Alignment` and `testTag` are in `raven.compose.ui`.
   The modifier functions (`padding`, `size`, `fillMaxWidth`, ...), `Arrangement`, the scopes and
   `Column`/`Row`/`Box` are in `raven.compose.foundation.layout`. The elements they create, and the
@@ -662,6 +673,12 @@ Added for the `themes` port:
   compose-raven's own reload callback).
 - **`RavenTheme.colors`** is a CompositionLocal with one `Color` per Raven colour role, read from
   the app theme with `Rtheme_get_color`. It doesn't see subtree themes.
+- **`RavenTheme(metrics: Map<ThemeMetric, Float> = emptyMap())`** (phase 3) sets theme metrics at
+  run time with `Rtheme_set_metric`, for example a compact or comfortable density. Only an
+  application-level `RavenTheme` may set it, as with `accent`, and compose-raven applies it again
+  after each look or theme change, which resets it. `ThemeMetric` mirrors every Raven metric, the
+  glass ones included, in Raven's own values (logical units, fractions for glass). A changed
+  `FontSize` moves `Typography.fromTheme()`'s base ([The editor's run-time extras](issues/archive/0102-the-editors-run-time-extras.md)).
 - **Colour parameters** follow Material: `XxxDefaults.colors(...)` returns `XxxColors`, passed as
   `colors =`. Every default is `Color.Unspecified`, meaning "keep the Raven theme's value", so
   only the colours given call `Rwidget_set_color`.
@@ -709,7 +726,8 @@ Added for the `overlay` and `glass` ports:
   - `radius = Unspecified` uses the theme's blur radius.
   - Use `Modifier.material(FrostedGlass)` for an ordinary glass panel, and `BackgroundBlur` for
     `Native`, `Plain`, or control over the blur.
-- The theme's glass metrics (frost, refraction, rim, ...) are set in theme files only.
+- The theme's glass metrics (frost, refraction, rim, ...) are set in theme files or with
+  `RavenTheme(metrics)`.
 
 ### Fonts and text styling (phase 3)
 
@@ -747,7 +765,11 @@ Added for the `overlay` and `glass` ports:
     `Path`.
   - `onDraw` is read-observed, and a change in state it read calls `Rwidget_invalidate`.
 - **Viewports**:
-  - `Viewport(image: ImageBitmap, modifier, stretch, flipY)` shows an `ImageBitmap`.
+  - `Viewport(image: ImageBitmap, modifier, stretch, flipY, onSizeChanged: ((IntSize) -> Unit)? = null)`
+    shows an `ImageBitmap`. `onSizeChanged` reports the viewport's size in **pixels**
+    (`Rviewport_set_resize_callback`), the size to render at. There is no `realtime` flag: updating
+    the image redraws it, and an app animating it updates it from a `withFrameNanos` loop, so
+    nothing redraws while it is still ([The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md)).
   - `NativeViewport(modifier, onCreated: (NativeWindowHandle) -> Unit, onResize)` uses a native
     child window. On macOS, that is an `NSView` with a `CAMetalLayer`, which is the route for Metal
     through `platform.Metal`. It sits above the UI and is not clipped.
@@ -835,8 +857,12 @@ is.
 - **Resource root**: relative paths resolve against `resources/` next to the executable, which
   `application(resourceRoot = ...)` overrides. `registerResource(path, bytes)` embeds a file
   (`Rfile_register_memory`), and Raven then finds it first everywhere.
-- **`ImageBitmap`** wraps a Raven texture: `ImageBitmap(width, height, rgba)` with `update(...)`,
-  `decodeToImageBitmap(bytes)`, and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
+- **`ImageBitmap`** wraps a Raven texture: `ImageBitmap(width, height, rgba)` with
+  `update(width, height, rgba)`, which may change its size (`width` and `height` follow) and
+  invalidates every `Viewport` showing it, since Raven doesn't redraw for a texture update. `update` is
+  called on the UI thread, like the rest of Raven's API; pixels can be computed elsewhere (an app's
+  coroutines on `Dispatchers.Default`, in place of Raven's `Rparallel_for`). Others
+  come from `decodeToImageBitmap(bytes)` and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
   App-made ones are freed by a `Cleaner` or by `close()`, both of which do nothing once the
   Raven instance that made it has shut down (the host epoch, [section 4](#4-application-host)).
 - **`Image(painter, contentDescription, modifier, contentScale = ContentScale.Fit, colorFilter)`**:
@@ -975,6 +1001,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md),
 [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md),
 [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
+[The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md),
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
 [Scroll position](issues/archive/0096-scroll-position.md),
@@ -1353,6 +1380,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `MarkdownText`'s links go to `onLinkClick` or `LocalUriHandler`; Raven's `action:` links aren't special | `LinkAnnotation` listeners, then `LocalUriHandler` | [8](#8-component-vocabulary) |
 | `Typography` has eight compose-raven roles (`display` ... `code`), sized by Raven's Markdown factors; Raven-drawn text and Markdown headings don't follow a custom typography | Material's fifteen roles, applied to every component | [8](#8-component-vocabulary) |
 | `Canvas` has no `Path`, but has Raven's cubic curves, triangles, glass and shaders | `Path`, `DrawScope` on Skia | [8](#8-component-vocabulary) |
+| `Viewport(onSizeChanged)` reports its pixel size; there is no generic `Modifier.onSizeChanged`, and `Density` has only `density`, `toPx` and `toDp` | `Modifier.onSizeChanged` on any element; a full `Density` with `fontScale` | [8](#custom-drawing-viewports-and-effects-phase-3) |
 | Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
 | Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
 | `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
@@ -1387,6 +1415,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | The backdrop is set with the `WindowBackdrop(...)` composable | no counterpart | [4](#4-application-host) |
 | External drops are a `Window(onExternalDrop)` handler for the whole window | `Modifier.dragAndDropTarget` on any element | [4](#4-application-host) |
 | `LocalWindowInfo` adds `isTransparent` | `WindowInfo` has focus, modifiers and size | [4](#4-application-host) |
+| `LocalWindowInfo.frameStats()` reports Raven's frame timings and counts | no counterpart | [4](#4-application-host) |
+| `RavenTheme(metrics)` sets Raven's theme metrics at run time | Material has no metrics; sizes are per component | [8](#phase-2-theming) |
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
 | `Dialog` is a sheet over its window, and a click outside it does nothing (no `dismissOnClickOutside`) | a separate window on desktop | [4](#4-application-host) |
 | No `Popup { }` | `Popup` | [4](#4-application-host) |
