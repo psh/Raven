@@ -1,6 +1,7 @@
 package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_ROLE_SEPARATOR
 import raven.cinterop.R_TRUE
@@ -19,10 +20,13 @@ import raven.compose.ui.MenuItemClicked
 import raven.compose.ui.MenuItemShortcut
 import raven.compose.ui.Modifier
 import raven.compose.ui.Property
+import raven.compose.ui.RavenNode
 import raven.compose.ui.RavenWidget
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
 import raven.compose.ui.input.key.KeyShortcut
+import raven.compose.ui.openMenuUnderParent
+import raven.compose.ui.unit.DpOffset
 
 /** What a [MenuBar] holds: only [Menu]s. */
 public interface MenuBarScope
@@ -37,6 +41,7 @@ private val MenuBarWidget = WidgetDescriptor("MenuBar", R_WIDGET_MENU_BAR, Child
 private val MenuWidget = WidgetDescriptor("Menu", R_WIDGET_MENU, ChildKind.Many)
 private val ItemWidget = WidgetDescriptor("Item", R_WIDGET_MENU_ITEM, events = listOf(MenuItemClicked))
 private val CheckboxItemWidget = WidgetDescriptor("CheckboxItem", R_WIDGET_MENU_ITEM, events = listOf(MenuItemCheckedChanged))
+private val DropdownMenuWidget = WidgetDescriptor("DropdownMenu", R_WIDGET_MENU, ChildKind.Many, popup = true)
 private val SeparatorWidget = WidgetDescriptor("Separator", R_WIDGET_MENU_ITEM, role = R_ROLE_SEPARATOR)
 
 private val Native = Property<Boolean> { widget, native -> Rmenu_bar_set_native(widget, if (native) R_TRUE else R_FALSE) }
@@ -129,4 +134,45 @@ public fun MenuScope.CheckboxItem(
 @Composable
 public fun MenuScope.Separator() {
     RavenWidget(SeparatorWidget, Modifier, { bind(true, MenuSeparator) })
+}
+
+/**
+ * Opens its [DropdownMenu]: hold it with [rememberDropdownMenuState], give it to the menu, and call
+ * [open] from an event handler. Raven dismisses the menu by itself (a chosen entry, a click
+ * outside, Escape) and reports no close, so there is no `expanded` state to keep.
+ */
+public class DropdownMenuState internal constructor() {
+    internal var node: RavenNode? = null
+    internal var offset: DpOffset = DpOffset.Zero
+
+    /** Opens the menu under its parent. Throws if the menu isn't in the composition. */
+    public fun open() {
+        checkNotNull(node) { "open a DropdownMenuState given to a DropdownMenu" }.openMenuUnderParent(offset)
+    }
+}
+
+/** A [DropdownMenuState] kept across recompositions. */
+@Composable
+public fun rememberDropdownMenuState(): DropdownMenuState = remember { DropdownMenuState() }
+
+/**
+ * A menu of [content]'s entries, opened from code by [state] under its parent, as Compose's
+ * `DropdownMenu` anchors to its parent: at the parent's bottom-left, moved by [offset]. So
+ * `Box { Button(onClick = { state.open() }) { }; DropdownMenu(state) { } }` opens under the
+ * button. It holds what a [Menu] does, and takes no room where it is composed. Raven places the
+ * menu itself, so [modifier]'s size and placement are ignored, with a warning.
+ */
+@Composable
+public fun DropdownMenu(
+    state: DropdownMenuState,
+    modifier: Modifier = Modifier,
+    offset: DpOffset = DpOffset.Zero,
+    content: @Composable MenuScope.() -> Unit,
+) {
+    RavenWidget(DropdownMenuWidget, modifier, {
+        set(state to offset) { (state, offset) ->
+            state.node = this
+            state.offset = offset
+        }
+    }) { MenuScopeInstance.content() }
 }

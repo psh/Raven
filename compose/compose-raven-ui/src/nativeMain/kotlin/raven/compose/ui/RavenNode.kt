@@ -1,16 +1,26 @@
+@file:OptIn(InternalComposeRavenApi::class)
+
 package raven.compose.ui
 
 import androidx.compose.runtime.ComposeNodeLifecycleCallback
 import kotlinx.cinterop.COpaquePointer
+import raven.cinterop.REvent
+import raven.cinterop.RCursor
+import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
 import raven.cinterop.Rid
 import raven.cinterop.Rwidget_destroy
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_is_valid
+import raven.cinterop.Rwidget_set_cursor
+import raven.cinterop.Rwidget_set_event_callback
+import raven.cinterop.Rwidget_set_focusable
+import raven.cinterop.Rwidget_set_hit_testable
 import raven.cinterop.Rwidget_set_material
 import raven.cinterop.Rwidget_set_tooltip
 import raven.compose.ui.graphics.Material
 import raven.compose.ui.graphics.toRaven
+import raven.compose.ui.input.pointer.PointerButton
 import raven.native.CallbackRegistry
 import kotlin.time.Duration
 
@@ -34,7 +44,9 @@ public enum class ChildKind {
  *
  * Nodes made through the binding layer know their [host], which receives what their callbacks
  * throw and checks their controlled values. A [content node][isContentNode] is the internal panel
- * that holds a single-child widget's content.
+ * that holds a single-child widget's content. A [popup][isPopup] (a `DropdownMenu`'s Menu) is a
+ * child of its parent in Compose only: Raven keeps it out of the parent's widget, and opens it as a
+ * popup.
  */
 @InternalComposeRavenApi
 public class RavenNode internal constructor(
@@ -44,6 +56,7 @@ public class RavenNode internal constructor(
     public val isContentNode: Boolean = false,
     /** The composable's name, for warnings. */
     internal val name: String = "a widget",
+    public val isPopup: Boolean = false,
 ) : ComposeNodeLifecycleCallback {
     /** The `user_data` of the widget's callbacks: a reference to this node. */
     internal val userData: COpaquePointer = CallbackRegistry.register(widget, this)
@@ -76,7 +89,56 @@ public class RavenNode internal constructor(
         if (modifier.appearTransition != previous.appearTransition) setAppearTransition(modifier.appearTransition)
         if (modifier.alpha != previous.alpha) drawCalls.setAlpha(widget, modifier.alpha)
         if (modifier.clipToBounds != previous.clipToBounds) drawCalls.setClipping(widget, modifier.clipToBounds)
+        applyInput(previous)
         applyLayout()
+    }
+
+    /**
+     * Registers Raven's event callback while the chain has an input element, and gives Raven the
+     * pointer icon and focusability that changed. Raven has no getters for a widget's own cursor,
+     * focusability and hit testing, so a chain that drops them leaves the widget with its parent's
+     * cursor and no focus, and still taking the pointer.
+     */
+    private fun applyInput(previous: FoldedModifier) {
+        val handlesInput = modifier.inputs.isNotEmpty()
+        if (handlesInput != previous.inputs.isNotEmpty()) {
+            Rwidget_set_event_callback(widget, if (handlesInput) onWidgetInput else null, userData)
+            if (!handlesInput) primaryPressed = false
+        }
+        // Panels and labels let the pointer through to what is under them. One that handles input,
+        // or that a click can focus, takes it.
+        val takesPointer = handlesInput || modifier.focusable == true
+        if (takesPointer && !(previous.inputs.isNotEmpty() || previous.focusable == true)) Rwidget_set_hit_testable(widget, R_TRUE)
+        if (modifier.pointerIcon != previous.pointerIcon) Rwidget_set_cursor(widget, modifier.pointerIcon?.cursor ?: NO_CURSOR)
+        if (modifier.focusable != previous.focusable) Rwidget_set_focusable(widget, if (modifier.focusable == true) R_TRUE else R_FALSE)
+        if (modifier.focusRequesters != previous.focusRequesters) {
+            previous.focusRequesters.forEach { it.detach(widget) }
+            modifier.focusRequesters.forEach { it.attach(widget) }
+        }
+    }
+
+    // Whether the primary button went down over the widget, and hasn't come up or left it since.
+    private var primaryPressed = false
+
+    /**
+     * Hands a Raven event to the input elements, in chain order, until one consumes it. Returns
+     * whether one did.
+     */
+    internal fun dispatchInput(raw: REvent): Boolean {
+        val kind = raw.inputKind() ?: return false
+        val primary = raw.pointerButton() == PointerButton.Primary
+        var completesClick = false
+        when (kind) {
+            InputKind.Press -> if (primary) primaryPressed = true
+            InputKind.Release -> if (primary) {
+                completesClick = primaryPressed
+                primaryPressed = false
+            }
+            InputKind.Exit -> primaryPressed = false
+            else -> {}
+        }
+        val event = inputEvent(raw, kind, completesClick)
+        return modifier.inputs.any { it.onInput(event) }
     }
 
     // The subtree settings this node last applied: none, outside a themed subtree.
@@ -107,6 +169,10 @@ public class RavenNode internal constructor(
     internal fun applyLayout() {
         val parent = parent ?: return
         if (isContentNode) return
+        if (isPopup) {
+            if (resolve(modifier, PanelLayout.Box).slot != resolve(FoldedModifier(), PanelLayout.Box).slot) warnOnce("$name: Raven places a popup itself, so its size and placement modifiers are ignored")
+            return
+        }
         val resolved = resolve(modifier, parent.panelLayout)
         resolved.warnings.forEach { warnOnce("$name: $it, so it is ignored") }
         resolved.slot.applyChanges(appliedLayout, RavenSlotTarget(widget))
@@ -114,8 +180,9 @@ public class RavenNode internal constructor(
     }
 
     /**
-     * The node's children as Compose sees them. For a [ChildKind.Many] widget this is exactly its
-     * Raven children; a [ChildKind.Single] widget has at most one of them attached in Raven.
+     * The node's children as Compose sees them. For a [ChildKind.Many] widget these are its Raven
+     * children, in Raven's order, and its [popups][isPopup]; a [ChildKind.Single] widget has at most
+     * one of them attached in Raven.
      */
     public val children: MutableList<RavenNode> = mutableListOf()
 
@@ -162,6 +229,7 @@ public class RavenNode internal constructor(
 
     override fun onRelease() {
         follower = null
+        modifier.focusRequesters.forEach { it.detach(widget) }
         // Destroying an ancestor first has already destroyed this widget with it.
         if (Rwidget_is_valid(widget) == R_TRUE) Rwidget_destroy(widget)
     }
@@ -171,3 +239,6 @@ public class RavenNode internal constructor(
 
     override fun onDeactivate() {}
 }
+
+/** `Rwidget_set_cursor`'s "no cursor of its own": the parent's shows. */
+private val NO_CURSOR: RCursor = 0u

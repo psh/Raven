@@ -80,7 +80,8 @@ public enum class ContentKind(internal val type: RWidgetType, internal val layou
 /**
  * What a composable's widget is: the composable's [name] (for warnings), its Raven [type], the
  * [children] it takes, the [content] panel a single-child widget holds its content in, its
- * accessible [role] (null keeps Raven's own), and the [events] it reports.
+ * accessible [role] (null keeps Raven's own), the [events] it reports, and whether it is a [popup]
+ * that Raven keeps out of its parent's widget ([RavenNode.isPopup]).
  */
 @InternalComposeRavenApi
 public class WidgetDescriptor(
@@ -90,6 +91,7 @@ public class WidgetDescriptor(
     internal val content: ContentKind? = null,
     internal val role: RAccessibleRole? = null,
     internal val events: List<Event<*>> = emptyList(),
+    internal val popup: Boolean = false,
 ) {
     init {
         require(content == null || children == ChildKind.Single) { "only a single-child widget has a content panel" }
@@ -98,7 +100,7 @@ public class WidgetDescriptor(
     internal fun create(host: RavenHost): RavenNode {
         val widget = Rwidget_create(type)
         role?.let { Rwidget_set_accessible_role(widget, it) }
-        return RavenNode(widget, children, host, name = name).also { node -> events.forEach { it.register(node) } }
+        return RavenNode(widget, children, host, name = name, isPopup = popup).also { node -> events.forEach { it.register(node) } }
     }
 }
 

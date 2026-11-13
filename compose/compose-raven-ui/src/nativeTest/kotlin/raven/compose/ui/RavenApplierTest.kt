@@ -1,9 +1,14 @@
 package raven.compose.ui
 
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_INVALID_ID
 import raven.cinterop.R_TRUE
+import raven.cinterop.R_WIDGET_MENU
+import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_destroy
+import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_is_valid
+import raven.cinterop.Rwidget_set_name
 import raven.native.CallbackRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -119,5 +124,40 @@ class RavenApplierTest {
         assertSame(label, CallbackRegistry.targetOf(label.widget))
         label.onRelease()
         assertEquals(0, CallbackRegistry.liveCount)
+    }
+
+    @Test
+    fun aPopupIsAChildInComposeOnly() = withHeadlessRaven {
+        val root = node("root", ChildKind.Many)
+        val applier = RavenApplier(root)
+        val menu = RavenNode(Rwidget_create(R_WIDGET_MENU).also { Rwidget_set_name(it, "menu") }, ChildKind.Many, isPopup = true)
+        val (a, b, c) = listOf("a", "b", "c").map { node(it) }
+        applier.insertAll(root, a, menu, b)
+        assertEquals(listOf("a", "b"), ravenChildren(root.widget))
+        assertEquals(listOf(a, menu, b), root.children)
+        assertEquals(R_INVALID_ID, Rwidget_get_parent(menu.widget))
+
+        // Inserted after the popup, a child is counted among the others in Raven.
+        applier.down(root)
+        applier.insertBottomUp(3, c)
+        assertEquals(listOf("a", "b", "c"), ravenChildren(root.widget))
+
+        // Moves keep Raven in the mirror list's order without the popup.
+        applier.move(0, 4, 2)
+        assertEquals(listOf(b, c, a, menu), root.children)
+        assertEquals(listOf("b", "c", "a"), ravenChildren(root.widget))
+        applier.move(3, 0, 1)
+        applier.move(3, 1, 1)
+        assertEquals(listOf(menu, a, b, c), root.children)
+        assertEquals(listOf("a", "b", "c"), ravenChildren(root.widget))
+
+        // Removing it makes no Raven call, and leaves it alive.
+        applier.remove(0, 2)
+        applier.up()
+        assertEquals(listOf("b", "c"), ravenChildren(root.widget))
+        assertEquals(R_TRUE, Rwidget_is_valid(menu.widget))
+        menu.onRelease()
+        a.onRelease()
+        Rwidget_destroy(root.widget)
     }
 }
