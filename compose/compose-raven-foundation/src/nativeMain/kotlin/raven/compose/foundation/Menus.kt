@@ -8,7 +8,10 @@ import raven.cinterop.R_WIDGET_MENU
 import raven.cinterop.R_WIDGET_MENU_BAR
 import raven.cinterop.R_WIDGET_MENU_ITEM
 import raven.cinterop.Rmenu_bar_set_native
+import raven.cinterop.R_INVALID_ID
+import raven.cinterop.Rid
 import raven.cinterop.Rmenu_item_set_checkable
+import raven.cinterop.Rmenu_item_set_icon
 import raven.cinterop.Rmenu_item_set_text
 import raven.cinterop.Rmenu_set_title
 import raven.cinterop.Rwidget_set_attribute
@@ -22,6 +25,8 @@ import raven.compose.ui.Property
 import raven.compose.ui.RavenWidget
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
+import raven.compose.ui.graphics.painter.Painter
+import raven.compose.ui.graphics.painter.TextureRegion
 import raven.compose.ui.input.key.KeyShortcut
 
 /** What a [MenuBar] holds: only [Menu]s. */
@@ -86,21 +91,44 @@ private fun RavenMenu(text: String, content: @Composable MenuScope.() -> Unit) {
     RavenWidget(MenuWidget, Modifier, { bind(text, MenuTitle) }) { MenuScopeInstance.content() }
 }
 
-/** An entry showing [text], which calls [onClick] when chosen, or when [shortcut] is pressed in its window. */
+/**
+ * An entry showing [text], which calls [onClick] when chosen, or when [shortcut] is pressed in its
+ * window. [icon] is drawn before the text, as it is.
+ */
 @Composable
 public fun MenuScope.Item(
     text: String,
     onClick: () -> Unit,
     shortcut: KeyShortcut? = null,
     enabled: Boolean = true,
+    icon: Painter? = null,
 ) {
     RavenWidget(ItemWidget, Modifier, {
         bind(text, ItemText)
         bind(shortcut, MenuItemShortcut)
         bind(enabled, Enabled)
+        bind(icon, ItemIcon)
         bind(onClick, MenuItemClicked)
     })
 }
+
+/** A menu item's icon, not tinted; null removes it. */
+private val ItemIcon = Property<Painter?> { widget, icon ->
+    if (icon == null) {
+        menuCalls.setIcon(widget, R_INVALID_ID, TextureRegion.Whole)
+    } else {
+        menuCalls.setIcon(widget, icon.texture, icon.region)
+        icon.addViewer(widget)
+    }
+}
+
+/** The menu item's icon call. Raven has no getter for it, so the tests replace [menuCalls] to see it. */
+internal open class MenuCalls {
+    open fun setIcon(item: Rid, texture: Rid, region: TextureRegion) =
+        Rmenu_item_set_icon(item, texture, region.minU, region.minV, region.maxU, region.maxV, R_FALSE)
+}
+
+internal var menuCalls: MenuCalls = MenuCalls()
 
 /**
  * An entry with a check mark showing [checked], controlled as [Checkbox] is: choosing it calls

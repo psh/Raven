@@ -880,7 +880,9 @@ is.
 
 - **Resource root**: relative paths resolve against `resources/` next to the executable, which
   `application(resourceRoot = ...)` overrides. `registerResource(path, bytes)` embeds a file
-  (`Rfile_register_memory`), and Raven then finds it first everywhere.
+  (`Rfile_register_memory`), and Raven then finds it first everywhere. It may be called before
+  `application`: the files are kept for the process and given to each run of Raven as it starts,
+  since `Rshutdown` forgets them.
 - **`ImageBitmap`** wraps a Raven texture: `ImageBitmap(width, height, rgba)` with
   `update(width, height, rgba)`, which may change its size (`width` and `height` follow) and
   invalidates every `Viewport` showing it, since Raven doesn't redraw for a texture update. `update` is
@@ -890,20 +892,31 @@ is.
   is why it lives on the bitmap and not on `Image`: `None` is nearest, `Low` linear (the default of
   bitmaps made from pixels), `Medium` and `High` mipmapped (`Rtexture_set_filter`); `painterResource`
   images keep Raven's mipmapped default ([Small port gaps](issues/archive/0107-small-port-gaps.md)). Others
-  come from `decodeToImageBitmap(bytes)` and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
+  come from `bytes.decodeToImageBitmap()` (Compose Multiplatform's form; mipmapped, as Raven makes
+  textures from files, so `Medium`) and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
+  The widgets showing it register with it (`addViewer`, internal API, for `Image`, menu items and
+  `Viewport`), and `update` calls `Rwidget_invalidate` on each.
   App-made ones are freed by a `Cleaner` or by `close()`, both of which do nothing once the
   Raven instance that made it has shut down (the host epoch, [section 4](#4-application-host)).
 - **`Image(painter, contentDescription, modifier, contentScale = ContentScale.Fit, colorFilter)`**:
   - `painterResource(path)` decodes asynchronously and is cached in the `RavenHost`.
   - `BitmapPainter(image, srcOffset, srcSize)` shows part of an image (a source region).
   - `ContentScale` is `Fit`, `Crop`, `FillBounds` or `None`.
-  - `ColorFilter.tint(color)` tints it. `ColorFilter.textColor()` (a compose-raven extension,
+  - `Image(bitmap: ImageBitmap, ...)` is shorthand for a `BitmapPainter` of the whole bitmap.
+  - `ColorFilter.tint(color)` tints it: Raven multiplies the pixels by the colour, so a white or
+    monochrome icon takes it (Compose's default blend, `SrcIn`, would replace them).
+    `ColorFilter.textColor()` (a compose-raven extension,
     `Rimage_set_tint_text`) tints it with the text colour where it sits, so an icon follows the
     theme, a button's content colour or a hover colour without recomposing.
-  - `Modifier.clip(RoundedCornerShape(r))` rounds its corners.
-  - Formats are PNG, JPEG, BMP, TGA, GIF and PSD.
+  - `Modifier.clip(RoundedCornerShape(r))` rounds its corners. On other widgets `clip` is
+    `clipToBounds`, corners square, since Raven clips children only to a widget's bounds.
+  - Formats are PNG, JPEG, BMP, TGA, GIF and PSD, and SVG, which Raven now rasterises into a
+    texture (`Rtexture_create_from_svg`) at the size it is shown.
 - **Icons** (`Painter?`): `Item(icon)`, `Tab(icon)`, `TreeView(itemIcon)`, `Window(icon)`, and
-  `DrawScope.drawImage(...)`.
+  `DrawScope.drawImage(...)`. A menu item's icon is drawn as it is, untinted. A window icon is
+  pixels (`Rwindow_set_icon`, Windows and X11), and a texture can't be read back, so it is read
+  again from the image file: only a `painterResource` can be one, and another painter logs a
+  warning.
 
 ### Transitions and Island (phase 3)
 
@@ -1447,7 +1460,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `filterQuality` is a property of `ImageBitmap`, not a parameter of `Image` | `Image(filterQuality)` | [8](#images-and-resources-phase-3) |
 | `Grid` with tracks and `Modifier.cell` | no explicit grid in Foundation | [8](#8-component-vocabulary) |
 | `ImageBitmap` lives on the GPU and can't be read back | a CPU bitmap with `readPixels` | [8](#8-component-vocabulary) |
-| No SVG, `ImageVector` or vector icons | `ImageVector`, `painterResource` for vectors | [8](#8-component-vocabulary) |
+| No `ImageVector` or vector drawing; an SVG file is rasterised into a texture | `ImageVector`, `painterResource` for vectors | [8](#images-and-resources-phase-3) |
+| `ColorFilter.tint` multiplies; `ColorFilter.textColor()` follows the text colour | `tint` blends `SrcIn` | [8](#images-and-resources-phase-3) |
+| `Window(icon)` is a `painterResource` only | any `Painter` | [8](#images-and-resources-phase-3) |
 | `ContentScale` has `Fit`, `Crop`, `FillBounds` and `None` only | also `Inside`, `FillWidth`, `FillHeight` | [8](#8-component-vocabulary) |
 | Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
 | `AnimatedVisibility` enter specs map to Raven's spring transitions and ignore `animationSpec`; exit is `fadeOut` only | any enter and exit spec, timed by the spec | [8](#8-component-vocabulary) |

@@ -23,6 +23,7 @@ import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.pointed
+import kotlinx.cinterop.refTo
 import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
@@ -63,6 +64,7 @@ import raven.cinterop.Rwindow_set_clear_color
 import raven.cinterop.Rwindow_set_close_callback
 import raven.cinterop.Rwindow_set_content
 import raven.cinterop.Rwindow_set_drop_callback
+import raven.cinterop.Rwindow_set_icon
 import raven.cinterop.Rwindow_set_min_size
 import raven.cinterop.Rwindow_set_opacity
 import raven.cinterop.Rwindow_set_position
@@ -72,6 +74,8 @@ import raven.cinterop.Rwindow_set_title
 import raven.cinterop.Rwindow_show
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
+import raven.compose.ui.graphics.painter.Painter
+import raven.compose.ui.graphics.painter.Pixels
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
@@ -102,6 +106,9 @@ import kotlin.math.roundToInt
  * [onExternalDrop] takes the files or the text other applications drop on the window where no
  * widget takes them. While it is set the window accepts drops, and Raven shows that it can; while
  * it is `null` the window refuses them. It is called only for the drop itself.
+ *
+ * [icon] is the window's icon in the title bar and task bar, on Windows and X11; `null` is the
+ * default. A window icon is pixels, read again from the image file, so it is a `painterResource`.
  */
 @Composable
 public fun Window(
@@ -116,6 +123,7 @@ public fun Window(
     background: Color = Color.Unspecified,
     opacity: Float = 1f,
     onExternalDrop: ((DragData) -> Unit)? = null,
+    icon: Painter? = null,
     content: @Composable () -> Unit,
 ) {
     val host = LocalRavenHost.current
@@ -138,6 +146,7 @@ public fun Window(
         }
     }
     SideEffect { opened.window?.update(state, settings) }
+    SideEffect { opened.window?.setIcon(icon) }
 }
 
 /** What a [Window] composed: its parameters, and the values of its state it read. */
@@ -366,6 +375,24 @@ internal class RavenWindow(
         return Rwindow_get_backdrop(window).toBackdrop()
     }
 
+    private var icon: Painter? = null
+
+    /** Sets the window's icon from the painter's image file; null is the default. */
+    fun setIcon(icon: Painter?) {
+        if (icon == this.icon) return
+        this.icon = icon
+        if (icon == null) {
+            windowCalls.setIcon(window, null)
+            return
+        }
+        val pixels = icon.readPixels()
+        if (pixels == null) {
+            warn("Window: a window icon is read from its image file, so $icon can't be one; use painterResource")
+            return
+        }
+        windowCalls.setIcon(window, pixels)
+    }
+
     /** Disposes the composition before the window, so no node holds a widget Raven deleted. */
     fun dispose() {
         host.windows -= this
@@ -452,6 +479,10 @@ internal open class WindowCalls {
     open fun setOpacity(window: Rid, opacity: Float): Boolean = Rwindow_set_opacity(window, opacity) == R_TRUE
 
     open fun setBackdrop(window: Rid, backdrop: RBackdrop): Boolean = Rwindow_set_backdrop(window, backdrop) == R_TRUE
+
+    @OptIn(ExperimentalUnsignedTypes::class)
+    open fun setIcon(window: Rid, icon: Pixels?) =
+        if (icon == null) Rwindow_set_icon(window, null, 0, 0) else Rwindow_set_icon(window, icon.rgba.asUByteArray().refTo(0), icon.width, icon.height)
 }
 
 internal var windowCalls: WindowCalls = WindowCalls()

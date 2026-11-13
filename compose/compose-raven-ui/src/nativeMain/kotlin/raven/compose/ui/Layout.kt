@@ -126,6 +126,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is AppearTransitionElement -> folded.copy(appearTransition = element)
         is AlphaElement -> folded.copy(alpha = element.alpha)
         is ClipToBoundsElement -> folded.copy(clipToBounds = true)
+        is ClipElement -> folded.copy(clipToBounds = true)
         else -> folded
     }
 }
