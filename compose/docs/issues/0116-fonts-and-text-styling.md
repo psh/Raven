@@ -6,7 +6,7 @@ status: open
 
 Font families, text styles, and the text parameters phase 2 left out; completes `Text(softWrap)` and `Text(fontFamily)` for `samples/overlay` and `samples/themes`. Spec: [8: Fonts and text styling](../spec.md#fonts-and-text-styling-phase-3).
 
-**Depends on:** [Images and resources](0115-images-and-resources.md).
+**Depends on:** [Images and resources](archive/0115-images-and-resources.md).
 
 ## Deliverables
 
