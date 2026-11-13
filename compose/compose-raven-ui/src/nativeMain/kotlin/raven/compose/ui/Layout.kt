@@ -101,6 +101,14 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
             paddingEnd = folded.paddingEnd + element.end.value,
             paddingBottom = folded.paddingBottom + element.bottom.value,
         )
+        // Raven insets a child's area by its padding, negative too, so an offset moves the widget
+        // by as much as it takes from the other side.
+        is OffsetElement -> folded.copy(
+            paddingStart = folded.paddingStart + element.x.value,
+            paddingTop = folded.paddingTop + element.y.value,
+            paddingEnd = folded.paddingEnd - element.x.value,
+            paddingBottom = folded.paddingBottom - element.y.value,
+        )
         is SizeElement -> folded.copy(
             width = element.width.orElse(folded.width),
             height = element.height.orElse(folded.height),

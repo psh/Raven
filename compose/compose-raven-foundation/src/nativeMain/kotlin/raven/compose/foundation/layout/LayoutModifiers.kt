@@ -2,12 +2,16 @@ package raven.compose.foundation.layout
 
 import raven.compose.ui.FillElement
 import raven.compose.ui.Modifier
+import raven.compose.ui.OffsetElement
 import raven.compose.ui.PaddingElement
 import raven.compose.ui.SizeElement
 import raven.compose.ui.SizeInElement
 import raven.compose.ui.unit.Dp
 
-/** Space around the widget. Paddings in one chain add up. Padding is always outside the widget. */
+/**
+ * Space around the widget. Paddings in one chain add up. Padding is always outside the widget, and
+ * a negative one is an error, as in Compose: [offset] moves a widget.
+ */
 public fun Modifier.padding(all: Dp): Modifier = this then PaddingElement(all, all, all, all)
 
 public fun Modifier.padding(horizontal: Dp = Dp(0f), vertical: Dp = Dp(0f)): Modifier =
@@ -15,6 +19,13 @@ public fun Modifier.padding(horizontal: Dp = Dp(0f), vertical: Dp = Dp(0f)): Mod
 
 public fun Modifier.padding(start: Dp = Dp(0f), top: Dp = Dp(0f), end: Dp = Dp(0f), bottom: Dp = Dp(0f)): Modifier =
     this then PaddingElement(start, top, end, bottom)
+
+/**
+ * Moves the widget [x] to the right and [y] down from where it is placed, without changing its size
+ * or its neighbours' places, as Compose's `offset` does: `Modifier.align(Alignment.BottomEnd)
+ * .offset(10.dp, 8.dp)` hangs a badge over a corner. Offsets add up, and to any padding.
+ */
+public fun Modifier.offset(x: Dp = Dp(0f), y: Dp = Dp(0f)): Modifier = this then OffsetElement(x, y)
 
 /** A fixed size. The last size in the chain wins on each axis. */
 public fun Modifier.size(size: Dp): Modifier = this then SizeElement(size, size)

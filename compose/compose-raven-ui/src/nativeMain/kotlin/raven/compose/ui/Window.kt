@@ -74,7 +74,9 @@ import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.platform.LocalUriHandler
+import raven.compose.ui.platform.LocalDensity
 import raven.compose.ui.platform.LocalWindowInfo
+import raven.compose.ui.platform.WindowDensity
 import raven.compose.ui.platform.RavenUriHandler
 import raven.compose.ui.platform.WindowInfo
 import raven.compose.ui.theme.LocalThemePlacement
@@ -226,6 +228,7 @@ internal class RavenWindow(
             native.transparent == R_TRUE
         }
     }
+    private val density = WindowDensity(window)
 
     // What the window last gave Raven, or Raven's defaults.
     private var title = settings.title
@@ -258,6 +261,7 @@ internal class RavenWindow(
         CompositionLocalProvider(
             LocalRavenWindow provides this,
             LocalWindowInfo provides info,
+            LocalDensity provides density.current,
             LocalUriHandler provides RavenUriHandler,
             LocalThemePlacement provides ThemePlacement.Window,
             content = content,
@@ -338,6 +342,7 @@ internal class RavenWindow(
 
     /** Writes the user's moves and changes of placement since the last frame into the state. */
     fun followRaven() {
+        density.follow()
         val position = readPosition()
         if (position != ravenPosition) {
             ravenPosition = position
