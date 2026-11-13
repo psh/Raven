@@ -27,4 +27,5 @@ include(
     ":samples:themes",
     ":samples:xml-translator",
     ":spikes:nested-frames",
+    ":spikes:navigation3",
 )

@@ -10,6 +10,7 @@ macOS (arm64) against Raven 0.2.1 at `8b1e7d4`, unless a row gives its own date.
 | [`raven/`](raven/) | `raven/run.sh` | Raven's own behaviour, headless (null backend, null platform) |
 | [`deps/`](deps/) | `cd deps && gradle -q resolve` | that phase 3 dependencies resolve for `macosArm64`, `linuxX64` and `mingwX64` without Compose UI |
 | [`nested-frames/`](nested-frames/) | `./gradlew :spikes:nested-frames:allTests`, from `compose/` | Compose inside the nested frames of Raven's blocking dialogs, headless, through `RavenHost` |
+| [`navigation3/`](navigation3/) | `./gradlew :spikes:navigation3:allTests`, from `compose/` | Navigation 3's back stack and saveable-state decorator under the host, with the serialization plugin |
 
 ## Results
 
@@ -25,6 +26,8 @@ macOS (arm64) against Raven 0.2.1 at `8b1e7d4`, unless a row gives its own date.
 | `navigationevent` resolves without Compose UI | **Passes** | `deps/`: `navigation3-runtime` 1.2.1, `navigationevent` and `navigationevent-compose` 1.1.1 resolve for all three targets with no Compose UI | `NavDisplay` can use them. The rest of the Navigation 3 item needs the host |
 | Compose recomposes safely inside the nested frames of Raven's blocking dialogs (checked 2026-11-11, Raven 0.2.3 at `c2f072d`) | **Passes** | `nested-frames/`: `Rmessage_box`, `Rdialog_run` and `Rfile_dialog_open`, each called from a coroutine on `RavenDispatcher`. While one waits, state writes recompose and apply in its frames and Text follows, a controlled Checkbox in another window reverts a refused click and keeps an accepted one, and every apply has exactly one `applyChanges` on the stack, never one inside another. Work queued behind the blocked coroutine and writes from another thread are composed within a millisecond, with animations on or off. Removing the dialog's window from the composition, or `Rquit`, ends the call with Cancel and leaks nothing | `native = true` stays in phase 3, with the [caveats below](#nested-frames-caveats) |
 | Writing text back during an IME composition doesn't cancel it (checked 2026-11-11, from the source) | **Passes**: there is no composition for Raven to see | Raven's platform code: the macOS view reads `[event characters]` in `keyDown:` and doesn't implement `NSTextInputClient`; X11 creates its input context with `XIMPreeditNothing`, so the input method composes in its own window; Windows handles `WM_CHAR` and no `WM_IME_*`; Wayland has only xkbcommon compose sequences. Every backend reports committed text only | `TextField` writes back as soon as the app answers, with no deferral. Check again if Raven gains preedit (`NSTextInputClient`, `text-input-v3`) |
+
+| `rememberNavBackStack` and the saveable-state decorator work under the host, with the kotlinx-serialization plugin (checked 2026-11-12) | **Passes**, with two findings | `navigation3/`: a back stack of `@Serializable` keys shows its top entry in a harness window and follows `add`/`removeLastOrNull`; with `rememberSaveableStateHolderNavEntryDecorator`, an entry's `rememberSaveable` state survives another entry pushed over it and popped; after the whole subtree leaves the composition, the stack and the entry's state come back from a `SaveableStateRegistry` provided above it. `navigation3-runtime` 1.2.1 brings no Compose UI, and its runtime resolves to ours (1.12.1) | No fallback needed. **On Kotlin/Native**, `rememberNavBackStack` takes a `SavedStateConfiguration` whose `serializersModule` declares the `NavKey` subclasses (`polymorphic(NavKey::class) { subclass(Home::class) }`), and refuses the default one: there is no reflective overload. **Saveable state goes through `runtime-saveable`**: the decorator uses a `SaveableStateHolder` (no registry needed), and restoring after a subtree leaves needs a `LocalSaveableStateRegistry` above it; neither reads the `SavedStateRegistryOwner` |
 
 ### Nested frames: caveats
 
@@ -47,7 +50,6 @@ macOS (arm64) against Raven 0.2.1 at `8b1e7d4`, unless a row gives its own date.
 | Fact | Waits for |
 |---|---|
 | Compose recomposes inside Windows' own modal loop (`IFileDialog_Show`), for `native = true` file dialogs | a Windows host |
-| `rememberNavBackStack` and the saveable decorator work under the host and window owners | compose-raven's host |
 | A MinGW-gcc `libraven.a` links with Kotlin/Native's `mingwX64` toolchain | a Windows host with MSYS2 |
 | A GL context works on Raven's macOS child view | a real window with MoltenVK installed |
 | Metal can draw into the child view's `CAMetalLayer` beside Raven | a real window with MoltenVK installed |

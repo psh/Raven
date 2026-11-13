@@ -169,7 +169,10 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     own Overlay root and Applier, under the one Recomposer, linked with
     `rememberCompositionContext()`.
   - **Owners**: each window provides a `LifecycleOwner` and a `SavedStateRegistryOwner`. They
-    persist nothing yet, but they are enough for Navigation 3 and lifecycle-aware libraries. The
+    persist nothing yet, but they are enough for lifecycle-aware libraries. Navigation 3 needs
+    neither: its saveable-state decorator keeps each entry's state in a `SaveableStateHolder`, and
+    `rememberSaveable` state comes back after leaving the composition only under a
+    `LocalSaveableStateRegistry`, which a window doesn't provide ([verified](../spikes/README.md)). The
     lifecycle follows Compose Desktop: **RESUMED** while the window is shown and active (focused),
     **STARTED** while shown but not active, **CREATED** while minimised or hidden, and
     **DESTROYED** when the window leaves the composition.
@@ -790,7 +793,8 @@ is.
     `animateScrollToItem` jumps the same way. There is no `layoutInfo`, `isScrollInProgress` or
     `canScrollForward`.
 - **Saved and restored**: both are `rememberSaveable`, with `ScrollState.Saver` and
-  `LazyListState.Saver`, so a position comes back with the window's saved state.
+  `LazyListState.Saver`, so a position comes back wherever saveable state is kept, such as a
+  Navigation 3 entry under its saveable-state decorator.
 - **Before attach**: a state keeps the position it was asked for (or restored) and applies it when
   it is attached to its ScrollBox.
 - **One scrollable per state**: a state given to a second scrollable logs an error, and only the
@@ -892,6 +896,17 @@ is.
 
 Apps use `navigation3-runtime` as on Android (`NavKey`, `entryProvider`, `rememberNavBackStack`)
 and apply `org.jetbrains.kotlin.plugin.serialization`, because `NavKey`s are `@Serializable`.
+Kotlin/Native has no reflection, so `rememberNavBackStack` takes a `SavedStateConfiguration` that
+declares the keys, and refuses the default one ([verified](../spikes/README.md)):
+
+```kotlin
+val navConfig = SavedStateConfiguration {
+    serializersModule = SerializersModule {
+        polymorphic(NavKey::class) { subclass(Home::class); subclass(ConfirmDelete::class) }
+    }
+}
+val backStack = rememberNavBackStack(navConfig, Home)
+```
 
 ```kotlin
 NavDisplay(
@@ -1339,6 +1354,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Navigation 3's Scene layer and `NavDisplay` come from `compose-raven-navigation3`, in compose-raven packages | `androidx.navigation3.ui` / `.scene` | [8](#8-component-vocabulary) |
 | `NavDisplay` transitions are Raven appear transitions (`NavTransition`) | `transitionSpec` / `popTransitionSpec` with `ContentTransform` | [8](#8-component-vocabulary) |
 | Back comes from the mouse Back button and Cmd+[ / Alt+Left, not Escape | the system back gesture | [8](#8-component-vocabulary) |
+| `rememberNavBackStack` needs a `SavedStateConfiguration` declaring the `NavKey` subclasses (Kotlin/Native) | Android finds them by reflection | [8](#navigation-3-phase-3-compose-raven-navigation3) |
 | `runRavenTest` covers one window, has no tree dumps or screenshots | `ComposeUiTest` with multiple roots and screenshots | [9](#9-testing) |
 | App-wide theme settings (`look`, `dark`, `material`, app-wide `theme`/`fontFamily`) only at `application` level | any `MaterialTheme` can set anything | [8](#8-component-vocabulary) |
 | A modifier a composable can't honour is ignored with a warning | modifiers always apply | [6](#6-layout-and-modifiers) |

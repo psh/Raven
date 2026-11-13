@@ -63,6 +63,7 @@ with nothing open. This map plans; it builds nothing.
 <!-- one line per closed ticket: [title](file): gist -->
 
 - [Scroll position](archive/0096-scroll-position.md): `ScrollState` (a `state` of the scroll containers: polled `value`, `scrollTo`, a jumping `animateScrollTo`, `scrollToEnd()`), `LazyListState` (`firstVisibleItem*`, `scrollToItem` to the top) and `ListViewState` (`revealItem` only); scroll states are saveable and apply positions on attach; `performScrollTo`/`performScrollToIndex` in the harness.
+- [Verify Navigation 3 under the host](archive/0097-verify-navigation-3-under-the-host.md): passes, no fallback; on Kotlin/Native `rememberNavBackStack` needs a `SavedStateConfiguration` declaring the `NavKey` subclasses, and entry state lives in the decorator's `SaveableStateHolder`, so a page kept as an entry keeps its state with nothing from the window.
 
 ## Not yet specified
 
@@ -81,8 +82,7 @@ The map's tickets, by sample (a ticket can serve several):
 - `glass`: [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
   [Menus opened from a button, and Raven's popups](0106-menus-opened-from-a-button-and-ravens-popups.md),
   [Small port gaps](0107-small-port-gaps.md)
-- Open facts: [Verify Navigation 3 under the host](0097-verify-navigation-3-under-the-host.md),
-  [Verify GL and Metal on macOS child views](0108-verify-gl-and-metal-on-macos-child-views.md)
+- Open facts: [Verify GL and Metal on macOS child views](0108-verify-gl-and-metal-on-macos-child-views.md)
 - Upstream: [Upstream changes and the fog notes](0109-upstream-changes-and-the-fog-notes.md)
 - Last: [Phase 3 implementation tickets](0110-phase-3-implementation-tickets.md)
 
