@@ -19,7 +19,7 @@ Decide whether compose-raven gains a `ScrollState` (`rememberScrollState()`, `va
 `animateScrollTo`) for the scroll containers, a `LazyListState` for `LazyColumn`/`LazyRow`, and a
 scroll-to-item for `ListView`, and which of them read Raven's position back (Raven reports no
 scroll changes, so a read is polled, as `CodeEditorState.cursor` is). Settle it before
-[Music's pages and back navigation](../0098-musics-pages-and-back-navigation.md), which depends on
+[Music's pages and back navigation](0098-musics-pages-and-back-navigation.md), which depends on
 whether a page can keep its scroll position.
 
 ## Resolution
@@ -39,7 +39,7 @@ section 8 ([Scroll position](../../spec.md#scroll-position-phase-3)), section 9 
   composes every item), `scrollToItem(index, scrollOffset)` putting the item at the top, and
   `animateScrollToItem` (jumps). No `layoutInfo`, `isScrollInProgress` or `canScrollForward`.
 - **Saveable**: both through `ScrollState.Saver` and `LazyListState.Saver`, with the window's
-  saved-state owner; this is what [Music's pages and back navigation](../0098-musics-pages-and-back-navigation.md)
+  saved-state owner; this is what [Music's pages and back navigation](0098-musics-pages-and-back-navigation.md)
   can rely on.
 - **`ListViewState`** (`rememberListViewState()`) has only `revealItem(index)`
   (`Rlist_view_scroll_to_item`, which scrolls just enough to show the row). Raven can't report

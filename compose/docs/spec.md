@@ -658,12 +658,12 @@ Added for the `themes` port:
 
   | Composable | Parameter | Raven roles |
   |---|---|---|
-  | `Button`, `OutlinedButton`, `TextButton` | `ButtonDefaults.buttonColors(containerColor, contentColor, disabledContentColor)` | `ACCENT` (`CONTROL` for Outlined/Text), `ACCENT_TEXT` (`TEXT`), `TEXT_DISABLED` |
-  | `Checkbox` | `CheckboxDefaults.colors(checkedColor, uncheckedColor, checkmarkColor)` | `ACCENT`, `CONTROL_BORDER`, `ACCENT_TEXT` |
-  | `RadioButton` | `RadioButtonDefaults.colors(selectedColor, unselectedColor)` | `ACCENT`, `CONTROL_BORDER` |
+  | `Button`, `OutlinedButton`, `TextButton` | `ButtonDefaults.buttonColors(containerColor, contentColor, disabledContentColor, hoveredContainerColor, pressedContainerColor)` | `ACCENT` (`CONTROL` for Outlined/Text), `ACCENT_TEXT` (`TEXT`), `TEXT_DISABLED`, `ACCENT_HOVERED`/`_PRESSED` (`CONTROL_HOVERED`/`_PRESSED`) |
+  | `Checkbox` | `CheckboxDefaults.colors(checkedColor, uncheckedColor, checkmarkColor, hoveredCheckedColor, pressedCheckedColor)` | `ACCENT`, `CONTROL_BORDER`, `ACCENT_TEXT`, `ACCENT_HOVERED`, `ACCENT_PRESSED` |
+  | `RadioButton` | `RadioButtonDefaults.colors(selectedColor, unselectedColor, hoveredSelectedColor, pressedSelectedColor)` | `ACCENT`, `CONTROL_BORDER`, `ACCENT_HOVERED`, `ACCENT_PRESSED` |
   | `Switch` | `SwitchDefaults.colors(checkedTrackColor, uncheckedTrackColor, thumbColor)` | `SWITCH`, `TRACK`, `HANDLE` |
-  | `Slider` | `SliderDefaults.colors(thumbColor, activeTrackColor, inactiveTrackColor)` | `HANDLE`, `ACCENT`, `TRACK` |
-  | `TextField` | `TextFieldDefaults.colors(containerColor, textColor, placeholderColor, focusedIndicatorColor, selectionColor)` | `INPUT`, `TEXT`, `TEXT_PLACEHOLDER`, `FOCUS`, `SELECTION` |
+  | `Slider` | `SliderDefaults.colors(thumbColor, activeTrackColor, inactiveTrackColor, hoveredActiveTrackColor, pressedActiveTrackColor)` | `HANDLE`, `ACCENT`, `TRACK`, `ACCENT_HOVERED`, `ACCENT_PRESSED` |
+  | `TextField` | `TextFieldDefaults.colors(containerColor, textColor, placeholderColor, focusedIndicatorColor, unfocusedIndicatorColor, selectionColor)` | `INPUT`, `TEXT`, `TEXT_PLACEHOLDER`, `FOCUS`, `CONTROL_BORDER` and `BORDER`, `SELECTION` |
   | `LinearProgressIndicator` | `color`, `trackColor` | `ACCENT`, `TRACK` |
   | `HorizontalDivider`, `VerticalDivider` | `color` | `SEPARATOR` |
   | `Surface` | `contentColor` | `TEXT`, passed down to the children |
@@ -671,7 +671,10 @@ Added for the `themes` port:
   **Hover and pressed shades:** Raven derives them only for a theme's accent (`Rtheme_set_accent`),
   not for `Rwidget_set_color` ([verified](../spikes/README.md)). So when a `colors` parameter sets
   `ACCENT` or `CONTROL`, compose-raven also sets the hovered and pressed roles, following the
-  per-look rules of Raven's `rvn_theme_set_accent`.
+  per-look rules of Raven's `rvn_theme_set_accent`. An explicit hovered or pressed colour (phase
+  3, for the buttons, `Checkbox`, `RadioButton` and `Slider`) is used as given instead, each on its
+  own, so a transparent button can still have a faint hover
+  ([Music's class-styled themes](issues/archive/0099-musics-class-styled-themes.md)).
 - **Shape and padding:** buttons take `shape` and `contentPadding: PaddingValues`, and `TextField`
   takes `shape`.
   - `shape` uses `R_METRIC_CORNER_RADIUS`, which is a single radius. A non-uniform shape uses
@@ -830,7 +833,9 @@ is.
   - `painterResource(path)` decodes asynchronously and is cached in the `RavenHost`.
   - `BitmapPainter(image, srcOffset, srcSize)` shows part of an image (a source region).
   - `ContentScale` is `Fit`, `Crop`, `FillBounds` or `None`.
-  - `ColorFilter.tint(color)` tints it.
+  - `ColorFilter.tint(color)` tints it. `ColorFilter.textColor()` (a compose-raven extension,
+    `Rimage_set_tint_text`) tints it with the text colour where it sits, so an icon follows the
+    theme, a button's content colour or a hover colour without recomposing.
   - `Modifier.clip(RoundedCornerShape(r))` rounds its corners.
   - Formats are PNG, JPEG, BMP, TGA, GIF and PSD.
 - **Icons** (`Painter?`): `Item(icon)`, `Tab(icon)`, `TreeView(itemIcon)`, `Window(icon)`, and
@@ -964,6 +969,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
 [Scroll position](issues/archive/0096-scroll-position.md),
 [Image and resources](issues/archive/0035-image-and-resources.md),
+[Music's class-styled themes](issues/archive/0099-musics-class-styled-themes.md),
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
 [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
 [Toolbar](issues/archive/0038-toolbar.md),
@@ -1323,6 +1329,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `shape` is one corner radius, and `contentPadding` is symmetric | any shape and padding | [8](#8-component-vocabulary) |
 | The look can only be set by the outermost `RavenTheme`, and `RavenTheme.colors` shows only the app theme | nested themes are fully independent | [8](#8-component-vocabulary) |
 | No style classes; theme rules by class don't apply | no such concept | [8](#8-component-vocabulary) |
+| Buttons, `Checkbox`, `RadioButton` and `Slider` colours take explicit hovered and pressed colours | hover and press come from `interactionSource` and indication | [8](#phase-2-theming) |
+| `ColorFilter.textColor()` tints an image with the text colour around it; there is no `LocalContentColor` | `Icon(tint = LocalContentColor.current)` | [8](#images-and-resources-phase-3) |
 | No coroutine `pointerInput`, drag gestures or long press | `pointerInput`, `draggable`, `combinedClickable(onLongClick)` | [7](#7-events-and-state) |
 | No `onPreviewKeyEvent`, because Raven doesn't tunnel events | preview handlers run root to leaf | [7](#7-events-and-state) |
 | No `clearAndSetSemantics` or `mergeDescendants` | merging and clearing semantics | [7](#7-events-and-state) |

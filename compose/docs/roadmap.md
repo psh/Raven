@@ -174,6 +174,9 @@ Decided for phase 3 so far (in the spec):
 - [Scroll position](issues/archive/0096-scroll-position.md): `ScrollState` for the scroll containers,
   `LazyListState` for the lazy lists and `ListViewState` (`revealItem`) for `ListView`, saveable where
   Raven can report the position; `performScrollTo`/`performScrollToIndex` in the harness
+- [Music's class-styled themes](issues/archive/0099-musics-class-styled-themes.md): explicit hovered and
+  pressed colours for the buttons, `Checkbox`, `RadioButton` and `Slider`, `ColorFilter.textColor()`, and
+  `TextFieldDefaults.colors(unfocusedIndicatorColor)`
 - [Image and resources](issues/archive/0035-image-and-resources.md): resource root and `registerResource`,
   `ImageBitmap` (renamed from `Texture`), `Image` with `painterResource`/`BitmapPainter`, icons everywhere
 - [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition`,

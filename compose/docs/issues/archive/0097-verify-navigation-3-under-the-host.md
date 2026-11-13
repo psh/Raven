@@ -45,6 +45,6 @@ Two facts the spec now records:
   runtime nor the decorator reads the window's `SavedStateRegistryOwner`. Spec section 4 now says
   so, and [Scroll position](0096-scroll-position.md)'s line "comes back with the window's saved
   state" became "wherever saveable state is kept, such as a Navigation 3 entry". For
-  [Music's pages and back navigation](../0098-musics-pages-and-back-navigation.md): a page that is a
+  [Music's pages and back navigation](0098-musics-pages-and-back-navigation.md): a page that is a
   Navigation 3 entry keeps its saveable state (scroll position included) while other pages are
   shown, with nothing more from the window.

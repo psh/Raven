@@ -16,4 +16,6 @@ the samples that need them and their tickets, each ticket with a **Depends on** 
 dependency order, including what phase 3 completes for phase 2 (the default dialogs, `themes`'
 `ListView`, `Text(softWrap)`/`fontFamily`, `MarkdownText`'s `style`, the rest of transitions).
 Write one sample ticket for each of the five samples, listing only its port gaps, each naming the
-phase that completes it. Then close this map.
+phase that completes it. A sample ticket also lists the deliberate differences from its
+C example that this map decided (for `music`, in
+[Music's pages and back navigation](archive/0098-musics-pages-and-back-navigation.md)). Then close this map.
