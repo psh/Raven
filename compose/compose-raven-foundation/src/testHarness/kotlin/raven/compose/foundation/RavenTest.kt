@@ -64,6 +64,7 @@ import raven.compose.ui.RavenNode
 import raven.compose.ui.Window
 import raven.native.CallbackRegistry
 import raven.native.toRavenString
+import kotlin.math.ceil
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
@@ -116,10 +117,29 @@ internal class RavenTestScope(val host: RavenHost) {
      */
     fun checkFiles(): Int = host.checkFiles()
 
-    /** Draws one frame. Throws what ended the host, if a failure asked Raven to quit. */
-    fun frame() {
+    /**
+     * Draws one frame. Throws what ended the host, if a failure asked Raven to quit. The frame moves
+     * compose-raven's animations on unless [MainTestClock.autoAdvance] is off.
+     */
+    fun frame() = frame(advance = mainClock.autoAdvance)
+
+    internal fun frame(advance: Boolean) {
+        host.holdsFrameTime = !advance
+        if (advance) framesDrawn++
         if (!host.frame()) throw host.error ?: AssertionError("Raven quit")
     }
+
+    /** How many frames have moved the clock on, each one animation time step later than the one before. */
+    internal var framesDrawn = 0
+        private set
+
+    /**
+     * The test's clock: time passes only as frames are drawn, one fixed animation time step a frame,
+     * for Raven's animations and compose-raven's alike. [waitForIdle] draws frames too, so it moves
+     * the clock on, and an animation whose value the composition reads recomposes every frame, so
+     * waiting for idle runs it to its end; turn [MainTestClock.autoAdvance] off to look at it mid-way.
+     */
+    val mainClock: MainTestClock = MainTestClock(this)
 
     /**
      * Drops [paths] and [text] on the window from another application, at its centre, as the user
@@ -183,6 +203,29 @@ internal class RavenTestScope(val host: RavenHost) {
         } else {
             null
         }
+}
+
+/** The clock of a [RavenTestScope], which advances as it draws frames. */
+internal class MainTestClock(private val scope: RavenTestScope) {
+    /** The time of the last frame drawn, in milliseconds since the test started. */
+    val currentTime: Long get() = (scope.framesDrawn * ANIMATION_TIME_STEP * 1000).toLong()
+
+    /**
+     * Whether every frame moves compose-raven's animations on, [waitForIdle][RavenTestScope.waitForIdle]'s
+     * included; true by default. Off, only [advanceTimeByFrame] and [advanceTimeBy] do, and waiting
+     * for idle recomposes with the animations held where they are. Raven's own animations go on.
+     */
+    var autoAdvance: Boolean = true
+
+    /** Draws one frame, one time step on. */
+    fun advanceTimeByFrame() = scope.frame(advance = true)
+
+    /** Draws frames until at least [milliseconds] have passed: a whole number of time steps. */
+    fun advanceTimeBy(milliseconds: Long) {
+        require(milliseconds >= 0) { "time only goes forward, not by $milliseconds ms" }
+        val frames = ceil(milliseconds / (ANIMATION_TIME_STEP * 1000) - 1e-9).toInt()
+        repeat(frames) { scope.frame(advance = true) }
+    }
 }
 
 /** One node a finder selects. Every use waits for the UI to be idle, then finds it again. */

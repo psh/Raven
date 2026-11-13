@@ -19,6 +19,8 @@ import raven.cinterop.Rslot_set_valign
 import raven.cinterop.Rwidget_set_max_size
 import raven.cinterop.Rwidget_set_min_size
 import raven.cinterop.Rwidget_set_size
+import raven.compose.animation.TransitionRequester
+import raven.compose.animation.TransitionRequesterElement
 import raven.compose.ui.graphics.Material
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.isSpecified
@@ -91,6 +93,8 @@ internal data class FoldedModifier(
     val alpha: Float = 1f,
     /** Whether the widget clips its children; off when the chain gives none. */
     val clipToBounds: Boolean = false,
+    /** The transition requesters attached to the widget, in the chain's order. */
+    val transitionRequesters: List<TransitionRequester> = emptyList(),
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -134,6 +138,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is AppearTransitionElement -> folded.copy(appearTransition = element)
         is AlphaElement -> folded.copy(alpha = element.alpha)
         is ClipToBoundsElement -> folded.copy(clipToBounds = true)
+        is TransitionRequesterElement -> folded.copy(transitionRequesters = folded.transitionRequesters + element.requester)
         else -> folded
     }
 }

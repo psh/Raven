@@ -8,6 +8,8 @@ import raven.cinterop.R_INVALID_ID
 import raven.cinterop.R_WIDGET_LABEL
 import raven.cinterop.Rid
 import raven.cinterop.Rwidget_get_parent
+import raven.compose.animation.TransitionRequester
+import raven.compose.animation.transitionRequester
 import raven.compose.ui.unit.dp
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -41,6 +43,11 @@ class AppearTransitionTest {
                 val where = if (Rwidget_get_parent(widget) == R_INVALID_ID) "before insert" else "inserted"
                 recorded += widget to "set % $transition $delay $where"
                 super.set(widget, transition, delay)
+            }
+
+            override fun play(widget: Rid, transition: AppearTransition, delay: Duration) {
+                recorded += widget to "play % $transition $delay"
+                super.play(widget, transition, delay)
             }
 
             override fun stop(widget: Rid) {
@@ -128,5 +135,45 @@ class AppearTransitionTest {
             runUntilIdle()
             assertEquals(emptyList(), calls)
         }
+    }
+
+    @Test
+    fun aRequesterPlaysItsTransitionOnTheWidgetItIsAttachedTo() {
+        val requester = TransitionRequester()
+        val other = TransitionRequester()
+        var attached by mutableStateOf(true)
+        var shown by mutableStateOf(true)
+        withHost({
+            Window(onCloseRequest = {}) {
+                if (shown) {
+                    val modifier = if (attached) Modifier.transitionRequester(requester).transitionRequester(other) else Modifier
+                    RavenWidget(TestLabel, modifier.appearTransition(AppearTransition.Fade), { bind("label", Name) })
+                }
+            }
+        }) {
+            recorded.clear()
+            requester.play(AppearTransition.Drop, 100.milliseconds)
+            other.play(AppearTransition.Pop)
+            assertEquals(listOf("play label Drop 100ms", "play label Pop 0s"), calls, "whatever the widget's appearTransition")
+            recorded.clear()
+
+            // Detached, it does nothing; attached again, it plays.
+            attached = false
+            runUntilIdle()
+            requester.play(AppearTransition.Drop)
+            assertEquals(emptyList(), calls)
+            attached = true
+            runUntilIdle()
+            requester.play(AppearTransition.Zoom)
+            assertEquals(listOf("play label Zoom 0s"), calls)
+            recorded.clear()
+
+            // Its widget gone, it does nothing.
+            shown = false
+            runUntilIdle()
+            requester.play(AppearTransition.Drop)
+            assertEquals(emptyList(), calls)
+        }
+        assertFailsWith<IllegalArgumentException> { requester.play(AppearTransition.Fade, (-1).milliseconds) }
     }
 }
