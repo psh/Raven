@@ -39,6 +39,9 @@ import raven.cinterop.Rexpander_is_expanded
 import raven.cinterop.Rexpander_set_changed_callback
 import raven.cinterop.Rexpander_set_expanded
 import raven.cinterop.Rid
+import raven.cinterop.Risland_is_expanded
+import raven.cinterop.Risland_set_changed_callback
+import raven.cinterop.Risland_set_expanded
 import raven.cinterop.Rlabel_set_link_callback
 import raven.cinterop.Rmenu_item_is_checked
 import raven.cinterop.Rmenu_item_set_checked
@@ -226,6 +229,18 @@ public fun RavenWidget(
             ComposeNode<RavenNode, RavenApplier>(factory = { createContentNode(contentKind, host) }, update = {}, content = content)
         }
     }
+}
+
+/**
+ * Emits a [content node][RavenNode.isContentNode] of [kind] holding [content], for a widget whose
+ * children are each a slot of its own (an Island's folded and unfolded content), where
+ * [RavenWidget]'s single content panel doesn't fit.
+ */
+@InternalComposeRavenApi
+@Composable
+public fun RavenContentNode(kind: ContentKind, content: @Composable () -> Unit) {
+    val host = LocalRavenHost.current
+    ComposeNode<RavenNode, RavenApplier>(factory = { createContentNode(kind, host) }, update = {}, content = content)
 }
 
 private fun createContentNode(kind: ContentKind, host: RavenHost): RavenNode {
@@ -504,4 +519,23 @@ private val onTextEditorCompletion = staticCFunction { editor: Rid, prefix: CPoi
 public fun <T : Any> rememberPerHost(key: Any, create: () -> T): T {
     val host = LocalRavenHost.current
     return remember(host, key) { host.caches.getOrPut(key, create) }
+}
+
+// The island's controlled value and event.
+
+/** Whether an island is unfolded. Raven doesn't call the changed callback when it is written. */
+@InternalComposeRavenApi
+public val IslandExpanded: ControlledValue<Boolean> = ControlledValue(
+    read = { Risland_is_expanded(it) == R_TRUE },
+    write = { widget, expanded -> Risland_set_expanded(widget, if (expanded) R_TRUE else R_FALSE) },
+)
+
+/** An island unfolded or folded by the user: by the pointer coming over it or leaving it, or by a click. */
+@InternalComposeRavenApi
+public val IslandChanged: Event<(Boolean) -> Unit> = Event(marks = IslandExpanded) { widget, userData ->
+    Risland_set_changed_callback(widget, onIslandChanged, userData)
+}
+
+private val onIslandChanged = staticCFunction { _: Rid, expanded: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, IslandChanged) { it(expanded == R_TRUE) }
 }

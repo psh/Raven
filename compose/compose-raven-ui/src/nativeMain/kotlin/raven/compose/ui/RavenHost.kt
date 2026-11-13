@@ -123,6 +123,9 @@ public class RavenHost(
     /** The root node of each open window, for test finders. */
     public val windowRoots: List<RavenNode> get() = windows.map { it.root }
 
+    /** The root node of each open window's island, for test finders. */
+    public val islandRoots: List<RavenNode> get() = windows.mapNotNull { it.islandRoot }
+
     /** Starts Raven on the calling thread and composes [content]. */
     public fun start(content: @Composable () -> Unit) {
         check(state == State.New) { "a RavenHost starts once" }

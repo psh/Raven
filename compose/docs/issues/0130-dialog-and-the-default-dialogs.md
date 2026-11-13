@@ -6,7 +6,7 @@ status: open
 
 `Dialog`, and the default (not `native`) message and file dialogs that phase 2 left out. Spec: [4. Application host](../spec.md#4-application-host).
 
-**Depends on:** [Windows that come and go, and their owners](0112-windows-that-come-and-go-and-their-owners.md), [DockArea and FileBrowser](0129-dockarea-and-filebrowser.md).
+**Depends on:** [Windows that come and go, and their owners](archive/0112-windows-that-come-and-go-and-their-owners.md), [DockArea and FileBrowser](0129-dockarea-and-filebrowser.md).
 
 ## Deliverables
 

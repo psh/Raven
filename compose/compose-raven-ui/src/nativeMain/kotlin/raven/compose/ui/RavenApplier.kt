@@ -15,11 +15,15 @@ import raven.cinterop.Rwidget_remove_child
  * [remove] only detaches, so `movableContentOf` can insert the same node somewhere else; nodes are
  * destroyed when Compose releases them ([RavenNode.onRelease]). [onChangesApplied] runs after each
  * batch of changes.
+ *
+ * With a [rootSlot], the root's widget is only a placeholder: the root's children go to the slot
+ * instead (a window's island), and only the mirror list holds them.
  */
 @OptIn(InternalComposeRavenApi::class)
 internal class RavenApplier(
     root: RavenNode,
     private val onChangesApplied: () -> Unit = {},
+    private val rootSlot: RootSlot? = null,
 ) : AbstractApplier<RavenNode>(root) {
     /** Single-child parents changed in this batch, to reattach their child in [onEndChanges]. */
     private val changedSingleParents = mutableSetOf<RavenNode>()
@@ -30,6 +34,13 @@ internal class RavenApplier(
 
     override fun insertBottomUp(index: Int, instance: RavenNode) {
         val parent = current
+        if (parent === root && rootSlot != null) {
+            rootSlot.attach(instance)
+            parent.children.add(index, instance)
+            instance.parent = parent
+            instance.applyLayout()
+            return
+        }
         when (parent.childKind) {
             ChildKind.None -> error("a ${Rwidget_get_type(parent.widget)} widget takes no children")
             ChildKind.Single -> {
@@ -50,6 +61,10 @@ internal class RavenApplier(
         for (i in index until index + count) {
             val child = parent.children[i]
             child.parent = null
+            if (parent === root && rootSlot != null) {
+                rootSlot.detach(child)
+                continue
+            }
             when (parent.childKind) {
                 ChildKind.Many -> Rwidget_remove_child(parent.widget, child.widget)
                 // A child that an insert has detached since is no longer in Raven's tree.
@@ -63,7 +78,7 @@ internal class RavenApplier(
     override fun move(from: Int, to: Int, count: Int) {
         val parent = current
         // A single-child parent shows one child at most, so only the mirror list changes.
-        if (parent.childKind == ChildKind.Many) {
+        if (parent.childKind == ChildKind.Many && !(parent === root && rootSlot != null)) {
             for ((moveFrom, moveTo) in ravenMoves(from, to, count)) {
                 Rwidget_move_child(parent.widget, moveFrom, moveTo)
             }
@@ -73,7 +88,11 @@ internal class RavenApplier(
 
     override fun onClear() {
         for (child in root.children) {
-            if (child.isAttachedTo(root)) Rwidget_remove_child(root.widget, child.widget)
+            if (rootSlot != null) {
+                rootSlot.detach(child)
+            } else if (child.isAttachedTo(root)) {
+                Rwidget_remove_child(root.widget, child.widget)
+            }
             child.parent = null
         }
         root.children.clear()
@@ -95,6 +114,16 @@ internal class RavenApplier(
             Rwidget_remove_child(parent.widget, Rwidget_get_child(parent.widget, i))
         }
     }
+}
+
+/** Where the children of a [RavenApplier]'s root go, in place of the root's widget. */
+@OptIn(InternalComposeRavenApi::class)
+internal interface RootSlot {
+    /** [node] was inserted at the root: the slot shows it from now on. */
+    fun attach(node: RavenNode)
+
+    /** [node] was removed from the root; Compose releases it next, unless it moves. */
+    fun detach(node: RavenNode)
 }
 
 /**

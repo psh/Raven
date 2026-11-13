@@ -307,6 +307,29 @@ static void test_clear_focus(void) {
 	Rwidget_set_event_callback(input, NULL, NULL);
 }
 
+/* Headless, Rwindow_focus moves the keyboard as a window system does: the other windows lose it. */
+static void test_window_focus_moves_the_keyboard(void) {
+	Rid other = Rwindow_create("other", 200, 100, R_WINDOW_DEFAULT);
+	/* a window has the keyboard from its creation, as the core takes it */
+	CHECK(Rwindow_is_active(g_window));
+	CHECK(Rwindow_is_active(other));
+	Rwindow_focus(other);
+	CHECK(!Rwindow_is_active(g_window));
+	CHECK(Rwindow_is_active(other));
+	/* focusing it again changes nothing */
+	Rwindow_focus(other);
+	CHECK(!Rwindow_is_active(g_window));
+	CHECK(Rwindow_is_active(other));
+	Rwindow_focus(g_window);
+	CHECK(Rwindow_is_active(g_window));
+	CHECK(!Rwindow_is_active(other));
+	/* a destroyed window is forgotten: focusing another doesn't reach it */
+	Rwindow_destroy(other);
+	Rwindow_focus(g_window);
+	CHECK(Rwindow_is_active(g_window));
+	Rdraw_frame();
+}
+
 static void test_combo_box(void) {
 	Rid box = column();
 	Rid combo = Rwidget_add_child(box, Rwidget_create(R_WIDGET_COMBO_BOX));
@@ -1075,6 +1098,7 @@ int main(void) {
 	RUN(test_slider_and_spin_box);
 	RUN(test_text_input);
 	RUN(test_clear_focus);
+	RUN(test_window_focus_moves_the_keyboard);
 	RUN(test_selectable_label);
 	RUN(test_combo_box);
 	RUN(test_highlight_follows_pointer);

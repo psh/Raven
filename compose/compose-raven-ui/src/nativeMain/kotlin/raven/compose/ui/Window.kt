@@ -13,6 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.IntVar
@@ -28,6 +30,7 @@ import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
 import raven.cinterop.RBackdrop
 import raven.cinterop.RDropEvent
+import raven.cinterop.RFrameStats
 import raven.cinterop.RNativeWindow
 import raven.cinterop.R_BACKDROP_ACRYLIC
 import raven.cinterop.R_BACKDROP_BLUR
@@ -36,6 +39,7 @@ import raven.cinterop.R_BACKDROP_NONE
 import raven.cinterop.R_BACKDROP_TRANSPARENT
 import raven.cinterop.R_DROP_DROPPED
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_INVALID_ID
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_OVERLAY
 import raven.cinterop.R_WINDOW_BORDERLESS
@@ -47,12 +51,15 @@ import raven.cinterop.R_WINDOW_NO_RESIZE
 import raven.cinterop.R_WINDOW_TRANSPARENT
 import raven.cinterop.Rid
 import raven.cinterop.Rwidget_create
+import raven.cinterop.Rwidget_destroy
 import raven.cinterop.Rwindow_create
 import raven.cinterop.Rwindow_destroy
 import raven.cinterop.Rwindow_get_backdrop
+import raven.cinterop.Rwindow_get_frame_stats
 import raven.cinterop.Rwindow_get_native_handle
 import raven.cinterop.Rwindow_get_position
 import raven.cinterop.Rwindow_get_size
+import raven.cinterop.Rwindow_is_active
 import raven.cinterop.Rwindow_is_maximized
 import raven.cinterop.Rwindow_is_minimized
 import raven.cinterop.Rwindow_maximize
@@ -63,6 +70,7 @@ import raven.cinterop.Rwindow_set_clear_color
 import raven.cinterop.Rwindow_set_close_callback
 import raven.cinterop.Rwindow_set_content
 import raven.cinterop.Rwindow_set_drop_callback
+import raven.cinterop.Rwindow_set_island
 import raven.cinterop.Rwindow_set_min_size
 import raven.cinterop.Rwindow_set_opacity
 import raven.cinterop.Rwindow_set_position
@@ -73,6 +81,7 @@ import raven.cinterop.Rwindow_show
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
+import raven.compose.ui.platform.FrameStats
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.RavenUriHandler
@@ -102,6 +111,13 @@ import kotlin.math.roundToInt
  * [onExternalDrop] takes the files or the text other applications drop on the window where no
  * widget takes them. While it is set the window accepts drops, and Raven shows that it can; while
  * it is `null` the window refuses them. It is called only for the drop itself.
+ *
+ * [island], usually an `Island`, floats at the top of the window, in the middle, above the
+ * content, in a composition of its own; its top padding is its distance from the top edge.
+ *
+ * The content has the window's `LocalLifecycleOwner` and `LocalSavedStateRegistryOwner`: the
+ * lifecycle is RESUMED while the window is shown and active, STARTED while it is shown but another
+ * window is active, CREATED while it is minimised, and DESTROYED once it has left the composition.
  */
 @Composable
 public fun Window(
@@ -116,20 +132,23 @@ public fun Window(
     background: Color = Color.Unspecified,
     opacity: Float = 1f,
     onExternalDrop: ((DragData) -> Unit)? = null,
+    island: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val host = LocalRavenHost.current
     val parent = rememberCompositionContext()
     val currentOnCloseRequest by rememberUpdatedState(onCloseRequest)
     val currentContent by rememberUpdatedState(content)
+    val currentIsland by rememberUpdatedState(island)
     // Read here, the state recomposes the Window when the app or the user changes it.
     val settings = WindowSettings(
         title, WindowFlags(customHeader, transparent, undecorated, resizable), minimumSize, background, opacity,
         onExternalDrop, state.size, state.position, state.placement, state.isMinimized,
+        hasIsland = island != null,
     )
     val opened = remember { OpenedWindow() }
     DisposableEffect(Unit) {
-        val window = RavenWindow(host, parent, state, settings) { currentOnCloseRequest() }
+        val window = RavenWindow(host, parent, state, settings, island = { currentIsland?.invoke() }) { currentOnCloseRequest() }
         window.setContent { currentContent() }
         opened.window = window
         onDispose {
@@ -152,6 +171,7 @@ internal data class WindowSettings(
     val position: WindowPosition,
     val placement: WindowPlacement,
     val isMinimized: Boolean,
+    val hasIsland: Boolean = false,
 )
 
 /** The parameters Raven takes only when it creates a window. */
@@ -194,15 +214,16 @@ internal val LocalRavenWindow = staticCompositionLocalOf<RavenWindow> { error("p
 public fun windowHasCustomHeader(): Boolean = LocalRavenWindow.current.flags.customHeader
 
 /**
- * A Raven window, its fixed Overlay root, and the composition that fills it. Raven reports
- * resizes, but no moves and no change of placement, so the host has the window [followRaven]
- * once a frame.
+ * A Raven window, its fixed Overlay root, the composition that fills it, and its owners. Raven
+ * reports resizes, but no moves, no change of placement and no change of the active window, so
+ * the host has the window [followRaven] once a frame.
  */
 internal class RavenWindow(
     private val host: RavenHost,
-    parent: CompositionContext,
+    private val parent: CompositionContext,
     private var state: WindowState,
     settings: WindowSettings,
+    private val island: @Composable () -> Unit,
     private val onCloseRequest: () -> Unit,
 ) {
     /** The flags the window opened with, which it keeps. */
@@ -218,6 +239,7 @@ internal class RavenWindow(
     val root = RavenNode(Rwidget_create(R_WIDGET_OVERLAY), ChildKind.Many)
     private val composition = Composition(RavenApplier(root, host::onChangesApplied), parent)
     private val selfRef = StableRef.create(this)
+    private val owners = WindowOwners()
     private val info = object : WindowInfo {
         override val isTransparent: Boolean = memScoped {
             val native = alloc<RNativeWindow>()
@@ -225,7 +247,18 @@ internal class RavenWindow(
             Rwindow_get_native_handle(window, native.ptr)
             native.transparent == R_TRUE
         }
+
+        override fun frameStats(): FrameStats = readFrameStats()
     }
+
+    // Created hidden, the window is shown once it has its settings.
+    private var shown = false
+
+    // The island's composition, while the Window has one.
+    private var islandComposition: WindowIsland? = null
+
+    /** The island's root, while the Window has one, for test finders. */
+    val islandRoot: RavenNode? get() = islandComposition?.root
 
     // What the window last gave Raven, or Raven's defaults.
     private var title = settings.title
@@ -249,19 +282,36 @@ internal class RavenWindow(
         host.windows += this
         update(state, settings)
         Rwindow_show(window)
+        shown = true
+        followLifecycle()
         // The state takes what the window opened with in place of a default position or size.
         if (!state.position.isSpecified) state.position = ravenPosition.toPosition()
         if (!state.size.width.isSpecified || !state.size.height.isSpecified) state.size = ravenSize.toDpSize()
     }
 
-    fun setContent(content: @Composable () -> Unit) = composition.setContent {
+    fun setContent(content: @Composable () -> Unit) = composition.setContent { WindowLocals(content) }
+
+    /** What the window gives its content and its island. */
+    @Composable
+    private fun WindowLocals(content: @Composable () -> Unit) {
         CompositionLocalProvider(
             LocalRavenWindow provides this,
             LocalWindowInfo provides info,
             LocalUriHandler provides RavenUriHandler,
+            LocalLifecycleOwner provides owners,
+            LocalSavedStateRegistryOwner provides owners,
             LocalThemePlacement provides ThemePlacement.Window,
             content = content,
         )
+    }
+
+    private fun openIsland() {
+        islandComposition = WindowIsland(window, host, parent).also { it.composition.setContent { WindowLocals(island) } }
+    }
+
+    private fun closeIsland() {
+        islandComposition?.dispose()
+        islandComposition = null
     }
 
     /** Gives Raven what changed in [settings], and follows [state] from now on. */
@@ -304,7 +354,11 @@ internal class RavenWindow(
             }
         }
         onExternalDrop = settings.onExternalDrop
+        if (settings.hasIsland != (islandComposition != null)) {
+            if (settings.hasIsland) openIsland() else closeIsland()
+        }
         updateState(settings)
+        followLifecycle()
     }
 
     private fun updateState(settings: WindowSettings) {
@@ -336,7 +390,10 @@ internal class RavenWindow(
         }
     }
 
-    /** Writes the user's moves and changes of placement since the last frame into the state. */
+    /**
+     * Writes the user's moves and changes of placement since the last frame into the state, and
+     * moves the lifecycle to follow the window.
+     */
     fun followRaven() {
         val position = readPosition()
         if (position != ravenPosition) {
@@ -351,6 +408,11 @@ internal class RavenWindow(
             if (placement == RavenPlacement.Maximized) state.placement = WindowPlacement.Maximized
             if (placement == RavenPlacement.Floating) state.placement = WindowPlacement.Floating
         }
+        followLifecycle()
+    }
+
+    private fun followLifecycle() {
+        owners.follow(shown, minimized = readPlacement() == RavenPlacement.Minimized, active = Rwindow_is_active(window) == R_TRUE)
     }
 
     /**
@@ -366,9 +428,14 @@ internal class RavenWindow(
         return Rwindow_get_backdrop(window).toBackdrop()
     }
 
-    /** Disposes the composition before the window, so no node holds a widget Raven deleted. */
+    /**
+     * Ends the lifecycle, so the content's observers see the window go, then disposes the island's
+     * composition and the content's before the window, so no node holds a widget Raven deleted.
+     */
     fun dispose() {
         host.windows -= this
+        owners.destroy()
+        closeIsland()
         composition.dispose()
         Rwindow_destroy(window)
         selfRef.dispose()
@@ -431,10 +498,48 @@ internal class RavenWindow(
         LogicalPoint(x.value, y.value)
     }
 
+    private fun readFrameStats(): FrameStats = memScoped {
+        val stats = alloc<RFrameStats>()
+        Rwindow_get_frame_stats(window, stats.ptr)
+        FrameStats(
+            layoutMs = stats.layout_ms,
+            paintMs = stats.paint_ms,
+            renderMs = stats.render_ms,
+            widgetCount = stats.widget_count.toInt(),
+            primitiveCount = stats.instance_count.toInt(),
+            drawCallCount = stats.draw_call_count.toInt(),
+            backdropCount = stats.backdrop_count.toInt(),
+            paintJobCount = stats.paint_job_count.toInt(),
+            frameIndex = stats.frame_index.toLong(),
+        )
+    }
+
     private fun readPlacement(): RavenPlacement = when {
         Rwindow_is_minimized(window) == R_TRUE -> RavenPlacement.Minimized
         Rwindow_is_maximized(window) == R_TRUE -> RavenPlacement.Maximized
         else -> RavenPlacement.Floating
+    }
+}
+
+/**
+ * A window's island: a composition whose root's widget is only a placeholder, its children going to
+ * `Rwindow_set_island` instead. The window then owns the island's widget, and deletes the one it
+ * had when another is set, so a removed island isn't taken out of the window: its node is released
+ * next, and destroying its widget takes it out.
+ */
+private class WindowIsland(private val window: Rid, host: RavenHost, parent: CompositionContext) : RootSlot {
+    val root = RavenNode(Rwidget_create(R_WIDGET_OVERLAY), ChildKind.Many)
+    val composition = Composition(RavenApplier(root, host::onChangesApplied, rootSlot = this), parent)
+
+    override fun attach(node: RavenNode) = Rwindow_set_island(window, node.widget)
+
+    override fun detach(node: RavenNode) = Unit
+
+    /** Disposes the composition, which destroys the island's widget, before the window lets go of it. */
+    fun dispose() {
+        composition.dispose()
+        Rwindow_set_island(window, R_INVALID_ID)
+        Rwidget_destroy(root.widget)
     }
 }
 

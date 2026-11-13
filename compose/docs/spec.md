@@ -43,7 +43,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | Module | Contents | Depends on |
 |---|---|---|
 | `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
-| `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime` |
+| `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime`; from phase 3, `androidx.lifecycle:lifecycle-runtime-compose` and `androidx.savedstate:savedstate-compose` with `api`, for the window owners |
 | `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `raven-native` with `implementation` |
 | `compose-raven-bom` (phase 4) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
@@ -61,7 +61,9 @@ depend on `compose-raven-foundation`, which brings `compose-raven-ui` with it.
 - **Toolchain**: Kotlin 2.4.21 with `kotlin("multiplatform")` and
   `org.jetbrains.kotlin.plugin.compose`. The dependency is `androidx.compose.runtime:runtime:1.12.1`
   from Google Maven; the JetBrains coordinates only redirect to it. Neither Compose UI nor the
-  `org.jetbrains.compose` plugin is used.
+  `org.jetbrains.compose` plugin is used. The window owners (phase 3) add
+  `lifecycle-runtime-compose:2.10.0` and `savedstate-compose:1.4.0`, the versions
+  `navigation3-runtime` 1.2.1 brings; they need only the Compose runtime.
 - **Targets**: `macosArm64` and `linuxX64`, plus `mingwX64` from phase 4. Each target builds and is
   tested on its own host, with no cross-compilation. On Windows, libraven is built with Raven's
   `mingw` CMake preset under MSYS2 MINGW64. The implementation first verifies that it links with
@@ -183,7 +185,9 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     `LocalSaveableStateRegistry`, which a window doesn't provide ([verified](../spikes/README.md)). The
     lifecycle follows Compose Desktop: **RESUMED** while the window is shown and active (focused),
     **STARTED** while shown but not active, **CREATED** while minimised or hidden, and
-    **DESTROYED** when the window leaves the composition.
+    **DESTROYED** when the window leaves the composition. Raven reports no change of the active
+    window, so each window reads `Rwindow_is_active` once a frame, as it reads its position. A
+    window is hidden only until it first shows, since `Window` has no `visible` parameter.
   - **`WindowBackdrop(backdrop: Backdrop): Backdrop`** inside a window calls `Rwindow_set_backdrop`
     for that window. `Backdrop` is `None`, `Transparent`, `Blur`, `Acrylic` or `Mica`, and a warning
     is logged when the window isn't transparent or the system refuses. It returns the backdrop in
@@ -255,8 +259,9 @@ The setup lives in an internal `RavenHost` with the interface `start(content)`, 
   (`Rwindow_set_content`, `Rdialog_open`, `Rwindow_set_island`, a window and everything in it). A
   composition is always **disposed before its Raven owner is destroyed**, so no node ever holds a
   widget that Raven deleted behind it:
-  - **Removing a `Window`**: dispose its island, dialog and content compositions (innermost
-    first), then `Rwindow_destroy`.
+  - **Removing a `Window`**: move its lifecycle to DESTROYED, so the content's observers see it go,
+    then dispose its island, dialog and content compositions (innermost first), then
+    `Rwindow_destroy`.
   - **Closing a `Dialog`**: dispose its composition, then `Rdialog_close`.
   - **Removing a window-level `Island`**: dispose its composition, then `Rwindow_set_island(window,
     R_INVALID_ID)`.
@@ -1330,7 +1335,7 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 ## 11. Required Raven changes
 
 These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
-6, 7 and 8 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
+6, 7, 8 and 9 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -1387,6 +1392,13 @@ for change 6, which only a real macOS window reaches.
    callback. With a C test in `tests/test_themes.c`. Found by
    [RavenTheme and theme files](issues/archive/0065-raventheme-and-theme-files.md), made in
    [Raven reports theme file reloads](issues/archive/0090-raven-reports-theme-file-reloads.md).
+9. **`Rwindow_focus` in the null window system** (required for tests, phase 3): headless, every
+   window had the keyboard from its creation and the null window system had no `window_focus`, so
+   no test could make a window inactive. It now keeps its windows (not the camera-housing
+   overlays) and gives the keyboard to the focused one, sending a focus event to each other window
+   that loses it, as a window system does. No function changes. With a C test in
+   `tests/test_widgets.c`. Made in
+   [Windows that come and go, and their owners](issues/archive/0112-windows-that-come-and-go-and-their-owners.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
