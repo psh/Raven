@@ -148,7 +148,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | Lists and trees (completes `themes`' `ListView`) | [8](spec.md#lists-and-trees-phase-3) | `editor`, `workspace`, `music`, `glass`, `themes` | [Lists and trees](issues/0120-lists-and-trees.md) |
 | Scroll position | [8](spec.md#scroll-position-phase-3) | `editor`, `workspace`, `music` | [Scroll position](issues/0121-scroll-position.md) |
 | Tabs and grids | [8](spec.md#tabs-and-grids-phase-3) | `editor`, `music`, `glass` | [Tabs and grids](issues/0122-tabs-and-grids.md) |
-| Toolbar | [8](spec.md#toolbar-phase-3) | `editor` | [Toolbar](issues/0123-toolbar.md) |
+| Toolbar | [8](spec.md#toolbar-phase-3) | `editor` | [Toolbar](issues/archive/0123-toolbar.md) |
 | Custom drawing, viewports and effects | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `editor`, `music`, `animations` | [Custom drawing, viewports and effects](issues/0124-custom-drawing-viewports-and-effects.md) |
 | `compose-raven-vulkan` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_vulkan` (phase 5) | [compose-raven-vulkan](issues/0125-compose-raven-vulkan.md) |
 | `compose-raven-opengl` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_opengl` (phase 5) | [compose-raven-opengl](issues/0126-compose-raven-opengl.md) |

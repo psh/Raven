@@ -967,7 +967,9 @@ is.
 
 - **`Toolbar(modifier, contentPadding = PaddingValues(6.dp, 4.dp), horizontalArrangement =
   Arrangement.spacedBy(4.dp)) { }`** is an HBox with `R_ROLE_TOOLBAR`. Its children are centred
-  vertically, and `ToolbarScope` adds `ToolbarSeparator()`.
+  vertically, and `ToolbarScope` (a `RowScope`, for `weight`) adds `ToolbarSeparator()`. Raven's
+  HBox has no padding of its own, so the role and the Modifier are on an Overlay that holds the
+  HBox, padded by `contentPadding` and filling it ([Toolbar](issues/archive/0123-toolbar.md)).
 - **Arrangements**:
 
   ```kotlin
