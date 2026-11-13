@@ -69,6 +69,7 @@ with nothing open. This map plans; it builds nothing.
 - [Music's accent picker](archive/0100-musics-accent-picker.md): a slim controlled `ColorPicker` moves into phase 3 (`popup`, `alpha`, `compact`, `swatches`), with `performColorChange` in the harness; `themes` uses it too, so its swatches gap moves from phase 5 to phase 3.
 - [The editor's scene viewport](archive/0101-the-editors-scene-viewport.md): `Viewport(onSizeChanged)` in pixels and a minimal `LocalDensity`; `ImageBitmap.update` may resize and invalidates its viewports, so no `realtime` flag; the job system is Kotlin's coroutines.
 - [The editor's run-time extras](archive/0102-the-editors-run-time-extras.md): `LocalWindowInfo.frameStats()` as a plain call, `RavenTheme(metrics)` for run-time theme metrics, and `RavenInfo.version`.
+- [Animations beyond appear transitions](archive/0103-animations-beyond-appear-transitions.md): `TransitionRequester` for on-demand transitions, the animation set written down with `RavenMotion` spring presets, and app-wide `RavenAnimation.speed`/`.enabled`.
 
 ## Not yet specified
 
@@ -78,7 +79,6 @@ The map's tickets, by sample (a ticket can serve several):
 - `music`: [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
   [DockArea and HeaderBar extras](0105-dockarea-and-headerbar-extras.md) (the header),
   [Small port gaps](0107-small-port-gaps.md)
-- `animations`: [Animations beyond appear transitions](0103-animations-beyond-appear-transitions.md)
 - `glass`: [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
   [Menus opened from a button, and Raven's popups](0106-menus-opened-from-a-button-and-ravens-popups.md),
   [Small port gaps](0107-small-port-gaps.md)

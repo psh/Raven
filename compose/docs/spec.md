@@ -887,10 +887,29 @@ is.
     Zoom, and `slideIn*` are the Fly transitions. Animation specs are ignored.
   - Exit supports `fadeOut()` only, animated with `Rwidget_set_opacity`. Other exits fall back
     to it.
-- **`animate*AsState` and `Animatable`** are compose-raven's own small set, on its frame clock.
-  Compose's `animation-core` can't be used: it has no macOS or Windows variant, and on Linux it is
-  a stub that needs Compose UI (verified, [spikes](../spikes/README.md)). `updateTransition` is
-  left out for now.
+- **`animate*AsState` and `Animatable`** are compose-raven's own small set, on its frame clock, in
+  `raven.compose.animation.core`. Compose's `animation-core` can't be used: it has no macOS or
+  Windows variant, and on Linux it is a stub that needs Compose UI (verified,
+  [spikes](../spikes/README.md)). The set ([Animations beyond appear transitions](issues/archive/0103-animations-beyond-appear-transitions.md)):
+  - `animateFloatAsState`, `animateDpAsState`, `animateColorAsState` and `animateOffsetAsState`;
+  - `Animatable(Float)`: `value`, `velocity`, `targetValue`, `isRunning`,
+    `animateTo(target, animationSpec, initialVelocity)`, `snapTo` and `stop`;
+  - specs `spring(dampingRatio, stiffness)`, the default, and `tween(durationMillis, delayMillis,
+    easing)` with the four standard easings;
+  - **`RavenMotion.Snappy | Smooth | Bouncy | Wobbly`**, spring specs built from Raven's own motions
+    (response and damping, `stiffness = (2π / response)²`), so an app moves as Raven's controls do.
+    A kick is `animateTo(target, RavenMotion.Bouncy, initialVelocity = v)`.
+  - Left out: `updateTransition`, keyframes, `rememberInfiniteTransition`, and `Animatable` of other
+    types.
+- **`TransitionRequester`**, in `raven.compose.animation`, plays a transition on demand on a widget
+  already shown, as `FocusRequester` focuses one: `Modifier.transitionRequester(r)`, then
+  `r.play(AppearTransition.Drop, delay)` (`Rwidget_play_transition`), whatever its
+  `appearTransition`. A requester not attached does nothing.
+- **`RavenAnimation.speed: Float`** and **`RavenAnimation.enabled: Boolean`**, in
+  `raven.compose.animation.core`, are snapshot-backed and set Raven's `Rset_animation_speed` and
+  `Rset_animations_enabled` for the whole app. They start from the system's reduced motion, which
+  the host follows, and compose-raven's own animations obey them too: `speed` scales their time,
+  as Compose's `MotionDurationScale` does, and `enabled = false` makes them snap.
 - **`Island(expanded, onExpandedChange, modifier, expandOnHover, expandOnClick, attached, notch,
   folded, unfolded)`** is controlled. `Window(island = { Island(...) })` floats it at the top of
   the window (`Rwindow_set_island`), in its own composition.
@@ -1008,6 +1027,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Image and resources](issues/archive/0035-image-and-resources.md),
 [Music's class-styled themes](issues/archive/0099-musics-class-styled-themes.md),
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
+[Animations beyond appear transitions](issues/archive/0103-animations-beyond-appear-transitions.md),
 [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
 [Toolbar](issues/archive/0038-toolbar.md),
 [Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md),
@@ -1396,6 +1416,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
 | `AnimatedVisibility` enter specs map to Raven's spring transitions and ignore `animationSpec`; exit is `fadeOut` only | any enter and exit spec, timed by the spec | [8](#8-component-vocabulary) |
 | `Modifier.appearTransition` replays on every appearance | no counterpart | [6](#6-layout-and-modifiers) |
+| `TransitionRequester` plays a Raven transition on demand | no counterpart | [8](#transitions-and-island-phase-3) |
+| `RavenMotion` spring presets, and app-wide `RavenAnimation.speed`/`.enabled` that Raven's own animations obey too | `spring()` parameters; `MotionDurationScale` per coroutine | [8](#transitions-and-island-phase-3) |
 | `DockArea`'s arrangement is Raven's (only `initialDock`, plus saved layouts) | no docking in Compose | [8](#8-component-vocabulary) |
 | Torn-off dock panels are Raven windows, not `Window`s | n/a | [8](#8-component-vocabulary) |
 | `FileBrowser`'s directory isn't controlled | no file browser in Compose | [8](#8-component-vocabulary) |
