@@ -43,6 +43,8 @@ import raven.cinterop.Rtext_editor_get_marker_count
 import raven.cinterop.Rtext_editor_insert_text
 import raven.cinterop.Rtext_editor_redo
 import raven.cinterop.Rtext_editor_select_all
+import raven.cinterop.R_COLOR_TEXT
+import raven.cinterop.Rtext_editor_set_font
 import raven.cinterop.Rtext_editor_set_language
 import raven.cinterop.Rtext_editor_set_line_numbers
 import raven.cinterop.Rtext_editor_set_placeholder
@@ -52,6 +54,11 @@ import raven.cinterop.Rtext_editor_show_completions
 import raven.cinterop.Rtext_editor_undo
 import raven.compose.ui.Modifier
 import raven.compose.ui.Property
+import raven.compose.ui.text.TextStyle
+import raven.compose.ui.text.font.BaseFont
+import raven.compose.ui.text.font.rememberRavenFont
+import raven.compose.ui.unit.TextUnit
+import raven.compose.ui.unit.isSpecified
 import raven.compose.ui.RavenWidget
 import raven.compose.ui.TextEditorChanged
 import raven.compose.ui.TextEditorCompletion
@@ -81,6 +88,11 @@ private val LineNumbers = Property<Boolean> { widget, shown -> Rtext_editor_set_
 private val WordWrap = Property<Boolean> { widget, wrapped -> Rtext_editor_set_word_wrap(widget, if (wrapped) R_TRUE else R_FALSE) }
 private val EditorPlaceholder = Property<String> { widget, text -> editorPlaceholderSetter(widget, text) }
 
+/** R_INVALID_ID is the theme's font, or the fixed-width one with a language; 0 the theme's size. */
+private val EditorFont = Property<Pair<Rid, TextUnit>> { widget, (font, size) ->
+    Rtext_editor_set_font(widget, font, if (size.isSpecified) size.value else 0f)
+}
+
 /** Sets an editor's placeholder. Raven has no getter for it, so tests wrap this to record it. */
 internal var editorPlaceholderSetter: (Rid, String) -> Unit = ::Rtext_editor_set_placeholder
 
@@ -101,6 +113,10 @@ internal var editorPlaceholderSetter: (Rid, String) -> Unit = ::Rtext_editor_set
  * [markers] underline parts of the text, and are controlled: Raven drops a marker whose line is
  * edited, and after each edit the editor shows the composed list again, so a marker stays where
  * the app put it until the app composes a new list.
+ *
+ * [textStyle] gives the text its font, size and colour; the default is the theme's, in the
+ * fixed-width font. Bold or italic without a family is the fixed-width font's. The editor has no
+ * alignment, so `textAlign` is ignored.
  */
 @Composable
 public fun CodeEditor(
@@ -115,10 +131,15 @@ public fun CodeEditor(
     placeholder: String = "",
     completions: ((prefix: String) -> List<Completion>)? = null,
     markers: List<EditorMarker> = emptyList(),
+    textStyle: TextStyle = TextStyle.Default,
 ) {
     val follower = remember { EditorFollower() }
+    val font = rememberRavenFont(textStyle.fontFamily, textStyle.fontWeight, textStyle.fontStyle, BaseFont.Monospace)
+    val textColor = roleColors(R_COLOR_TEXT to textStyle.color)
     RavenWidget(CodeEditorWidget, modifier, {
         bind(follower)
+        bind(font to textStyle.fontSize, EditorFont)
+        bind(textColor, WidgetColors)
         set(state) { follower.state = it }
         bind(language, Language)
         bind(readOnly, EditorReadOnly)

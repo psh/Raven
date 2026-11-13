@@ -11,6 +11,7 @@ import raven.cinterop.R_COLOR_TEXT
 import raven.cinterop.R_COLOR_TEXT_PLACEHOLDER
 import raven.cinterop.R_COLOR_TRACK
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_METRIC_FONT_SIZE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_COMBO_BOX
 import raven.cinterop.R_WIDGET_SLIDER
@@ -27,6 +28,8 @@ import raven.cinterop.Rspin_box_set_range
 import raven.cinterop.Rspin_box_set_step
 import raven.cinterop.Rtext_input_set_placeholder
 import raven.cinterop.Rtext_input_set_read_only
+import raven.cinterop.Rwidget_clear_metric
+import raven.cinterop.Rwidget_set_metric
 import raven.compose.ui.ComboBoxChanged
 import raven.compose.ui.ComboBoxSelected
 import raven.compose.ui.IntSpinBoxChanged
@@ -43,6 +46,12 @@ import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Shape
+import raven.compose.ui.graphics.isSpecified
+import raven.compose.ui.text.LocalTextStyle
+import raven.compose.ui.text.TextStyle
+import raven.compose.ui.text.font.rememberRavenFont
+import raven.compose.ui.unit.TextUnit
+import raven.compose.ui.unit.isSpecified
 
 private val TextFieldWidget = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged))
 private val SliderWidget = WidgetDescriptor("Slider", R_WIDGET_SLIDER, events = listOf(SliderChanged))
@@ -117,6 +126,11 @@ public object SliderDefaults {
     ): SliderColors = SliderColors(thumbColor, activeTrackColor, inactiveTrackColor)
 }
 
+/** A widget's own text size, for one without a size setter; unspecified is the theme's. */
+private val FontSizeMetric = Property<TextUnit> { widget, size ->
+    if (size.isSpecified) Rwidget_set_metric(widget, R_METRIC_FONT_SIZE, size.value) else Rwidget_clear_metric(widget, R_METRIC_FONT_SIZE)
+}
+
 /**
  * A single-line field showing [value], which only the app changes: each edit calls
  * [onValueChange] with the new text, and if the app doesn't take it, the field shows [value]
@@ -125,6 +139,9 @@ public object SliderDefaults {
  *
  * [shape] null is the theme's corner radius. Raven has one, so a shape with different corners
  * uses its `topStart` and logs a warning.
+ *
+ * [textStyle] gives the text its font, size and colour; its colour wins over [colors]'
+ * `textColor`. Raven's field has no alignment, so `textAlign` is ignored.
  *
  * Only single-line fields exist: `CodeEditor` edits several lines.
  */
@@ -135,6 +152,7 @@ public fun TextField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     readOnly: Boolean = false,
+    textStyle: TextStyle = LocalTextStyle.current,
     placeholder: String = "",
     singleLine: Boolean = true,
     shape: Shape? = null,
@@ -143,12 +161,17 @@ public fun TextField(
     require(singleLine) { "TextField is single-line only; CodeEditor edits several lines" }
     val roleColors = roleColors(
         R_COLOR_INPUT to colors.containerColor,
-        R_COLOR_TEXT to colors.textColor,
+        R_COLOR_TEXT to if (textStyle.color.isSpecified) textStyle.color else colors.textColor,
         R_COLOR_TEXT_PLACEHOLDER to colors.placeholderColor,
         R_COLOR_FOCUS to colors.focusedIndicatorColor,
         R_COLOR_SELECTION to colors.selectionColor,
     )
+    val font = rememberRavenFont(textStyle.fontFamily, textStyle.fontWeight, textStyle.fontStyle)
     RavenWidget(TextFieldWidget, modifier, {
+        // Raven's field has no font setter of its own: the widget's font, which a subtree font
+        // also sets, is its font.
+        set(font) { setOwnFont(it) }
+        bind(textStyle.fontSize, FontSizeMetric)
         bind(enabled, Enabled)
         bind(readOnly, ReadOnly)
         bind(shape, TextFieldShape)

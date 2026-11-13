@@ -20,6 +20,7 @@ import raven.cinterop.Rtheme_get_count
 import raven.cinterop.Rtheme_get_material
 import raven.cinterop.Rtheme_get_name_at
 import raven.cinterop.Rtheme_set_accent
+import raven.cinterop.Rtheme_set_font
 import raven.cinterop.Rtheme_set_material
 import raven.cinterop.Rtheme_use
 import raven.cinterop.Rwidget_set_theme
@@ -50,6 +51,7 @@ internal class HostTheme {
     private var theme: String? = null
     private var accent: Color? = null
     private var material: Material? = null
+    private var font: Rid? = null
 
     // The subtree themes Raven refused, by name, so it reports each once and not once per widget.
     // Forgotten when Raven's themes change, since the name can then be one.
@@ -61,10 +63,10 @@ internal class HostTheme {
 
     /**
      * Makes the app-wide settings that changed: [look] and [dark] as one `Rlook_set`, then
-     * [theme], then [material] and [accent], which Raven resets on every look or theme change, so
-     * they are applied again after one.
+     * [theme], then [material], [accent] and [font], which Raven resets on every look or theme
+     * change, so they are applied again after one.
      */
-    fun apply(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?) {
+    fun apply(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?, font: Rid? = null) {
         val lookChanged = (look != null || dark != null) && (look != this.look || dark != this.dark)
         val themeChanged = theme != null && (theme != this.theme || lookChanged)
         this.look = look
@@ -74,12 +76,15 @@ internal class HostTheme {
         this.accent = accent
         val materialChanged = material != null && (material != this.material || lookChanged || themeChanged)
         this.material = material
+        val fontChanged = font != null && (font != this.font || lookChanged || themeChanged)
+        this.font = font
         if (lookChanged) Rlook_set(resolve(look, dark))
         // A look change lays a theme file over the new look, or replaces a theme that names its own.
         if (themeChanged) Rtheme_use(theme)
         if (lookChanged || themeChanged) themeMaterial = null
         if (materialChanged) setMaterial()
         if (accentChanged) setAccent()
+        if (fontChanged) Rtheme_set_font(font!!)
         if (lookChanged || themeChanged || accentChanged || materialChanged) refresh(restoreAccent = false)
     }
 
