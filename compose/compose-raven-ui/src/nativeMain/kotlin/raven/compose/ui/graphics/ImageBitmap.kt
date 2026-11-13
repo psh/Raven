@@ -112,6 +112,17 @@ public class ImageBitmap internal constructor(texture: Rid, filterQuality: Filte
     }
 
     /**
+     * The texture changed by other means than [update] (a Vulkan image view replaced): its size is
+     * read again, and every widget showing it is laid out and drawn again.
+     */
+    @InternalComposeRavenApi
+    public fun textureChanged() {
+        readSize()
+        viewers.retainAll { Rwidget_is_valid(it) == R_TRUE }
+        viewers.forEach { textureCalls.invalidate(it) }
+    }
+
+    /**
      * Records that [widget] shows the bitmap, so [update] lays it out and draws it again. A widget
      * destroyed since is forgotten, and one that shows another bitmap since is only redrawn.
      */
@@ -133,6 +144,9 @@ public class ImageBitmap internal constructor(texture: Rid, filterQuality: Filte
         width = w.value
         height = h.value
     }
+
+    /** For the constructors other modules add, such as `compose-raven-vulkan`'s `fromVulkanImageView`. */
+    public companion object
 }
 
 /**
@@ -145,6 +159,16 @@ public fun ImageBitmap(width: Int, height: Int, rgba: ByteArray, filterQuality: 
     val texture = Rtexture_create_from_pixels(rgba.asUByteArray().refTo(0), width, height)
     check(texture != R_INVALID_ID) { "Raven made no texture of $width x $height pixels" }
     if (filterQuality != FilterQuality.Low) textureCalls.setFilter(texture, filterQuality.toRaven())
+    return ImageBitmap(texture, filterQuality)
+}
+
+/**
+ * A bitmap over [texture], which another module made (`compose-raven-vulkan`'s image views): it
+ * frees the texture as any bitmap does.
+ */
+@InternalComposeRavenApi
+public fun imageBitmapOf(texture: Rid, filterQuality: FilterQuality = FilterQuality.Low): ImageBitmap {
+    runningHost("ImageBitmap")
     return ImageBitmap(texture, filterQuality)
 }
 

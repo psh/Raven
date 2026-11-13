@@ -8,6 +8,7 @@ import androidx.compose.runtime.DisallowComposableCalls
 import androidx.compose.runtime.Updater
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import cnames.structs.RPainter
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
@@ -95,11 +96,15 @@ import raven.cinterop.Rfile_browser_get_selection_count
 import raven.cinterop.Rfile_browser_set_accepted_callback
 import raven.cinterop.Rfile_browser_set_cancelled_callback
 import raven.cinterop.Rfile_browser_set_selection_changed_callback
+import raven.cinterop.Rcustom_set_paint_callback
+import raven.cinterop.Rviewport_set_resize_callback
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.input.key.KeyShortcut
 import raven.compose.ui.text.font.FontFamily
+import raven.compose.ui.geometry.Size
+import raven.compose.ui.graphics.drawscope.DrawScope
 import raven.native.callbackTarget
 import raven.native.toRavenString
 import kotlin.math.roundToInt
@@ -797,4 +802,27 @@ private val onFileBrowserCancelled = staticCFunction { _: Rid, _: CPointer<ByteV
 
 private val onFileBrowserSelectionChanged = staticCFunction { browser: Rid, _: CPointer<ByteVar>?, userData: COpaquePointer? ->
     dispatchEvent(userData, FileBrowserSelectionChanged) { it(fileBrowserSelection(browser)) }
+}
+
+// A custom widget's painting and a viewport's size.
+
+/** A custom widget painting itself: the lambda draws with the [DrawScope] it is given. */
+@InternalComposeRavenApi
+public val CustomPaint: Event<(DrawScope) -> Unit> = Event { widget, userData ->
+    Rcustom_set_paint_callback(widget, onCustomPaint, userData)
+}
+
+/** A viewport's size in pixels changed: the size to render at. */
+@InternalComposeRavenApi
+public val ViewportResized: Event<(width: Int, height: Int) -> Unit> = Event { widget, userData ->
+    Rviewport_set_resize_callback(widget, onViewportResized, userData)
+}
+
+private val onCustomPaint = staticCFunction { _: Rid, painter: CPointer<RPainter>?, width: Float, height: Float, userData: COpaquePointer? ->
+    val host = userData!!.callbackTarget<RavenNode>().host
+    if (painter != null && host != null) dispatchEvent(userData, CustomPaint) { it(DrawScope(painter, host, Size(width, height))) }
+}
+
+private val onViewportResized = staticCFunction { _: Rid, width: Int, height: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ViewportResized) { it(width, height) }
 }

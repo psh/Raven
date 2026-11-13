@@ -810,15 +810,22 @@ Added for the `overlay` and `glass` ports:
     callback. **`onDraw` runs on Raven's render thread**: it records Vulkan commands into
     `VulkanFrame.commandBuffer`, and must not write Compose state or call Raven's UI API. An
     exception it throws is caught on that thread and ends the app through the host's error path.
-  - `ImageBitmap.fromVulkanImageView(imageView, sampler, width, height)` is zero copy.
-  - `RavenVulkan.device` exposes Raven's Vulkan handles.
-  - `application(vulkan = VulkanSetup.External(...))` shares the app's own device.
+  - `ImageBitmap.fromVulkanImageView(imageView, sampler, width, height)` is zero copy, and
+    `setVulkanImageView(...)` points it at another view after a resize.
+  - `RavenVulkan.device` exposes Raven's Vulkan handles (a `VulkanDevice`, null off Vulkan).
+  - `application(vulkan = VulkanSetup.External(...))`, the module's overload of `application`,
+    shares the app's own device, made with `VulkanSetup.requiredInstanceExtensions` and
+    `requiredDeviceExtensions`.
   - The app brings its own Vulkan bindings.
 - **`compose-raven-opengl`**:
-  - `OpenGLViewport(modifier, realtime = false, onInit, onDraw, onDispose)` runs on the UI thread
-    in a context the module creates on a native child window. It sits above the UI.
-  - `OpenGLTexture(width, height)` renders to an FBO read back into an `ImageBitmap`, for GL under the
-    UI.
+  - `OpenGLViewport(modifier, realtime = false, onInit, onDraw: (width, height) -> Unit, onDispose)`
+    runs on the UI thread in a context the module creates on a native child window
+    (`NSOpenGLContext` on the child's `NSView` on macOS). It sits above the UI. `onDraw` gets the
+    size in pixels and runs again when state it read changes, on a resize, and every frame with
+    `realtime`. GLX on Linux waits for the Linux build (phase 4): Kotlin/Native has no GL platform
+    library there, and until then no context is made, with a warning.
+  - `OpenGLTexture(width, height)` renders to an FBO in a context of its own, read back into an
+    `ImageBitmap` (`image`, top row first) by `render { }`, for GL under the UI.
   - The app brings its own GL bindings.
 - **Shader effects**:
   - `ShaderEffect.builtin(Effect.Aurora | ...)`, `fromFile(spirv path)` and `fromBytes(...)`,

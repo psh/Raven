@@ -1,0 +1,5 @@
+# Raven's Vulkan API (raven_vulkan.h), beside raven-native's cinterop of the rest of Raven, whose
+# libraven.a links it.
+headers = raven/raven_vulkan.h
+headerFilter = raven/raven_vulkan.h
+package = raven.cinterop.vulkan
