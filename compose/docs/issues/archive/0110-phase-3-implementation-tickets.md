@@ -36,7 +36,7 @@ is.
   [Theming extras](0119-theming-extras.md),
   [Lists and trees](0120-lists-and-trees.md),
   [Scroll position](../0121-scroll-position.md),
-  [Tabs and grids](../0122-tabs-and-grids.md),
+  [Tabs and grids](0122-tabs-and-grids.md),
   [Toolbar](0123-toolbar.md),
   [Custom drawing, viewports and effects](../0124-custom-drawing-viewports-and-effects.md),
   [compose-raven-vulkan](../0125-compose-raven-vulkan.md),
