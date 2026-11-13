@@ -6,7 +6,7 @@ status: open
 
 Navigation 3 over compose-raven. Spec: [8: Navigation 3](../spec.md#navigation-3-phase-3-compose-raven-navigation3).
 
-**Depends on:** [Windows that come and go, and their owners](0112-windows-that-come-and-go-and-their-owners.md), [Dialog and the default dialogs](0130-dialog-and-the-default-dialogs.md).
+**Depends on:** [Windows that come and go, and their owners](archive/0112-windows-that-come-and-go-and-their-owners.md), [Dialog and the default dialogs](0130-dialog-and-the-default-dialogs.md).
 
 ## Deliverables
 

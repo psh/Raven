@@ -1398,7 +1398,7 @@ for change 6, which only a real macOS window reaches.
    overlays) and gives the keyboard to the focused one, sending a focus event to each other window
    that loses it, as a window system does. No function changes. With a C test in
    `tests/test_widgets.c`. Made in
-   [Windows that come and go, and their owners](issues/0112-windows-that-come-and-go-and-their-owners.md).
+   [Windows that come and go, and their owners](issues/archive/0112-windows-that-come-and-go-and-their-owners.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),

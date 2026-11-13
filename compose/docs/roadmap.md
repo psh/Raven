@@ -137,7 +137,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 
 | Family | Spec | Needed by | Ticket |
 |---|---|---|---|
-| Windows that come and go, lifecycle and saved-state owners, `frameStats()`, `RavenInfo.version` | [4](spec.md#4-application-host) | most samples | [Windows that come and go, and their owners](issues/0112-windows-that-come-and-go-and-their-owners.md) |
+| Windows that come and go, lifecycle and saved-state owners, `frameStats()`, `RavenInfo.version` | [4](spec.md#4-application-host) | most samples | [Windows that come and go, and their owners](issues/archive/0112-windows-that-come-and-go-and-their-owners.md) |
 | Generic input and focus, `ContextMenuArea`, `DropdownMenu` | [7](spec.md#generic-input-and-focus-phase-3) | all five | [Generic input, focus and menus](issues/0113-generic-input-focus-and-menus.md) |
 | Accessibility semantics | [7](spec.md#accessibility-phase-3) | `music` | [Accessibility semantics](issues/0114-accessibility-semantics.md) |
 | Images and resources, `ImageBitmap`, icons | [8](spec.md#images-and-resources-phase-3) | `music`, `glass`, and the rows below | [Images and resources](issues/0115-images-and-resources.md) |

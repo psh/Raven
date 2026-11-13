@@ -6,7 +6,7 @@ status: open
 
 The pill at the top of the window. Spec: [8: Transitions and Island](../spec.md#transitions-and-island-phase-3).
 
-**Depends on:** [Windows that come and go, and their owners](0112-windows-that-come-and-go-and-their-owners.md).
+**Depends on:** [Windows that come and go, and their owners](archive/0112-windows-that-come-and-go-and-their-owners.md).
 
 ## Deliverables
 
