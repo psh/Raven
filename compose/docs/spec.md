@@ -793,6 +793,15 @@ Added for the `overlay` and `glass` ports:
     cached in the `RavenHost`.
   - `Surface(effect, effectStyle)` uses `Rborder_set_effect`, and `DrawScope.drawShader(...)` uses
     `Rdraw_shader`.
+  - `EffectStyle(color, color2, params, animate: Boolean? = null, pointer: Boolean = true)`:
+    `animate` null moves as the shader does, and `true`/`false` force it; `pointer = false` keeps
+    the effect from following the pointer. A changed style calls `Rborder_set_effect` again, which
+    only replaces the look, so an effect whose colours follow state keeps moving unbroken. The
+    `hover`/`press` overrides and an effect texture are left out ([Animated effects and continuous redraw](issues/archive/0104-animated-effects-and-continuous-redraw.md)).
+- **No continuous redraw**: an animated Raven effect keeps its window drawing while it is shown,
+  compose-raven's animations and `withFrameNanos` loops keep frames coming through the frame clock,
+  and a `Canvas` reading changing state invalidates itself, so there is no
+  `Rwindow_set_continuous_redraw` counterpart.
 
 ### Lists and trees (phase 3)
 
@@ -1020,6 +1029,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Glass and BackgroundBlur](issues/archive/0022-glass-and-background-blur.md),
 [Fonts and text styling](issues/archive/0027-fonts-and-text-styling.md),
 [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
+[Animated effects and continuous redraw](issues/archive/0104-animated-effects-and-continuous-redraw.md),
 [The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md),
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),

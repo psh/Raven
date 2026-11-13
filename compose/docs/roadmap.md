@@ -185,6 +185,8 @@ Decided for phase 3 so far (in the spec):
   `RavenTheme(metrics)` and `RavenInfo.version`
 - [Animations beyond appear transitions](issues/archive/0103-animations-beyond-appear-transitions.md):
   `TransitionRequester`, the `animate*AsState`/`Animatable` set with `RavenMotion`, and `RavenAnimation`
+- [Animated effects and continuous redraw](issues/archive/0104-animated-effects-and-continuous-redraw.md):
+  `EffectStyle(animate, pointer)`, and no continuous-redraw API
 - [Image and resources](issues/archive/0035-image-and-resources.md): resource root and `registerResource`,
   `ImageBitmap` (renamed from `Texture`), `Image` with `painterResource`/`BitmapPainter`, icons everywhere
 - [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition`,

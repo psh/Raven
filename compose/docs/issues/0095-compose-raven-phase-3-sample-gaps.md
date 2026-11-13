@@ -70,17 +70,16 @@ with nothing open. This map plans; it builds nothing.
 - [The editor's scene viewport](archive/0101-the-editors-scene-viewport.md): `Viewport(onSizeChanged)` in pixels and a minimal `LocalDensity`; `ImageBitmap.update` may resize and invalidates its viewports, so no `realtime` flag; the job system is Kotlin's coroutines.
 - [The editor's run-time extras](archive/0102-the-editors-run-time-extras.md): `LocalWindowInfo.frameStats()` as a plain call, `RavenTheme(metrics)` for run-time theme metrics, and `RavenInfo.version`.
 - [Animations beyond appear transitions](archive/0103-animations-beyond-appear-transitions.md): `TransitionRequester` for on-demand transitions, the animation set written down with `RavenMotion` spring presets, and app-wide `RavenAnimation.speed`/`.enabled`.
+- [Animated effects and continuous redraw](archive/0104-animated-effects-and-continuous-redraw.md): `EffectStyle(animate, pointer)`, effect colours re-applied without restarting the motion, and no continuous-redraw API since Raven's effects and the frame clock keep frames coming.
 
 ## Not yet specified
 
 The map's tickets, by sample (a ticket can serve several):
 
 - `workspace`: [DockArea and HeaderBar extras](0105-dockarea-and-headerbar-extras.md)
-- `music`: [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
-  [DockArea and HeaderBar extras](0105-dockarea-and-headerbar-extras.md) (the header),
+- `music`: [DockArea and HeaderBar extras](0105-dockarea-and-headerbar-extras.md) (the header),
   [Small port gaps](0107-small-port-gaps.md)
-- `glass`: [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
-  [Menus opened from a button, and Raven's popups](0106-menus-opened-from-a-button-and-ravens-popups.md),
+- `glass`: [Menus opened from a button, and Raven's popups](0106-menus-opened-from-a-button-and-ravens-popups.md),
   [Small port gaps](0107-small-port-gaps.md)
 - Open facts: [Verify GL and Metal on macOS child views](0108-verify-gl-and-metal-on-macos-child-views.md)
 - Upstream: [Upstream changes and the fog notes](0109-upstream-changes-and-the-fog-notes.md)
