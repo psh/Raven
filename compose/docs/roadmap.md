@@ -232,8 +232,10 @@ Decided for phase 4 (in the spec):
 **Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
 virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,
-multi-window tests, build-time XML translation, app bundling, gestures (with drop targets on widgets, drags inside the app, and dragging a window by its content,
-`samples/overlay`'s `WindowDrag`) and popups.
+multi-window tests, build-time XML translation, app bundling (with no fork change now, since Raven
+finds MoltenVK in the bundle), gestures (with drop targets on widgets, drags inside the app, and
+dragging a window by its content, `samples/overlay`'s `WindowDrag`), popups (over Raven's new
+`Rpopup_open`), and bringing a window to the front (`Rwindow_focus`).
 
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
   (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after

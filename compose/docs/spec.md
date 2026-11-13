@@ -148,7 +148,8 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     and the window is destroyed when the app removes `Window` from the composition.
   - **Window flags**: `customHeader` uses `R_WINDOW_CUSTOM_HEADER` (for a `HeaderBar`,
     [section 8](#8-component-vocabulary)), `transparent` uses `R_WINDOW_TRANSPARENT`, and
-    `undecorated` uses `R_WINDOW_BORDERLESS`. `background` uses `Rwindow_set_clear_color`.
+    `undecorated` uses `R_WINDOW_BORDERLESS`; on macOS a borderless window still takes the keyboard
+    (upstream, 2026-11-12). `background` uses `Rwindow_set_clear_color`.
   - **`opacity`** (0 to 1, the frame included) uses `Rwindow_set_opacity`. When the window system
     refuses, a warning is logged and the window stays opaque; the app's value stays the source of
     truth (phase 2).

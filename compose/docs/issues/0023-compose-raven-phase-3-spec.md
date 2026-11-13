@@ -84,9 +84,11 @@ charted.
   several windows, beyond `runRavenTest`'s single window.
 - **Build-time XML translation**: a Gradle task that runs `raven-xml2compose` for an app's XML
   during the build (Gradle's JVM can't load the native library directly).
-- **App bundling**: shipping apps: a macOS `.app` with MoltenVK in `Contents/Frameworks` (likely
-  needing a fork change so Raven also tries `@executable_path/../Frameworks/libMoltenVK.dylib`), and
-  Linux packages, like Compose Desktop's packaging tasks.
+- **App bundling**: shipping apps: a macOS `.app` with MoltenVK in `Contents/Frameworks`, and Linux
+  packages, like Compose Desktop's packaging tasks. No fork change is needed any more: Raven's
+  Vulkan loader tries `RAVEN_VULKAN_LIBRARY` first, then, on macOS, `libvulkan.1.dylib` and
+  `libMoltenVK.dylib` in the bundle's `Contents/Frameworks` beside `Contents/MacOS` (upstream,
+  pulled in 2026-11-12; [Upstream changes and the fog notes](archive/0109-upstream-changes-and-the-fog-notes.md)).
 - **Lazy virtualisation**: make `LazyColumn`/`LazyRow` compose only the items in view, from the
   ScrollBox offset and measured row sizes.
 - **More list widgets**: TileView (tiles from a callback, multi-select), and controlled TreeView
@@ -110,8 +112,18 @@ charted.
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`; drop targets on
   widgets and drags inside the app (`Modifier.dragAndDropTarget`, `Rdrag_begin`), beyond phase 2's
   `Window(onExternalDrop)`.
-- **Popups**: Compose's `Popup { }` needs a generic popup in Raven, which only has menu and
-  tooltip popups today.
+- **Popups**: Compose's `Popup(alignment, offset, onDismissRequest) { }`. Raven now has a generic
+  popup (upstream, pulled in 2026-11-12): `Rpopup_open(window, content, x, y, closed, user_data)`
+  shows a widget over the window, light-dismissed by a click outside or Escape, with a `closed`
+  callback (`onDismissRequest`), the content kept by the app, and `Rpopup_close`/`Rpopup_is_open`.
+  The position would come from the parent's widget rectangle plus `alignment` and `offset`. It
+  waits only for a sample that needs a popup of composables
+  ([Menus opened from a button, and Raven's popups](archive/0106-menus-opened-from-a-button-and-ravens-popups.md)).
+- **A window brought to the front**: Raven's `Rwindow_focus` (upstream, pulled in 2026-11-12) shows
+  a window in front with the keyboard and makes the app active, where `Rwindow_show` doesn't take
+  the keyboard from another app (macOS only; elsewhere it shows). Compose Desktop does this through
+  the AWT window (`window.toFront()`), not a composable parameter, so compose-raven needs a shape
+  for it (a `WindowState` call, or `LocalWindowInfo`); no phase 3 sample needs it ([Upstream changes and the fog notes](archive/0109-upstream-changes-and-the-fog-notes.md)).
 
 ## Out of scope
 

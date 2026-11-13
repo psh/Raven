@@ -34,6 +34,6 @@ Decided 2026-11-12. Written into spec section 7
   need nothing new: the harness clicks the button and finds and activates menu items by text.
 - **`Popup { }`** stays phase 5 fog, keeping it slim: no phase 3 sample needs a popup of
   composables (`ColorPicker`'s is Raven's own). Its fog note is rewritten by
-  [Upstream changes and the fog notes](../0109-upstream-changes-and-the-fog-notes.md): Raven now has
+  [Upstream changes and the fog notes](0109-upstream-changes-and-the-fog-notes.md): Raven now has
   `Rpopup_open` (light-dismiss, a `closed` callback, content kept by the app), which maps to
   `Popup(alignment, offset, onDismissRequest)`.
