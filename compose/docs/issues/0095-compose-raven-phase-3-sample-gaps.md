@@ -73,13 +73,12 @@ with nothing open. This map plans; it builds nothing.
 - [Animated effects and continuous redraw](archive/0104-animated-effects-and-continuous-redraw.md): `EffectStyle(animate, pointer)`, effect colours re-applied without restarting the motion, and no continuous-redraw API since Raven's effects and the frame clock keep frames coming.
 - [DockArea and HeaderBar extras](archive/0105-dockarea-and-headerbar-extras.md): `DockAreaState.layout` as snapshot state, `DockAreaState.showPanel(name)`, and `HeaderBar(background)`; a Navigation 3 docking scene went to the phase 5 fog.
 - [Menus opened from a button, and Raven's popups](archive/0106-menus-opened-from-a-button-and-ravens-popups.md): `DropdownMenu` with `rememberDropdownMenuState().open()` over Raven's Menu and phase 2's `MenuScope`, dismissed by Raven; `Popup` stays phase 5 fog with its note rewritten.
+- [Small port gaps](archive/0107-small-port-gaps.md): `Modifier.offset` on the slot padding, `LazyVerticalGrid(minCellSize)`, and `ImageBitmap.filterQuality`.
 
 ## Not yet specified
 
-The map's tickets, by sample (a ticket can serve several):
+Every sample's port gaps are decided. The tickets left:
 
-- `music`: [Small port gaps](0107-small-port-gaps.md)
-- `glass`: [Small port gaps](0107-small-port-gaps.md)
 - Open facts: [Verify GL and Metal on macOS child views](0108-verify-gl-and-metal-on-macos-child-views.md)
 - Upstream: [Upstream changes and the fog notes](0109-upstream-changes-and-the-fog-notes.md)
 - Last: [Phase 3 implementation tickets](0110-phase-3-implementation-tickets.md)

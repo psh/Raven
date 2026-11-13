@@ -416,6 +416,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 | `material(Material)` | any | `Rwidget_set_material` on the composable's own (outer) widget; `Material.Default` clears it ([section 8](#8-component-vocabulary)) |
 | `alpha(Float)` | any | `Rwidget_set_opacity` on the outer widget, 0 to 1, its children included; 1 when left out of the chain (phase 2) |
 | `clipToBounds()` | any | `Rwidget_set_clipping`: the widget's descendants are clipped to its bounds; off when left out (phase 2) |
+| `offset(x: Dp, y: Dp)` | any | the slot padding: left +x, right −x, top +y, bottom −y, added to any `padding`, so the widget moves without changing its size or its neighbours' places; negative `padding` stays an error, as in Compose (phase 3, [Small port gaps](issues/archive/0107-small-port-gaps.md)) |
 
   For size and alignment, the last element in the chain wins. Padding is always outside the widget,
   because phase 1 has no drawing modifiers.
@@ -864,8 +865,9 @@ is.
   closable, onClose) { page } }`** puts each `Tab` page in an internal Box, titled through its slot.
   Selection and closing are controlled: Raven's close callback keeps the tab and calls `onClose`.
 - **No Switcher**: use `when (page) { }`.
-- **`LazyVerticalGrid(columns = GridCells.Fixed(n), ...) { items(...) }`** uses UniformGrid, and
-  composes every item in phase 3. It has one spacing for both directions.
+- **`LazyVerticalGrid(columns = GridCells.Fixed(n), minCellSize: DpSize? = null, ...) { items(...) }`**
+  uses UniformGrid, and composes every item in phase 3. It has one spacing for both directions.
+  `minCellSize` is `Runiform_grid_set_min_cell_size` ([Small port gaps](issues/archive/0107-small-port-gaps.md)).
 - **`Grid(columns: List<GridTrack>, rows: List<GridTrack>, modifier, spacing) { }`** uses Raven's
   Grid. `GridTrack` is `Auto` or `Fill(weight)`, and children are placed with `GridScope`'s
   `Modifier.cell(column, row, columnSpan, rowSpan)`.
@@ -879,7 +881,11 @@ is.
   `update(width, height, rgba)`, which may change its size (`width` and `height` follow) and
   invalidates every `Viewport` showing it, since Raven doesn't redraw for a texture update. `update` is
   called on the UI thread, like the rest of Raven's API; pixels can be computed elsewhere (an app's
-  coroutines on `Dispatchers.Default`, in place of Raven's `Rparallel_for`). Others
+  coroutines on `Dispatchers.Default`, in place of Raven's `Rparallel_for`). Its `filterQuality`
+  (Compose's `FilterQuality`, settable and a constructor parameter) is the texture's filter, which
+  is why it lives on the bitmap and not on `Image`: `None` is nearest, `Low` linear (the default of
+  bitmaps made from pixels), `Medium` and `High` mipmapped (`Rtexture_set_filter`); `painterResource`
+  images keep Raven's mipmapped default ([Small port gaps](issues/archive/0107-small-port-gaps.md)). Others
   come from `decodeToImageBitmap(bytes)` and `ImageBitmap.fromVulkanImageView(...)`. It lives on the GPU.
   App-made ones are freed by a `Cleaner` or by `close()`, both of which do nothing once the
   Raven instance that made it has shut down (the host epoch, [section 4](#4-application-host)).
@@ -1046,6 +1052,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md),
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
+[Small port gaps](issues/archive/0107-small-port-gaps.md),
 [Scroll position](issues/archive/0096-scroll-position.md),
 [Image and resources](issues/archive/0035-image-and-resources.md),
 [Music's class-styled themes](issues/archive/0099-musics-class-styled-themes.md),
@@ -1432,7 +1439,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
 | `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
 | `TabView` holds its pages | Material's `TabRow` is separate from the content | [8](#8-component-vocabulary) |
-| `LazyVerticalGrid` has `GridCells.Fixed` only and one spacing | `Adaptive` cells, separate arrangements | [8](#8-component-vocabulary) |
+| `LazyVerticalGrid` has `GridCells.Fixed` only and one spacing, and a `minCellSize` | `Adaptive` cells, separate arrangements | [8](#8-component-vocabulary) |
+| `filterQuality` is a property of `ImageBitmap`, not a parameter of `Image` | `Image(filterQuality)` | [8](#images-and-resources-phase-3) |
 | `Grid` with tracks and `Modifier.cell` | no explicit grid in Foundation | [8](#8-component-vocabulary) |
 | `ImageBitmap` lives on the GPU and can't be read back | a CPU bitmap with `readPixels` | [8](#8-component-vocabulary) |
 | No SVG, `ImageVector` or vector icons | `ImageVector`, `painterResource` for vectors | [8](#8-component-vocabulary) |
