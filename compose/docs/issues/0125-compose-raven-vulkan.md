@@ -6,7 +6,7 @@ status: open
 
 The opt-in Vulkan module. Spec: [8: Custom drawing, viewports and effects](../spec.md#custom-drawing-viewports-and-effects-phase-3).
 
-**Depends on:** [Custom drawing, viewports and effects](0124-custom-drawing-viewports-and-effects.md).
+**Depends on:** [Custom drawing, viewports and effects](archive/0124-custom-drawing-viewports-and-effects.md).
 
 ## Deliverables
 
