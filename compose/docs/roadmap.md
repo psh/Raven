@@ -189,6 +189,8 @@ Decided for phase 3 so far (in the spec):
   `EffectStyle(animate, pointer)`, and no continuous-redraw API
 - [DockArea and HeaderBar extras](issues/archive/0105-dockarea-and-headerbar-extras.md): `DockAreaState.layout`,
   `DockAreaState.showPanel(name)` and `HeaderBar(background)`
+- [Menus opened from a button, and Raven's popups](issues/archive/0106-menus-opened-from-a-button-and-ravens-popups.md):
+  `DropdownMenu` with `rememberDropdownMenuState()`; `Popup` stays phase 5
 - [Image and resources](issues/archive/0035-image-and-resources.md): resource root and `registerResource`,
   `ImageBitmap` (renamed from `Texture`), `Image` with `painterResource`/`BitmapPainter`, icons everywhere
 - [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition`,

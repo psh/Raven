@@ -492,6 +492,14 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
 - **Context menus**: `ContextMenuArea(items = { listOf(ContextMenuItem(label) { ... }) }) { }`
   builds an unparented Raven Menu on a right-click and opens it with `Rmenu_open`. The content goes
   in an internal Box.
+- **Menus opened from a button**: `DropdownMenu(state = rememberDropdownMenuState(), modifier,
+  offset: DpOffset = DpOffset.Zero) { }` holds phase 2's `MenuScope` items (`Item`,
+  `CheckboxItem`, `Separator`, sub-`Menu`), and `state.open()` opens them as a Raven Menu
+  (`Rmenu_open`) under its parent's widget: the parent's bottom-left (`Rwidget_get_rect`) plus
+  `offset`, as Compose's `DropdownMenu` anchors to its parent, so `Box { Button(onClick = {
+  state.open() }) { }; DropdownMenu(state) { } }` opens under the button. Raven dismisses it (a
+  click outside, Escape, a chosen item), as with `ContextMenuArea`; it reports no close, so there
+  is no controlled `expanded` ([Menus opened from a button, and Raven's popups](issues/archive/0106-menus-opened-from-a-button-and-ravens-popups.md)).
 
 ### Accessibility (phase 3)
 
@@ -516,6 +524,7 @@ name, value and state, and a `Text` directly before an input names it.
 
 Decided in: [Events and state](issues/archive/0010-events-and-state.md),
 [Generic input and focus](issues/archive/0025-generic-input-and-focus.md),
+[Menus opened from a button, and Raven's popups](issues/archive/0106-menus-opened-from-a-button-and-ravens-popups.md),
 [Accessibility semantics](issues/archive/0026-accessibility-semantics.md).
 
 ## 8. Component vocabulary
@@ -1457,6 +1466,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
 | `Dialog` is a sheet over its window, and a click outside it does nothing (no `dismissOnClickOutside`) | a separate window on desktop | [4](#4-application-host) |
 | No `Popup { }` | `Popup` | [4](#4-application-host) |
+| `DropdownMenu` opens from `rememberDropdownMenuState().open()`, and Raven dismisses it | `DropdownMenu(expanded, onDismissRequest)`, controlled (Material) | [7](#generic-input-and-focus-phase-3) |
 | Message boxes and file dialogs are suspend functions, built on `Dialog` and `FileBrowser` unless `native = true` | no built-in equivalent | [4](#4-application-host) |
 
 ## 13. Roadmap

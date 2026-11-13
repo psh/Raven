@@ -13,7 +13,7 @@ assignee: null
 The upstream changes pulled in on 2026-11-12 leave two fog notes on
 [compose-raven phase 3 spec](0023-compose-raven-phase-3-spec.md#not-yet-specified) out of date.
 **Popups** says Raven has only menu and tooltip popups (now `Rpopup_open`; update it as
-[Menus opened from a button, and Raven's popups](0106-menus-opened-from-a-button-and-ravens-popups.md)
+[Menus opened from a button, and Raven's popups](archive/0106-menus-opened-from-a-button-and-ravens-popups.md)
 decides). **App bundling** expects a fork change so Raven finds MoltenVK in
 `Contents/Frameworks`; upstream's loader now finds MoltenVK in the app bundle and honours
 `RAVEN_VULKAN_LIBRARY`, so check whether that need is gone and rewrite the note. Also note
