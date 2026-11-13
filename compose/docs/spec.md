@@ -810,9 +810,12 @@ Added for the `overlay` and `glass` ports:
     callback. **`onDraw` runs on Raven's render thread**: it records Vulkan commands into
     `VulkanFrame.commandBuffer`, and must not write Compose state or call Raven's UI API. An
     exception it throws is caught on that thread and ends the app through the host's error path.
-  - `ImageBitmap.fromVulkanImageView(imageView, sampler, width, height)` is zero copy.
-  - `RavenVulkan.device` exposes Raven's Vulkan handles.
-  - `application(vulkan = VulkanSetup.External(...))` shares the app's own device.
+  - `ImageBitmap.fromVulkanImageView(imageView, sampler, width, height)` is zero copy, and
+    `setVulkanImageView(...)` points it at another view after a resize.
+  - `RavenVulkan.device` exposes Raven's Vulkan handles (a `VulkanDevice`, null off Vulkan).
+  - `application(vulkan = VulkanSetup.External(...))`, the module's overload of `application`,
+    shares the app's own device, made with `VulkanSetup.requiredInstanceExtensions` and
+    `requiredDeviceExtensions`.
   - The app brings its own Vulkan bindings.
 - **`compose-raven-opengl`**:
   - `OpenGLViewport(modifier, realtime = false, onInit, onDraw, onDispose)` runs on the UI thread

@@ -20,6 +20,7 @@ include(
     ":raven-native",
     ":compose-raven-ui",
     ":compose-raven-foundation",
+    ":compose-raven-vulkan",
     ":samples:hello",
     ":samples:components",
     ":samples:notepad",
