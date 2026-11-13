@@ -687,7 +687,8 @@ Added for the `themes` port:
 - **`RavenTheme(metrics: Map<ThemeMetric, Float> = emptyMap())`** (phase 3) sets theme metrics at
   run time with `Rtheme_set_metric`, for example a compact or comfortable density. Only an
   application-level `RavenTheme` may set it, as with `accent`, and compose-raven applies it again
-  after each look or theme change, which resets it. `ThemeMetric` mirrors every Raven metric, the
+  after each look or theme change, which resets it. A metric left out of the map again goes back to
+  the value Raven had before compose-raven set it, since Raven can't reset one. `ThemeMetric` mirrors every Raven metric, the
   glass ones included, in Raven's own values (logical units, fractions for glass). A changed
   `FontSize` moves `Typography.fromTheme()`'s base ([The editor's run-time extras](issues/archive/0102-the-editors-run-time-extras.md)).
 - **Colour parameters** follow Material: `XxxDefaults.colors(...)` returns `XxxColors`, passed as

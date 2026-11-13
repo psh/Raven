@@ -2,11 +2,14 @@ package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import raven.cinterop.R_FALSE
 import raven.cinterop.R_HEADER_CLOSE
 import raven.cinterop.R_HEADER_MAXIMIZE
 import raven.cinterop.R_HEADER_MINIMIZE
 import raven.cinterop.R_HEADER_NO_BUTTONS
+import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_HEADER_BAR
+import raven.cinterop.Rheader_bar_set_background
 import raven.cinterop.Rheader_bar_set_buttons
 import raven.cinterop.Rheader_bar_set_title
 import raven.compose.ui.AlignElement
@@ -51,6 +54,8 @@ private object HeaderBarScopeInstance : HeaderBarScope
 
 private val HeaderBarWidget = WidgetDescriptor("HeaderBar", R_WIDGET_HEADER_BAR, ChildKind.Many)
 
+private val HeaderBarBackground = Property<Boolean> { widget, shown -> Rheader_bar_set_background(widget, if (shown) R_TRUE else R_FALSE) }
+
 /** Raven shows the window's title for a null one. */
 private val HeaderBarTitle = Property<String?> { widget, title -> Rheader_bar_set_title(widget, title) }
 
@@ -67,6 +72,9 @@ private val HeaderBarButtons = Property<Set<WindowButton>> { widget, buttons ->
  * the window [buttons], and the user drags the window by it. Its children are packed from the
  * left, or from the right with `Modifier.align(Alignment.End)`, each centred vertically.
  *
+ * Without [background], it draws no bar of its own, and what is behind it shows: the window's
+ * content, or the glass of a glass look.
+ *
  * It takes the place of the system's title bar only in a `Window(customHeader = true)`; in any
  * other window it logs a warning when it enters the composition.
  */
@@ -75,6 +83,7 @@ public fun HeaderBar(
     modifier: Modifier = Modifier,
     title: String? = null,
     buttons: Set<WindowButton> = WindowButton.all(),
+    background: Boolean = true,
     content: @Composable HeaderBarScope.() -> Unit = {},
 ) {
     val customHeader = windowHasCustomHeader()
@@ -86,5 +95,6 @@ public fun HeaderBar(
         bind(PanelLayout(LayoutAxis.Horizontal, vertical = Alignment.CenterVertically, mainAxis = MainAxis.Packed))
         bind(title, HeaderBarTitle)
         bind(buttons, HeaderBarButtons)
+        bind(background, HeaderBarBackground)
     }) { HeaderBarScopeInstance.content() }
 }

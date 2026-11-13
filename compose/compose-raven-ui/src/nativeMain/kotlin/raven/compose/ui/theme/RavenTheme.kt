@@ -52,9 +52,11 @@ public enum class Look {
  * or the outermost `RavenTheme` of `singleWindowApplication`'s content), it emits no node and makes
  * the app-wide settings: [look] and [dark] as one look, [theme] as the app theme, [accent], from
  * which Raven derives the hovered and pressed shades, the focus outline, the selection and the
- * links, [material], what every widget without one of its own is made of, and [fontFamily], the font
- * of every text that has none of its own (`Rtheme_set_font`). A look or theme change resets Raven's
- * accent and material, so they and the font are applied again after one.
+ * links, [material], what every widget without one of its own is made of, [fontFamily], the font
+ * of every text that has none of its own (`Rtheme_set_font`), and [metrics], Raven's theme metrics
+ * (a compact density, larger text), a metric left out going back to the look's. A look or theme
+ * change resets Raven's accent, material and metrics, so they and the font are applied again after
+ * one. A changed [ThemeMetric.FontSize] resizes [Typography.fromTheme]'s roles.
  *
  * Inside a window, [theme] gives the content its own theme. As `MaterialTheme`, it emits no node,
  * so the content is laid out as if it were not there: every node of the content gives its own
@@ -62,8 +64,8 @@ public enum class Look {
  * the same way (`Rwidget_set_font`), for its texts that have no font of their own; Raven-drawn text
  * such as menus opened from the content follows it. The innermost theme and family win. A name
  * Raven doesn't know is reported once, by Raven, and leaves the widgets' themes as they were. The
- * app-wide settings can't be made there: setting [look], [dark], [accent] or [material] logs an
- * error and does nothing.
+ * app-wide settings can't be made there: setting [look], [dark], [accent], [material] or [metrics]
+ * logs an error and does nothing.
  *
  * In either place, [typography] gives the content its text roles, `RavenTheme.typography`, and its
  * `body` as the text style; null keeps the outer one, or [Typography.fromTheme].
@@ -81,6 +83,7 @@ public fun RavenTheme(
     material: Material? = null,
     fontFamily: FontFamily? = null,
     typography: Typography? = null,
+    metrics: Map<ThemeMetric, Float> = emptyMap(),
     content: @Composable () -> Unit,
 ) {
     // Bold and italic text without a family of its own follows the innermost family given.
@@ -91,19 +94,19 @@ public fun RavenTheme(
     )
     when (LocalThemePlacement.current) {
         ThemePlacement.Application -> {
-            ApplyAppTheme(look, dark, theme, accent, material, fontFamily)
+            ApplyAppTheme(look, dark, theme, accent, material, fontFamily, metrics)
             CompositionLocalProvider(LocalFontFamily provides family, *typographyLocals, content = content)
         }
         ThemePlacement.TopOfSingleWindow -> {
-            ApplyAppTheme(look, dark, theme, accent, material, fontFamily)
+            ApplyAppTheme(look, dark, theme, accent, material, fontFamily, metrics)
             CompositionLocalProvider(
                 LocalThemePlacement provides ThemePlacement.Window, LocalFontFamily provides family, *typographyLocals, content = content,
             )
         }
         ThemePlacement.Window -> {
-            if (look != null || dark != null || accent != null || material != null) {
-                DisposableEffect(look, dark, accent, material) {
-                    themeErrorSink("RavenTheme: look, dark, accent and material are app-wide, and only an application-level RavenTheme may set them")
+            if (look != null || dark != null || accent != null || material != null || metrics.isNotEmpty()) {
+                DisposableEffect(look, dark, accent, material, metrics) {
+                    themeErrorSink("RavenTheme: look, dark, accent, material and metrics are app-wide, and only an application-level RavenTheme may set them")
                     onDispose { }
                 }
             }
@@ -116,11 +119,19 @@ public fun RavenTheme(
 }
 
 @Composable
-private fun ApplyAppTheme(look: Look?, dark: Boolean?, theme: String?, accent: Color?, material: Material?, fontFamily: FontFamily?) {
+private fun ApplyAppTheme(
+    look: Look?,
+    dark: Boolean?,
+    theme: String?,
+    accent: Color?,
+    material: Material?,
+    fontFamily: FontFamily?,
+    metrics: Map<ThemeMetric, Float>,
+) {
     val host = LocalRavenHost.current
     // An effect, not a SideEffect: it runs before the windows' own effects create and fill them.
-    DisposableEffect(look, dark, theme, accent, material, fontFamily) {
-        host.theme.apply(look, dark, theme, accent, material, fontFamily?.let { host.font(it) })
+    DisposableEffect(look, dark, theme, accent, material, fontFamily, metrics) {
+        host.theme.apply(look, dark, theme, accent, material, fontFamily?.let { host.font(it) }, metrics)
         onDispose { }
     }
 }

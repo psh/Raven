@@ -63,18 +63,26 @@ public data class ButtonColors(
     /** Its content's text: the text on the accent of a [Button], the text of the others. */
     public val contentColor: Color,
     public val disabledContentColor: Color,
+    /** The fill under the pointer; unspecified derives it from [containerColor]. */
+    public val hoveredContainerColor: Color = Color.Unspecified,
+    /** The fill while pressed; unspecified derives it from [containerColor]. */
+    public val pressedContainerColor: Color = Color.Unspecified,
 )
 
 public object ButtonDefaults {
     /**
      * Colours for any of the three buttons. A container colour also gives the button its
-     * hovered and pressed shades, derived as the look in use derives the accent's.
+     * hovered and pressed shades, derived as the look in use derives the accent's. A hovered or
+     * pressed container colour given is used as it is instead, each on its own, even without a
+     * container colour: a transparent button can keep a faint hover.
      */
     public fun buttonColors(
         containerColor: Color = Color.Unspecified,
         contentColor: Color = Color.Unspecified,
         disabledContentColor: Color = Color.Unspecified,
-    ): ButtonColors = ButtonColors(containerColor, contentColor, disabledContentColor)
+        hoveredContainerColor: Color = Color.Unspecified,
+        pressedContainerColor: Color = Color.Unspecified,
+    ): ButtonColors = ButtonColors(containerColor, contentColor, disabledContentColor, hoveredContainerColor, pressedContainerColor)
 }
 
 @Composable
@@ -92,6 +100,8 @@ private fun RavenButton(
         kind.containerRole to colors.containerColor,
         kind.contentRole to colors.contentColor,
         R_COLOR_TEXT_DISABLED to colors.disabledContentColor,
+        ShadedRoles.getValue(kind.containerRole).first to colors.hoveredContainerColor,
+        ShadedRoles.getValue(kind.containerRole).second to colors.pressedContainerColor,
     )
     RavenWidget(kind.widget, modifier, {
         bind(kind.style, ButtonStyle)
