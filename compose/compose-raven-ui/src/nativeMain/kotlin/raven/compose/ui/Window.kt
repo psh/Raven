@@ -13,6 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.IntVar
@@ -28,6 +30,7 @@ import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
 import raven.cinterop.RBackdrop
 import raven.cinterop.RDropEvent
+import raven.cinterop.RFrameStats
 import raven.cinterop.RNativeWindow
 import raven.cinterop.R_BACKDROP_ACRYLIC
 import raven.cinterop.R_BACKDROP_BLUR
@@ -50,9 +53,11 @@ import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwindow_create
 import raven.cinterop.Rwindow_destroy
 import raven.cinterop.Rwindow_get_backdrop
+import raven.cinterop.Rwindow_get_frame_stats
 import raven.cinterop.Rwindow_get_native_handle
 import raven.cinterop.Rwindow_get_position
 import raven.cinterop.Rwindow_get_size
+import raven.cinterop.Rwindow_is_active
 import raven.cinterop.Rwindow_is_maximized
 import raven.cinterop.Rwindow_is_minimized
 import raven.cinterop.Rwindow_maximize
@@ -73,6 +78,7 @@ import raven.cinterop.Rwindow_show
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.toRaven
+import raven.compose.ui.platform.FrameStats
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.RavenUriHandler
@@ -102,6 +108,10 @@ import kotlin.math.roundToInt
  * [onExternalDrop] takes the files or the text other applications drop on the window where no
  * widget takes them. While it is set the window accepts drops, and Raven shows that it can; while
  * it is `null` the window refuses them. It is called only for the drop itself.
+ *
+ * The content has the window's `LocalLifecycleOwner` and `LocalSavedStateRegistryOwner`: the
+ * lifecycle is RESUMED while the window is shown and active, STARTED while it is shown but another
+ * window is active, CREATED while it is minimised, and DESTROYED once it has left the composition.
  */
 @Composable
 public fun Window(
@@ -194,9 +204,9 @@ internal val LocalRavenWindow = staticCompositionLocalOf<RavenWindow> { error("p
 public fun windowHasCustomHeader(): Boolean = LocalRavenWindow.current.flags.customHeader
 
 /**
- * A Raven window, its fixed Overlay root, and the composition that fills it. Raven reports
- * resizes, but no moves and no change of placement, so the host has the window [followRaven]
- * once a frame.
+ * A Raven window, its fixed Overlay root, the composition that fills it, and its owners. Raven
+ * reports resizes, but no moves, no change of placement and no change of the active window, so
+ * the host has the window [followRaven] once a frame.
  */
 internal class RavenWindow(
     private val host: RavenHost,
@@ -218,6 +228,7 @@ internal class RavenWindow(
     val root = RavenNode(Rwidget_create(R_WIDGET_OVERLAY), ChildKind.Many)
     private val composition = Composition(RavenApplier(root, host::onChangesApplied), parent)
     private val selfRef = StableRef.create(this)
+    private val owners = WindowOwners()
     private val info = object : WindowInfo {
         override val isTransparent: Boolean = memScoped {
             val native = alloc<RNativeWindow>()
@@ -225,7 +236,12 @@ internal class RavenWindow(
             Rwindow_get_native_handle(window, native.ptr)
             native.transparent == R_TRUE
         }
+
+        override fun frameStats(): FrameStats = readFrameStats()
     }
+
+    // Created hidden, the window is shown once it has its settings.
+    private var shown = false
 
     // What the window last gave Raven, or Raven's defaults.
     private var title = settings.title
@@ -249,6 +265,8 @@ internal class RavenWindow(
         host.windows += this
         update(state, settings)
         Rwindow_show(window)
+        shown = true
+        followLifecycle()
         // The state takes what the window opened with in place of a default position or size.
         if (!state.position.isSpecified) state.position = ravenPosition.toPosition()
         if (!state.size.width.isSpecified || !state.size.height.isSpecified) state.size = ravenSize.toDpSize()
@@ -259,6 +277,8 @@ internal class RavenWindow(
             LocalRavenWindow provides this,
             LocalWindowInfo provides info,
             LocalUriHandler provides RavenUriHandler,
+            LocalLifecycleOwner provides owners,
+            LocalSavedStateRegistryOwner provides owners,
             LocalThemePlacement provides ThemePlacement.Window,
             content = content,
         )
@@ -305,6 +325,7 @@ internal class RavenWindow(
         }
         onExternalDrop = settings.onExternalDrop
         updateState(settings)
+        followLifecycle()
     }
 
     private fun updateState(settings: WindowSettings) {
@@ -336,7 +357,10 @@ internal class RavenWindow(
         }
     }
 
-    /** Writes the user's moves and changes of placement since the last frame into the state. */
+    /**
+     * Writes the user's moves and changes of placement since the last frame into the state, and
+     * moves the lifecycle to follow the window.
+     */
     fun followRaven() {
         val position = readPosition()
         if (position != ravenPosition) {
@@ -351,6 +375,11 @@ internal class RavenWindow(
             if (placement == RavenPlacement.Maximized) state.placement = WindowPlacement.Maximized
             if (placement == RavenPlacement.Floating) state.placement = WindowPlacement.Floating
         }
+        followLifecycle()
+    }
+
+    private fun followLifecycle() {
+        owners.follow(shown, minimized = readPlacement() == RavenPlacement.Minimized, active = Rwindow_is_active(window) == R_TRUE)
     }
 
     /**
@@ -366,9 +395,13 @@ internal class RavenWindow(
         return Rwindow_get_backdrop(window).toBackdrop()
     }
 
-    /** Disposes the composition before the window, so no node holds a widget Raven deleted. */
+    /**
+     * Ends the lifecycle, so the content's observers see the window go, then disposes the
+     * composition before the window, so no node holds a widget Raven deleted.
+     */
     fun dispose() {
         host.windows -= this
+        owners.destroy()
         composition.dispose()
         Rwindow_destroy(window)
         selfRef.dispose()
@@ -429,6 +462,22 @@ internal class RavenWindow(
         val y = alloc<IntVar>()
         Rwindow_get_position(window, x.ptr, y.ptr)
         LogicalPoint(x.value, y.value)
+    }
+
+    private fun readFrameStats(): FrameStats = memScoped {
+        val stats = alloc<RFrameStats>()
+        Rwindow_get_frame_stats(window, stats.ptr)
+        FrameStats(
+            layoutMs = stats.layout_ms,
+            paintMs = stats.paint_ms,
+            renderMs = stats.render_ms,
+            widgetCount = stats.widget_count.toInt(),
+            primitiveCount = stats.instance_count.toInt(),
+            drawCallCount = stats.draw_call_count.toInt(),
+            backdropCount = stats.backdrop_count.toInt(),
+            paintJobCount = stats.paint_job_count.toInt(),
+            frameIndex = stats.frame_index.toLong(),
+        )
     }
 
     private fun readPlacement(): RavenPlacement = when {
