@@ -1,0 +1,6 @@
+# ThorVG's C API (CPU engine, Lottie loader) for Kotlin/Native. The include and library paths come
+# from spikes/thorvg/build.gradle.kts (Homebrew's thorvg by default).
+headers = thorvg_capi.h
+headerFilter = thorvg_capi.h
+package = thorvg.cinterop
+linkerOpts = -lthorvg-1

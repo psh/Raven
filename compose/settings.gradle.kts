@@ -28,4 +28,5 @@ include(
     ":samples:xml-translator",
     ":spikes:nested-frames",
     ":spikes:navigation3",
+    ":spikes:thorvg",
 )

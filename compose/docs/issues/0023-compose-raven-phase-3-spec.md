@@ -112,6 +112,11 @@ charted.
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`; drop targets on
   widgets and drags inside the app (`Modifier.dragAndDropTarget`, `Rdrag_begin`), beyond phase 2's
   `Window(onExternalDrop)`.
+- **Lottie animations**: an opt-in `compose-raven-lottie` module over ThorVG's C API, with Compose's
+  `rememberLottieComposition` / `animateLottieCompositionAsState` / `LottieAnimation` API; the
+  spike passes, and the findings, design sketch and open questions are kept in
+  [A compose-raven-lottie module](0111-compose-raven-lottie-module.md). ThorVG's SVG loader could
+  also serve the vector-icons patch.
 - **Popups**: Compose's `Popup(alignment, offset, onDismissRequest) { }`. Raven now has a generic
   popup (upstream, pulled in 2026-11-12): `Rpopup_open(window, content, x, y, closed, user_data)`
   shows a widget over the window, light-dismissed by a click outside or Escape, with a `closed`

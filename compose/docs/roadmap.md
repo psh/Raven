@@ -235,7 +235,8 @@ virtualisation, more list widgets, exit transitions, torn-off panels as windows,
 multi-window tests, build-time XML translation, app bundling (with no fork change now, since Raven
 finds MoltenVK in the bundle), gestures (with drop targets on widgets, drags inside the app, and
 dragging a window by its content, `samples/overlay`'s `WindowDrag`), popups (over Raven's new
-`Rpopup_open`), and bringing a window to the front (`Rwindow_focus`).
+`Rpopup_open`), bringing a window to the front (`Rwindow_focus`), and Lottie animations in an
+opt-in `compose-raven-lottie` module over ThorVG ([A compose-raven-lottie module](issues/0111-compose-raven-lottie-module.md)).
 
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
   (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after
