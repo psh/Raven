@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 wayfinder: map
 ---
 
@@ -76,16 +76,21 @@ with nothing open. This map plans; it builds nothing.
 - [Small port gaps](archive/0107-small-port-gaps.md): `Modifier.offset` on the slot padding, `LazyVerticalGrid(minCellSize)`, and `ImageBitmap.filterQuality`.
 - [Verify GL and Metal on macOS child views](archive/0108-verify-gl-and-metal-on-macos-child-views.md): both pass in a real window beside Raven's MoltenVK; compose-raven finds the child's `NSView` by its `CAMetalLayer`, since Raven reports only the layer.
 - [Upstream changes and the fog notes](archive/0109-upstream-changes-and-the-fog-notes.md): the Popups and App bundling fog notes rewritten (Raven has `Rpopup_open`, and finds MoltenVK in the bundle), `Rwindow_focus` noted as new fog, and `undecorated` windows take the keyboard on macOS.
+- [Phase 3 implementation tickets](archive/0110-phase-3-implementation-tickets.md): phase 3 broken into 21 family tickets in dependency order, one completing the phase 2 samples, and the five sample tickets, all listed in `roadmap.md`'s phase 3 table.
 
 ## Not yet specified
 
-Every sample's port gaps are decided. The tickets left:
-
-- Last: [Phase 3 implementation tickets](0110-phase-3-implementation-tickets.md)
+Closed on 2026-11-12 with the destination reached: every port gap of the five phase 3 samples is
+decided into phase 3 (none is left for a later phase), the open facts are checked, the fog notes
+match upstream, and phase 3 is broken into implementation tickets, listed on `roadmap.md`'s phase 3
+table. The remaining fog stays on
+[compose-raven phase 3 spec](0023-compose-raven-phase-3-spec.md#not-yet-specified), for a phase 5
+map; this map added three patches to it: a Navigation 3 docking scene, a window brought to the
+front, and Lottie animations ([A compose-raven-lottie module](0111-compose-raven-lottie-module.md)).
 
 ## Out of scope
 
-- Implementation of phase 3: the tickets [Phase 3 implementation tickets](0110-phase-3-implementation-tickets.md)
+- Implementation of phase 3: the tickets [Phase 3 implementation tickets](archive/0110-phase-3-implementation-tickets.md)
   creates do that.
 - Reopening phase 3's vocabulary decisions, beyond what a gap ticket needs to add to them.
 - The phase 5 samples (`effects`, `viewport_opengl`, `viewport_vulkan`, `studio`, `browser`) and

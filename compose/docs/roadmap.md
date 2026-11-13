@@ -2,10 +2,10 @@
 
 The source of truth for **what gets built, in what order**. [`spec.md`](spec.md) says *what*
 compose-raven is, and this file says *when*. Implementation planning starts here: each milestone
-links to the spec sections that define it. Phases 1 to 3 are fully designed. The first three
-wayfinder maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
-settled the phase 2 samples), and [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md)
-is settling the phase 3 samples' port gaps before phase 3 is broken into tickets. The remaining fog, listed on
+links to the spec sections that define it. Phases 1 to 3 are fully designed, and all four wayfinder
+maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
+and [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md) settled
+the samples of phases 2 and 3). The remaining fog, listed on
 [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
 for a phase 5 map. The split between phases 2, 3 and 4 follows [ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
 
@@ -126,32 +126,39 @@ settled every one; nothing is left open before implementation.
 
 ## 4. Phase 3
 
-Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md). These are the
-decisions the ports were designed around; checking the samples against them found port gaps, which
-[compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md) settles before
-phase 3 is broken into tickets:
+Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), and its
+samples' port gaps settled by [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md).
+Broken into tickets, in dependency order; each ticket's **Depends on** line names its blockers. The
+five samples have no port gap left, and phase 3 also completes the phase 2 samples (the default
+dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `themes`, `softWrap` for
+`overlay`). `MarkdownText` and `Modifier.appearTransition` arrived early, in phase 2
+([ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md)).
 
-| Sample | Decisions it needs |
-|---|---|
-| `editor` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) (Viewport), [Toolbar](issues/archive/0038-toolbar.md) |
-| `workspace` | [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md), [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Toolbar](issues/archive/0038-toolbar.md) |
-| `music` | [Lists and trees](issues/archive/0033-lists-and-trees.md), [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Image and resources](issues/archive/0035-image-and-resources.md) |
-| `animations` | [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md), [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md) |
-| `glass` | [Lists and trees](issues/archive/0033-lists-and-trees.md) (TreeView), [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md) (UniformGrid). It uses phase 2's glass, ComboBox and SpinBox too |
-
-Phase 3 also completes what phase 2 builds as a foundation:
-
-- The default message and file dialogs, on `Dialog` and `FileBrowser`, and headless tests of
-  dialog flows (`samples/notepad` included); phase 2 builds only `native = true`
-  ([Notepad's file dialogs and discard prompt](issues/archive/0074-notepad-file-dialogs-and-discard-prompt.md)).
-- `samples/themes`' `ListView`, with the lists
-  ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
-- `Text(softWrap)` and `Text(fontFamily)`, with the text styling, so `samples/overlay`'s
-  explanation and `samples/themes`' status line wrap, and `samples/themes`' monospace label is
-  monospace ([samples/overlay](issues/archive/0072-samples-overlay.md),
-  [samples/themes](issues/archive/0071-samples-themes.md)).
-- `MarkdownText`'s `style` and the rest of transitions (`AnimatedVisibility`, `animate*AsState`,
-  `Island`); phase 2 brings `MarkdownText` and `Modifier.appearTransition` early ([ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md)).
+| Family | Spec | Needed by | Ticket |
+|---|---|---|---|
+| Windows that come and go, lifecycle and saved-state owners, `frameStats()`, `RavenInfo.version` | [4](spec.md#4-application-host) | most samples | [Windows that come and go, and their owners](issues/0112-windows-that-come-and-go-and-their-owners.md) |
+| Generic input and focus, `ContextMenuArea`, `DropdownMenu` | [7](spec.md#generic-input-and-focus-phase-3) | all five | [Generic input, focus and menus](issues/0113-generic-input-focus-and-menus.md) |
+| Accessibility semantics | [7](spec.md#accessibility-phase-3) | `music` | [Accessibility semantics](issues/0114-accessibility-semantics.md) |
+| Images and resources, `ImageBitmap`, icons | [8](spec.md#images-and-resources-phase-3) | `music`, `glass`, and the rows below | [Images and resources](issues/0115-images-and-resources.md) |
+| Fonts and text styling (completes `Text(softWrap/fontFamily)`) | [8](spec.md#fonts-and-text-styling-phase-3) | `music`, `workspace`, `themes`, `overlay` | [Fonts and text styling](issues/0116-fonts-and-text-styling.md) |
+| Typography | [8](spec.md#typography-phase-3) | every sample | [Typography in RavenTheme](issues/0117-typography-in-raventheme.md) |
+| `Modifier.offset`, `LocalDensity` | [6](spec.md#6-layout-and-modifiers) | `music`, `editor` | [Modifier.offset and LocalDensity](issues/0118-layout-offset-and-density.md) |
+| Theming extras: hovered and pressed colours, `unfocusedIndicatorColor`, `metrics`, `HeaderBar(background)` | [8](spec.md#phase-2-theming) | `music`, `editor`, `workspace` | [Theming extras](issues/0119-theming-extras.md) |
+| Lists and trees (completes `themes`' `ListView`) | [8](spec.md#lists-and-trees-phase-3) | `editor`, `workspace`, `music`, `glass`, `themes` | [Lists and trees](issues/0120-lists-and-trees.md) |
+| Scroll position | [8](spec.md#scroll-position-phase-3) | `editor`, `workspace`, `music` | [Scroll position](issues/0121-scroll-position.md) |
+| Tabs and grids | [8](spec.md#tabs-and-grids-phase-3) | `editor`, `music`, `glass` | [Tabs and grids](issues/0122-tabs-and-grids.md) |
+| Toolbar | [8](spec.md#toolbar-phase-3) | `editor` | [Toolbar](issues/0123-toolbar.md) |
+| Custom drawing, viewports and effects | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `editor`, `music`, `animations` | [Custom drawing, viewports and effects](issues/0124-custom-drawing-viewports-and-effects.md) |
+| `compose-raven-vulkan` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_vulkan` (phase 5) | [compose-raven-vulkan](issues/0125-compose-raven-vulkan.md) |
+| `compose-raven-opengl` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_opengl` (phase 5) | [compose-raven-opengl](issues/0126-compose-raven-opengl.md) |
+| Animation: `animate*AsState`, `Animatable`, `RavenMotion`, `RavenAnimation`, `AnimatedVisibility`, `TransitionRequester` | [8](spec.md#transitions-and-island-phase-3) | `animations`, `music` | [Animation](issues/0127-animation.md) |
+| Island | [8](spec.md#transitions-and-island-phase-3) | `workspace`, `music`, `animations` | [Island](issues/0128-island.md) |
+| DockArea and FileBrowser | [8](spec.md#docking-and-the-file-browser-phase-3) | `workspace` | [DockArea and FileBrowser](issues/0129-dockarea-and-filebrowser.md) |
+| `Dialog` and the default message and file dialogs | [4](spec.md#4-application-host) | `notepad`, navigation's dialog destinations | [Dialog and the default dialogs](issues/0130-dialog-and-the-default-dialogs.md) |
+| `compose-raven-navigation3` | [8](spec.md#navigation-3-phase-3-compose-raven-navigation3) | `music` | [compose-raven-navigation3](issues/0131-compose-raven-navigation3.md) |
+| ColorPicker | [8](spec.md#colorpicker-phase-3) | `music`, `themes` | [ColorPicker](issues/0132-colorpicker.md) |
+| The phase 2 samples completed | [10](spec.md#10-samples) | `themes`, `overlay`, `notepad` | [The phase 2 samples completed](issues/0133-phase-2-samples-completed.md) |
+| Samples | [10](spec.md#10-samples) | | [samples/editor](issues/0134-samples-editor.md), [samples/workspace](issues/0135-samples-workspace.md), [samples/music](issues/0136-samples-music.md), [samples/animations](issues/0137-samples-animations.md), [samples/glass](issues/0138-samples-glass.md) |
 
 Decided for phase 3 so far (in the spec):
 
