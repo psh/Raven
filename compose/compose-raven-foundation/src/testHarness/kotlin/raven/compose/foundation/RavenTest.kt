@@ -18,7 +18,9 @@ import raven.cinterop.RError
 import raven.cinterop.RMemoryStats
 import raven.cinterop.RSeverity
 import raven.cinterop.RKey
+import raven.cinterop.R_KEY_DELETE
 import raven.cinterop.R_KEY_DOWN
+import raven.cinterop.R_KEY_END
 import raven.cinterop.R_KEY_ENTER
 import raven.cinterop.R_KEY_HOME
 import raven.cinterop.R_SEVERITY_ERROR
@@ -27,6 +29,7 @@ import raven.cinterop.R_SEVERITY_FATAL
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_WIDGET_CHECKBOX
+import raven.cinterop.R_WIDGET_COLOR_PICKER
 import raven.cinterop.R_METRIC_ROW_HEIGHT
 import raven.cinterop.R_ROLE_SEPARATOR
 import raven.cinterop.R_WIDGET_COMBO_BOX
@@ -34,6 +37,7 @@ import raven.cinterop.R_WIDGET_LABEL
 import raven.cinterop.R_WIDGET_MENU
 import raven.cinterop.R_WIDGET_MENU_ITEM
 import raven.cinterop.R_WIDGET_SPIN_BOX
+import raven.cinterop.R_WIDGET_TEXT_INPUT
 import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rcombo_box_get_item_count
 import raven.cinterop.Rcombo_box_get_selected
@@ -43,16 +47,22 @@ import raven.cinterop.Rmenu_item_get_text
 import raven.cinterop.Rmenu_item_is_checked
 import raven.cinterop.Rmenu_open
 import raven.cinterop.Rspin_box_get_value
+import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_get_accessible_name
 import raven.cinterop.Rwidget_get_accessible_role
+import raven.cinterop.Rwidget_get_child
+import raven.cinterop.Rwidget_get_child_count
 import raven.cinterop.Rwidget_get_metric
 import raven.cinterop.Rwidget_get_rect
 import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_get_window
+import raven.cinterop.Rwidget_focus
 import raven.cinterop.Rwindow_inject_key
 import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
 import raven.cinterop.Rwindow_close_popups
+import raven.cinterop.Rwindow_get_popup
+import raven.cinterop.Rwindow_get_popup_count
 import raven.cinterop.Rwindow_inject_text
 import raven.cinterop.Rwindow_inject_drop
 import raven.cinterop.Rwidget_is_focused
@@ -62,6 +72,7 @@ import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.RavenNode
 import raven.compose.ui.Window
+import raven.compose.ui.graphics.Color
 import raven.native.CallbackRegistry
 import raven.native.toRavenString
 import kotlin.math.ceil
@@ -330,6 +341,43 @@ internal class NodeInteraction(
         if (Rwidget_is_focused(widget) != R_TRUE) click(widget)
         Rwindow_inject_text(Rwidget_get_window(widget), text)
     }
+
+    /**
+     * Types [color]'s code into the node's colour picker and presses Enter, as the user would; a
+     * popup picker is opened first, with the keyboard, and its popup closed after. A compact picker
+     * shows no code, so it fails. The code is typed after an `x` that is then deleted, so the
+     * picker sees no other colour on the way (`#F00` is one): it reports [color] once.
+     */
+    fun performColorChange(color: Color): NodeInteraction = apply {
+        val widget = fetchWidget()
+        if (Rwidget_get_type(widget) != R_WIDGET_COLOR_PICKER) fail("the node with $selector is not a colour picker")
+        val window = Rwidget_get_window(widget)
+        var code = codeInput(widget)
+        val popups = Rwindow_get_popup_count(window)
+        if (code == null) {
+            // A popup picker opens on Enter; a compact one takes no focus, and opens nothing.
+            Rwidget_focus(widget)
+            if (Rwidget_is_focused(widget) == R_TRUE) press(widget, R_KEY_ENTER)
+            if (Rwindow_get_popup_count(window) > popups) {
+                code = codeInput(Rwidget_get_child(Rwindow_get_popup(window, popups), 0))
+            }
+        }
+        if (code == null) fail("the colour picker with $selector is compact: it shows no code to type")
+        fun channel(value: Float) = (value * 255f + 0.5f).toInt().toString(16).padStart(2, '0').uppercase()
+        val text = channel(color.red) + channel(color.green) + channel(color.blue) + if (color.alpha < 1f) channel(color.alpha) else ""
+        Rtext_input_set_text(code, "x")
+        Rwidget_focus(code)
+        press(code, R_KEY_END)
+        Rwindow_inject_text(window, text)
+        press(code, R_KEY_HOME)
+        press(code, R_KEY_DELETE)
+        press(code, R_KEY_ENTER)
+        if (Rwindow_get_popup_count(window) > popups) Rwindow_close_popups(window)
+    }
+
+    /** The text input of [picker]'s code, or null when it shows none. */
+    private fun codeInput(picker: Rid): Rid? =
+        (0 until Rwidget_get_child_count(picker)).map { Rwidget_get_child(picker, it) }.firstOrNull { Rwidget_get_type(it) == R_WIDGET_TEXT_INPUT }
 
     private fun click(widget: Rid) {
         val rect = widgetRect(widget)
