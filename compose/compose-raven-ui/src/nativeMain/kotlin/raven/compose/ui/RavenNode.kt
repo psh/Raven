@@ -4,14 +4,29 @@ package raven.compose.ui
 
 import androidx.compose.runtime.ComposeNodeLifecycleCallback
 import kotlinx.cinterop.COpaquePointer
+import raven.cinterop.RAccessibleRole
 import raven.cinterop.REvent
 import raven.cinterop.RCursor
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_ROLE_AUTO
 import raven.cinterop.R_TRUE
+import raven.cinterop.R_WIDGET_CHECKBOX
+import raven.cinterop.R_WIDGET_COMBO_BOX
+import raven.cinterop.R_WIDGET_HBOX
+import raven.cinterop.R_WIDGET_LABEL
+import raven.cinterop.R_WIDGET_SLIDER
+import raven.cinterop.R_WIDGET_SPIN_BOX
+import raven.cinterop.R_WIDGET_TEXT_INPUT
+import raven.cinterop.R_WIDGET_WRAP_BOX
 import raven.cinterop.Rid
 import raven.cinterop.Rwidget_destroy
 import raven.cinterop.Rwidget_get_parent
+import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_is_valid
+import raven.cinterop.Rwidget_set_accessible_hidden
+import raven.cinterop.Rwidget_set_accessible_labelled_by
+import raven.cinterop.Rwidget_set_accessible_name
+import raven.cinterop.Rwidget_set_accessible_role
 import raven.cinterop.Rwidget_set_cursor
 import raven.cinterop.Rwidget_set_event_callback
 import raven.cinterop.Rwidget_set_focusable
@@ -21,6 +36,8 @@ import raven.cinterop.Rwidget_set_tooltip
 import raven.compose.ui.graphics.Material
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.input.pointer.PointerButton
+import raven.compose.ui.semantics.SemanticsElement
+import raven.compose.ui.semantics.accessibilityCalls
 import raven.native.CallbackRegistry
 import kotlin.time.Duration
 
@@ -46,7 +63,8 @@ public enum class ChildKind {
  * throw and checks their controlled values. A [content node][isContentNode] is the internal panel
  * that holds a single-child widget's content. A [popup][isPopup] (a `DropdownMenu`'s Menu) is a
  * child of its parent in Compose only: Raven keeps it out of the parent's widget, and opens it as a
- * popup.
+ * popup. [defaultRole] is the accessible role its composable gives it, or [R_ROLE_AUTO] for Raven's
+ * own, which `Modifier.semantics` overrides.
  */
 @InternalComposeRavenApi
 public class RavenNode internal constructor(
@@ -57,6 +75,7 @@ public class RavenNode internal constructor(
     /** The composable's name, for warnings. */
     internal val name: String = "a widget",
     public val isPopup: Boolean = false,
+    internal val defaultRole: RAccessibleRole = R_ROLE_AUTO,
 ) : ComposeNodeLifecycleCallback {
     /** The `user_data` of the widget's callbacks: a reference to this node. */
     internal val userData: COpaquePointer = CallbackRegistry.register(widget, this)
@@ -90,7 +109,57 @@ public class RavenNode internal constructor(
         if (modifier.alpha != previous.alpha) drawCalls.setAlpha(widget, modifier.alpha)
         if (modifier.clipToBounds != previous.clipToBounds) drawCalls.setClipping(widget, modifier.clipToBounds)
         applyInput(previous)
+        applySemantics(previous)
         applyLayout()
+    }
+
+    /**
+     * Gives Raven the semantics that changed. What a chain drops goes back to Raven's own: the name
+     * and role it finds for the widget, no description, not hidden.
+     */
+    private fun applySemantics(previous: FoldedModifier) {
+        val now = modifier.semantics ?: NO_SEMANTICS
+        val before = previous.semantics ?: NO_SEMANTICS
+        if (now == before) return
+        if (now.contentDescription != before.contentDescription) {
+            Rwidget_set_accessible_name(widget, now.contentDescription)
+            // An input named by its description takes no label from the Text after it.
+            parent?.labelInputs()
+        }
+        if (now.accessibleDescription != before.accessibleDescription) accessibilityCalls.setDescription(widget, now.accessibleDescription)
+        val role = now.ravenRole(defaultRole)
+        if (role != before.ravenRole(defaultRole)) Rwidget_set_accessible_role(widget, role)
+        if (now.isHidden != before.isHidden) Rwidget_set_accessible_hidden(widget, if (now.isHidden) R_TRUE else R_FALSE)
+    }
+
+    private val type by lazy { Rwidget_get_type(widget) }
+
+    // The Text after this input that compose-raven made its label, or NO_LABEL.
+    private var autoLabel: Rid = NO_LABEL
+
+    /**
+     * In a Row or a FlowRow, labels each input that nothing names (no `contentDescription`, no Text
+     * directly before it, which Raven takes as its label by itself) by the Text directly after it,
+     * and takes the label back from an input that no longer needs it; elsewhere, takes back every
+     * one. The Applier calls it once a batch has changed the children; a Text in a Column never
+     * labels the input above it.
+     */
+    internal fun labelInputs() {
+        // A panel removed in this batch has been destroyed, with the children it still holds.
+        if (Rwidget_is_valid(widget) != R_TRUE) return
+        val labels = !isContentNode && (type == R_WIDGET_HBOX || type == R_WIDGET_WRAP_BOX)
+        val shown = children.filterNot { it.isPopup }
+        shown.forEachIndexed { i, child ->
+            val after = shown.getOrNull(i + 1)
+            val label = if (
+                labels && child.type in LABELLED_INPUTS && child.modifier.semantics?.contentDescription == null &&
+                shown.getOrNull(i - 1)?.type != R_WIDGET_LABEL && after?.type == R_WIDGET_LABEL
+            ) after.widget else NO_LABEL
+            if (label != child.autoLabel) {
+                Rwidget_set_accessible_labelled_by(child.widget, label)
+                child.autoLabel = label
+            }
+        }
     }
 
     /**
@@ -239,6 +308,15 @@ public class RavenNode internal constructor(
 
     override fun onDeactivate() {}
 }
+
+/** No semantics: Raven's own name and role, no description, not hidden. */
+private val NO_SEMANTICS = SemanticsElement()
+
+/** `Rwidget_set_accessible_labelled_by`'s "no label": a handle that never resolves, as [R_INVALID_ID][raven.cinterop.R_INVALID_ID] does, but that Raven reads as none. */
+private const val NO_LABEL: Rid = 0u
+
+/** The widgets that take the Text after them as their label: Checkbox, Switch, RadioButton, Slider, TextField, ComboBox and SpinBox. */
+private val LABELLED_INPUTS = setOf(R_WIDGET_CHECKBOX, R_WIDGET_SLIDER, R_WIDGET_TEXT_INPUT, R_WIDGET_COMBO_BOX, R_WIDGET_SPIN_BOX)
 
 /** `Rwidget_set_cursor`'s "no cursor of its own": the parent's shows. */
 private val NO_CURSOR: RCursor = 0u

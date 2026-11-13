@@ -19,6 +19,7 @@ import raven.cinterop.R_HALIGN_CENTER
 import raven.cinterop.R_VALIGN_CENTER
 import raven.cinterop.Rslot_set_halign
 import raven.cinterop.Rslot_set_valign
+import raven.cinterop.R_ROLE_AUTO
 import raven.cinterop.R_ROLE_NONE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_HBOX
@@ -100,7 +101,7 @@ public class WidgetDescriptor(
     internal fun create(host: RavenHost): RavenNode {
         val widget = Rwidget_create(type)
         role?.let { Rwidget_set_accessible_role(widget, it) }
-        return RavenNode(widget, children, host, name = name, isPopup = popup).also { node -> events.forEach { it.register(node) } }
+        return RavenNode(widget, children, host, name = name, isPopup = popup, defaultRole = role ?: R_ROLE_AUTO).also { node -> events.forEach { it.register(node) } }
     }
 }
 

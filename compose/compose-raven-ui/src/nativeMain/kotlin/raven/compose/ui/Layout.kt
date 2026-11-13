@@ -25,6 +25,7 @@ import raven.compose.ui.focus.FocusableElement
 import raven.compose.ui.graphics.Material
 import raven.compose.ui.input.pointer.PointerHoverIconElement
 import raven.compose.ui.input.pointer.PointerIcon
+import raven.compose.ui.semantics.SemanticsElement
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.isSpecified
 
@@ -104,6 +105,8 @@ internal data class FoldedModifier(
     val focusable: Boolean? = null,
     /** The focus requesters that can focus the widget. */
     val focusRequesters: List<FocusRequester> = emptyList(),
+    /** What the chain's `semantics` blocks set, together; null when it has none. */
+    val semantics: SemanticsElement? = null,
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -143,6 +146,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is PointerHoverIconElement -> folded.copy(pointerIcon = element.icon)
         is FocusableElement -> folded.copy(focusable = element.enabled)
         is FocusRequesterElement -> folded.copy(focusRequesters = folded.focusRequesters + element.requester)
+        is SemanticsElement -> folded.copy(semantics = folded.semantics?.then(element) ?: element)
         else -> folded
     }
 }

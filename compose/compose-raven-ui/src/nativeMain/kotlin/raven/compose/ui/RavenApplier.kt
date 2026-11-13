@@ -27,12 +27,16 @@ internal class RavenApplier(
     /** Single-child parents changed in this batch, to reattach their child in [onEndChanges]. */
     private val changedSingleParents = mutableSetOf<RavenNode>()
 
+    /** Parents whose children changed in this batch, to label their inputs again in [onEndChanges]. */
+    private val changedParents = mutableSetOf<RavenNode>()
+
     override fun insertTopDown(index: Int, instance: RavenNode) {
         // Bottom-up only: a subtree is built before it joins the tree.
     }
 
     override fun insertBottomUp(index: Int, instance: RavenNode) {
         val parent = current
+        changedParents += parent
         if (instance.isPopup) {
             if (parent.childKind == ChildKind.None) error("a ${Rwidget_get_type(parent.widget)} widget takes no children")
             parent.children.add(index, instance)
@@ -57,6 +61,7 @@ internal class RavenApplier(
 
     override fun remove(index: Int, count: Int) {
         val parent = current
+        changedParents += parent
         for (i in index until index + count) {
             val child = parent.children[i]
             child.parent = null
@@ -73,6 +78,7 @@ internal class RavenApplier(
 
     override fun move(from: Int, to: Int, count: Int) {
         val parent = current
+        changedParents += parent
         // A single-child parent shows one child at most, so only the mirror list changes.
         if (parent.childKind != ChildKind.Many) {
             parent.children.move(from, to, count)
@@ -115,6 +121,8 @@ internal class RavenApplier(
             if (!only.isAttachedTo(parent)) Rwidget_insert_child(parent.widget, only.widget, 0)
         }
         changedSingleParents.clear()
+        changedParents.forEach { it.labelInputs() }
+        changedParents.clear()
         onChangesApplied()
     }
 
