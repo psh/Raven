@@ -28,6 +28,9 @@ import raven.cinterop.Rbutton_set_clicked_callback
 import raven.cinterop.Rcheckbox_is_checked
 import raven.cinterop.Rcheckbox_set_changed_callback
 import raven.cinterop.Rcheckbox_set_checked
+import raven.cinterop.Rcolor_picker_get_color
+import raven.cinterop.Rcolor_picker_set_changed_callback
+import raven.cinterop.Rcolor_picker_set_color
 import raven.cinterop.R_KEY_UNKNOWN
 import raven.cinterop.R_MOD_ALT
 import raven.cinterop.R_MOD_CTRL
@@ -64,6 +67,9 @@ import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
+import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.ravenColor
+import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.input.key.KeyShortcut
 import raven.compose.ui.text.font.FontFamily
 import raven.native.callbackTarget
@@ -542,4 +548,26 @@ public val IslandChanged: Event<(Boolean) -> Unit> = Event(marks = IslandExpande
 
 private val onIslandChanged = staticCFunction { _: Rid, expanded: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, IslandChanged) { it(expanded == R_TRUE) }
+}
+
+// The colour picker's controlled value and event kind.
+
+/**
+ * A colour picker's colour. Raven keeps it as hue, saturation and value, so what is read back is
+ * compared as the 8-bit colour it rounds to.
+ */
+@InternalComposeRavenApi
+public val ColorPickerColor: ControlledValue<Color> = ControlledValue(
+    read = { widget -> ravenColor { r, g, b, a -> Rcolor_picker_get_color(widget, r, g, b, a) } },
+    write = { widget, color -> color.toRaven { r, g, b, a -> Rcolor_picker_set_color(widget, r, g, b, a) } },
+)
+
+/** A colour picker's change by the user: during a drag too, and from a popup picker's own picker. */
+@InternalComposeRavenApi
+public val ColorPickerChanged: Event<(Color) -> Unit> = Event(marks = ColorPickerColor) { widget, userData ->
+    Rcolor_picker_set_changed_callback(widget, onColorPickerChanged, userData)
+}
+
+private val onColorPickerChanged = staticCFunction { _: Rid, r: Float, g: Float, b: Float, a: Float, userData: COpaquePointer? ->
+    dispatchEvent(userData, ColorPickerChanged) { it(Color(r, g, b, a)) }
 }

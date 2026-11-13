@@ -19,6 +19,8 @@ import raven.cinterop.Rslot_set_valign
 import raven.cinterop.Rwidget_set_max_size
 import raven.cinterop.Rwidget_set_min_size
 import raven.cinterop.Rwidget_set_size
+import raven.compose.animation.TransitionRequester
+import raven.compose.animation.TransitionRequesterElement
 import raven.compose.ui.focus.FocusRequester
 import raven.compose.ui.focus.FocusRequesterElement
 import raven.compose.ui.focus.FocusableElement
@@ -107,6 +109,8 @@ internal data class FoldedModifier(
     val focusRequesters: List<FocusRequester> = emptyList(),
     /** What the chain's `semantics` blocks set, together; null when it has none. */
     val semantics: SemanticsElement? = null,
+    /** The transition requesters attached to the widget, in the chain's order. */
+    val transitionRequesters: List<TransitionRequester> = emptyList(),
 )
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
@@ -116,6 +120,14 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
             paddingTop = folded.paddingTop + element.top.value,
             paddingEnd = folded.paddingEnd + element.end.value,
             paddingBottom = folded.paddingBottom + element.bottom.value,
+        )
+        // Raven insets a child's area by its padding, negative too, so an offset moves the widget
+        // by as much as it takes from the other side.
+        is OffsetElement -> folded.copy(
+            paddingStart = folded.paddingStart + element.x.value,
+            paddingTop = folded.paddingTop + element.y.value,
+            paddingEnd = folded.paddingEnd - element.x.value,
+            paddingBottom = folded.paddingBottom - element.y.value,
         )
         is SizeElement -> folded.copy(
             width = element.width.orElse(folded.width),
@@ -148,6 +160,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is FocusRequesterElement -> folded.copy(focusRequesters = folded.focusRequesters + element.requester)
         is SemanticsElement -> folded.copy(semantics = folded.semantics?.then(element) ?: element)
         is ClipElement -> folded.copy(clipToBounds = true)
+        is TransitionRequesterElement -> folded.copy(transitionRequesters = folded.transitionRequesters + element.requester)
         else -> folded
     }
 }

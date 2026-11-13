@@ -48,6 +48,7 @@ import raven.cinterop.Rwait_frame
 import raven.cinterop.Rxml_check_files
 import raven.cinterop.Rxml_set_live_reload
 import raven.cinterop.Rxml_set_reload_callback
+import raven.compose.animation.core.RavenAnimation
 import raven.compose.ui.res.defaultResourceRoot
 import raven.compose.ui.res.registerEmbeddedResources
 import raven.compose.ui.theme.HostTheme
@@ -141,6 +142,7 @@ public class RavenHost(
         epoch = HostEpoch.current
         if (animationTimeStep > 0.0) Rset_animation_time_step(animationTimeStep)
         if (followSystemAccessibility && !headless) Raccessibility_follow_system()
+        RavenAnimation.followRaven()
         if (getenv("RAVEN_LIVE_RELOAD") == null) Rxml_set_live_reload(if (liveReload) R_TRUE else R_FALSE)
         running = this
         registerEmbeddedResources()
@@ -297,12 +299,14 @@ public class RavenHost(
         try {
             // Raven reports no moves and no changes of placement: each window reads them here.
             windows.forEach { it.followRaven() }
+            // Nor a change of its animation settings, which follow the system's reduced motion.
+            RavenAnimation.followRaven()
             // Nor a text editor's cursor: each follower reads what it follows here, before recomposing.
             followedNodes.forEach { node -> node.follower?.follow(node.widget) }
             // What was dispatched since the frame's tasks ran, a timer's state write say, joins this frame.
             dispatcher.drain()
             // Recomposes and applies, inside the frame callback, so layout and paint follow.
-            clock.sendFrame((Rget_time() * 1e9).toLong())
+            clock.sendFrame(nextFrameTimeNanos())
             // The frame awaiters it resumed (animations, withFrameNanos loops) take their step now,
             // instead of leaving work queued after every frame.
             dispatcher.drain()
@@ -310,6 +314,23 @@ public class RavenHost(
         } catch (t: Throwable) {
             reportError(t)
         }
+    }
+
+    /**
+     * While true, the frame clock gives each frame the time of the one before, so compose-raven's
+     * animations hold still while frames still recompose: a test's `mainClock.autoAdvance = false`.
+     * Raven's own animations go on.
+     */
+    public var holdsFrameTime: Boolean = false
+
+    // The frame clock's time with a fixed animation time step: it advances by the step each frame,
+    // as Raven's animations do, so compose-raven's animations are as deterministic as Raven's.
+    private var frameTimeNanos = 0L
+
+    private fun nextFrameTimeNanos(): Long {
+        if (holdsFrameTime && frameTimeNanos != 0L) return frameTimeNanos
+        frameTimeNanos = if (animationTimeStep <= 0.0) (Rget_time() * 1e9).toLong() else frameTimeNanos + (animationTimeStep * 1e9).toLong()
+        return frameTimeNanos
     }
 
     /** Raven reloaded a file: a theme file can have been renamed, or the app theme's colours changed. */

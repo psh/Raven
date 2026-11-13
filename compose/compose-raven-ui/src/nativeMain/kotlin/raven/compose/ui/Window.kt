@@ -90,7 +90,9 @@ import raven.compose.ui.input.key.KeyEvent
 import raven.compose.ui.platform.FrameStats
 import raven.compose.ui.platform.LocalFocusManager
 import raven.compose.ui.platform.LocalUriHandler
+import raven.compose.ui.platform.LocalDensity
 import raven.compose.ui.platform.LocalWindowInfo
+import raven.compose.ui.platform.WindowDensity
 import raven.compose.ui.platform.RavenUriHandler
 import raven.compose.ui.platform.WindowInfo
 import raven.compose.ui.theme.LocalThemePlacement
@@ -271,6 +273,7 @@ internal class RavenWindow(
 
         override fun frameStats(): FrameStats = readFrameStats()
     }
+    private val density = WindowDensity(window)
 
     // Created hidden, the window is shown once it has its settings.
     private var shown = false
@@ -319,6 +322,7 @@ internal class RavenWindow(
         CompositionLocalProvider(
             LocalRavenWindow provides this,
             LocalWindowInfo provides info,
+            LocalDensity provides density.current,
             LocalUriHandler provides RavenUriHandler,
             LocalLifecycleOwner provides owners,
             LocalSavedStateRegistryOwner provides owners,
@@ -418,6 +422,7 @@ internal class RavenWindow(
      * moves the lifecycle to follow the window.
      */
     fun followRaven() {
+        density.follow()
         val position = readPosition()
         if (position != ravenPosition) {
             ravenPosition = position

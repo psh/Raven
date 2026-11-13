@@ -143,21 +143,21 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | Images and resources, `ImageBitmap`, icons | [8](spec.md#images-and-resources-phase-3) | `music`, `glass`, and the rows below | [Images and resources](issues/archive/0115-images-and-resources.md) |
 | Fonts and text styling (completes `Text(softWrap/fontFamily)`) | [8](spec.md#fonts-and-text-styling-phase-3) | `music`, `workspace`, `themes`, `overlay` | [Fonts and text styling](issues/archive/0116-fonts-and-text-styling.md) |
 | Typography | [8](spec.md#typography-phase-3) | every sample | [Typography in RavenTheme](issues/archive/0117-typography-in-raventheme.md) |
-| `Modifier.offset`, `LocalDensity` | [6](spec.md#6-layout-and-modifiers) | `music`, `editor` | [Modifier.offset and LocalDensity](issues/0118-layout-offset-and-density.md) |
+| `Modifier.offset`, `LocalDensity` | [6](spec.md#6-layout-and-modifiers) | `music`, `editor` | [Modifier.offset and LocalDensity](issues/archive/0118-layout-offset-and-density.md) |
 | Theming extras: hovered and pressed colours, `unfocusedIndicatorColor`, `metrics`, `HeaderBar(background)` | [8](spec.md#phase-2-theming) | `music`, `editor`, `workspace` | [Theming extras](issues/archive/0119-theming-extras.md) |
 | Lists and trees (completes `themes`' `ListView`) | [8](spec.md#lists-and-trees-phase-3) | `editor`, `workspace`, `music`, `glass`, `themes` | [Lists and trees](issues/0120-lists-and-trees.md) |
 | Scroll position | [8](spec.md#scroll-position-phase-3) | `editor`, `workspace`, `music` | [Scroll position](issues/0121-scroll-position.md) |
 | Tabs and grids | [8](spec.md#tabs-and-grids-phase-3) | `editor`, `music`, `glass` | [Tabs and grids](issues/0122-tabs-and-grids.md) |
-| Toolbar | [8](spec.md#toolbar-phase-3) | `editor` | [Toolbar](issues/0123-toolbar.md) |
+| Toolbar | [8](spec.md#toolbar-phase-3) | `editor` | [Toolbar](issues/archive/0123-toolbar.md) |
 | Custom drawing, viewports and effects | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `editor`, `music`, `animations` | [Custom drawing, viewports and effects](issues/0124-custom-drawing-viewports-and-effects.md) |
 | `compose-raven-vulkan` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_vulkan` (phase 5) | [compose-raven-vulkan](issues/0125-compose-raven-vulkan.md) |
 | `compose-raven-opengl` | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `viewport_opengl` (phase 5) | [compose-raven-opengl](issues/0126-compose-raven-opengl.md) |
-| Animation: `animate*AsState`, `Animatable`, `RavenMotion`, `RavenAnimation`, `AnimatedVisibility`, `TransitionRequester` | [8](spec.md#transitions-and-island-phase-3) | `animations`, `music` | [Animation](issues/0127-animation.md) |
+| Animation: `animate*AsState`, `Animatable`, `RavenMotion`, `RavenAnimation`, `AnimatedVisibility`, `TransitionRequester` | [8](spec.md#transitions-and-island-phase-3) | `animations`, `music` | [Animation](issues/archive/0127-animation.md) |
 | Island | [8](spec.md#transitions-and-island-phase-3) | `workspace`, `music`, `animations` | [Island](issues/archive/0128-island.md) |
 | DockArea and FileBrowser | [8](spec.md#docking-and-the-file-browser-phase-3) | `workspace` | [DockArea and FileBrowser](issues/0129-dockarea-and-filebrowser.md) |
 | `Dialog` and the default message and file dialogs | [4](spec.md#4-application-host) | `notepad`, navigation's dialog destinations | [Dialog and the default dialogs](issues/0130-dialog-and-the-default-dialogs.md) |
 | `compose-raven-navigation3` | [8](spec.md#navigation-3-phase-3-compose-raven-navigation3) | `music` | [compose-raven-navigation3](issues/0131-compose-raven-navigation3.md) |
-| ColorPicker | [8](spec.md#colorpicker-phase-3) | `music`, `themes` | [ColorPicker](issues/0132-colorpicker.md) |
+| ColorPicker | [8](spec.md#colorpicker-phase-3) | `music`, `themes` | [ColorPicker](issues/archive/0132-colorpicker.md) |
 | The phase 2 samples completed | [10](spec.md#10-samples) | `themes`, `overlay`, `notepad` | [The phase 2 samples completed](issues/0133-phase-2-samples-completed.md) |
 | Samples | [10](spec.md#10-samples) | | [samples/editor](issues/0134-samples-editor.md), [samples/workspace](issues/0135-samples-workspace.md), [samples/music](issues/0136-samples-music.md), [samples/animations](issues/0137-samples-animations.md), [samples/glass](issues/0138-samples-glass.md) |
 

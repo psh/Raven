@@ -6,7 +6,7 @@ status: open
 
 What phase 3 completes in the phase 2 samples, per their tickets' gaps. Spec: [10. Samples](../spec.md#10-samples).
 
-**Depends on:** [Fonts and text styling](archive/0116-fonts-and-text-styling.md), [Lists and trees](0120-lists-and-trees.md), [Dialog and the default dialogs](0130-dialog-and-the-default-dialogs.md), [ColorPicker](0132-colorpicker.md).
+**Depends on:** [Fonts and text styling](archive/0116-fonts-and-text-styling.md), [Lists and trees](0120-lists-and-trees.md), [Dialog and the default dialogs](0130-dialog-and-the-default-dialogs.md), [ColorPicker](archive/0132-colorpicker.md).
 
 ## Deliverables
 

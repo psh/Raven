@@ -36,6 +36,14 @@ class LayoutTest {
     }
 
     @Test
+    fun anOffsetMovesThePaddingFromOneSideToTheOther() {
+        val folded = fold(Modifier then padding(4.dp) then OffsetElement(3.dp, (-2).dp) then OffsetElement(1.dp, 0.dp))
+        assertEquals(listOf(8f, 2f, 0f, 6f), listOf(folded.paddingStart, folded.paddingTop, folded.paddingEnd, folded.paddingBottom))
+        val slot = resolve(folded, column).slot
+        assertEquals(listOf(8f, 2f, 0f, 6f), listOf(slot.paddingLeft, slot.paddingTop, slot.paddingRight, slot.paddingBottom))
+    }
+
+    @Test
     fun theLastSizeWinsOnEachAxis() {
         val folded = fold(
             Modifier then SizeElement(10.dp, 20.dp) then SizeElement(30.dp, Dp.Unspecified) then

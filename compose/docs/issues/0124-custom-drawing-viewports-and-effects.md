@@ -6,7 +6,7 @@ status: open
 
 `Canvas`, the texture and native viewports, and shader effects. Spec: [8: Custom drawing, viewports and effects](../spec.md#custom-drawing-viewports-and-effects-phase-3).
 
-**Depends on:** [Images and resources](archive/0115-images-and-resources.md), [Modifier.offset and LocalDensity](0118-layout-offset-and-density.md).
+**Depends on:** [Images and resources](archive/0115-images-and-resources.md), [Modifier.offset and LocalDensity](archive/0118-layout-offset-and-density.md).
 
 ## Deliverables
 

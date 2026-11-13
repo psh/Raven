@@ -17,6 +17,7 @@ import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 /** Column, Row, Box and FlowRow, read back from Raven's layout. */
 class LayoutsTest {
@@ -90,6 +91,47 @@ class LayoutsTest {
         }
         assertEquals(listOf(15f, 10f, 20f, 20f), rect("padded"))
         assertEquals(listOf(1f, 42f, 20f, 20f), rect("next"))
+    }
+
+    @Test
+    fun anOffsetMovesAWidgetWithoutMovingItsNeighbours() = runRavenTest {
+        var offset by mutableStateOf(0.dp)
+        setContent {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.size(20.dp).testTag("before"))
+                Box(Modifier.padding(start = 5.dp).offset(x = offset, y = offset).offset(x = 1.dp).size(20.dp).testTag("moved"))
+                Box(Modifier.size(20.dp).testTag("after"))
+            }
+        }
+        assertEquals(listOf(36f, 0f, 20f, 20f), rect("moved"))
+        assertEquals(listOf(65f, 0f, 20f, 20f), rect("after"))
+
+        offset = 7.dp
+        waitForIdle()
+        assertEquals(listOf(0f, 0f, 20f, 20f), rect("before"))
+        assertEquals(listOf(43f, 7f, 20f, 20f), rect("moved"))
+        assertEquals(listOf(65f, 0f, 20f, 20f), rect("after"))
+
+        // Up and to the left, past the start of the Row.
+        offset = (-50).dp
+        waitForIdle()
+        assertEquals(listOf(-14f, -50f, 20f, 20f), rect("moved"))
+        assertEquals(listOf(65f, 0f, 20f, 20f), rect("after"))
+    }
+
+    @Test
+    fun anOffsetHangsAnAlignedWidgetOverTheCorner() = runRavenTest {
+        setContent {
+            Box(Modifier.size(100.dp)) {
+                Box(Modifier.size(20.dp).align(Alignment.BottomEnd).offset(10.dp, 8.dp).testTag("badge"))
+            }
+        }
+        assertEquals(listOf(90f, 88f, 20f, 20f), rect("badge"))
+    }
+
+    @Test
+    fun aNegativePaddingIsAnError() {
+        assertFailsWith<IllegalArgumentException> { Modifier.padding(start = (-1).dp) }
     }
 
     @Test

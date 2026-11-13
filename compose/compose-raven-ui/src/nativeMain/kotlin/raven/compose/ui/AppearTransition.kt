@@ -76,6 +76,10 @@ internal open class AppearCalls {
     open fun set(widget: Rid, transition: AppearTransition?, delay: Duration) =
         Rwidget_set_transition(widget, transition.toRaven(), delay.toDouble(DurationUnit.SECONDS).toFloat())
 
+    /** Plays [transition] on [widget] now, after [delay], keeping the one it was given: a `TransitionRequester`'s. */
+    open fun play(widget: Rid, transition: AppearTransition, delay: Duration) =
+        Rwidget_play_transition(widget, transition.toRaven(), delay.toDouble(DurationUnit.SECONDS).toFloat())
+
     /** Stops the transition [widget] is playing, keeping the one it was given. */
     open fun stop(widget: Rid) = Rwidget_play_transition(widget, R_TRANSITION_NONE, 0f)
 }

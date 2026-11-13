@@ -6,9 +6,22 @@ import raven.compose.ui.unit.Dp
 // The layout elements of a Modifier chain. Foundation's modifier functions create them; the node
 // folds them into slot and size settings (Layout.kt).
 
-/** Space around the widget, inside its slot. Several paddings add up. */
+/** Space around the widget, inside its slot. Several paddings add up; none can be negative. */
 @InternalComposeRavenApi
-public data class PaddingElement(val start: Dp, val top: Dp, val end: Dp, val bottom: Dp) : Modifier.Element
+public data class PaddingElement(val start: Dp, val top: Dp, val end: Dp, val bottom: Dp) : Modifier.Element {
+    init {
+        require(start.value >= 0f && top.value >= 0f && end.value >= 0f && bottom.value >= 0f) {
+            "padding must not be negative, not ($start, $top, $end, $bottom)"
+        }
+    }
+}
+
+/**
+ * A move of the widget by [x] and [y], folded into the slot padding (left +x, right −x, top +y,
+ * bottom −y), so it keeps its size and its neighbours keep their places. Offsets add up.
+ */
+@InternalComposeRavenApi
+public data class OffsetElement(val x: Dp, val y: Dp) : Modifier.Element
 
 /** The widget's size on each axis; [Dp.Unspecified] leaves an axis as it is. */
 @InternalComposeRavenApi

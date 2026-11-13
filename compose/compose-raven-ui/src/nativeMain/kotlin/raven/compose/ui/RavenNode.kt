@@ -113,6 +113,10 @@ public class RavenNode internal constructor(
         if (modifier.clipToBounds != previous.clipToBounds) drawCalls.setClipping(widget, modifier.clipToBounds)
         applyInput(previous)
         applySemantics(previous)
+        if (modifier.transitionRequesters != previous.transitionRequesters) {
+            previous.transitionRequesters.forEach { if (it.widget == widget) it.widget = null }
+            modifier.transitionRequesters.forEach { it.widget = widget }
+        }
         applyLayout()
     }
 
@@ -333,6 +337,7 @@ public class RavenNode internal constructor(
     override fun onRelease() {
         follower = null
         modifier.focusRequesters.forEach { it.detach(widget) }
+        modifier.transitionRequesters.forEach { if (it.widget == widget) it.widget = null }
         // Destroying an ancestor first has already destroyed this widget with it.
         if (Rwidget_is_valid(widget) == R_TRUE) Rwidget_destroy(widget)
     }
