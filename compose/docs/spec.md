@@ -843,8 +843,9 @@ Added for the `overlay` and `glass` ports:
 - **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, state, onActivate)`** uses
   Raven's virtualised ListView in virtual mode, for text rows. Selection is controlled.
 - **`TreeView(roots, children, itemText, key, selection, onSelectionChange, multiSelect,
-  initiallyExpanded, onActivate, contextMenuItems, modifier)`** uses Raven's virtualised TreeView,
-  diffed by key onto Raven item handles.
+  initiallyExpanded, onActivate, contextMenuItems, itemIcon, modifier)`** uses Raven's virtualised
+  TreeView, diffed by key onto Raven item handles. Raven only appends items, so from the first item
+  out of place among siblings the rest are destroyed and added again, keeping their expansion.
   - Selection is a controlled set of keys.
   - Expansion stays Raven's, because Raven reports no expansion. `initiallyExpanded` applies to
     new items only.

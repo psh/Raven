@@ -12,6 +12,10 @@ import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.nativeHeap
+import kotlinx.cinterop.set
+import kotlinx.cinterop.free
 import raven.cinterop.RAccessibleRole
 import raven.cinterop.RWidgetType
 import raven.cinterop.R_FALSE
@@ -67,6 +71,19 @@ import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
 import raven.cinterop.Rwidget_set_accessible_role
+import raven.cinterop.Rlist_view_get_selected
+import raven.cinterop.Rlist_view_set_activated_callback
+import raven.cinterop.Rlist_view_set_selected
+import raven.cinterop.Rlist_view_set_selection_changed_callback
+import raven.cinterop.Rlist_view_set_virtual_items
+import raven.cinterop.Rtree_item_set_selected
+import raven.cinterop.Rtree_view_clear_selection
+import raven.cinterop.Rtree_view_get_selection
+import raven.cinterop.Rtree_view_get_selection_count
+import raven.cinterop.Rtree_view_set_activated_callback
+import raven.cinterop.Rtree_view_set_context_callback
+import raven.cinterop.Rtree_view_set_selection_changed_callback
+import raven.cinterop.Rwidget_get_user_handle
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.graphics.toRaven
@@ -570,4 +587,108 @@ public val ColorPickerChanged: Event<(Color) -> Unit> = Event(marks = ColorPicke
 
 private val onColorPickerChanged = staticCFunction { _: Rid, r: Float, g: Float, b: Float, a: Float, userData: COpaquePointer? ->
     dispatchEvent(userData, ColorPickerChanged) { it(Color(r, g, b, a)) }
+}
+
+// The list view's and the tree view's controlled values and event kinds.
+
+/** A list view's selected row, -1 for none. Raven selects nothing for a row it doesn't have. */
+@InternalComposeRavenApi
+public val ListViewSelected: ControlledValue<Int> = ControlledValue(
+    read = { Rlist_view_get_selected(it) },
+    write = { widget, index -> Rlist_view_set_selected(widget, index) },
+)
+
+/** A list view's rows, in virtual mode: their count, each row's text asked of [ListViewItemText]. */
+@InternalComposeRavenApi
+public val ListViewItems: Property<List<*>> = Property { widget, items ->
+    // Set again, the rows are asked for again; Raven keeps the selection and the scroll position.
+    Rlist_view_set_virtual_items(widget, items.size, onListViewItemText, Rwidget_get_user_handle(widget))
+}
+
+/** The text of a list view's row, asked as Raven paints it. */
+@InternalComposeRavenApi
+public val ListViewItemText: Event<(Int) -> String> = Event { _, _ -> }
+
+@InternalComposeRavenApi
+public val ListViewSelectionChanged: Event<(Int) -> Unit> = Event(marks = ListViewSelected) { widget, userData ->
+    Rlist_view_set_selection_changed_callback(widget, onListViewSelectionChanged, userData)
+}
+
+/** A row activated: double-clicked, or Enter pressed on it. */
+@InternalComposeRavenApi
+public val ListViewActivated: Event<(Int) -> Unit> = Event { widget, userData ->
+    Rlist_view_set_activated_callback(widget, onListViewActivated, userData)
+}
+
+/**
+ * A tree view's selected items, as Raven's item handles: one at most unless it is multi-select.
+ * Raven calls no callback when it is written.
+ */
+@InternalComposeRavenApi
+public val TreeViewSelection: ControlledValue<Set<Rid>> = ControlledValue(
+    read = { treeSelection(it) },
+    write = { widget, items ->
+        Rtree_view_clear_selection(widget)
+        items.forEach { Rtree_item_set_selected(it, R_TRUE) }
+    },
+)
+
+/** The user changed a tree view's selection: the items selected now. */
+@InternalComposeRavenApi
+public val TreeViewSelectionChanged: Event<(Set<Rid>) -> Unit> = Event(marks = TreeViewSelection) { widget, userData ->
+    Rtree_view_set_selection_changed_callback(widget, onTreeViewSelectionChanged, userData)
+}
+
+/** An item activated: double-clicked, or Enter pressed on it. */
+@InternalComposeRavenApi
+public val TreeViewActivated: Event<(Rid) -> Unit> = Event { widget, userData ->
+    Rtree_view_set_activated_callback(widget, onTreeViewActivated, userData)
+}
+
+/**
+ * A right click on a tree view: the item under the pointer, selected first, or `R_INVALID_ID` in the
+ * empty space, and where in the window, for `Rmenu_open`.
+ */
+@InternalComposeRavenApi
+public val TreeViewContext: Event<(item: Rid, x: Float, y: Float) -> Unit> = Event { widget, userData ->
+    Rtree_view_set_context_callback(widget, onTreeViewContext, userData)
+}
+
+private fun treeSelection(tree: Rid): Set<Rid> = (0 until Rtree_view_get_selection_count(tree)).mapTo(LinkedHashSet()) { Rtree_view_get_selection(tree, it) }
+
+// The text a list view asked for last: Raven draws it at once, so it lives until the next row's.
+private var lastItemText: CPointer<ByteVar>? = null
+
+private val onListViewItemText = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? -> listViewItemText(index, userData) }
+
+private fun listViewItemText(index: Int, userData: COpaquePointer?): CPointer<ByteVar>? {
+    var text = ""
+    dispatchEvent(userData, ListViewItemText) { text = it(index) }
+    lastItemText?.let { nativeHeap.free(it) }
+    val bytes = text.encodeToByteArray()
+    val copy = nativeHeap.allocArray<ByteVar>(bytes.size + 1)
+    bytes.forEachIndexed { i, byte -> copy[i] = byte }
+    copy[bytes.size] = 0
+    lastItemText = copy
+    return copy
+}
+
+private val onListViewSelectionChanged = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ListViewSelectionChanged) { it(index) }
+}
+
+private val onListViewActivated = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, ListViewActivated) { it(index) }
+}
+
+private val onTreeViewSelectionChanged = staticCFunction { tree: Rid, _: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewSelectionChanged) { it(treeSelection(tree)) }
+}
+
+private val onTreeViewActivated = staticCFunction { _: Rid, item: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewActivated) { it(item) }
+}
+
+private val onTreeViewContext = staticCFunction { _: Rid, item: Rid, x: Float, y: Float, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewContext) { it(item, x, y) }
 }
