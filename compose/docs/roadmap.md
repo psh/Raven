@@ -2,9 +2,10 @@
 
 The source of truth for **what gets built, in what order**. [`spec.md`](spec.md) says *what*
 compose-raven is, and this file says *when*. Implementation planning starts here: each milestone
-links to the spec sections that define it. Phases 1 to 3 are fully designed. All three wayfinder
-maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
-settled the phase 2 samples), and the remaining fog, listed on
+links to the spec sections that define it. Phases 1 to 3 are fully designed. The first three
+wayfinder maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
+settled the phase 2 samples), and [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md)
+is settling the phase 3 samples' port gaps before phase 3 is broken into tickets. The remaining fog, listed on
 [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
 for a phase 5 map. The split between phases 2, 3 and 4 follows [ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
 
@@ -125,8 +126,10 @@ settled every one; nothing is left open before implementation.
 
 ## 4. Phase 3
 
-Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md). Every decision these
-ports need is now made:
+Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md). These are the
+decisions the ports were designed around; checking the samples against them found port gaps, which
+[compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md) settles before
+phase 3 is broken into tickets:
 
 | Sample | Decisions it needs |
 |---|---|
@@ -168,6 +171,9 @@ Decided for phase 3 so far (in the spec):
   now), `ListView` and `TreeView` over Raven's virtualised widgets
 - [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md): controlled `TabView` with `Tab`
   pages, no Switcher, `LazyVerticalGrid` over UniformGrid, `Grid` with tracks and `Modifier.cell`
+- [Scroll position](issues/archive/0096-scroll-position.md): `ScrollState` for the scroll containers,
+  `LazyListState` for the lazy lists and `ListViewState` (`revealItem`) for `ListView`, saveable where
+  Raven can report the position; `performScrollTo`/`performScrollToIndex` in the harness
 - [Image and resources](issues/archive/0035-image-and-resources.md): resource root and `registerResource`,
   `ImageBitmap` (renamed from `Texture`), `Image` with `painterResource`/`BitmapPainter`, icons everywhere
 - [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition`,

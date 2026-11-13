@@ -523,7 +523,7 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | `LinearProgressIndicator(progress)` | ProgressBar | |
 | `HorizontalDivider()`, `VerticalDivider()` | Separator | |
 | `Spacer(modifier)` | Spacer | no children |
-| `VerticalScroll(modifier, verticalArrangement, horizontalAlignment) { }`, `HorizontalScroll(modifier, horizontalArrangement, verticalAlignment) { }` | ScrollBox | a scrolling Column or Row, with `ColumnScope`/`RowScope`. The ScrollBox stacks the children itself, each at its own size |
+| `VerticalScroll(modifier, state: ScrollState = rememberScrollState(), verticalArrangement, horizontalAlignment) { }`, `HorizontalScroll(modifier, state, horizontalArrangement, verticalAlignment) { }` | ScrollBox | a scrolling Column or Row, with `ColumnScope`/`RowScope`. The ScrollBox stacks the children itself, each at its own size. `state` arrives in phase 3 ([scroll position](#scroll-position-phase-3)) |
 | `CodeEditor(value, onValueChange = {}, modifier, language: String? = null, readOnly = false, lineNumbers = true)` | TextEditor | controlled. Its change callback carries no text, so the node reads `Rtext_editor_get_text`. `language` is a name for `Rtext_editor_set_language`; an unknown one shows plain text (Raven warns). Text the app rewrites also clears Raven's undo history |
 | `HorizontalSplitter(modifier) { }`, `VerticalSplitter(modifier) { }` | Splitter | each child is a pane it fills. In `SplitterScope`, `Modifier.weight` is its relative pane size, 1 by default. Dragging a handle keeps the new sizes until a weight changes |
 
@@ -761,7 +761,7 @@ Added for the `overlay` and `glass` ports:
 - **`LazyColumn { }` / `LazyRow { }`** use Compose's DSL (`items(list, key = { ... }) { item -> }`)
   over `VerticalScroll`/`HorizontalScroll`. In phase 3 they compose every item, with no
   virtualisation. `key` keeps rows stable through `Rwidget_move_child`.
-- **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, onActivate)`** uses
+- **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, state, onActivate)`** uses
   Raven's virtualised ListView in virtual mode, for text rows. Selection is controlled.
 - **`TreeView(roots, children, itemText, key, selection, onSelectionChange, multiSelect,
   initiallyExpanded, onActivate, contextMenuItems, modifier)`** uses Raven's virtualised TreeView,
@@ -770,6 +770,36 @@ Added for the `overlay` and `glass` ports:
   - Expansion stays Raven's, because Raven reports no expansion. `initiallyExpanded` applies to
     new items only.
   - `contextMenuItems` opens a menu at the pointer.
+
+### Scroll position (phase 3)
+
+The scroll containers, the lazy lists and `ListView` take a state holder, as in Compose. Raven
+reports no scroll changes, so what a state reads is polled each frame, as `CodeEditorState.cursor`
+is.
+
+- **`ScrollState`** (`rememberScrollState()`), the `state` of `VerticalScroll`/`HorizontalScroll`:
+  - `value: Int`, the offset in dp, read-only snapshot state from `Rscroll_box_get_offset`.
+  - `suspend scrollTo(value)` uses `Rscroll_box_set_offset`, which Raven clamps.
+    `animateScrollTo(value)` jumps the same way, because Raven doesn't animate scrolling.
+  - `suspend scrollToEnd()` (a compose-raven extension) uses `Rscroll_box_scroll_to_end`, in place
+    of Compose's `scrollTo(maxValue)`. There is no `maxValue` and no `isScrollInProgress`.
+- **`LazyListState`** (`rememberLazyListState()`), the `state` of `LazyColumn`/`LazyRow`:
+  - `firstVisibleItemIndex` and `firstVisibleItemScrollOffset`, from the ScrollBox offset and the
+    item widgets' positions (every item is composed in phase 3).
+  - `suspend scrollToItem(index, scrollOffset = 0)` puts the item at the top, as in Compose.
+    `animateScrollToItem` jumps the same way. There is no `layoutInfo`, `isScrollInProgress` or
+    `canScrollForward`.
+- **Saved and restored**: both are `rememberSaveable`, with `ScrollState.Saver` and
+  `LazyListState.Saver`, so a position comes back with the window's saved state.
+- **Before attach**: a state keeps the position it was asked for (or restored) and applies it when
+  it is attached to its ScrollBox.
+- **One scrollable per state**: a state given to a second scrollable logs an error, and only the
+  first uses it.
+- **`ListViewState`** (`rememberListViewState()`), the `state` of `ListView`, has only
+  `suspend revealItem(index)`: `Rlist_view_scroll_to_item`, which scrolls just enough to show the
+  row. Raven can't report the list's position, so it isn't saveable, and `revealItem` on a state
+  not attached to a list does nothing. A log keeps its last line in view with
+  `LaunchedEffect(lines.size) { state.revealItem(lines.lastIndex) }`.
 
 ### Tabs and grids (phase 3)
 
@@ -917,6 +947,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md),
 [Lists and trees](issues/archive/0033-lists-and-trees.md),
 [Tabs, Switcher and grids](issues/archive/0034-tabs-switcher-and-grids.md),
+[Scroll position](issues/archive/0096-scroll-position.md),
 [Image and resources](issues/archive/0035-image-and-resources.md),
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
 [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
@@ -987,7 +1018,9 @@ it needs from foundation is public behind `@InternalComposeRavenApi` (`@Requires
   their `onAllNodesWith...` forms, and `onNode(matcher)`. The matchers (`hasText`, `hasTestTag`,
   `hasContentDescription`, `isEnabled`, `isFocused`, `isToggleable`) combine with `and` and `or`.
 - **Actions**: `performClick`, `performTextInput`, `performTextReplacement`, `performKeyPress`
-  and `performScrollBy`, all through Raven's input injection.
+  and `performScrollBy`, all through Raven's input injection. Phase 3 adds `performScrollTo()`
+  (`Rwidget_scroll_into_view`) and `performScrollToIndex(i)` on a lazy list (`scrollToItem`) or a
+  `ListView` (`revealItem`).
 - **Assertions**: `assertExists`, `assertDoesNotExist`, `assertIsDisplayed`, `assertTextEquals`,
   `assertIsChecked`/`NotChecked`, `assertIsEnabled`/`NotEnabled`, `assertIsFocused` and
   `assertValueEquals`. They read typed node accessors, not Raven getters.
@@ -1257,6 +1290,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `padding` is always outside the widget (no drawing modifiers) | position in the chain decides | [6](#6-layout-and-modifiers) |
 | No `Layout {}`, and no right-to-left yet, although Raven supports it (`Start`/`End` are left/right) | custom layouts, `LayoutDirection` | [6](#6-layout-and-modifiers) |
 | `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-component-vocabulary) |
+| `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
+| `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
 | `CodeEditor(completions)` is a synchronous `(prefix) -> List<Completion>`, called inside Raven's completion callback | no code editor; completions come from the app's own popup | [8](#phase-2-codeeditors-editing-extras) |
