@@ -6,7 +6,7 @@ status: open
 
 Port Raven's `examples/glass`: floating glass bars over a page that scrolls under them. Spec: [10. Samples](../spec.md#10-samples).
 
-**Depends on:** [Generic input, focus and menus](archive/0113-generic-input-focus-and-menus.md), [Images and resources](archive/0115-images-and-resources.md), [Lists and trees](0120-lists-and-trees.md), [Tabs and grids](0122-tabs-and-grids.md).
+**Depends on:** [Generic input, focus and menus](archive/0113-generic-input-focus-and-menus.md), [Images and resources](archive/0115-images-and-resources.md), [Lists and trees](archive/0120-lists-and-trees.md), [Tabs and grids](0122-tabs-and-grids.md).
 
 ## Deliverables
 

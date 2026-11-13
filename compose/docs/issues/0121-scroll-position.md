@@ -6,7 +6,7 @@ status: open
 
 Scroll state for the scroll containers, the lazy lists and `ListView`. Spec: [8: Scroll position](../spec.md#scroll-position-phase-3).
 
-**Depends on:** [Lists and trees](0120-lists-and-trees.md).
+**Depends on:** [Lists and trees](archive/0120-lists-and-trees.md).
 
 ## Deliverables
 

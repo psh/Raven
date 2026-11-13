@@ -34,7 +34,7 @@ is.
   [Typography in RavenTheme](0117-typography-in-raventheme.md),
   [Modifier.offset and LocalDensity](0118-layout-offset-and-density.md),
   [Theming extras](0119-theming-extras.md),
-  [Lists and trees](../0120-lists-and-trees.md),
+  [Lists and trees](0120-lists-and-trees.md),
   [Scroll position](../0121-scroll-position.md),
   [Tabs and grids](../0122-tabs-and-grids.md),
   [Toolbar](0123-toolbar.md),
