@@ -382,9 +382,11 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
 - **`DpSize(width: Dp, height: Dp)`**, in the same package, is a window's size and minimum size
   (phase 2), rounded to whole logical units for Raven.
 - **`LocalDensity`** (phase 3), in `raven.compose.ui.platform`, provides a minimal `Density`: its
-  `density` is the window's scale (`Rwindow_get_scale`), with `Dp.toPx()` and `Int.toDp()` in its
-  scope, for turning dp (pointer positions) into pixels (a viewport's size) and back
-  ([The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md)).
+  `density` is the window's scale (`Rwindow_get_scale`), with `Dp.toPx()`, `Int.toDp()` and
+  `Float.toDp()` in its scope, for turning dp (pointer positions) into pixels (a viewport's size)
+  and back ([The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md)). Raven
+  reports no change of scale, so the window reads it once a frame, and a change recomposes its
+  readers ([Modifier.offset and LocalDensity](issues/archive/0118-layout-offset-and-density.md)).
 - **Packages follow Compose's**: `Modifier`, `Alignment` and `testTag` are in `raven.compose.ui`.
   The modifier functions (`padding`, `size`, `fillMaxWidth`, ...), `Arrangement`, the scopes and
   `Column`/`Row`/`Box` are in `raven.compose.foundation.layout`. The elements they create, and the
