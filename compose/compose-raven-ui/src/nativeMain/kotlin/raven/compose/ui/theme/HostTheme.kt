@@ -13,11 +13,13 @@ import raven.cinterop.R_LOOK_RAVEN_DARK
 import raven.cinterop.R_TRUE
 import raven.cinterop.Rid
 import raven.cinterop.Ris_ui_thread
+import raven.cinterop.R_METRIC_FONT_SIZE
 import raven.cinterop.Rlook_get
 import raven.cinterop.Rlook_set
 import raven.cinterop.Rtheme_get_color
 import raven.cinterop.Rtheme_get_count
 import raven.cinterop.Rtheme_get_material
+import raven.cinterop.Rtheme_get_metric
 import raven.cinterop.Rtheme_get_name_at
 import raven.cinterop.Rtheme_set_accent
 import raven.cinterop.Rtheme_set_font
@@ -43,6 +45,10 @@ internal class HostTheme {
         private set
 
     var themeNames: List<String> by mutableStateOf(emptyList())
+        private set
+
+    /** The app theme's font size (`R_METRIC_FONT_SIZE`), which `Typography.fromTheme()` sizes its roles from. */
+    var baseFontSize: Float by mutableStateOf(0f)
         private set
 
     // What the application-level RavenTheme last asked for; null is "left as Raven has it".
@@ -103,6 +109,8 @@ internal class HostTheme {
             read = readColors()
         }
         if (read != colors) colors = read
+        val size = Rtheme_get_metric(R_METRIC_FONT_SIZE)
+        if (size != baseFontSize) baseFontSize = size
         val names = List(Rtheme_get_count()) { Rtheme_get_name_at(it).toRavenString() }
         if (names != themeNames) {
             themeNames = names

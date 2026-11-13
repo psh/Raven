@@ -55,6 +55,7 @@ import raven.cinterop.Rtext_editor_undo
 import raven.compose.ui.Modifier
 import raven.compose.ui.Property
 import raven.compose.ui.text.TextStyle
+import raven.compose.ui.theme.RavenTheme
 import raven.compose.ui.text.font.BaseFont
 import raven.compose.ui.text.font.rememberRavenFont
 import raven.compose.ui.unit.TextUnit
@@ -114,8 +115,8 @@ internal var editorPlaceholderSetter: (Rid, String) -> Unit = ::Rtext_editor_set
  * edited, and after each edit the editor shows the composed list again, so a marker stays where
  * the app put it until the app composes a new list.
  *
- * [textStyle] gives the text its font, size and colour; the default is the theme's, in the
- * fixed-width font. Bold or italic without a family is the fixed-width font's. The editor has no
+ * [textStyle] gives the text its font, size and colour; the default is the typography's `code`, the
+ * theme's size in the fixed-width font. Bold or italic without a family is the fixed-width font's. The editor has no
  * alignment, so `textAlign` is ignored.
  */
 @Composable
@@ -131,7 +132,7 @@ public fun CodeEditor(
     placeholder: String = "",
     completions: ((prefix: String) -> List<Completion>)? = null,
     markers: List<EditorMarker> = emptyList(),
-    textStyle: TextStyle = TextStyle.Default,
+    textStyle: TextStyle = RavenTheme.typography.code,
 ) {
     val follower = remember { EditorFollower() }
     val font = rememberRavenFont(textStyle.fontFamily, textStyle.fontWeight, textStyle.fontStyle, BaseFont.Monospace)

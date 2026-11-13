@@ -30,6 +30,8 @@ import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Shape
+import raven.compose.ui.text.ProvideTextStyle
+import raven.compose.ui.theme.RavenTheme
 
 private val ButtonStyle = Property<RButtonStyle> { widget, style -> Rbutton_set_style(widget, style) }
 
@@ -98,7 +100,7 @@ private fun RavenButton(
         bind(roleColors, WidgetColors)
         bind(contentPadding, kind.contentPadding)
         bind(onClick, ButtonClicked)
-    }) { RowScopeInstance.content() }
+    }) { ProvideTextStyle(RavenTheme.typography.label) { RowScopeInstance.content() } }
 }
 
 /**

@@ -1062,7 +1062,9 @@ sized from Raven's base font size *B* using Raven's own Markdown heading factors
 - **Raven's own sizes**: `body`, `label` and `code` leave the size to Raven, so theme files still
   set them. The scaled roles are recalculated when the theme or look changes.
 - **Custom typography**: `Typography.fromTheme().copy(...)`. A nested `RavenTheme(typography)`
-  changes it for a subtree.
+  changes it for a subtree, at application level or in a window, and gives the subtree its `body`
+  as the text style; `typography = null`, the default, keeps the outer one.
+- **Button content** gets `label` merged over the text style around it, as Material's buttons do.
 - **Raven-drawn text** (menus, tabs, list and tree rows, header and dock titles) keeps Raven's
   theme font.
 - **`MarkdownText` headings** use Raven's factors.

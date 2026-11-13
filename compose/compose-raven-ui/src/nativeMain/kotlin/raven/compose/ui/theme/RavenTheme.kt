@@ -13,6 +13,7 @@ import raven.compose.ui.LocalRavenHost
 import raven.compose.ui.LocalSubtreeSettings
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Material
+import raven.compose.ui.text.LocalTextStyle
 import raven.compose.ui.text.font.FontFamily
 import raven.compose.ui.text.font.LocalFontFamily
 import raven.compose.ui.text.font.font
@@ -64,6 +65,9 @@ public enum class Look {
  * app-wide settings can't be made there: setting [look], [dark], [accent] or [material] logs an
  * error and does nothing.
  *
+ * In either place, [typography] gives the content its text roles, `RavenTheme.typography`, and its
+ * `body` as the text style; null keeps the outer one, or [Typography.fromTheme].
+ *
  * A null setting leaves Raven's as it is. [theme] names a theme from [loadTheme], a built-in one or
  * a look ("WindowsLight"). [Material.Default] is the material the look and theme give. Only Raven's
  * own looks are made of glass: the others keep [Material.Solid], and Raven warns.
@@ -76,18 +80,25 @@ public fun RavenTheme(
     accent: Color? = null,
     material: Material? = null,
     fontFamily: FontFamily? = null,
+    typography: Typography? = null,
     content: @Composable () -> Unit,
 ) {
     // Bold and italic text without a family of its own follows the innermost family given.
     val family = fontFamily ?: LocalFontFamily.current
+    val typographyLocals = if (typography == null) emptyArray() else arrayOf(
+        LocalTypography provides typography,
+        LocalTextStyle provides LocalTextStyle.current.merge(typography.body),
+    )
     when (LocalThemePlacement.current) {
         ThemePlacement.Application -> {
             ApplyAppTheme(look, dark, theme, accent, material, fontFamily)
-            CompositionLocalProvider(LocalFontFamily provides family, content = content)
+            CompositionLocalProvider(LocalFontFamily provides family, *typographyLocals, content = content)
         }
         ThemePlacement.TopOfSingleWindow -> {
             ApplyAppTheme(look, dark, theme, accent, material, fontFamily)
-            CompositionLocalProvider(LocalThemePlacement provides ThemePlacement.Window, LocalFontFamily provides family, content = content)
+            CompositionLocalProvider(
+                LocalThemePlacement provides ThemePlacement.Window, LocalFontFamily provides family, *typographyLocals, content = content,
+            )
         }
         ThemePlacement.Window -> {
             if (look != null || dark != null || accent != null || material != null) {
@@ -99,7 +110,7 @@ public fun RavenTheme(
             // Provided even when null, so changing the theme to or from null keeps the content's state.
             val subtree = LocalSubtreeSettings.current
             val settings = subtree.copy(theme = theme ?: subtree.theme, font = fontFamily ?: subtree.font)
-            CompositionLocalProvider(LocalSubtreeSettings provides settings, LocalFontFamily provides family, content = content)
+            CompositionLocalProvider(LocalSubtreeSettings provides settings, LocalFontFamily provides family, *typographyLocals, content = content)
         }
     }
 }
@@ -132,6 +143,12 @@ public object RavenTheme {
      */
     public val themeNames: List<String>
         get() = runningHost("RavenTheme.themeNames").theme.themeNames
+
+    /** The text roles the innermost `RavenTheme(typography)` gives, or else [Typography.fromTheme]. */
+    public val typography: Typography
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalTypography.current ?: Typography.fromTheme()
 }
 
 /** The app theme's colours, provided by the host to the application composition and every window. */
