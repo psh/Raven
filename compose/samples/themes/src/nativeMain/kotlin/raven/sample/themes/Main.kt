@@ -69,7 +69,7 @@ import kotlin.time.Duration.Companion.milliseconds
 //   RavenTheme(theme)           at application level, the theme of the application; inside the
 //                               window, the theme of a subtree (the C example's Theme="paper.xml")
 //   RavenTheme(accent)          one colour, and the shades that follow from it, from a row of
-//                               swatches (the C example's ColorPicker arrives in phase 5)
+//                               swatches (the C example's ColorPicker arrives in phase 3)
 //   saveTheme(path, name)       writes the theme in use as a theme file
 //   colors = ...                the C example's Class="danger"
 //   MarkdownText, CodeEditor(language = "Markdown")   Markdown rendered, and styled as you type

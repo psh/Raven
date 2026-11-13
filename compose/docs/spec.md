@@ -594,6 +594,16 @@ Added for the `notepad`, `themes` and `overlay` ports (and `glass` in phase 3). 
 `codeEditorLanguages(): List<String>` lists Raven's editor languages (`Rlanguage_get_count`/`_name`).
 It is valid only inside the composition.
 
+### ColorPicker (phase 3)
+
+Added for the `music` port, and replacing the stand-in swatches of the phase 2 `themes` port:
+
+| Composable | Raven widget | Notes |
+|---|---|---|
+| `ColorPicker(color: Color, onColorChange: (Color) -> Unit, modifier, popup = false, alpha = true, compact = false, swatches: List<Color> = emptyList(), enabled = true)` | ColorPicker | controlled; `Rcolor_picker_set_color` doesn't call back, so a refused change reverts on the next frame. `onColorChange` fires on every change, during a drag too, as `Slider`'s does. `popup` is a swatch the size of a button that opens the picker; `alpha = false` makes colours opaque; `compact` hides the code and the numbers. A popup picker shows the colour it opened with beside the new one. Raven's `Numbers` (RGB or HSV) stays its default |
+
+Decided in [Music's accent picker](issues/archive/0100-musics-accent-picker.md).
+
 ### Phase 2: Surface, FlowRow and Expander
 
 Added for the `components` port:
@@ -1041,7 +1051,8 @@ it needs from foundation is public behind `@InternalComposeRavenApi` (`@Requires
 - **Actions**: `performClick`, `performTextInput`, `performTextReplacement`, `performKeyPress`
   and `performScrollBy`, all through Raven's input injection. Phase 3 adds `performScrollTo()`
   (`Rwidget_scroll_into_view`) and `performScrollToIndex(i)` on a lazy list (`scrollToItem`) or a
-  `ListView` (`revealItem`).
+  `ListView` (`revealItem`), and `performColorChange(color)` on a `ColorPicker`, which opens its
+  popup if it has one and types the colour's hex code into its code field.
 - **Assertions**: `assertExists`, `assertDoesNotExist`, `assertIsDisplayed`, `assertTextEquals`,
   `assertIsChecked`/`NotChecked`, `assertIsEnabled`/`NotEnabled`, `assertIsFocused` and
   `assertValueEquals`. They read typed node accessors, not Raven getters.
@@ -1319,6 +1330,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
 | Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-component-vocabulary) |
 | `CodeEditor`, `HorizontalSplitter`, `VerticalSplitter`, `ComboBox`, `SpinBox` | no counterpart in Compose Foundation | [8](#8-component-vocabulary) |
+| `ColorPicker` | no counterpart in Compose Foundation | [8](#colorpicker-phase-3) |
 | `SpinBox` shows 2 decimals unless told otherwise (Raven's default) | none | [8](#8-component-vocabulary) |
 | `Surface` container for background, border, corners and shadow | `Modifier.background` / `.border` / `.clip` / `.shadow` | [8](#8-component-vocabulary) |
 | `shadowElevation` maps to blur and offset as an approximation | Material elevation | [8](#8-component-vocabulary) |

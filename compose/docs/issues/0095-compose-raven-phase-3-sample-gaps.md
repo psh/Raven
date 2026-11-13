@@ -66,6 +66,7 @@ with nothing open. This map plans; it builds nothing.
 - [Verify Navigation 3 under the host](archive/0097-verify-navigation-3-under-the-host.md): passes, no fallback; on Kotlin/Native `rememberNavBackStack` needs a `SavedStateConfiguration` declaring the `NavKey` subclasses, and entry state lives in the decorator's `SaveableStateHolder`, so a page kept as an entry keeps its state with nothing from the window.
 - [Music's pages and back navigation](archive/0098-musics-pages-and-back-navigation.md): a `NavDisplay` over keys per page (the one phase 3 sample using `compose-raven-navigation3`), pages brought to the front when visited again, Search's two views a plain `if`; nothing new for compose-raven, and four deliberate differences from the C example go to `music`'s sample ticket.
 - [Music's class-styled themes](archive/0099-musics-class-styled-themes.md): classes stay out; the port has its own palette per theme over the C example's theme files, and compose-raven gains explicit hovered and pressed colours (buttons, `Checkbox`, `RadioButton`, `Slider`), `ColorFilter.textColor()` and `TextFieldDefaults.colors(unfocusedIndicatorColor)`.
+- [Music's accent picker](archive/0100-musics-accent-picker.md): a slim controlled `ColorPicker` moves into phase 3 (`popup`, `alpha`, `compact`, `swatches`), with `performColorChange` in the harness; `themes` uses it too, so its swatches gap moves from phase 5 to phase 3.
 
 ## Not yet specified
 
@@ -74,8 +75,7 @@ The map's tickets, by sample (a ticket can serve several):
 - `editor`: [The editor's scene viewport](0101-the-editors-scene-viewport.md),
   [The editor's run-time extras](0102-the-editors-run-time-extras.md)
 - `workspace`: [DockArea and HeaderBar extras](0105-dockarea-and-headerbar-extras.md)
-- `music`: [Music's accent picker](0100-musics-accent-picker.md),
-  [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
+- `music`: [Animated effects and continuous redraw](0104-animated-effects-and-continuous-redraw.md),
   [DockArea and HeaderBar extras](0105-dockarea-and-headerbar-extras.md) (the header),
   [Small port gaps](0107-small-port-gaps.md)
 - `animations`: [Animations beyond appear transitions](0103-animations-beyond-appear-transitions.md)

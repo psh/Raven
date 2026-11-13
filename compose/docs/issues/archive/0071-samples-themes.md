@@ -33,7 +33,8 @@ with theme files loaded at start. Spec: [10. Samples](../../spec.md#10-samples),
 ## Gaps
 
 - **Phase 3:** `ListView` ([Lists and trees](0033-lists-and-trees.md)).
-- **Phase 5** (the specialist widgets): `ColorPicker`, replacing the accent swatches.
+- **Phase 3** ([Music's accent picker](0100-musics-accent-picker.md), moved from phase 5 on
+  2026-11-12): `ColorPicker(popup = true, alpha = false)`, replacing the accent swatches.
 - **Phase 3** ([Fonts and text styling](0027-fonts-and-text-styling.md)): `Text(softWrap)`
   for the wrapped status line, and `fontFamily` for the C example's monospace label. Found while
   porting; not yet on `roadmap.md`.

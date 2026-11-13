@@ -66,8 +66,9 @@ patches below are the fog that remains. They seed a future phase 5 map (renumber
 [ADR 0001](../adr/0001-phase-split-after-the-phase-2-sample-gaps.md)), and move there when one is
 charted.
 
-- **Specialist widgets**: Timeline, NodeGraph, ColorPicker, WebView and BlockEditor, for `studio`
-  and `browser`. Each is large and driven by callbacks, and they wait until the list, custom
+- **Specialist widgets**: Timeline, NodeGraph, WebView and BlockEditor, for `studio` and
+  `browser` (`ColorPicker` moved to phase 3:
+  [Music's accent picker](archive/0100-musics-accent-picker.md)). Each is large and driven by callbacks, and they wait until the list, custom
   drawing and input tickets have settled the common patterns.
 
 - **Right-to-left layout**: Raven supports it (`Rset_layout_direction`, `Rwidget_set_direction`).

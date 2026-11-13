@@ -177,6 +177,8 @@ Decided for phase 3 so far (in the spec):
 - [Music's class-styled themes](issues/archive/0099-musics-class-styled-themes.md): explicit hovered and
   pressed colours for the buttons, `Checkbox`, `RadioButton` and `Slider`, `ColorFilter.textColor()`, and
   `TextFieldDefaults.colors(unfocusedIndicatorColor)`
+- [Music's accent picker](issues/archive/0100-musics-accent-picker.md): a slim controlled `ColorPicker` in phase 3, for `music`, and for
+  `samples/themes` in place of its stand-in swatches ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md))
 - [Image and resources](issues/archive/0035-image-and-resources.md): resource root and `registerResource`,
   `ImageBitmap` (renamed from `Texture`), `Image` with `painterResource`/`BitmapPainter`, icons everywhere
 - [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md): `Modifier.appearTransition`,
@@ -222,8 +224,6 @@ multi-window tests, build-time XML translation, app bundling, gestures (with dro
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
   (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after
   phase 3, once the modules exist.
-- `ColorPicker`, one of the specialist widgets, also completes `samples/themes`: it replaces the
-  row of accent swatches the phase 2 port uses
-  ([Theme extras the themes sample uses](issues/archive/0077-theme-extras-the-themes-sample-uses.md)).
-- `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, ColorPicker, WebView,
-  BlockEditor), which are still fog on the phase 3 map.
+- `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, WebView, BlockEditor),
+  which are still fog on the phase 3 map. `ColorPicker` left that list for phase 3
+  ([Music's accent picker](issues/archive/0100-musics-accent-picker.md)).
