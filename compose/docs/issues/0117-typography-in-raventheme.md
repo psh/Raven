@@ -6,7 +6,7 @@ status: open
 
 Eight text roles sized from Raven's base size, and the components' defaults. Spec: [8: Typography](../spec.md#typography-phase-3).
 
-**Depends on:** [Fonts and text styling](0116-fonts-and-text-styling.md).
+**Depends on:** [Fonts and text styling](archive/0116-fonts-and-text-styling.md).
 
 ## Deliverables
 

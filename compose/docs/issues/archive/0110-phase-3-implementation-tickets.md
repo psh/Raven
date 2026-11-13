@@ -30,7 +30,7 @@ is.
   [Generic input, focus and menus](../0113-generic-input-focus-and-menus.md),
   [Accessibility semantics](../0114-accessibility-semantics.md),
   [Images and resources](0115-images-and-resources.md),
-  [Fonts and text styling](../0116-fonts-and-text-styling.md),
+  [Fonts and text styling](0116-fonts-and-text-styling.md),
   [Typography in RavenTheme](../0117-typography-in-raventheme.md),
   [Modifier.offset and LocalDensity](../0118-layout-offset-and-density.md),
   [Theming extras](../0119-theming-extras.md),

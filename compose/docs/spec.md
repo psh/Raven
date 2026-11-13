@@ -750,8 +750,18 @@ Added for the `overlay` and `glass` ports:
 - **Weight and style**: `FontWeight` W100 to W500 mean Regular and W600 to W900 mean Bold.
   `FontStyle` is Normal or Italic. Raven synthesises the styles that have no file.
 - **`TextStyle(color, fontSize, fontFamily, fontWeight, fontStyle, textAlign)`** is read from
-  `LocalTextStyle` and changed for a subtree with `ProvideTextStyle(style) { }`. `TextField` and
-  `CodeEditor` take a `textStyle`.
+  `LocalTextStyle` and changed for a subtree with `ProvideTextStyle(style) { }`, which merges with
+  the outer style. `TextField` and `CodeEditor` take a `textStyle`:
+  - `TextField(textStyle)`'s font is the widget's own `Rwidget_set_font`, winning over a subtree's,
+    and its size the widget's `R_METRIC_FONT_SIZE`: Raven's field has no font setter. The field keeps
+    the theme's control height, and has no alignment. A `textStyle` colour wins over `colors`.
+  - `CodeEditor(textStyle)` uses `Rtext_editor_set_font`; its default is the theme's, in the
+    fixed-width font.
+- **`Text(softWrap = false)`** by default: a Raven label keeps to one line unless told to wrap,
+  so `softWrap = true` wraps it on the width its parent gives it. `TextAlign` is `Left`, `Right`,
+  `Center`, and `Start`/`End` as left and right.
+- **Bold or italic without a family** is that style of the family a `RavenTheme` gives, else of the
+  theme's font, read once.
 - **`RavenTheme(fontFamily: FontFamily? = null)`**: at application level it sets `Rtheme_set_font`,
   and inside a window it uses `Rwidget_set_font` on its subtree. The starting `LocalTextStyle` comes from the
   theme's font size metric.
@@ -1420,6 +1430,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
+| `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
 | `CodeEditor(completions)` is a synchronous `(prefix) -> List<Completion>`, called inside Raven's completion callback | no code editor; completions come from the app's own popup | [8](#phase-2-codeeditors-editing-extras) |
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
