@@ -782,7 +782,10 @@ Added for the `overlay` and `glass` ports:
     nothing redraws while it is still ([The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md)).
   - `NativeViewport(modifier, onCreated: (NativeWindowHandle) -> Unit, onResize)` uses a native
     child window. On macOS, that is an `NSView` with a `CAMetalLayer`, which is the route for Metal
-    through `platform.Metal`. It sits above the UI and is not clipped.
+    through `platform.Metal`. It sits above the UI and is not clipped. Raven reports only the
+    child's `CAMetalLayer`, so compose-raven finds its `NSView` in the window's view tree by that
+    layer, and the macOS `NativeWindowHandle` carries both; GL (`compose-raven-opengl`) attaches to
+    the view and Metal draws into the layer, beside Raven's MoltenVK ([verified](../spikes/README.md)).
 - **`compose-raven-vulkan`**:
   - `VulkanViewport(modifier, realtime = false, onDraw: (VulkanFrame) -> Unit)` uses Raven's draw
     callback. **`onDraw` runs on Raven's render thread**: it records Vulkan commands into

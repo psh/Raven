@@ -74,12 +74,12 @@ with nothing open. This map plans; it builds nothing.
 - [DockArea and HeaderBar extras](archive/0105-dockarea-and-headerbar-extras.md): `DockAreaState.layout` as snapshot state, `DockAreaState.showPanel(name)`, and `HeaderBar(background)`; a Navigation 3 docking scene went to the phase 5 fog.
 - [Menus opened from a button, and Raven's popups](archive/0106-menus-opened-from-a-button-and-ravens-popups.md): `DropdownMenu` with `rememberDropdownMenuState().open()` over Raven's Menu and phase 2's `MenuScope`, dismissed by Raven; `Popup` stays phase 5 fog with its note rewritten.
 - [Small port gaps](archive/0107-small-port-gaps.md): `Modifier.offset` on the slot padding, `LazyVerticalGrid(minCellSize)`, and `ImageBitmap.filterQuality`.
+- [Verify GL and Metal on macOS child views](archive/0108-verify-gl-and-metal-on-macos-child-views.md): both pass in a real window beside Raven's MoltenVK; compose-raven finds the child's `NSView` by its `CAMetalLayer`, since Raven reports only the layer.
 
 ## Not yet specified
 
 Every sample's port gaps are decided. The tickets left:
 
-- Open facts: [Verify GL and Metal on macOS child views](0108-verify-gl-and-metal-on-macos-child-views.md)
 - Upstream: [Upstream changes and the fog notes](0109-upstream-changes-and-the-fog-notes.md)
 - Last: [Phase 3 implementation tickets](0110-phase-3-implementation-tickets.md)
 
