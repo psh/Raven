@@ -6,7 +6,7 @@ status: open
 
 Port Raven's `examples/animations`: transitions, springs, cards that come and go, the island. Spec: [10. Samples](../spec.md#10-samples).
 
-**Depends on:** [Generic input, focus and menus](0113-generic-input-focus-and-menus.md), [Custom drawing, viewports and effects](0124-custom-drawing-viewports-and-effects.md), [Animation](0127-animation.md), [Island](0128-island.md).
+**Depends on:** [Generic input, focus and menus](archive/0113-generic-input-focus-and-menus.md), [Custom drawing, viewports and effects](0124-custom-drawing-viewports-and-effects.md), [Animation](0127-animation.md), [Island](0128-island.md).
 
 ## Deliverables
 
