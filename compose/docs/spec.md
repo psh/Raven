@@ -552,7 +552,7 @@ Added for the `notepad` port:
 | `Item(text, onClick, shortcut: KeyShortcut? = null, enabled = true)` | MenuItem | no children |
 | `CheckboxItem(text, checked, onCheckedChange, shortcut, enabled)` | MenuItem, checkable | controlled |
 | `Separator()` (in `MenuScope`) | MenuItem with `Separator = true` | a plain Separator widget is not a menu separator in Raven, but a MenuItem with the `Separator` attribute (`Rwidget_set_attribute`) is, and can be inserted at an index (verified, [spikes](../spikes/README.md)) |
-| `HeaderBar(modifier, title: String? = null, buttons: Set<WindowButton> = WindowButton.all()) { }` | HeaderBar | needs `Window(customHeader = true)`, otherwise a warning is logged; in `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right |
+| `HeaderBar(modifier, title: String? = null, buttons: Set<WindowButton> = WindowButton.all(), background: Boolean = true) { }` | HeaderBar | needs `Window(customHeader = true)`, otherwise a warning is logged; in `HeaderBarScope`, `Modifier.align(Alignment.End)` places a child on the right. `background = false` (phase 3, `Rheader_bar_set_background`) removes the bar's own background, for a header over the window's content or in a glass panel ([DockArea and HeaderBar extras](issues/archive/0105-dockarea-and-headerbar-extras.md)) |
 
 `KeyShortcut(key: Key, ctrl, shift, alt, meta)` uses `Rmenu_item_set_shortcut`, where `meta` is
 Super (Cmd on macOS). `Key` mirrors `RKey`: letters, digits, F1 to F12, and the named keys.
@@ -930,7 +930,11 @@ is.
   - The arrangement is Raven's. `initialDock` (`Dock.Left/Right/Top/Bottom(size)`,
     `Dock.Tab(of)`) applies when a panel is first added.
   - `state.saveLayout()` and `loadLayout(text)` persist the arrangement, and panels need a
-    `name` for that.
+    `name` for that. `state.layout` is the same text as read-only snapshot state, refreshed from
+    Raven's changed callback after the user moves, resizes, shows or closes a panel.
+  - `state.showPanel(name)` brings a panel's tab to the front (`Rdock_area_show_panel`); a panel
+    hidden or unknown logs a warning. Which tab is shown stays Raven's, as the arrangement does;
+    reopening a panel with `open = true` brings it forward too ([DockArea and HeaderBar extras](issues/archive/0105-dockarea-and-headerbar-extras.md)).
   - `open` and `onClose` are controlled, and closing hides the panel.
   - Torn-off panels live in Raven's floating windows but stay in their window's composition, so
     window-level settings still refer to the original window.
@@ -1039,6 +1043,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 [Island and appear transitions](issues/archive/0036-island-and-appear-transitions.md),
 [Animations beyond appear transitions](issues/archive/0103-animations-beyond-appear-transitions.md),
 [DockArea and FileBrowser](issues/archive/0037-docking-and-file-browser.md),
+[DockArea and HeaderBar extras](issues/archive/0105-dockarea-and-headerbar-extras.md),
 [Toolbar](issues/archive/0038-toolbar.md),
 [Navigation 3 and scenes](issues/archive/0039-navigation3-and-scenes.md),
 [Typography in RavenTheme](issues/archive/0040-typography-in-raventheme.md).

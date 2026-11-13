@@ -100,8 +100,12 @@ charted.
 - **Torn-off panels as Windows**: making DockArea's floating windows real compose-raven `Window`s,
   with their own window-level settings.
 - **More navigation**: a `WindowSceneStrategy` that opens entries as separate `Window`s (closing
-  calls `onBack`), list-detail scenes, and the ViewModel entry decorator
-  (`lifecycle-viewmodel-navigation3`).
+  calls `onBack`), list-detail scenes, the ViewModel entry decorator
+  (`lifecycle-viewmodel-navigation3`), and a docking scene that shows back-stack entries as
+  `DockArea` panels: showing a panel becomes pushing its key, and a tab the user picks or a panel
+  they close would report back so the stack follows (raised in
+  [DockArea and HeaderBar extras](archive/0105-dockarea-and-headerbar-extras.md); phase 3 keeps
+  `showPanel(name)`).
 - **Gestures**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`, drag gestures
   (`draggable`, `detectDragGestures`) and long press, beyond `onPointerEvent`; drop targets on
   widgets and drags inside the app (`Modifier.dragAndDropTarget`, `Rdrag_begin`), beyond phase 2's
