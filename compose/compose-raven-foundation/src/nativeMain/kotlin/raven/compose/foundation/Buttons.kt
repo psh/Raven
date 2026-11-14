@@ -114,7 +114,8 @@ private fun RavenButton(
 }
 
 /**
- * The main action: a filled button. Its [content] is laid out in a Row, centred.
+ * The main action: a filled button. Its [content] is laid out in a Row, centred; a child with
+ * `Modifier.weight` makes the Row span the button and takes the room left.
  *
  * [shape] and [contentPadding] null are the theme's. Raven has one corner radius, so a shape with
  * different corners uses its `topStart`, and it pads opposite sides alike, so padding uses `start`

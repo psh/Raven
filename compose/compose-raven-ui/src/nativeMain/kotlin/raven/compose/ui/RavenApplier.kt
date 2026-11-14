@@ -93,6 +93,7 @@ internal class RavenApplier(
             }
         }
         parent.children.remove(index, count)
+        parent.fitContent()
         if (parent.childKind == ChildKind.Single) changedSingleParents += parent
     }
 
