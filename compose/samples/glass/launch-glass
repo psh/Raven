@@ -1,0 +1,3 @@
+#!/bin/sh
+# Builds samples/glass for this machine and runs it; "light" starts with the light glass.
+exec "$(dirname "$0")/../launch-sample" glass "$@"
