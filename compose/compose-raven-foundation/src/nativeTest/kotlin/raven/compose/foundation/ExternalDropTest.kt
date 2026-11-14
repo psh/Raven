@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import raven.compose.ui.DragData
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.Window
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

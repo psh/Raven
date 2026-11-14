@@ -20,14 +20,14 @@ import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_has_dialog
 import raven.cinterop.Rwindow_inject_mouse_button
 import raven.compose.foundation.Button
-import raven.compose.foundation.RavenTestScope
 import raven.compose.foundation.Surface
 import raven.compose.foundation.Text
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.AppearTransition
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import kotlin.test.Test
 import kotlin.test.assertEquals

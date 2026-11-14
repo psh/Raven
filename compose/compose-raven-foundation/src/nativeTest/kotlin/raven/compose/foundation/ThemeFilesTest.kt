@@ -11,6 +11,7 @@ import platform.posix.mkdtemp
 import platform.posix.remove
 import platform.posix.rmdir
 import platform.posix.usleep
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.theme.RavenTheme
 import raven.compose.ui.theme.loadTheme
 import kotlin.test.AfterTest

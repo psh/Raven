@@ -10,10 +10,10 @@ import raven.cinterop.R_BACKDROP_BLUR
 import raven.cinterop.R_BACKDROP_MICA
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_get_backdrop
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.Window
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -21,7 +21,7 @@ class OverlayTest {
     /** Hosts [Overlay] as `main` does: in a transparent window whose opacity it controls. */
     private fun RavenTestScope.setOverlay(onClose: () -> Unit = {}) {
         var opacity by mutableFloatStateOf(1f)
-        host.start {
+        setApplicationContent {
             Window(onCloseRequest = {}, title = "Test", transparent = true, opacity = opacity) {
                 Overlay(opacity, onOpacityChange = { opacity = it }, onClose = onClose)
             }

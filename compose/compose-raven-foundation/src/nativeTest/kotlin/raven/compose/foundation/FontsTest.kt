@@ -22,6 +22,9 @@ import raven.compose.foundation.layout.Column
 import raven.compose.foundation.layout.width
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.text.ProvideTextStyle
 import raven.compose.ui.text.TextAlign

@@ -23,10 +23,10 @@ import raven.compose.animation.core.animateFloatAsState
 import raven.compose.animation.core.animateOffsetAsState
 import raven.compose.animation.core.spring
 import raven.compose.animation.core.tween
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.geometry.Offset
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals

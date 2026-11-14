@@ -30,6 +30,8 @@ import raven.compose.ui.layout.ContentScale
 import raven.compose.ui.layoutWarningSink
 import raven.compose.ui.res.painterResource
 import raven.compose.ui.res.registerResource
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.IntOffset
 import raven.compose.ui.unit.IntSize

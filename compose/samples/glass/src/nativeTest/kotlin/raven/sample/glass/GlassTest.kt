@@ -8,12 +8,12 @@ import androidx.compose.runtime.setValue
 import raven.cinterop.R_COLOR_WINDOW
 import raven.cinterop.Rtheme_get_color
 import raven.cinterop.Rwidget_focus
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.Window
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.theme.Look
 import raven.compose.ui.theme.RavenTheme
 import kotlin.test.Test
@@ -30,7 +30,7 @@ class GlassTest {
     private fun RavenTestScope.show() {
         // The player's time moves every frame while it plays: waiting for idle holds it.
         mainClock.autoAdvance = false
-        host.start {
+        setApplicationContent {
             RavenTheme(look = Look.Glass, dark = dark) {
                 Window(onCloseRequest = {}, title = "Glass") { GlassScreen(dark, { dark = it }, onQuit = { quits++ }, player = player) }
             }
@@ -54,7 +54,7 @@ class GlassTest {
     fun theMoreMenuOpensAndQuits() = runRavenTest {
         show()
         onNodeWithTag("more").performClick()
-        assertEquals(1, openMenus().size)
+        assertEquals(1, openMenuCount())
         clickOpenMenuItem("Lossless audio")
         waitForIdle()
         onNodeWithTag("more").performClick()

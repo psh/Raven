@@ -21,7 +21,7 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import raven.compose.foundation.Button
 import raven.compose.foundation.Text
-import raven.compose.foundation.runRavenTest
+import raven.compose.ui.test.runRavenTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

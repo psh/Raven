@@ -16,6 +16,8 @@ import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_key
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.test.Test
@@ -205,7 +207,7 @@ class InputsTest {
                 value = it
             }, Modifier.testTag("spin"))
         }
-        onNodeWithTag("spin").assertValue(10.0)
+        onNodeWithTag("spin").assertValueEquals(10.0)
         val spin = onNodeWithTag("spin").fetchWidget()
         onNodeWithTag("spin").performValueInput(42.5)
         // Shown at once, then kept, as an accepted selection is.
@@ -214,14 +216,14 @@ class InputsTest {
         assertEquals(42.5, Rspin_box_get_value(spin))
         assertEquals(listOf(42.5), changes)
         value = 7.0
-        onNodeWithTag("spin").assertValue(7.0)
+        onNodeWithTag("spin").assertValueEquals(7.0)
     }
 
     @Test
     fun aSpinBoxWhoseAppIgnoresTheValueReverts() = runRavenTest {
         setContent { SpinBox(10.0, onValueChange = {}, Modifier.testTag("spin")) }
         onNodeWithTag("spin").performValueInput(42.0)
-        onNodeWithTag("spin").assertValue(10.0)
+        onNodeWithTag("spin").assertValueEquals(10.0)
     }
 
     @Test
@@ -230,7 +232,7 @@ class InputsTest {
         setContent { SpinBox(value, onValueChange = { value = it }, Modifier.testTag("spin"), valueRange = 0.0..50.0) }
         onNodeWithTag("spin").performValueInput(500.0)
         assertEquals(50.0, value)
-        onNodeWithTag("spin").assertValue(50.0)
+        onNodeWithTag("spin").assertValueEquals(50.0)
     }
 
     @Test
@@ -246,13 +248,13 @@ class InputsTest {
         onNodeWithTag("spin").performValueInput(2.6)
         assertEquals(listOf(3), changes)
         // The fraction typed is written back as the whole number the app took.
-        onNodeWithTag("spin").assertValue(3.0)
+        onNodeWithTag("spin").assertValueEquals(3.0)
     }
 
     @Test
     fun anIntSpinBoxWhoseAppIgnoresTheValueReverts() = runRavenTest {
         setContent { SpinBox(5, onValueChange = {}, Modifier.testTag("spin"), valueRange = 0..10) }
         onNodeWithTag("spin").performValueInput(8.0)
-        onNodeWithTag("spin").assertValue(5.0)
+        onNodeWithTag("spin").assertValueEquals(5.0)
     }
 }

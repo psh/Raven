@@ -9,10 +9,10 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
 import raven.cinterop.Rwidget_get_rect
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.Alignment
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import kotlin.test.Test

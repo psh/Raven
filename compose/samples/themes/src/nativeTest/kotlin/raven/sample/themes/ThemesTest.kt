@@ -31,12 +31,12 @@ import raven.cinterop.Rwidget_get_color
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_get_rect
 import raven.cinterop.Rwidget_get_theme
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.platform.UriHandler
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.theme.Look
 import raven.compose.ui.theme.RavenTheme
 import raven.native.toRavenString
@@ -62,7 +62,7 @@ class ThemesTest {
     }
 
     private fun RavenTestScope.startThemes(notes: String = "$EXAMPLE_DIR/notes.md") {
-        host.start { ThemesApp(EXAMPLE_DIR, onCloseRequest = {}, notesPath = notes, savePath = savePath) }
+        setApplicationContent { ThemesApp(EXAMPLE_DIR, onCloseRequest = {}, notesPath = notes, savePath = savePath) }
         waitForIdle()
     }
 

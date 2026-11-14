@@ -22,6 +22,8 @@ import raven.cinterop.Rwindow_inject_mouse_move
 import raven.compose.ui.Modifier
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.UriHandler
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.test.Test

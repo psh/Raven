@@ -5,10 +5,10 @@ package raven.sample.editor
 import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rtree_view_get_item_count
 import raven.cinterop.Rwidget_focus
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.theme.ThemeMetric
 import raven.native.toRavenString
 import kotlin.test.Test
@@ -28,7 +28,7 @@ class EditorTest {
         // Rendered on the UI thread, small: on other threads it would take real time, which frames here don't.
         editor.rendering.parallel = false
         editor.rendering.divisor = 4
-        host.start { EditorApp(onQuit = { quits++ }, editor = editor) }
+        setApplicationContent { EditorApp(onQuit = { quits++ }, editor = editor) }
         waitForIdle()
         mainClock.advanceTimeByFrame()
     }

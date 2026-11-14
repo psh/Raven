@@ -50,13 +50,13 @@ import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
 import raven.compose.foundation.Button
 import raven.compose.foundation.Checkbox
-import raven.compose.foundation.RavenTestScope
 import raven.compose.foundation.Text
 import raven.compose.foundation.layout.Column
-import raven.compose.foundation.runRavenTest
-import raven.compose.foundation.widgetRect
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.concurrent.atomics.AtomicInt

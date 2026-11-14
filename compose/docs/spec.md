@@ -49,7 +49,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
 | `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `compose-raven-native` (`implementation`) |
 | `tools/raven-xml2compose` (phase 4) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
-| `compose-raven-test` (phase 4) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
+| `compose-raven-test` | The public test harness, package `raven.compose.ui.test`: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
 | `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 4 |
@@ -1139,11 +1139,12 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   - `RavenHost.isIdle()` checks for no queued dispatch, no pending snapshot apply, and no
     `Recomposer.hasPendingWork` while the composition frame clock is paused for the check, since
     pausing hides its awaiters.
-  - Until phase 4, the harness is internal test code: it lives in foundation's
-    `src/testHarness/kotlin`, which foundation's tests and the samples' tests both compile. `RavenHost` and the
-    single-window `Window` it hosts, and the binding layer foundation's composables are written
-    on, are public in `compose-raven-ui` behind `@InternalComposeRavenApi`. Foundation opts in
-    module-wide.
+  - Every module's tests use it: foundation's, navigation3's, the samples' and the spikes'. What
+    it drives in `compose-raven-ui` (`RavenHost`, the node tree, the binding layer) is public
+    behind `@InternalComposeRavenApi`, as are its own members that hand out Raven types, for
+    compose-raven's tests: `host`, `fetchNode()`, `fetchWidget()`, `findNodes`, `openMenus` and
+    `widgetRect`. Its own main sources opt in; its own tests don't, so they check the API an app
+    sees.
 - **API**, a small part of `ComposeUiTest`:
   ```kotlin
   runRavenTest {
@@ -1182,25 +1183,40 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 
 ### Public test module (phase 4)
 
-The harness moves into `compose-raven-test`, which both apps and foundation's own tests use. What
-it needs from foundation is public behind `@InternalComposeRavenApi` (`@RequiresOptIn`).
+The harness is `compose-raven-test`, package `raven.compose.ui.test` (as Compose's
+`androidx.compose.ui.test`). An app adds it as a test dependency: it brings
+`compose-raven-foundation` and `kotlin-test` with `api`, and no Raven type.
 
 - **`runRavenTest(checkLeaks = true) { setContent { } }`** hosts a single window.
+  `setApplicationContent { }` hosts what an app's `application { }` holds instead: its own
+  `Window`, with its title, island, key handling and app-wide theme.
 - **Finders**: `onNodeWithText(text, substring)`, `onNodeWithTag`, `onNodeWithContentDescription`,
-  their `onAllNodesWith...` forms, and `onNode(matcher)`. The matchers (`hasText`, `hasTestTag`,
-  `hasContentDescription`, `isEnabled`, `isFocused`, `isToggleable`) combine with `and` and `or`.
-- **Actions**: `performClick`, `performTextInput`, `performTextReplacement`, `performKeyPress`
-  and `performScrollBy`, all through Raven's input injection. Phase 3 adds `performScrollTo()`
-  (`Rwidget_scroll_into_view`) and `performScrollToIndex(i)` on a lazy list (`scrollToItem`) or a
-  `ListView` (`revealItem`), and `performColorChange(color)` on a `ColorPicker`, which opens its
-  popup if it has one and types the colour's hex code into its code field.
-- **Assertions**: `assertExists`, `assertDoesNotExist`, `assertIsDisplayed`, `assertTextEquals`,
-  `assertIsChecked`/`NotChecked`, `assertIsEnabled`/`NotEnabled`, `assertIsFocused` and
-  `assertValueEquals`. They read typed node accessors, not Raven getters.
+  their `onAllNodesWith...` forms, and `onNode(matcher)`/`onAllNodes(matcher)`. The matchers
+  (`hasText`, `hasTestTag`, `hasContentDescription`, `isEnabled`, `isNotEnabled`, `isFocused`,
+  `isToggleable`) combine with `and` and `or`. A collection has `assertCountEquals`, `fetchCount`,
+  `[index]`, `onFirst` and `onLast`.
+- **Actions** on a node, through Raven's input injection: `performClick`, `performDoubleClick`,
+  `performRightClick`, `performMouseEnter`/`Exit`, `performTextInput`, `performTextReplacement`
+  (selects the field's text and types over it), `performKeyPress(KeyShortcut)` (focuses the node
+  first), `performSelection(index)` on a `ComboBox`, `performValueInput` on a `SpinBox`, and
+  `performColorChange(color)` on a `ColorPicker`, which opens its popup if it has one and types the
+  colour's hex code into its code field. Scrolling sets the offset instead: `performScrollBy(dx, dy)`
+  on a scroll container, `performScrollTo()` (`Rwidget_scroll_into_view`), and
+  `performScrollToIndex(i)` on a lazy list (`scrollToItem`) or a `ListView` (`revealItem`).
+- **On the window**: `pressKey(key, ctrl, shift, alt, meta)` or `pressKey(KeyShortcut)` (to the
+  focused widget, or the window), `clickOpenMenuItem(text)` and `openMenuCount()` for a menu the app
+  built from data, `performExternalDrop(paths, text)`, and `checkFiles()` for theme files changed
+  on disk, since live reload is off.
+- **Assertions**: `assertExists`, `assertDoesNotExist`, `assertIsDisplayed` (shown, sized, and not
+  scrolled or clipped out of an ancestor), `assertTextEquals`, `assertIsChecked`/`NotChecked`,
+  `assertIsEnabled`/`NotEnabled`, `assertIsFocused`/`NotFocused`, `assertSelectedIndex` on a
+  `ComboBox`, `assertValueEquals` on a `Slider`, a `SpinBox` or a progress bar, and
+  `assert(matcher)`. `fetchText()` reads what a Text, a text field, a `CodeEditor` or a menu item
+  shows, for a check `assertTextEquals` can't make.
 - **`mainClock`**: `autoAdvance` (the default) or stepping with `advanceTimeBy(ms)` /
   `advanceTimeByFrame()`, using Raven's fixed animation time step.
 - **Leak checks**: `checkLeaks = true` by default, and a failure lists the composables whose
-  widgets were not released.
+  widgets were not released, by name and test tag (`CallbackRegistry.liveTargets`).
 
 Decided in: [Testing strategy](issues/archive/0012-testing-strategy.md),
 [Public test module for apps](issues/archive/0029-app-testing-module.md).

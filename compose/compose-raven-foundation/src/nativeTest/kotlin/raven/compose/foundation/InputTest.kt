@@ -33,6 +33,8 @@ import raven.compose.ui.input.pointer.PointerIcon
 import raven.compose.ui.input.pointer.onPointerEvent
 import raven.compose.ui.input.pointer.pointerHoverIcon
 import raven.compose.ui.platform.LocalFocusManager
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import kotlin.test.Test

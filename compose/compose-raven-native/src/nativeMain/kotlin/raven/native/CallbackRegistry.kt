@@ -17,9 +17,14 @@ import raven.cinterop.Rwidget_set_user_handle
  * UI thread only, like every Raven widget call.
  */
 public object CallbackRegistry {
+    // The references not yet disposed, for a test to name what leaked.
+    private val live = mutableSetOf<COpaquePointer>()
+
     /** How many references are live: zero once every registered widget has been destroyed. */
-    public var liveCount: Int = 0
-        private set
+    public val liveCount: Int get() = live.size
+
+    /** The targets whose widgets have not been destroyed yet. */
+    public val liveTargets: List<Any> get() = live.map { it.asStableRef<Any>().get() }
 
     /**
      * Registers [target] for [widget] and returns the `user_data` to pass to its callbacks. A
@@ -31,7 +36,7 @@ public object CallbackRegistry {
         val ref = StableRef.create(target).asCPointer()
         Rwidget_set_user_handle(widget, ref)
         Rwidget_set_destroy_callback(widget, disposeOnDestroy, ref)
-        liveCount++
+        live += ref
         return ref
     }
 
@@ -40,8 +45,10 @@ public object CallbackRegistry {
 
     // The handle Raven passes is already dead, so only the reference is touched.
     private val disposeOnDestroy = staticCFunction { _: Rid, userData: COpaquePointer? ->
-        userData?.asStableRef<Any>()?.dispose()
-        liveCount -= 1
+        if (userData != null) {
+            live -= userData
+            userData.asStableRef<Any>().dispose()
+        }
     }
 }
 

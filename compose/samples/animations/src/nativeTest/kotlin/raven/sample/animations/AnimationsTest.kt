@@ -8,12 +8,12 @@ import raven.cinterop.Rwindow_inject_mouse_move
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_MOUSE_LEFT
 import raven.cinterop.R_TRUE
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
-import raven.compose.foundation.widgetRect
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.input.key.Key
 import raven.cinterop.Rwidget_focus
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +25,7 @@ class AnimationsTest {
 
     private fun RavenTestScope.show() {
         state = Animations()
-        host.start { AnimationsWindow(onCloseRequest = {}, state = state) }
+        setApplicationContent { AnimationsWindow(onCloseRequest = {}, state = state) }
         waitForIdle()
     }
 

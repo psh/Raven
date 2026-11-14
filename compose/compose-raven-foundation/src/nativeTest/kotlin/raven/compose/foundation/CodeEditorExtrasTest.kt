@@ -14,6 +14,8 @@ import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_key
 import raven.compose.foundation.layout.fillMaxSize
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.test.Test

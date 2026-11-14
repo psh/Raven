@@ -6,8 +6,8 @@ import androidx.compose.runtime.setValue
 import raven.compose.animation.core.RavenAnimation
 import raven.compose.animation.core.tween
 import raven.compose.foundation.Text
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.AppearTransition
+import raven.compose.ui.test.runRavenTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

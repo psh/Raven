@@ -10,8 +10,7 @@ kotlin {
         api(libs.compose.runtime.saveable)
         implementation(project(":compose-raven-native"))
     }
-    // The test harness, shared with the samples' tests until it moves to compose-raven-test.
-    sourceSets.nativeTest { kotlin.srcDir("src/testHarness/kotlin") }
+    sourceSets.nativeTest.dependencies { implementation(project(":compose-raven-test")) }
     // Foundation is built on compose-raven-ui's binding layer.
     sourceSets.all { languageSettings.optIn("raven.compose.ui.InternalComposeRavenApi") }
 }

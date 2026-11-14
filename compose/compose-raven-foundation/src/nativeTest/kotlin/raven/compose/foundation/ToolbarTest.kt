@@ -16,6 +16,9 @@ import raven.compose.foundation.layout.width
 import raven.compose.ui.Modifier
 import raven.compose.ui.PaddingValues
 import raven.compose.ui.Window
+import raven.compose.ui.test.WidgetRect
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import kotlin.test.Test

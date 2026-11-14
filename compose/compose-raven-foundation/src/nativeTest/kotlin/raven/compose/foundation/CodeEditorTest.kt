@@ -10,6 +10,8 @@ import raven.cinterop.Rtext_editor_get_language
 import raven.cinterop.Rtext_editor_get_text
 import raven.compose.foundation.layout.fillMaxSize
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.test.Test
