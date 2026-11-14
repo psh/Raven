@@ -6,6 +6,8 @@ import raven.cinterop.R_WIDGET_GRID
 import raven.cinterop.Rgrid_set_column_fill
 import raven.cinterop.Rgrid_set_row_fill
 import raven.cinterop.Rid
+import raven.compose.ui.Alignment
+import raven.compose.ui.AlignElement
 import raven.compose.ui.ChildKind
 import raven.compose.ui.GridCellElement
 import raven.compose.ui.LayoutAxis
@@ -40,6 +42,12 @@ public interface GridScope {
      */
     public fun Modifier.cell(column: Int, row: Int, columnSpan: Int = 1, rowSpan: Int = 1): Modifier =
         this then GridCellElement(column, row, columnSpan, rowSpan)
+
+    /** Where the child sits in its cell, instead of filling it. */
+    public fun Modifier.align(alignment: Alignment): Modifier = this then AlignElement(alignment.horizontal, alignment.vertical)
+
+    /** Where the child sits in its cell's height, filling its width. */
+    public fun Modifier.align(alignment: Alignment.Vertical): Modifier = this then AlignElement(null, alignment)
 }
 
 private object GridScopeInstance : GridScope

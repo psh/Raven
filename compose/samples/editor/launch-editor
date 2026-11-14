@@ -1,0 +1,3 @@
+#!/bin/sh
+# Builds samples/editor for this machine and runs it.
+exec "$(dirname "$0")/../launch-sample" editor "$@"
