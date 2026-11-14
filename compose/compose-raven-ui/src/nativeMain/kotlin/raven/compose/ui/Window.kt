@@ -7,13 +7,18 @@ import androidx.compose.runtime.Composition
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigationevent.DirectNavigationEventInput
+import androidx.navigationevent.NavigationEvent
+import androidx.navigationevent.NavigationEventDispatcher
 import androidx.savedstate.compose.LocalSavedStateRegistryOwner
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
@@ -133,6 +138,10 @@ import kotlin.math.roundToInt
  *
  * [icon] is the window's icon in the title bar and task bar, on Windows and X11; `null` is the
  * default. A window icon is pixels, read again from the image file, so it is a `painterResource`.
+ *
+ * The window has a `NavigationEventDispatcher` ([LocalNavigationEventDispatcher]), which
+ * Navigation 3's `NavDisplay` takes its back from. With [backKeys], the mouse's Back button and
+ * Cmd+[ or Alt+Left that nothing else consumed go back through it.
  */
 @Composable
 public fun Window(
@@ -150,6 +159,7 @@ public fun Window(
     island: (@Composable () -> Unit)? = null,
     onKeyEvent: ((KeyEvent) -> Boolean)? = null,
     icon: Painter? = null,
+    backKeys: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val host = LocalRavenHost.current
@@ -176,7 +186,10 @@ public fun Window(
         }
     }
     SideEffect { opened.window?.update(state, settings) }
-    SideEffect { opened.window?.setIcon(icon) }
+    SideEffect {
+        opened.window?.setIcon(icon)
+        opened.window?.backKeys = backKeys
+    }
 }
 
 /** What a [Window] composed: its parameters, and the values of its state it read. */
@@ -227,6 +240,9 @@ private class OpenedWindow {
 
 /** The window a composable is in, for [WindowBackdrop]. */
 internal val LocalRavenWindow = staticCompositionLocalOf<RavenWindow> { error("put it in a Window") }
+
+/** The `NavigationEventDispatcher` of the window the composable is in; null outside a window. */
+public val LocalNavigationEventDispatcher: ProvidableCompositionLocal<NavigationEventDispatcher?> = staticCompositionLocalOf { null }
 
 /** Whether the window the composable is in draws its own title bar (`customHeader`), for a `HeaderBar`. */
 @InternalComposeRavenApi
@@ -314,13 +330,36 @@ internal class RavenWindow(
         if (!state.size.width.isSpecified || !state.size.height.isSpecified) state.size = ravenSize.toDpSize()
     }
 
-    fun setContent(content: @Composable () -> Unit) = composition.setContent { WindowLocals(content) }
+    /** The window's back: Navigation 3 adds its handlers, and [back] feeds it. */
+    val navigationEvents = NavigationEventDispatcher()
+    private val backInput = DirectNavigationEventInput().also { navigationEvents.addInput(it) }
+
+    /** Whether the mouse's Back button and the back keys go back: `Window(backKeys)`. */
+    var backKeys: Boolean = true
+
+    /** Goes back, as a back key or the Back button does, and returns that it was taken. */
+    fun back(): Boolean {
+        backInput.backStarted(NavigationEvent())
+        backInput.backCompleted()
+        return true
+    }
+
+    /** The dialogs suspend functions show over the window (`awaitWindowDialog`), in the order asked. */
+    val dialogRequests = mutableStateListOf<WindowDialog>()
+
+    fun setContent(content: @Composable () -> Unit) = composition.setContent {
+        WindowLocals {
+            content()
+            WindowDialogs(dialogRequests)
+        }
+    }
 
     /** What the window gives its content and its island. */
     @Composable
     private fun WindowLocals(content: @Composable () -> Unit) {
         CompositionLocalProvider(
             LocalRavenWindow provides this,
+            LocalNavigationEventDispatcher provides navigationEvents,
             LocalWindowInfo provides info,
             LocalDensity provides density.current,
             LocalUriHandler provides RavenUriHandler,
@@ -480,9 +519,13 @@ internal class RavenWindow(
      */
     fun dispose() {
         host.windows -= this
+        // A dialog waiting for an answer gets none: its caller is cancelled.
+        dialogRequests.toList().forEach { it.continuation?.cancel() }
+        dialogRequests.clear()
         owners.destroy()
         closeIsland()
         composition.dispose()
+        navigationEvents.dispose()
         Rwindow_destroy(window)
         selfRef.dispose()
     }

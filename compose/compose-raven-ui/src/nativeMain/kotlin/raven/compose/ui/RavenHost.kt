@@ -131,6 +131,12 @@ public class RavenHost(
     /** The root node of each open window, for test finders. */
     public val windowRoots: List<RavenNode> get() = windows.map { it.root }
 
+    /** The dialogs open now, in the order they opened. */
+    internal val dialogs: MutableList<RavenDialog> = mutableListOf()
+
+    /** The root node of each open dialog, for test finders. */
+    public val dialogRoots: List<RavenNode> get() = dialogs.map { it.root }
+
     /** The root node of each open window's island, for test finders. */
     public val islandRoots: List<RavenNode> get() = windows.mapNotNull { it.islandRoot }
 

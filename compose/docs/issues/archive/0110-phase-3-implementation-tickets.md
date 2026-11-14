@@ -44,8 +44,8 @@ is.
   [Animation](0127-animation.md),
   [Island](0128-island.md),
   [DockArea and FileBrowser](0129-dockarea-and-filebrowser.md),
-  [Dialog and the default dialogs](../0130-dialog-and-the-default-dialogs.md),
-  [compose-raven-navigation3](../0131-compose-raven-navigation3.md),
+  [Dialog and the default dialogs](0130-dialog-and-the-default-dialogs.md),
+  [compose-raven-navigation3](0131-compose-raven-navigation3.md),
   [ColorPicker](0132-colorpicker.md). Every decision of this map is a deliverable of one of them,
   linked to the ticket that made it.
 - **The phase 2 samples completed**: [The phase 2 samples completed](../0133-phase-2-samples-completed.md)
