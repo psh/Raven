@@ -6,7 +6,16 @@ import raven.compose.foundation.layout.Arrangement
 import raven.compose.foundation.layout.HorizontalScroll
 import raven.compose.foundation.layout.VerticalScroll
 import raven.compose.ui.Alignment
+import raven.cinterop.R_ROLE_NONE
+import raven.cinterop.R_WIDGET_OVERLAY
+import raven.compose.foundation.layout.fillMaxHeight
+import raven.compose.foundation.layout.fillMaxWidth
+import raven.compose.ui.ChildKind
 import raven.compose.ui.Modifier
+import raven.compose.ui.PanelLayout
+import raven.compose.ui.RavenWidget
+import raven.compose.ui.WidgetDescriptor
+import raven.compose.ui.bind
 
 /** What an item of a [LazyColumn] or [LazyRow] is composed in. */
 public interface LazyItemScope
@@ -58,15 +67,28 @@ private class LazyListContent : LazyListScope {
  * composing each again; an item without one is known by its place.
  */
 @Composable
-private fun LazyItems(content: LazyListScope.() -> Unit) {
+private fun LazyItems(vertical: Boolean, content: LazyListScope.() -> Unit) {
     val items = LazyListContent().apply(content).items
     val keys = HashSet<Any>()
     for (item in items) {
         if (item.key != null) require(keys.add(item.key)) { "the key ${item.key} is used by two items: keys must be unique" }
     }
     for ((index, item) in items.withIndex()) {
-        key(item.key ?: PlaceKey(index)) { item.content(LazyItemScopeInstance) }
+        key(item.key ?: PlaceKey(index)) { LazyItemBox(vertical) { item.content(LazyItemScopeInstance) } }
     }
+}
+
+/**
+ * The internal Box each item is in, as each item of Compose's lazy layouts is a node of its own:
+ * where it starts is where the item starts, for [LazyListState]. It fills the list across.
+ */
+private val LazyItemWidget = WidgetDescriptor("LazyItem", R_WIDGET_OVERLAY, ChildKind.Many, role = R_ROLE_NONE)
+
+@Composable
+private fun LazyItemBox(vertical: Boolean, content: @Composable () -> Unit) {
+    RavenWidget(LazyItemWidget, if (vertical) Modifier.fillMaxWidth() else Modifier.fillMaxHeight(), {
+        bind(PanelLayout.Box)
+    }) { content() }
 }
 
 /** The key of an item given none: its place, which can't be equal to a key the app gives. */
@@ -74,26 +96,28 @@ private data class PlaceKey(val index: Int)
 
 /**
  * A scrolling column of the items [content] declares, with Compose's DSL: `items(list, key = { it.id })
- * { item -> }`. In phase 3 every item is composed, whether shown or not: it is a [VerticalScroll]
+ * { item -> }`. [state] holds its position. In phase 3 every item is composed, whether shown or not: it is a [VerticalScroll]
  * holding them, so a list of thousands of rows wants [raven.compose.foundation.ListView].
  */
 @Composable
 public fun LazyColumn(
     modifier: Modifier = Modifier,
+    state: LazyListState = rememberLazyListState(),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: LazyListScope.() -> Unit,
 ) {
-    VerticalScroll(modifier, verticalArrangement, horizontalAlignment) { LazyItems(content) }
+    VerticalScroll(modifier, state, verticalArrangement, horizontalAlignment) { LazyItems(vertical = true, content) }
 }
 
 /** A scrolling row of the items [content] declares, as [LazyColumn] is a column. */
 @Composable
 public fun LazyRow(
     modifier: Modifier = Modifier,
+    state: LazyListState = rememberLazyListState(),
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: LazyListScope.() -> Unit,
 ) {
-    HorizontalScroll(modifier, horizontalArrangement, verticalAlignment) { LazyItems(content) }
+    HorizontalScroll(modifier, state, horizontalArrangement, verticalAlignment) { LazyItems(vertical = false, content) }
 }

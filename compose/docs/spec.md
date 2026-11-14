@@ -848,7 +848,9 @@ Added for the `overlay` and `glass` ports:
 
 - **`LazyColumn { }` / `LazyRow { }`** use Compose's DSL (`items(list, key = { ... }) { item -> }`)
   over `VerticalScroll`/`HorizontalScroll`. In phase 3 they compose every item, with no
-  virtualisation. `key` keeps rows stable through `Rwidget_move_child`.
+  virtualisation. `key` keeps rows stable through `Rwidget_move_child`. Each item is in an
+  internal Box filling the list across, as each item of Compose's lazy layouts is a node of its
+  own, so `LazyListState` knows where items start.
 - **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, state, onActivate)`** uses
   Raven's virtualised ListView in virtual mode, for text rows. Selection is controlled.
 - **`TreeView(roots, children, itemText, key, selection, onSelectionChange, multiSelect,
@@ -866,7 +868,8 @@ The scroll containers, the lazy lists and `ListView` take a state holder, as in 
 reports no scroll changes, so what a state reads is polled each frame, as `CodeEditorState.cursor`
 is.
 
-- **`ScrollState`** (`rememberScrollState()`), the `state` of `VerticalScroll`/`HorizontalScroll`:
+- **`ScrollState`** (`rememberScrollState()`), the `state` of `VerticalScroll`/`HorizontalScroll`
+  (`VerticalScroll(modifier, state = null, ...)`; without one nothing follows the box):
   - `value: Int`, the offset in dp, read-only snapshot state from `Rscroll_box_get_offset`.
   - `suspend scrollTo(value)` uses `Rscroll_box_set_offset`, which Raven clamps.
     `animateScrollTo(value)` jumps the same way, because Raven doesn't animate scrolling.

@@ -32,7 +32,7 @@ Done on macOS. `./gradlew build allTests` passes: 460 tests, 11 of them `ListsTe
   draws it at once. New items set the count again, which Raven does keeping the selection and the
   scroll position. The selection is a controlled value (`ListViewSelected`, `Binding.kt`), and
   `onActivate` gets a row double-clicked or Enter. The spec's `state` parameter belongs to
-  [Scroll position](../0121-scroll-position.md).
+  [Scroll position](0121-scroll-position.md).
 - **`TreeView(roots, children, itemText, key, selection, onSelectionChange, multiSelect = false,
   initiallyExpanded = { false }, onActivate = {}, contextMenuItems = null, itemIcon = null,
   modifier)`**, as [Lists and trees](0033-lists-and-trees.md) decided, with the ticket's `itemIcon`
