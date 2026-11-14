@@ -25,6 +25,7 @@ include(
     ":compose-raven-navigation3",
     ":samples:animations",
     ":samples:hello",
+    ":samples:music",
     ":samples:components",
     ":samples:editor",
     ":samples:glass",
