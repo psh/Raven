@@ -991,8 +991,9 @@ is.
 
 - **`DockArea(state = rememberDockAreaState(), modifier, movable, tearable) { Panel(name, title,
   initialDock, closable, icon, open, onClose) { } }`**:
-  - The arrangement is Raven's. `initialDock` (`Dock.Left/Right/Top/Bottom(size)`,
-    `Dock.Tab(of)`) applies when a panel is first added.
+  - The arrangement is Raven's. `initialDock` (`Dock.Left/Right/Top/Bottom(size, of)`, along a
+    side of the area or of the panel named `of`, and `Dock.Tab(of)`) applies when a panel is
+    first added.
   - `state.saveLayout()` and `loadLayout(text)` persist the arrangement, and panels need a
     `name` for that. `state.layout` is the same text as read-only snapshot state, refreshed from
     Raven's changed callback after the user moves, resizes, shows or closes a panel.
