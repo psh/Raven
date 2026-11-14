@@ -77,8 +77,9 @@ change once upstream has it.
 Broken into tickets, in dependency order. Each ticket's **Depends on** line names its blockers.
 **Done on macOS** but for two rows: CI ([CI job for compose](issues/archive/0052-ci-job-for-compose.md)) and
 the Linux build ([Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md)). Both are
-closed unfinished for now and finish in [phase 4](#5-phase-4-release), the release; until then,
-every phase is checked on macOS only.
+closed unfinished for now and finish in [phase 4](#5-phase-4-release), the release. The compose
+workflow was removed until then (its last version is in git history), and every phase is checked
+with local builds on macOS only.
 
 | Part | Spec | Ticket |
 |---|---|---|
@@ -220,8 +221,9 @@ What makes compose-raven usable outside this repository, split from phase 3 by [
 It needs none of phase 3's vocabulary, so it can start as soon as phase 2 is done, beside phase 3.
 
 - Phase 1's unfinished CI and Linux build: [CI job for compose](issues/archive/0052-ci-job-for-compose.md)
-  and [Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md), both disabled or
-  deferred until a fuller codebase runs.
+  and [Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md). The compose
+  workflow was removed until this phase: it comes back here, with the spikes left out of its build
+  and the OpenGL tests skipped where a runner has no GL context, the two reasons it last failed.
 
 Decided for phase 4 (in the spec):
 

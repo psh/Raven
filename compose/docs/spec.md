@@ -1174,8 +1174,8 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
 - **Pure logic** gets plain Kotlin unit tests, with no Raven: Modifier folding, move-index
   adjustment and mirror-list bookkeeping. There are no screenshot tests, because the null renderer
   draws nothing.
-- **CI**: a compose job in `.github/workflows/build.yml` on a macOS, a Linux and (from phase 4) a
-  Windows runner with MSYS2, running `./gradlew -p compose allTests`.
+- **CI** (phase 4; until then, local builds only): a compose job in `.github/workflows/build.yml`
+  on a macOS, a Linux and a Windows runner with MSYS2, running `./gradlew -p compose allTests`.
 - **What headless tests can't cover** gets a short manual checklist, run before each release on a
   real display: native, OpenGL and Metal viewports, `VulkanViewport`, dock panel tearing, the
   island notch, `native = true` dialogs, window transparency and backdrops, and IME input.
