@@ -19,6 +19,7 @@ import raven.compose.foundation.layout.Column
 import raven.compose.foundation.layout.Row
 import raven.compose.foundation.layout.fillMaxHeight
 import raven.compose.foundation.layout.fillMaxSize
+import raven.compose.foundation.layout.fillMaxWidth
 import raven.compose.foundation.layout.padding
 import raven.compose.foundation.layout.width
 import raven.compose.ui.Alignment
@@ -100,7 +101,9 @@ fun Overlay(opacity: Float, onOpacityChange: (Float) -> Unit, onClose: () -> Uni
             Text(
                 if (seeThrough) "Where this window draws nothing, what is behind it shows."
                 else "This window system did not give a window that can be seen through: the same interface, on a plain background.",
+                Modifier.fillMaxWidth(),
                 color = Dim,
+                softWrap = true,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Backdrop", Modifier.width(80.dp), color = Dim)

@@ -12,6 +12,7 @@ import raven.compose.foundation.Button
 import raven.compose.foundation.ButtonDefaults
 import raven.compose.foundation.Checkbox
 import raven.compose.foundation.CodeEditor
+import raven.compose.foundation.ColorPicker
 import raven.compose.foundation.ComboBox
 import raven.compose.foundation.LinearProgressIndicator
 import raven.compose.foundation.ListView
@@ -42,16 +43,16 @@ import raven.compose.foundation.layout.size
 import raven.compose.foundation.layout.width
 import raven.compose.ui.Alignment
 import raven.compose.ui.Modifier
-import raven.compose.ui.PaddingValues
 import raven.compose.ui.Window
+import raven.compose.ui.alpha
 import raven.compose.ui.application
-import raven.compose.ui.graphics.CircleShape
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.RoundedCornerShape
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.UriHandler
 import raven.compose.ui.rememberWindowState
 import raven.compose.ui.testTag
+import raven.compose.ui.text.font.FontFamily
 import raven.compose.ui.theme.Look
 import raven.compose.ui.theme.RavenTheme
 import raven.compose.ui.theme.loadTheme
@@ -70,8 +71,8 @@ import kotlin.time.Duration.Companion.milliseconds
 //   loadTheme(path)             reads a theme file and keeps it under its name
 //   RavenTheme(theme)           at application level, the theme of the application; inside the
 //                               window, the theme of a subtree (the C example's Theme="paper.xml")
-//   RavenTheme(accent)          one colour, and the shades that follow from it, from a row of
-//                               swatches (the C example's ColorPicker arrives in phase 3)
+//   RavenTheme(accent)          one colour, and the shades that follow from it, from a
+//                               ColorPicker in its popup form
 //   saveTheme(path, name)       writes the theme in use as a theme file
 //   colors = ...                the C example's Class="danger"
 //   MarkdownText, CodeEditor(language = "Markdown")   Markdown rendered, and styled as you type
@@ -107,15 +108,8 @@ val lookChoices: List<LookChoice> = listOf(
     "macOS 26 glass" to Look.MacosGlass,
 ).flatMap { (name, look) -> listOf(LookChoice("$name dark", look, true), LookChoice("$name light", look, false)) }
 
-/** The accent swatches, standing in for the C example's ColorPicker; the first is its colour. */
-val accentSwatches: List<Color> = listOf(
-    Color(0xFF22D3EE),
-    Color(0xFF3B82F6),
-    Color(0xFF8B5CF6),
-    Color(0xFFEC4899),
-    Color(0xFFF97316),
-    Color(0xFF22C55E),
-)
+/** The colour the accent picker shows until one is picked, the C example's; the look's accent stays until then. */
+val initialAccent: Color = Color(0xFF22D3EE)
 
 /** The link of notes.md that fires the C example's action. */
 const val DOCS_LINK: String = "action:themes.docs"
@@ -183,6 +177,7 @@ fun ThemesApp(
                     },
                     theme = theme,
                     onThemeChange = { theme = it },
+                    accent = accent ?: initialAccent,
                     onAccentChange = { accent = it },
                     onSave = {
                         status = if (saveTheme(savePath, "Mine")) "Written: my-theme.xml (in the working folder)" else "Could not write my-theme.xml"
@@ -223,6 +218,7 @@ private fun Appearance(
     onLookIndexChange: (Int) -> Unit,
     theme: String?,
     onThemeChange: (String) -> Unit,
+    accent: Color,
     onAccentChange: (Color) -> Unit,
     onSave: () -> Unit,
     status: String,
@@ -245,23 +241,16 @@ private fun Appearance(
         )
 
         Text("Accent", Modifier.padding(top = 8.dp), color = muted())
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (swatch in accentSwatches) {
-                Button(
-                    onClick = { onAccentChange(swatch) },
-                    modifier = Modifier.size(22.dp).tooltip("RavenTheme(accent = $swatch)").testTag("accent $swatch"),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = swatch),
-                    contentPadding = PaddingValues(0.dp),
-                ) {}
-            }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            ColorPicker(accent, onAccentChange, Modifier.testTag("accent"), popup = true, alpha = false)
+            Text("RavenTheme(accent)", Modifier.alpha(0.7f), fontSize = 12.sp, fontFamily = FontFamily.Monospace)
         }
 
         TextButton(
             onClick = onSave,
             modifier = Modifier.padding(top = 8.dp).tooltip("Writes the theme in use, with the changes made here, as a theme file"),
         ) { Text("Save as my-theme.xml") }
-        Text(status, Modifier.fillMaxWidth().testTag("status"), color = muted())
+        Text(status, Modifier.fillMaxWidth().testTag("status"), color = muted(), softWrap = true)
 
         Spacer(Modifier.weight(1f))
         MarkdownText(

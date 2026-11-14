@@ -119,10 +119,10 @@ class ThemesTest {
     }
 
     @Test
-    fun aSwatchSetsTheAccentWhichSurvivesALook() = runRavenTest {
+    fun thePickerSetsTheAccentWhichSurvivesALook() = runRavenTest {
         startThemes()
         val violet = Color(0xFF8B5CF6)
-        onNodeWithTag("accent $violet").performClick()
+        onNodeWithTag("accent").performColorChange(violet)
         waitForIdle()
         assertEquals(violet, themeColor(R_COLOR_ACCENT))
         onNodeWithTag("looks").performSelection(lookChoices.indexOfFirst { it.look == Look.Gnome && !it.dark })
