@@ -156,7 +156,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | Island | [8](spec.md#transitions-and-island-phase-3) | `workspace`, `music`, `animations` | [Island](issues/archive/0128-island.md) |
 | DockArea and FileBrowser | [8](spec.md#docking-and-the-file-browser-phase-3) | `workspace` | [DockArea and FileBrowser](issues/archive/0129-dockarea-and-filebrowser.md) |
 | `Dialog` and the default message and file dialogs | [4](spec.md#4-application-host) | `notepad`, navigation's dialog destinations | [Dialog and the default dialogs](issues/archive/0130-dialog-and-the-default-dialogs.md) |
-| `compose-raven-navigation3` | [8](spec.md#navigation-3-phase-3-compose-raven-navigation3) | `music` | [compose-raven-navigation3](issues/0131-compose-raven-navigation3.md) |
+| `compose-raven-navigation3` | [8](spec.md#navigation-3-phase-3-compose-raven-navigation3) | `music` | [compose-raven-navigation3](issues/archive/0131-compose-raven-navigation3.md) |
 | ColorPicker | [8](spec.md#colorpicker-phase-3) | `music`, `themes` | [ColorPicker](issues/archive/0132-colorpicker.md) |
 | The phase 2 samples completed | [10](spec.md#10-samples) | `themes`, `overlay`, `notepad` | [The phase 2 samples completed](issues/0133-phase-2-samples-completed.md) |
 | Samples | [10](spec.md#10-samples) | | [samples/editor](issues/0134-samples-editor.md), [samples/workspace](issues/0135-samples-workspace.md), [samples/music](issues/0136-samples-music.md), [samples/animations](issues/0137-samples-animations.md), [samples/glass](issues/0138-samples-glass.md) |
