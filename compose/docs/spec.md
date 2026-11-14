@@ -1061,8 +1061,15 @@ NavDisplay(
   behaviour, adapted from AndroidX 1.2.1 without Compose UI.
 - **Dialog destinations** render with `Dialog`, and their dismissal calls `onBack`. They stack.
 - **Transitions** are Raven appear transitions, chosen by push or pop. There are none by default.
-- **Back** comes from each window's `NavigationEventDispatcher`, fed by the mouse Back button and
-  Cmd+[ or Alt+Left (`Window(backKeys)`). Escape only closes dialogs.
+- **Back** comes from each window's `NavigationEventDispatcher` (`LocalNavigationEventDispatcher`,
+  from `androidx.navigationevent`, whose Compose artifact has no macOS variant), fed by the mouse
+  Back button and Cmd+[ or Alt+Left that nothing else consumed (`Window(backKeys = true)`).
+  `NavDisplay` adds a handler, enabled while there is somewhere to go back to, that calls `onBack`.
+  Escape only closes dialogs.
+- **`NavDisplay(backStack, modifier, onBack, entryDecorators, sceneStrategy,
+  sceneDecoratorStrategies, transition, entryProvider)`**: `entryDecorators` defaults to the
+  saveable-state decorator, `sceneStrategy` to `SinglePaneSceneStrategy`, and `onBack` removes the
+  last key of a mutable back stack. The first scene shown has no transition.
 
 ### Typography (phase 3)
 
