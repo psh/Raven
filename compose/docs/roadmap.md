@@ -146,7 +146,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | `Modifier.offset`, `LocalDensity` | [6](spec.md#6-layout-and-modifiers) | `music`, `editor` | [Modifier.offset and LocalDensity](issues/archive/0118-layout-offset-and-density.md) |
 | Theming extras: hovered and pressed colours, `unfocusedIndicatorColor`, `metrics`, `HeaderBar(background)` | [8](spec.md#phase-2-theming) | `music`, `editor`, `workspace` | [Theming extras](issues/archive/0119-theming-extras.md) |
 | Lists and trees (completes `themes`' `ListView`) | [8](spec.md#lists-and-trees-phase-3) | `editor`, `workspace`, `music`, `glass`, `themes` | [Lists and trees](issues/archive/0120-lists-and-trees.md) |
-| Scroll position | [8](spec.md#scroll-position-phase-3) | `editor`, `workspace`, `music` | [Scroll position](issues/0121-scroll-position.md) |
+| Scroll position | [8](spec.md#scroll-position-phase-3) | `editor`, `workspace`, `music` | [Scroll position](issues/archive/0121-scroll-position.md) |
 | Tabs and grids | [8](spec.md#tabs-and-grids-phase-3) | `editor`, `music`, `glass` | [Tabs and grids](issues/archive/0122-tabs-and-grids.md) |
 | Toolbar | [8](spec.md#toolbar-phase-3) | `editor` | [Toolbar](issues/archive/0123-toolbar.md) |
 | Custom drawing, viewports and effects | [8](spec.md#custom-drawing-viewports-and-effects-phase-3) | `editor`, `music`, `animations` | [Custom drawing, viewports and effects](issues/archive/0124-custom-drawing-viewports-and-effects.md) |
