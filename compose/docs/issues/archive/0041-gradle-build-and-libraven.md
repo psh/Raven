@@ -7,7 +7,7 @@ status: closed
 Stand up the standalone Gradle build in `compose/` and get Kotlin/Native calling Raven: a CMake
 task that builds `libraven.a`, the `raven.def` cinterop in `raven-native`, and empty
 `compose-raven-ui`, `compose-raven-foundation` and `samples/*` modules that compile. Spec:
-[2. Modules and build](../../spec.md#2-modules-and-build), [3. raven-native](../../spec.md#3-raven-native).
+[2. Modules and build](../../spec.md#2-modules-and-build), [3. raven-native](../../spec.md#3-compose-raven-native).
 
 **Depends on:** nothing. This is the first phase 1 ticket.
 

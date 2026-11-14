@@ -11,7 +11,7 @@ kotlin {
         kotlin.srcDir(project(":compose-raven-foundation").file("src/testHarness/kotlin"))
         dependencies {
             implementation(project(":compose-raven-foundation"))
-            implementation(project(":raven-native"))
+            implementation(project(":compose-raven-native"))
         }
     }
     sourceSets.all { languageSettings.optIn("raven.compose.ui.InternalComposeRavenApi") }

@@ -82,8 +82,8 @@ every phase is checked on macOS only.
 
 | Part | Spec | Ticket |
 |---|---|---|
-| Gradle build: `raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/archive/0041-gradle-build-and-libraven.md) (macOS), [Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md) |
-| `raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-raven-native) | [raven.native helpers](issues/archive/0042-raven-native-helpers.md) |
+| Gradle build: `compose-raven-native`, `compose-raven-ui`, `compose-raven-foundation`, `samples/*`; libraven through CMake, static linking | [2](spec.md#2-modules-and-build) | [Gradle build and libraven](issues/archive/0041-gradle-build-and-libraven.md) (macOS), [Linux build and libraven](issues/archive/0058-linux-build-and-libraven.md) |
+| `compose-raven-native`: `raven.def` and the `raven.native` helpers (callback registry, strings, UI-thread check) | [3](spec.md#3-compose-raven-native) | [raven.native helpers](issues/archive/0042-raven-native-helpers.md) |
 | `RavenNode` and `RavenApplier` | [5](spec.md#5-node-model-and-applier) | [RavenNode and RavenApplier](issues/archive/0043-ravennode-and-ravenapplier.md) |
 | `RavenHost` and `singleWindowApplication`: dispatcher, frame clock, snapshot pump, host epoch and per-host caches, ownership and shutdown order, errors; the harness core | [4](spec.md#4-application-host), [9](spec.md#9-testing) | [RavenHost and singleWindowApplication](issues/archive/0044-ravenhost-and-singlewindowapplication.md) |
 | The binding layer in `compose-raven-ui`, **before any composable**: widget descriptors, property and event binding, the content node, `ControlledValue<T>` | [5](spec.md#the-binding-layer), [7](spec.md#7-events-and-state) | [The binding layer](issues/archive/0045-binding-layer.md) |

@@ -18,7 +18,7 @@ kotlin {
     }
     sourceSets.nativeMain.dependencies {
         api(project(":compose-raven-ui"))
-        implementation(project(":raven-native"))
+        implementation(project(":compose-raven-native"))
     }
     // The tests lay out with foundation's modifiers.
     sourceSets.nativeTest.dependencies { implementation(project(":compose-raven-foundation")) }

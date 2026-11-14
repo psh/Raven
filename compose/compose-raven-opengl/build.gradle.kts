@@ -9,7 +9,7 @@ plugins {
 kotlin {
     sourceSets.nativeMain.dependencies {
         api(project(":compose-raven-foundation"))
-        implementation(project(":raven-native"))
+        implementation(project(":compose-raven-native"))
     }
     // The tests lay out with foundation's modifiers; the module's own tests use its internals.
     sourceSets.all { languageSettings.optIn("raven.compose.ui.InternalComposeRavenApi") }

@@ -17,7 +17,7 @@ dependencyResolutionManagement {
 rootProject.name = "compose-raven"
 
 include(
-    ":raven-native",
+    ":compose-raven-native",
     ":compose-raven-ui",
     ":compose-raven-foundation",
     ":compose-raven-vulkan",

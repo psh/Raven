@@ -5,7 +5,7 @@ plugins {
 
 kotlin {
     sourceSets.nativeMain.dependencies {
-        implementation(project(":raven-native"))
+        implementation(project(":compose-raven-native"))
         api(libs.compose.runtime)
         // Each window's LifecycleOwner and SavedStateRegistryOwner, and their CompositionLocals.
         api(libs.lifecycle.runtime.compose)

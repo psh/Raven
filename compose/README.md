@@ -30,8 +30,8 @@ CMake build, into `build/raven/<target>`.
 
 From the repository root, use `./compose/gradlew -p compose allTests`.
 
-`:raven-native:checkRavenLinkerOpts`, part of every build, fails when the linker options in
-`raven-native/src/nativeInterop/cinterop/raven.def` drift from `RAVEN_LIBRARIES` in Raven's
+`:compose-raven-native:checkRavenLinkerOpts`, part of every build, fails when the linker options in
+`compose-raven-native/src/nativeInterop/cinterop/raven.def` drift from `RAVEN_LIBRARIES` in Raven's
 `CMakeLists.txt`.
 
 ## Running the samples

@@ -42,14 +42,14 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 
 | Module | Contents | Depends on |
 |---|---|---|
-| `raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-raven-native)). It contains no Compose code. | libraven |
-| `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime`; from phase 3, `androidx.lifecycle:lifecycle-runtime-compose` and `androidx.savedstate:savedstate-compose` with `api`, for the window owners |
-| `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `raven-native` with `implementation` |
+| `compose-raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-compose-raven-native)). It contains no Compose code. | libraven |
+| `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `compose-raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime`; from phase 3, `androidx.lifecycle:lifecycle-runtime-compose` and `androidx.savedstate:savedstate-compose` with `api`, for the window owners |
+| `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `compose-raven-native` with `implementation` |
 | `compose-raven-bom` (phase 4) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
-| `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `raven-native` (`implementation`) |
+| `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `compose-raven-native` (`implementation`) |
 | `tools/raven-xml2compose` (phase 4) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
-| `compose-raven-test` (phase 4) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `raven-native` (`implementation`) |
+| `compose-raven-test` (phase 4) | The public test harness: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
 | `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 4 |
@@ -99,7 +99,7 @@ Decided in: [Compose runtime on Kotlin/Native](issues/archive/0002-compose-runti
 [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md),
 [Windows (mingwX64) target](issues/archive/0032-windows-target.md).
 
-## 3. raven-native
+## 3. compose-raven-native
 
 - **`raven.def`**: `headers = Raven.h`, `compilerOpts = -I<repo>/include`,
   `package = raven.cinterop`. The `headerFilter` keeps only Raven's own headers, without
@@ -1146,7 +1146,7 @@ Decided in: [v1 component vocabulary](issues/archive/0011-v1-component-vocabular
   - `performClick()` injects a mouse press and release at the centre of `Rwidget_get_rect`.
   - `performTextInput` clicks the field to focus it, then calls `Rwindow_inject_text`.
   - Assertions include `assertExists` and `assertIsChecked`, plus widget values read through
-    `raven-native` getters.
+    `compose-raven-native` getters.
 - **Leak checks after every test**: after `close()`/`Rshutdown`, `Rmemory_get_stats` must report
   zero blocks held, and the `raven.native` registry must report zero live `StableRef`s.
 - **Live reload is off in tests**: the harness's host runs with `liveReload = false`, so no test
@@ -1217,7 +1217,7 @@ This sample translates Raven XML into compose-raven source.
     built-in Kotlin language ([section 11](#11-required-raven-changes)).
   - A `Text` below shows the warnings.
   - Translation reruns on every change.
-- **Parsing**: Raven's own parser, through `raven-native`'s `raven.cinterop`, which already
+- **Parsing**: Raven's own parser, through `compose-raven-native`'s `raven.cinterop`, which already
   binds `raven_xml.h` (in `compose-raven-xml` from phase 4, in the sample before that, as an
   `implementation` dependency, so no Raven type is in its API). A single adapter,
   `parseRavenXml(text)`, calls `Rxml_document_parse` (UI thread, Raven running) and copies the

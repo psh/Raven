@@ -6,7 +6,7 @@ status: closed
 
 Write the small public `raven.native` layer that node code needs again and again: the callback
 registry, string conversion at the C boundary, and the UI-thread check. Spec:
-[3. raven-native](../../spec.md#3-raven-native).
+[3. raven-native](../../spec.md#3-compose-raven-native).
 
 **Depends on:** [Gradle build and libraven](0041-gradle-build-and-libraven.md).
 

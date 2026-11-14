@@ -55,7 +55,7 @@ kotlin {
     sourceSets.nativeMain.dependencies {
         implementation(project(":compose-raven-foundation"))
         // parseRavenXml reads Raven's XML API through raven.cinterop
-        implementation(project(":raven-native"))
+        implementation(project(":compose-raven-native"))
     }
     // foundation's test harness, until it moves to compose-raven-test
     sourceSets.nativeTest { kotlin.srcDir(project(":compose-raven-foundation").file("src/testHarness/kotlin")) }

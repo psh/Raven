@@ -1,5 +1,5 @@
 # Raven's C API for Kotlin/Native. The include path and the directory of libraven.a are passed by
-# raven-native/build.gradle.kts, which builds libraven first.
+# compose-raven-native/build.gradle.kts, which builds libraven first.
 headers = Raven.h
 package = raven.cinterop
 
@@ -12,7 +12,7 @@ headerFilter = Raven.h raven/raven_core.h raven/raven_window.h raven/raven_touch
 
 staticLibraries = libraven.a
 
-# Keep these in step with RAVEN_LIBRARIES in CMakeLists.txt: :raven-native:checkRavenLinkerOpts
+# Keep these in step with RAVEN_LIBRARIES in CMakeLists.txt: :compose-raven-native:checkRavenLinkerOpts
 # fails the build when they drift.
 # Raven dlopens libvulkan/libMoltenVK by name, and dyld looks for a bare name in the rpath:
 # /opt/homebrew/lib is where Homebrew installs MoltenVK on Apple silicon (/usr/local/lib, where the

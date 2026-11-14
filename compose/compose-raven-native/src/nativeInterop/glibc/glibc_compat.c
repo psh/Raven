@@ -3,7 +3,7 @@
  * against its own glibc 2.19 sysroot. These are the newer glibc symbols libraven refers to, defined
  * with what 2.19 has. A newer Raven that needs another one fails to link, naming it.
  *
- * Built as its own static library (raven-native/build.gradle.kts): code in raven.def would be
+ * Built as its own static library (compose-raven-native/build.gradle.kts): code in raven.def would be
  * internalized by Kotlin/Native and never seen by libraven.a. Compiled as strict C11 with only
  * _DEFAULT_SOURCE, so glibc's headers don't turn these calls into the C23 versions again.
  */

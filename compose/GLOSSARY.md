@@ -17,7 +17,7 @@ _Avoid_: Compose (unqualified), Jetpack Compose
 An object in Raven's retained widget tree, addressed by a handle; Raven owns its layout and painting.
 _Avoid_: control, view, component
 
-**raven-native**:
+**compose-raven-native**:
 The lowest compose-raven module: Raven's C API as seen from Kotlin/Native, with no Compose in it. The modules above it wrap it, so apps never see it.
 _Avoid_: compose-raven (that is the family), the binding (ambiguous with the generated bindings in `bindings/`)
 

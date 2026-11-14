@@ -23,7 +23,7 @@
             <option value="$PROJECT_DIR$/build-logic" />
             <option value="$PROJECT_DIR$/compose-raven-foundation" />
             <option value="$PROJECT_DIR$/compose-raven-ui" />
-            <option value="$PROJECT_DIR$/raven-native" />
+            <option value="$PROJECT_DIR$/compose-raven-native" />
             <option value="$PROJECT_DIR$/samples" />
             <option value="$PROJECT_DIR$/samples/components" />
             <option value="$PROJECT_DIR$/samples/hello" />

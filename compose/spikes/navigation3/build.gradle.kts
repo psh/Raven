@@ -13,7 +13,7 @@ kotlin {
         kotlin.srcDir(project(":compose-raven-foundation").file("src/testHarness/kotlin"))
         dependencies {
             implementation(project(":compose-raven-foundation"))
-            implementation(project(":raven-native"))
+            implementation(project(":compose-raven-native"))
             implementation("androidx.navigation3:navigation3-runtime:1.2.1")
         }
     }

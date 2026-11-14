@@ -3,7 +3,7 @@
 # libraven with it, through Raven's CMake build.
 #
 # `allTests` fails on a failing test, on a leak (the tests check that Raven holds no block and no
-# widget reference after Rshutdown), on a linker-option drift (:raven-native:checkRavenLinkerOpts,
+# widget reference after Rshutdown), on a linker-option drift (:compose-raven-native:checkRavenLinkerOpts,
 # which the cinterop depends on) and on the xml-translator's examples check.
 #
 # Kept apart from build.yml, which is upstream Raven's, so rebasing the fork on upstream never
