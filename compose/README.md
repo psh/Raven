@@ -45,9 +45,9 @@ samples/notepad/launch-notepad README.md
 ```
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-overlay`,
-`launch-themes`, `launch-animations` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the
-target (`macosArm64` on an Apple silicon Mac, `linuxX64` on Linux), links the release executable
-with Gradle and starts it.
+`launch-themes`, `launch-animations`, `launch-glass` and `launch-xml-translator`; they share
+`samples/launch-sample`, which picks the target (`macosArm64` on an Apple silicon Mac, `linuxX64`
+on Linux), links the release executable with Gradle and starts it.
 
 Each sample is an executable. Kotlin/Native's run tasks also build and start it:
 
@@ -87,6 +87,12 @@ as its first argument. Edit those files while it runs and the window follows.
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion
 controls), runs the same way: `./gradlew :samples:animations:runReleaseExecutableMacosArm64`, or
 `samples/animations/build/bin/<target>/releaseExecutable/animations.kexe`.
+
+`samples/glass`, the port of Raven's `examples/glass` (the glass look, panels of frosted, tinted and
+clear glass floating over a page that scrolls under them, a player whose time moves), runs the same
+way: `./gradlew :samples:glass:runReleaseExecutableMacosArm64`, or
+`samples/glass/build/bin/<target>/releaseExecutable/glass.kexe`; `glass.kexe light` starts with the
+light glass.
 
 Running an app (not the tests) needs a Vulkan driver:
 

@@ -53,7 +53,7 @@ is.
   dialogs and their tests).
 - **The five samples**: [samples/editor](../0134-samples-editor.md),
   [samples/workspace](../0135-samples-workspace.md), [samples/music](../0136-samples-music.md),
-  [samples/animations](0137-samples-animations.md), [samples/glass](../0138-samples-glass.md).
+  [samples/animations](0137-samples-animations.md), [samples/glass](0138-samples-glass.md).
   Each lists only its port gaps (none) and, for `music`, the deliberate differences decided in
   [Music's pages and back navigation](0098-musics-pages-and-back-navigation.md).
 - Spec section 10's port rule needed no change.

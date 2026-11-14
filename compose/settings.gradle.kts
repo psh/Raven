@@ -26,6 +26,7 @@ include(
     ":samples:animations",
     ":samples:hello",
     ":samples:components",
+    ":samples:glass",
     ":samples:notepad",
     ":samples:overlay",
     ":samples:themes",
