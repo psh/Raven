@@ -45,7 +45,7 @@ samples/notepad/launch-notepad README.md
 ```
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-overlay`,
-`launch-themes` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the
+`launch-themes`, `launch-animations` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the
 target (`macosArm64` on an Apple silicon Mac, `linuxX64` on Linux), links the release executable
 with Gradle and starts it.
 
@@ -82,6 +82,11 @@ a theme of its own, Markdown), runs the same way: `./gradlew :samples:themes:run
 or `samples/themes/build/bin/<target>/releaseExecutable/themes.kexe`. It reads the theme files and
 `notes.md` from Raven's `examples/themes`, whose path the build writes into it; give another folder
 as its first argument. Edit those files while it runs and the window follows.
+
+`samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
+that pop in, springs that follow the pointer, the island with the speed and reduce-motion
+controls), runs the same way: `./gradlew :samples:animations:runReleaseExecutableMacosArm64`, or
+`samples/animations/build/bin/<target>/releaseExecutable/animations.kexe`.
 
 Running an app (not the tests) needs a Vulkan driver:
 

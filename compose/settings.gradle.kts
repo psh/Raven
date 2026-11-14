@@ -23,6 +23,7 @@ include(
     ":compose-raven-vulkan",
     ":compose-raven-opengl",
     ":compose-raven-navigation3",
+    ":samples:animations",
     ":samples:hello",
     ":samples:components",
     ":samples:notepad",
