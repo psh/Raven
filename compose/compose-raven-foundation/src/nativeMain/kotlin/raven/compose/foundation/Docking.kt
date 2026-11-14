@@ -47,14 +47,15 @@ import raven.compose.ui.layoutWarningSink
 import raven.native.toRavenString
 
 /**
- * Where a [DockAreaScope.Panel] goes when it is first added: along a side of the area, taking [size]
- * of it (0 to 1; 0 is Raven's, a quarter), or behind the tabs of another panel.
+ * Where a [DockAreaScope.Panel] goes when it is first added: along a side of the area, or of the
+ * panel named `of`, taking `size` of it (0 to 1; 0 is Raven's, a quarter of the area or half of a
+ * panel), or behind the tabs of another panel.
  */
 public sealed interface Dock {
-    public data class Left(val size: Float = 0f) : Dock
-    public data class Right(val size: Float = 0f) : Dock
-    public data class Top(val size: Float = 0f) : Dock
-    public data class Bottom(val size: Float = 0f) : Dock
+    public data class Left(val size: Float = 0f, val of: String? = null) : Dock
+    public data class Right(val size: Float = 0f, val of: String? = null) : Dock
+    public data class Top(val size: Float = 0f, val of: String? = null) : Dock
+    public data class Bottom(val size: Float = 0f, val of: String? = null) : Dock
 
     /** Behind the tabs of the panel named [of]; null is the area's first group of tabs. */
     public data class Tab(val of: String? = null) : Dock
@@ -67,6 +68,15 @@ private val Dock.side: String
         is Dock.Top -> "Top"
         is Dock.Bottom -> "Bottom"
         is Dock.Tab -> "Tab"
+    }
+
+private val Dock.of: String?
+    get() = when (this) {
+        is Dock.Left -> of
+        is Dock.Right -> of
+        is Dock.Top -> of
+        is Dock.Bottom -> of
+        is Dock.Tab -> of
     }
 
 private val Dock.size: Float
@@ -157,7 +167,7 @@ private val PanelClosable = Property<Boolean> { widget, closable -> Rwidget_set_
 /** Where the panel goes when it is added, in its slot: Raven docks a child as its slot says. */
 private val InitialDock = Property<Dock> { widget, dock ->
     Rwidget_set_attribute(widget, "Slot.Dock", dock.side)
-    Rwidget_set_attribute(widget, "Slot.DockTo", (dock as? Dock.Tab)?.of ?: "")
+    Rwidget_set_attribute(widget, "Slot.DockTo", dock.of ?: "")
     Rwidget_set_attribute(widget, "Slot.DockSize", dock.size.toString())
 }
 
@@ -203,6 +213,8 @@ public class DockAreaScope internal constructor(internal val state: DockAreaStat
             panel.update(icon, open, onClose)
         }
         DisposableEffect(panel) {
+            // In the area now: the arrangement has it.
+            state.refresh()
             onDispose {
                 panels.remove(panel.widget)
                 state.refresh()

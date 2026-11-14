@@ -31,6 +31,7 @@ include(
     ":samples:notepad",
     ":samples:overlay",
     ":samples:themes",
+    ":samples:workspace",
     ":samples:xml-translator",
     ":spikes:nested-frames",
     ":spikes:navigation3",

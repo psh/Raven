@@ -79,6 +79,22 @@ class DockingTest {
     }
 
     @Test
+    fun aPanelCanBeDockedBesideAnother() = runRavenTest {
+        setContent {
+            DockArea(modifier = Modifier.testTag("dock").fillMaxSize()) {
+                Panel("editor", "Editor") { Box(Modifier.fillMaxSize().testTag("editor")) {} }
+                Panel("files", "Files", Dock.Left(0.25f)) { Box(Modifier.fillMaxSize().testTag("files")) {} }
+                Panel("log", "Log", Dock.Bottom(0.3f, of = "editor")) { Box(Modifier.fillMaxSize().testTag("log")) {} }
+            }
+        }
+        val editor = widgetRect(panel("editor"))
+        val files = widgetRect(panel("files"))
+        val log = widgetRect(panel("log"))
+        assertTrue(log.y >= editor.y + editor.height, "below the editor: $log, $editor")
+        assertTrue(log.x >= files.x + files.width, "only under the editor, not under the files: $log, $files")
+    }
+
+    @Test
     fun closingIsControlledAndHides() = runRavenTest {
         var open by mutableStateOf(true)
         var take by mutableStateOf(false)
@@ -238,6 +254,7 @@ class DockingTest {
         withLog = true
         waitForIdle()
         assertEquals(2, Rwidget_get_child_count(widget("dock")))
+        assertTrue("log" in state.layout, "a panel added later is in the layout: ${state.layout}")
     }
 
     /** Middle-clicks [panel]'s tab, just above the panel, which closes a closable panel. */
