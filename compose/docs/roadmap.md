@@ -228,7 +228,9 @@ It needs none of phase 3's vocabulary, so it can start as soon as phase 2 is don
 Decided for phase 4 (in the spec):
 
 - [Public test module for apps](issues/archive/0029-app-testing-module.md): `compose-raven-test` with the one
-  harness, Compose-style finders, actions and assertions, `mainClock`, leak checks
+  harness, Compose-style finders, actions and assertions, `mainClock`, leak checks; ticket:
+  [The public compose-raven-test module](issues/0139-compose-raven-test-module.md), taken ahead of the
+  release since it needs no publishing
 - [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
   the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
 - [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md): Maven Central under `io.github.psh`,
