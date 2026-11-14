@@ -10,6 +10,8 @@ import raven.compose.foundation.layout.size
 import raven.compose.ui.Modifier
 import raven.compose.ui.input.key.Key
 import raven.compose.ui.input.key.KeyShortcut
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.DpOffset
 import raven.compose.ui.unit.dp

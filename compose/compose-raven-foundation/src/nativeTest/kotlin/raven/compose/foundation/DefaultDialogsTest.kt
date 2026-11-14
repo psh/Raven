@@ -29,6 +29,8 @@ import raven.compose.ui.Dialog
 import raven.compose.ui.DialogProperties
 import raven.compose.ui.Modifier
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import kotlin.test.Test
 import kotlin.test.assertEquals

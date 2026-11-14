@@ -1,8 +1,11 @@
+@file:OptIn(InternalComposeRavenApi::class)
+
 package raven.sample.hello
 
 import raven.cinterop.Rwidget_get_tooltip
-import raven.compose.foundation.runRavenTest
-import raven.compose.foundation.widgetRect
+import raven.compose.ui.InternalComposeRavenApi
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals

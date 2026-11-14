@@ -30,6 +30,8 @@ import raven.cinterop.Rwindow_inject_key
 import raven.compose.foundation.layout.Column
 import raven.compose.ui.input.key.Key
 import raven.compose.ui.input.key.KeyShortcut
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals

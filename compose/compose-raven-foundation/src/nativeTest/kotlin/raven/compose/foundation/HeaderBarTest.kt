@@ -22,6 +22,9 @@ import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.Modifier
 import raven.compose.ui.Window
 import raven.compose.ui.layoutWarningSink
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -85,8 +85,8 @@ public class RavenNode internal constructor(
     internal val childKind: ChildKind,
     internal val host: RavenHost? = null,
     public val isContentNode: Boolean = false,
-    /** The composable's name, for warnings. */
-    internal val name: String = "a widget",
+    /** The composable's name, for warnings and a test's leak report. */
+    public val name: String = "a widget",
     public val isPopup: Boolean = false,
     internal val defaultRole: RAccessibleRole = R_ROLE_AUTO,
 ) : ComposeNodeLifecycleCallback {

@@ -27,12 +27,12 @@ import raven.cinterop.Rwidget_get_child_count
 import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_get_title
-import raven.compose.foundation.RavenTestScope
 import raven.compose.foundation.codeEditorLanguages
-import raven.compose.foundation.runRavenTest
-import raven.compose.foundation.widgetRect
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -202,7 +202,7 @@ class NotepadTest {
     }
 
     private fun RavenTestScope.setNotepad() {
-        host.start { Notepad(onExit = {}) }
+        setApplicationContent { Notepad(onExit = {}) }
         waitForIdle()
     }
 

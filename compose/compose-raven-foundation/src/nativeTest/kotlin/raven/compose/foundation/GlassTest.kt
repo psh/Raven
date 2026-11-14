@@ -35,6 +35,8 @@ import raven.compose.ui.graphics.RoundedCornerShape
 import raven.compose.ui.graphics.Shape
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.material
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.Dp
 import raven.compose.ui.unit.dp

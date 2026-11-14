@@ -29,6 +29,7 @@ import raven.compose.ui.graphics.ShaderEffect
 import raven.compose.ui.graphics.drawscope.Stroke
 import raven.compose.ui.graphics.painter.BitmapPainter
 import raven.compose.ui.layoutWarningSink
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.IntSize
 import raven.compose.ui.unit.dp

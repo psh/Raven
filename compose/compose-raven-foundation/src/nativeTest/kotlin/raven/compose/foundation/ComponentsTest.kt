@@ -34,6 +34,7 @@ import raven.compose.ui.Modifier
 import raven.compose.ui.PaddingValues
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import raven.native.CallbackRegistry

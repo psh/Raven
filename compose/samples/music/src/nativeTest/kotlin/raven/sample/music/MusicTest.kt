@@ -3,18 +3,15 @@
 package raven.sample.music
 
 import androidx.compose.runtime.remember
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.toKString
 import raven.cinterop.R_COLOR_ACCENT
 import raven.cinterop.R_COLOR_WINDOW
-import raven.cinterop.Rlabel_get_text
 import raven.cinterop.Rtheme_get_color
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +28,7 @@ class MusicTest {
         // The player's clock and the visualizers move every frame while a song plays: waiting for
         // idle holds them.
         mainClock.autoAdvance = false
-        host.start {
+        setApplicationContent {
             // The themes, the covers and the icons need Raven running.
             val themes = remember { MusicThemes(EXAMPLE_DIR) }
             val icons = remember { Icons() }
@@ -44,8 +41,7 @@ class MusicTest {
     private fun title(position: Int) = state.library.tracks[player.queue[position]].title
 
     /** The text of the label tagged [tag]. */
-    @OptIn(ExperimentalForeignApi::class)
-    private fun RavenTestScope.text(tag: String): String = Rlabel_get_text(onNodeWithTag(tag).fetchWidget())?.toKString().orEmpty()
+    private fun RavenTestScope.text(tag: String): String = onNodeWithTag(tag).fetchText()
 
     private fun color(role: UInt) = ravenColor { r, g, b, a -> Rtheme_get_color(role, r, g, b, a) }
 

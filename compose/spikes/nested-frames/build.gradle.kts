@@ -6,10 +6,9 @@ plugins {
 }
 
 kotlin {
-    // foundation's test harness, until it moves to compose-raven-test
     sourceSets.nativeTest {
-        kotlin.srcDir(project(":compose-raven-foundation").file("src/testHarness/kotlin"))
         dependencies {
+            implementation(project(":compose-raven-test"))
             implementation(project(":compose-raven-foundation"))
             implementation(project(":compose-raven-native"))
         }

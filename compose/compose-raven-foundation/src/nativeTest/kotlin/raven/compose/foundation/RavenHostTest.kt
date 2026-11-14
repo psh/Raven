@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import raven.compose.ui.test.runRavenTest
 import kotlin.native.concurrent.ObsoleteWorkersApi
 import kotlin.native.concurrent.TransferMode
 import kotlin.native.concurrent.Worker

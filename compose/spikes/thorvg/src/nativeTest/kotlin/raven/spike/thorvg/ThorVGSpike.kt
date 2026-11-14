@@ -19,7 +19,7 @@ import raven.cinterop.Rtexture_destroy
 import raven.cinterop.Rtexture_get_size
 import raven.cinterop.Rtexture_update
 import raven.compose.foundation.Text
-import raven.compose.foundation.runRavenTest
+import raven.compose.ui.test.runRavenTest
 import thorvg.cinterop.TVG_COLORSPACE_ABGR8888S
 import thorvg.cinterop.TVG_ENGINE_OPTION_DEFAULT
 import thorvg.cinterop.TVG_RESULT_SUCCESS

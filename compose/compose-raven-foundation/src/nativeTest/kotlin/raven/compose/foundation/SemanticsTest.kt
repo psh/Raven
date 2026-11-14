@@ -19,6 +19,8 @@ import raven.compose.ui.Modifier
 import raven.compose.ui.semantics.AccessibleRole
 import raven.compose.ui.semantics.Role
 import raven.compose.ui.semantics.semantics
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.native.toRavenString
 import kotlin.test.Test

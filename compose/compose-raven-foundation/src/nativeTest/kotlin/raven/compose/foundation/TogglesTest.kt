@@ -8,6 +8,8 @@ import raven.cinterop.Rcheckbox_is_checked
 import raven.compose.foundation.layout.Column
 import raven.compose.foundation.layout.Row
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import kotlin.test.Test
 import kotlin.test.assertEquals

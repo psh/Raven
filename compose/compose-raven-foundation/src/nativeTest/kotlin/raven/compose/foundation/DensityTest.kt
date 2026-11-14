@@ -7,6 +7,7 @@ import raven.cinterop.Rwindow_get_scale
 import raven.compose.foundation.layout.Box
 import raven.compose.ui.Modifier
 import raven.compose.ui.platform.LocalDensity
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.Density
 import raven.compose.ui.unit.dp

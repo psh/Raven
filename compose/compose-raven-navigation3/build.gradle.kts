@@ -14,7 +14,6 @@ kotlin {
         api(libs.navigation3.runtime)
         implementation(project(":compose-raven-native"))
     }
-    // foundation's test harness, until it moves to compose-raven-test
-    sourceSets.nativeTest { kotlin.srcDir(project(":compose-raven-foundation").file("src/testHarness/kotlin")) }
+    sourceSets.nativeTest.dependencies { implementation(project(":compose-raven-test")) }
     sourceSets.all { languageSettings.optIn("raven.compose.ui.InternalComposeRavenApi") }
 }

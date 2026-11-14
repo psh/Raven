@@ -1,15 +1,13 @@
 package raven.sample.components
 
-import raven.cinterop.Rtext_editor_get_text
-import raven.compose.foundation.RavenTestScope
-import raven.compose.foundation.runRavenTest
-import raven.native.toRavenString
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ComponentsTest {
-    private fun RavenTestScope.source(): String = Rtext_editor_get_text(onNodeWithTag("source").fetchWidget()).toRavenString()
+    private fun RavenTestScope.source(): String = onNodeWithTag("source").fetchText()
 
     @Test
     fun itStartsWithTheThreeCardsAndAHint() = runRavenTest {

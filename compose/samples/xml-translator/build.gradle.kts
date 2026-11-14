@@ -57,8 +57,7 @@ kotlin {
         // parseRavenXml reads Raven's XML API through raven.cinterop
         implementation(project(":compose-raven-native"))
     }
-    // foundation's test harness, until it moves to compose-raven-test
-    sourceSets.nativeTest { kotlin.srcDir(project(":compose-raven-foundation").file("src/testHarness/kotlin")) }
+    sourceSets.nativeTest.dependencies { implementation(project(":compose-raven-test")) }
 }
 
 /** `music/ui/now-playing.xml` becomes the package `examples.music.ui.now_playing`. */

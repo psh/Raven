@@ -19,6 +19,8 @@ import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_has_dialog
 import raven.cinterop.Rwindow_inject_key
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
 import kotlin.test.Test
 import kotlin.test.assertEquals

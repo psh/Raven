@@ -8,9 +8,9 @@ import kotlinx.cinterop.value
 import raven.cinterop.Rscroll_box_get_offset
 import raven.cinterop.Rwidget_scroll_into_view
 import raven.compose.foundation.Text
-import raven.compose.foundation.runRavenTest
-import raven.compose.foundation.widgetRect
 import raven.compose.ui.Modifier
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.dp
 import kotlin.test.Test

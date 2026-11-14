@@ -29,6 +29,9 @@ import raven.compose.ui.Modifier
 import raven.compose.ui.graphics.ImageBitmap
 import raven.compose.ui.graphics.painter.BitmapPainter
 import raven.compose.ui.graphics.painter.TextureRegion
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.test.widgetRect
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.DpSize
 import raven.compose.ui.unit.dp

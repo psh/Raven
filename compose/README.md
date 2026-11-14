@@ -34,6 +34,35 @@ From the repository root, use `./compose/gradlew -p compose allTests`.
 `compose-raven-native/src/nativeInterop/cinterop/raven.def` drift from `RAVEN_LIBRARIES` in Raven's
 `CMakeLists.txt`.
 
+## Testing an app
+
+`compose-raven-test` runs an app's UI headless, with no display or GPU, the way compose-raven's own
+tests do. Add it to the app's test source set, and write tests as with Compose's `ComposeUiTest`:
+
+```kotlin
+kotlin {
+    sourceSets.nativeTest.dependencies { implementation(project(":compose-raven-test")) }
+}
+```
+
+```kotlin
+import raven.compose.ui.test.runRavenTest
+
+class CounterTest {
+    @Test
+    fun itCounts() = runRavenTest {
+        setContent { Counter() }
+        onNodeWithText("Add").performClick()
+        onNodeWithText("Count: 1").assertExists()
+    }
+}
+```
+
+`setApplicationContent { }` hosts the app's own `Window` instead. Each test starts a fresh Raven,
+and fails if Raven reports an error or a widget outlives the test. The finders, actions and
+assertions are listed in [the spec](docs/spec.md#public-test-module-phase-4); each sample's tests
+show them in use.
+
 ## Running the samples
 
 Each sample folder has a launch script that builds the sample for this machine and runs it, from

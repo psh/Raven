@@ -20,11 +20,11 @@ import raven.cinterop.Rtext_editor_get_text
 import raven.cinterop.Rwidget_focus
 import raven.cinterop.Rwidget_get_parent
 import raven.compose.foundation.DockAreaState
-import raven.compose.foundation.RavenTestScope
 import raven.compose.foundation.rememberDockAreaState
-import raven.compose.foundation.runRavenTest
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.input.key.Key
+import raven.compose.ui.test.RavenTestScope
+import raven.compose.ui.test.runRavenTest
 import raven.native.toRavenString
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,7 +38,7 @@ class WorkspaceTest {
     private val directory = memScoped { checkNotNull(mkdtemp("/tmp/compose-raven-workspace-XXXXXX".cstr.getPointer(this))).toKString() }
 
     private fun RavenTestScope.show() {
-        host.start { WorkspaceApp(onCloseRequest = {}, workspace = workspace, dock = rememberDockAreaState().also { dock = it }, directory = directory) }
+        setApplicationContent { WorkspaceApp(onCloseRequest = {}, workspace = workspace, dock = rememberDockAreaState().also { dock = it }, directory = directory) }
         waitForIdle()
     }
 
