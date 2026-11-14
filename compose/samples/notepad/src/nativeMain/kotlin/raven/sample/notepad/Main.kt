@@ -48,6 +48,8 @@ import raven.compose.ui.Modifier
 import raven.compose.ui.Window
 import raven.compose.ui.alpha
 import raven.compose.ui.application
+import raven.compose.ui.focus.FocusRequester
+import raven.compose.ui.focus.focusRequester
 import raven.compose.ui.input.key.Key
 import raven.compose.ui.input.key.KeyShortcut
 import raven.compose.ui.rememberWindowState
@@ -60,8 +62,10 @@ import raven.compose.ui.unit.dp
 
 // A port of Raven's examples/notepad: a small text editor under a custom header bar, with File,
 // Edit and View menus, a language list (one language declared here, INI), the app's own
-// completions, TODO and FIXME markers, the system's file dialogs, "discard the changes?" before
-// losing them, and files dropped on the window. Run it with a file to open it: notepad.kexe Main.kt
+// completions, TODO and FIXME markers, file dialogs, "discard the changes?" before losing them,
+// and files dropped on the window. The dialogs are compose-raven's, over the window, where the C
+// example's are the system's (as messageBox and the file dialogs are with native = true). Run it
+// with a file to open it: notepad.kexe Main.kt
 
 fun main(args: Array<String>) = application {
     Notepad(initialPath = args.firstOrNull()?.takeUnless { it.startsWith("-") }, onExit = ::exitApplication)
@@ -84,6 +88,8 @@ enum class ViewLook(val text: String, val look: Look, val dark: Boolean) {
 fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
     val scope = rememberCoroutineScope()
     val editor = rememberCodeEditorState()
+    // The editor takes the keyboard back after a language, an Edit command or a file, as in the C example.
+    val editorFocus = remember { FocusRequester() }
     // Registered before the languages are listed, so the list has it.
     rememberCodeEditorLanguage(IniLanguage)
     val languages = remember { listOf(PLAIN_TEXT) + codeEditorLanguages() }
@@ -110,11 +116,12 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
         language = codeEditorLanguageForFile(file)
         markers = scanNotes(content)
         status = "Opened $file"
+        editorFocus.requestFocus()
     }
 
     /** True when the text can be replaced: nothing to lose, or the user agreed to lose it. */
     suspend fun canDiscard(): Boolean = !modified ||
-        messageBox("Unsaved changes", "The text has changes that were not saved. Discard them?", MessageButtons.OkCancel, native = true) ==
+        messageBox("Unsaved changes", "The text has changes that were not saved. Discard them?", MessageButtons.OkCancel) ==
         MessageResult.Ok
 
     suspend fun save(ask: Boolean) {
@@ -125,7 +132,6 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
                 title = "Save the text",
                 fileName = current?.let(::fileName) ?: "untitled.txt",
                 defaultExtension = "txt",
-                native = true,
             ) ?: return
         } else {
             current
@@ -188,7 +194,7 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
                             }, shortcut = KeyShortcut(Key.N, ctrl = true))
                             Item("Open...", onClick = {
                                 scope.launch {
-                                    if (canDiscard()) openFileDialog(FILE_FILTERS, title = "Open a text", native = true).firstOrNull()?.let(::openPath)
+                                    if (canDiscard()) openFileDialog(FILE_FILTERS, title = "Open a text").firstOrNull()?.let(::openPath)
                                 }
                             }, shortcut = KeyShortcut(Key.O, ctrl = true))
                             Separator()
@@ -198,11 +204,11 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
                             Item("Quit", onClick = ::quit, shortcut = KeyShortcut(Key.Q, ctrl = true))
                         }
                         Menu("Edit") {
-                            Item("Undo", onClick = editor::undo)
-                            Item("Redo", onClick = editor::redo)
+                            Item("Undo", onClick = { editor.undo(); editorFocus.requestFocus() })
+                            Item("Redo", onClick = { editor.redo(); editorFocus.requestFocus() })
                             Separator()
-                            Item("Propose words", onClick = editor::showCompletions)
-                            Item("Select all", onClick = editor::selectAll)
+                            Item("Propose words", onClick = { editorFocus.requestFocus(); editor.showCompletions() })
+                            Item("Select all", onClick = { editor.selectAll(); editorFocus.requestFocus() })
                         }
                         Menu("View") {
                             CheckboxItem("Line numbers", lineNumbers, { lineNumbers = it })
@@ -215,7 +221,10 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
                     ComboBox(
                         languages,
                         selectedIndex = languages.indexOf(language ?: PLAIN_TEXT).coerceAtLeast(0),
-                        onSelectedIndexChange = { language = if (it > 0) languages[it] else null },
+                        onSelectedIndexChange = {
+                            language = if (it > 0) languages[it] else null
+                            editorFocus.requestFocus()
+                        },
                         Modifier.align(Alignment.End).padding(horizontal = 8.dp).width(130.dp).height(26.dp)
                             .tooltip("Language of the text").testTag("language"),
                     )
@@ -229,7 +238,7 @@ fun Notepad(initialPath: String? = null, onExit: () -> Unit) {
                             modified = true
                         }
                     },
-                    Modifier.fillMaxWidth().weight(1f).testTag("editor"),
+                    Modifier.fillMaxWidth().weight(1f).focusRequester(editorFocus).testTag("editor"),
                     language = language,
                     lineNumbers = lineNumbers,
                     state = editor,

@@ -42,6 +42,11 @@ with theme files loaded at start. Spec: [10. Samples](../../spec.md#10-samples),
 The status line's "Loaded again" for interface files has no counterpart, since the interface is
 Kotlin, and is no gap ([Theme extras the themes sample uses](0077-theme-extras-the-themes-sample-uses.md)).
 
+**Filled in phase 3** ([The phase 2 samples completed](0133-phase-2-samples-completed.md)): the
+C example's ListView (by [Lists and trees](0120-lists-and-trees.md)), the accent as a
+`ColorPicker(popup = true, alpha = false)`, its label in `FontFamily.Monospace`, and the status line
+wrapping with `Text(softWrap = true)`.
+
 ## Resolution
 
 Done and run on macOS. `./gradlew build allTests` passes: 290 tests, 8 of them the sample's.

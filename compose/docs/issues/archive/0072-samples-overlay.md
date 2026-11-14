@@ -31,6 +31,10 @@ opacity, the backdrop obtained and the transparency check into phase 2.
 Found while porting (see the Resolution): the stripes' `Clip="true"` and the explanation's
 `Wrap="true"` have no phase 2 counterpart, and `WindowDrag` has none at all.
 
+**Filled in phase 3** ([The phase 2 samples completed](0133-phase-2-samples-completed.md)): the
+explanation wraps with `Text(softWrap = true)`, and the stripes clip with `Modifier.clipToBounds()`
+(by [Images and resources](0115-images-and-resources.md)). `WindowDrag` still has no counterpart.
+
 ## Resolution
 
 Done and run on macOS. `./gradlew build allTests` passes: 283 tests, 4 of them the sample's.

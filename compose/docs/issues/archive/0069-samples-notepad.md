@@ -61,6 +61,11 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../../sp
 Everything else of the C example is in phase 2, settled by
 [compose-raven phase 2 sample gaps](../0073-compose-raven-phase-2-sample-gaps.md).
 
+**Filled in phase 3** ([The phase 2 samples completed](0133-phase-2-samples-completed.md)): the
+dialogs are the default ones, on `Dialog` and `FileBrowser`, with headless tests of the open, save
+and discard flows, and the editor takes the focus back after a language, an Edit command or a file,
+with a `FocusRequester`.
+
 ## Resolution
 
 Done and run on macOS. `./gradlew build allTests` passes: 272 tests, 6 of them the sample's
