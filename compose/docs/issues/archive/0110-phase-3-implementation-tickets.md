@@ -51,7 +51,7 @@ is.
 - **The phase 2 samples completed**: [The phase 2 samples completed](0133-phase-2-samples-completed.md)
   (`themes`' `ListView`, `ColorPicker` and text styling, `overlay`'s `softWrap`, `notepad`'s default
   dialogs and their tests).
-- **The five samples**: [samples/editor](../0134-samples-editor.md),
+- **The five samples**: [samples/editor](0134-samples-editor.md),
   [samples/workspace](../0135-samples-workspace.md), [samples/music](../0136-samples-music.md),
   [samples/animations](0137-samples-animations.md), [samples/glass](0138-samples-glass.md).
   Each lists only its port gaps (none) and, for `music`, the deliberate differences decided in

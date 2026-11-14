@@ -159,7 +159,7 @@ dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `theme
 | `compose-raven-navigation3` | [8](spec.md#navigation-3-phase-3-compose-raven-navigation3) | `music` | [compose-raven-navigation3](issues/archive/0131-compose-raven-navigation3.md) |
 | ColorPicker | [8](spec.md#colorpicker-phase-3) | `music`, `themes` | [ColorPicker](issues/archive/0132-colorpicker.md) |
 | The phase 2 samples completed | [10](spec.md#10-samples) | `themes`, `overlay`, `notepad` | [The phase 2 samples completed](issues/archive/0133-phase-2-samples-completed.md) |
-| Samples | [10](spec.md#10-samples) | | [samples/editor](issues/0134-samples-editor.md), [samples/workspace](issues/0135-samples-workspace.md), [samples/music](issues/0136-samples-music.md), [samples/animations](issues/archive/0137-samples-animations.md), [samples/glass](issues/archive/0138-samples-glass.md) |
+| Samples | [10](spec.md#10-samples) | | [samples/editor](issues/archive/0134-samples-editor.md), [samples/workspace](issues/0135-samples-workspace.md), [samples/music](issues/0136-samples-music.md), [samples/animations](issues/archive/0137-samples-animations.md), [samples/glass](issues/archive/0138-samples-glass.md) |
 
 Decided for phase 3 so far (in the spec):
 
