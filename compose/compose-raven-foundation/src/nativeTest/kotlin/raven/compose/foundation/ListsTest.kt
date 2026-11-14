@@ -54,10 +54,10 @@ class ListsTest {
 
     private fun RavenTestScope.widget(tag: String) = onNodeWithTag(tag).fetchWidget()
 
-    /** The Raven children of the scroll box's content, in order. */
+    /** What each item of the scroll box shows, in order: each item is in a Box of its own. */
     private fun RavenTestScope.rows(tag: String): List<Rid> {
         val scroll = widget(tag)
-        return List(Rwidget_get_child_count(scroll)) { Rwidget_get_child(scroll, it) }
+        return List(Rwidget_get_child_count(scroll)) { Rwidget_get_child(Rwidget_get_child(scroll, it), 0) }
     }
 
     @Test

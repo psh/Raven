@@ -1,6 +1,7 @@
 package raven.compose.foundation.layout
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import raven.cinterop.ROrientation
 import raven.cinterop.R_HORIZONTAL
 import raven.cinterop.R_VERTICAL
@@ -18,6 +19,9 @@ import raven.compose.ui.Property
 import raven.compose.ui.RavenWidget
 import raven.compose.ui.WeightElement
 import raven.compose.ui.WidgetDescriptor
+import raven.compose.foundation.ScrollFollower
+import raven.compose.foundation.ScrollState
+import raven.compose.foundation.ScrollTarget
 import raven.compose.ui.bind
 
 /** What a splitter's panes can say about their place in it. */
@@ -41,16 +45,32 @@ private val SplitterOrientation = Property<ROrientation> { widget, orientation -
 
 /**
  * A Column that scrolls when it is taller than the space it gets. Each child keeps its own
- * height, so `Modifier.weight` is ignored here.
+ * height, so `Modifier.weight` is ignored here. [state], when given, holds its position.
  */
 @Composable
 public fun VerticalScroll(
     modifier: Modifier = Modifier,
+    state: ScrollState? = null,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    VerticalScroll(modifier, state as ScrollTarget?, verticalArrangement, horizontalAlignment, content)
+}
+
+/** A [VerticalScroll] following [target]: a [ScrollState], or a lazy list's state. */
+@Composable
+internal fun VerticalScroll(
+    modifier: Modifier,
+    target: ScrollTarget?,
+    verticalArrangement: Arrangement.Vertical,
+    horizontalAlignment: Alignment.Horizontal,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val follower = remember { ScrollFollower(vertical = true) }
     RavenWidget(VerticalScrollWidget, modifier, {
+        bind(follower)
+        set(target) { follower.target = it }
         bind(R_VERTICAL, ScrollOrientation)
         bind(PanelLayout(LayoutAxis.Vertical, horizontal = horizontalAlignment, mainAxis = MainAxis.Scrolling))
         bind(verticalArrangement.spacing, PanelSpacing)
@@ -61,11 +81,27 @@ public fun VerticalScroll(
 @Composable
 public fun HorizontalScroll(
     modifier: Modifier = Modifier,
+    state: ScrollState? = null,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: @Composable RowScope.() -> Unit,
 ) {
+    HorizontalScroll(modifier, state as ScrollTarget?, horizontalArrangement, verticalAlignment, content)
+}
+
+/** A [HorizontalScroll] following [target]: a [ScrollState], or a lazy list's state. */
+@Composable
+internal fun HorizontalScroll(
+    modifier: Modifier,
+    target: ScrollTarget?,
+    horizontalArrangement: Arrangement.Horizontal,
+    verticalAlignment: Alignment.Vertical,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val follower = remember { ScrollFollower(vertical = false) }
     RavenWidget(HorizontalScrollWidget, modifier, {
+        bind(follower)
+        set(target) { follower.target = it }
         bind(R_HORIZONTAL, ScrollOrientation)
         bind(PanelLayout(LayoutAxis.Horizontal, vertical = verticalAlignment, mainAxis = MainAxis.Scrolling))
         bind(horizontalArrangement.spacing, PanelSpacing)

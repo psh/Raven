@@ -46,7 +46,8 @@ private val TreeViewWidget = WidgetDescriptor(
  * Raven's virtualised list of text rows, one for each of [items], showing `itemText(item)`: for long
  * lists, as only the rows shown are asked for. Its selection, the row at [selectedIndex] or none at
  * -1, is controlled as [Slider]'s value is: the user's choice calls [onSelectedIndexChange], and a
- * choice the app doesn't take reverts. [onActivate] gets a row double-clicked, or Enter pressed on it.
+ * choice the app doesn't take reverts. [state] reveals rows; [onActivate] gets a row double-clicked,
+ * or Enter pressed on it.
  * For rows of composables, see `LazyColumn`.
  */
 @Composable
@@ -56,11 +57,15 @@ public fun <T> ListView(
     selectedIndex: Int,
     onSelectedIndexChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    state: ListViewState = rememberListViewState(),
     onActivate: (Int) -> Unit = {},
 ) {
+    val follower = remember { ListViewFollower() }
     require(selectedIndex in -1..items.lastIndex) { "selectedIndex $selectedIndex is not -1 or an index of the ${items.size} items" }
     val rowText: (Int) -> String = { index -> items.getOrNull(index)?.let(itemText) ?: "" }
     RavenWidget(ListViewWidget, modifier, {
+        bind(follower)
+        set(state) { follower.state = it }
         bind(rowText, ListViewItemText)
         // The rows before the selection: Raven selects nothing for a row it doesn't have.
         bind(items, ListViewItems)

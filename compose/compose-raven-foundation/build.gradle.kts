@@ -6,6 +6,8 @@ plugins {
 kotlin {
     sourceSets.nativeMain.dependencies {
         api(project(":compose-raven-ui"))
+        // ScrollState and LazyListState are rememberSaveable.
+        api(libs.compose.runtime.saveable)
         implementation(project(":raven-native"))
     }
     // The test harness, shared with the samples' tests until it moves to compose-raven-test.

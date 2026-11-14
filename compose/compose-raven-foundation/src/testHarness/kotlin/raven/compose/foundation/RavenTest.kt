@@ -78,6 +78,13 @@ import raven.cinterop.Rwindow_inject_drop
 import raven.cinterop.Rwidget_is_focused
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rmemory_get_stats
+import raven.cinterop.R_WIDGET_LIST_VIEW
+import raven.cinterop.R_WIDGET_SCROLL_BOX
+import raven.cinterop.Rlist_view_get_item_count
+import raven.cinterop.Rlist_view_scroll_to_item
+import raven.cinterop.Rscroll_box_get_offset
+import raven.cinterop.Rscroll_box_set_offset
+import raven.cinterop.Rwidget_scroll_into_view
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.RavenNode
@@ -428,6 +435,53 @@ internal class NodeInteraction(
         press(code, R_KEY_DELETE)
         press(code, R_KEY_ENTER)
         if (Rwindow_get_popup_count(window) > popups) Rwindow_close_popups(window)
+    }
+
+    /**
+     * Scrolls every scroll box above the node's widget until it is in view
+     * (`Rwidget_scroll_into_view`), then draws a frame, so the states following them read it.
+     */
+    fun performScrollTo(): NodeInteraction = apply {
+        Rwidget_scroll_into_view(fetchWidget())
+        scope.frame()
+    }
+
+    /**
+     * Scrolls the node's lazy list so its item at [index] is at the top (or the start), as
+     * `scrollToItem` does, or the node's ListView just enough to show its row at [index]
+     * (`Rlist_view_scroll_to_item`), then draws a frame.
+     */
+    fun performScrollToIndex(index: Int): NodeInteraction = apply {
+        val widget = fetchWidget()
+        when (Rwidget_get_type(widget)) {
+            R_WIDGET_LIST_VIEW -> {
+                val count = Rlist_view_get_item_count(widget)
+                if (index !in 0 until count) fail("the node with $selector has $count rows, so none at $index")
+                Rlist_view_scroll_to_item(widget, index)
+            }
+            R_WIDGET_SCROLL_BOX -> {
+                val count = Rwidget_get_child_count(widget)
+                if (index !in 0 until count) fail("the node with $selector has $count items, so none at $index")
+                val box = widgetRect(widget)
+                val item = widgetRect(Rwidget_get_child(widget, index))
+                val offset = memScoped {
+                    val x = alloc<FloatVar>()
+                    val y = alloc<FloatVar>()
+                    Rscroll_box_get_offset(widget, x.ptr, y.ptr)
+                    x.value to y.value
+                }
+                // The axis the items go along: a column's are below each other.
+                val vertical = Rwidget_get_child_count(widget) < 2 ||
+                    widgetRect(Rwidget_get_child(widget, 1)).y != widgetRect(Rwidget_get_child(widget, 0)).y
+                if (vertical) {
+                    Rscroll_box_set_offset(widget, 0f, item.y - box.y + offset.second)
+                } else {
+                    Rscroll_box_set_offset(widget, item.x - box.x + offset.first, 0f)
+                }
+            }
+            else -> fail("the node with $selector is no lazy list or ListView")
+        }
+        scope.frame()
     }
 
     /** The text input of [picker]'s code, or null when it shows none. */
