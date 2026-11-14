@@ -8,6 +8,8 @@ import raven.cinterop.RAccessibleRole
 import raven.cinterop.REvent
 import raven.cinterop.RCursor
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_HALIGN_CENTER
+import raven.cinterop.R_HALIGN_FILL
 import raven.cinterop.R_ROLE_AUTO
 import raven.cinterop.R_INVALID_ID
 import raven.cinterop.R_TRUE
@@ -20,6 +22,7 @@ import raven.cinterop.R_WIDGET_SPIN_BOX
 import raven.cinterop.R_WIDGET_TEXT_INPUT
 import raven.cinterop.R_WIDGET_WRAP_BOX
 import raven.cinterop.Rid
+import raven.cinterop.Rslot_set_halign
 import raven.cinterop.Rwidget_destroy
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_get_type
@@ -291,6 +294,23 @@ public class RavenNode internal constructor(
         resolved.warnings.forEach { warnOnce("$name: $it, so it is ignored") }
         resolved.slot.applyChanges(appliedLayout, RavenSlotTarget(widget))
         appliedLayout = resolved.slot
+        parent.fitContent()
+    }
+
+    // Whether this button's content row stretches across the button.
+    private var stretched = false
+
+    /**
+     * A button's content row is centred in the button, as wide as its children, except when a
+     * child has a weight: then, as Compose's Row given the button's width, it spans the button
+     * and the weighted child takes the room left.
+     */
+    internal fun fitContent() {
+        if (!isContentNode || panelLayout.axis != LayoutAxis.Horizontal) return
+        val stretch = children.any { it.appliedLayout.fill != null }
+        if (stretch == stretched) return
+        stretched = stretch
+        Rslot_set_halign(widget, if (stretch) R_HALIGN_FILL else R_HALIGN_CENTER)
     }
 
     /**

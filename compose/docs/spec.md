@@ -404,7 +404,9 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   parent's panel layout (axis and default alignments). A container whose layout changes places
   its children again. A content node never applies a Modifier: a Box content node keeps Raven's
   fill defaults and fills its widget, and a Row content node (a button's) is centred in its
-  widget, with its children centred vertically, as a Compose Button's content is.
+  widget, with its children centred vertically, as a Compose Button's content is. While one of
+  its children has a weight (or `fillMaxWidth`), it spans the widget instead, as Compose's Row
+  given the button's width does, and that child takes the room left.
 - **Containers**: `Column` uses VBox, `Row` uses HBox and `Box` uses Overlay.
 - **Defaults are Compose's**: each node sets its slot to start/top alignment when it is created,
   overriding Raven's `FILL`. Stretching is opt-in.

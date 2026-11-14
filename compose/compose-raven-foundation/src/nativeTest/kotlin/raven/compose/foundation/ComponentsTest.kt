@@ -31,6 +31,7 @@ import raven.compose.foundation.layout.height
 import raven.compose.foundation.layout.padding
 import raven.compose.foundation.layout.width
 import raven.compose.ui.Modifier
+import raven.compose.ui.PaddingValues
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.ravenColor
 import raven.compose.ui.testTag
@@ -94,6 +95,31 @@ class ComponentsTest {
 
         onNodeWithText("all").performClick()
         assertEquals(1, clicks)
+    }
+
+    @Test
+    fun aWeightedChildSpansTheButtonsContent() = runRavenTest {
+        var weighted by mutableStateOf(true)
+        setContent {
+            Button(onClick = {}, Modifier.width(240.dp).testTag("button"), contentPadding = PaddingValues(0.dp)) {
+                Text("Title", if (weighted) Modifier.weight(1f) else Modifier)
+                Text("3:20")
+            }
+        }
+        val button = onNodeWithTag("button").fetchWidget()
+        val panel = Rwidget_get_parent(onNodeWithText("Title").fetchWidget())
+        val (buttonX, _, buttonWidth) = rect(button)
+        val (panelX, _, panelWidth) = rect(panel)
+        assertEquals(buttonX, panelX, "as Compose's Row given the button's width")
+        assertEquals(buttonWidth, panelWidth)
+        val (timeX, _, timeWidth) = rect(onNodeWithText("3:20").fetchWidget())
+        assertEquals(buttonX + buttonWidth, timeX + timeWidth, "the weighted title takes the room left")
+
+        weighted = false
+        waitForIdle()
+        val (centredX, _, centredWidth) = rect(panel)
+        assertTrue(centredWidth < buttonWidth, "without a weight, as wide as its children")
+        assertEquals(buttonX + buttonWidth / 2, centredX + centredWidth / 2, "and centred again")
     }
 
     @Test

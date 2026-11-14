@@ -45,8 +45,8 @@ samples/notepad/launch-notepad README.md
 ```
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-overlay`,
-`launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace` and
-`launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
+`launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
+`launch-music` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 Each sample is an executable. Kotlin/Native's run tasks also build and start it:
@@ -103,6 +103,14 @@ every core, a profiler, properties and a log), runs the same way:
 and restored, a file browser opening files in new panels, materials, an island), runs the same
 way: `./gradlew :samples:workspace:runReleaseExecutableMacosArm64`, or
 `samples/workspace/build/bin/<target>/releaseExecutable/workspace.kexe`.
+
+`samples/music`, the port of Raven's `examples/music` (a music player with no sound: pages in a
+`NavDisplay`, the player's themes or any look of Raven, the accent following the cover, an island
+in the notch), runs the same way: `./gradlew :samples:music:runReleaseExecutableMacosArm64`, or
+`samples/music/build/bin/<target>/releaseExecutable/music.kexe`. It reads the theme files and the
+covers of `examples/music` where they are. As the C example, it takes `RAVEN_MUSIC_LOOK` (a look's
+name), `RAVEN_MUSIC_PAGE` (`album`, `playlist`, `search`, `genres`, `library` or `settings`),
+`RAVEN_MUSIC_PAUSED` and `RAVEN_MUSIC_ISLAND` from the environment.
 
 Running an app (not the tests) needs a Vulkan driver:
 
