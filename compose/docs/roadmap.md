@@ -128,8 +128,8 @@ settled every one; nothing is left open before implementation.
 
 Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), and its
 samples' port gaps settled by [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md).
-Broken into tickets, in dependency order; each ticket's **Depends on** line names its blockers, and
-[the phase 3 plan](phase-3-plan.md) splits them into lanes for agents working at once. The
+Broken into tickets, in dependency order; each ticket's **Depends on** line names its blockers.
+They were worked in lanes, by agents at once, and are all closed. The
 five samples have no port gap left, and phase 3 also completes the phase 2 samples (the default
 dialogs for `notepad`, `ListView`, `ColorPicker` and the text styling for `themes`, `softWrap` for
 `overlay`). `MarkdownText` and `Modifier.appearTransition` arrived early, in phase 2
