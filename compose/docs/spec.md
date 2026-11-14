@@ -194,7 +194,8 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     effect, read with `Rwindow_get_backdrop` after each apply, as snapshot state: `None` until the
     first apply, then its readers recompose. `val obtained = WindowBackdrop(Backdrop.Mica)`.
 - **`Dialog(onDismissRequest, properties: DialogProperties = DialogProperties()) { }`** is a
-  Raven sheet over its window.
+  Raven sheet over its window, centred over a scrim; its content draws its own background (a
+  `Surface`).
   - Its content has its own composition, rooted in a panel given to `Rdialog_open`. When it leaves
     the composition, that composition is disposed, then `Rdialog_close` is called.
   - Escape calls `onDismissRequest`, through `Rdialog_set_dismiss_callback`
@@ -212,11 +213,12 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     Linux with zenity or kdialog; everywhere else, and for every message box, they are Raven's
     own, only blocking. Calls that wait at the same time return in reverse order: the first one
     opened resumes only once every later one has closed.
-  - **Phased**: phase 2 ships all four with their final signatures, `native: Boolean = false`
-    included, but builds only `native = true`, for `samples/notepad`. A phase 2 call without
-    `native = true` fails with an error saying the default arrives in phase 3. Phase 3 builds the
-    default on `Dialog` and `FileBrowser` without changing the API, and with it the headless tests
-    of dialog flows.
+  - **Phased**: phase 2 shipped all four with their final signatures and built only `native =
+    true`, for `samples/notepad`; phase 3 builds the default on `Dialog` and `FileBrowser` without
+    changing the API. A default dialog shows over the active window (else the first), in that
+    window's composition, until it is answered; cancelling the call takes it away, and a window
+    that goes cancels the calls waiting on it. Escape answers a message box Cancel, or No when it
+    has no Cancel button, and a file dialog none.
 
 The setup lives in an internal `RavenHost` with the interface `start(content)`, `frame()` and
 `close()`. `application` is `RavenHost` plus `while (Rwait_frame(-1.0))`. The test harness is

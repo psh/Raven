@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
@@ -314,7 +315,15 @@ internal class RavenWindow(
         if (!state.size.width.isSpecified || !state.size.height.isSpecified) state.size = ravenSize.toDpSize()
     }
 
-    fun setContent(content: @Composable () -> Unit) = composition.setContent { WindowLocals(content) }
+    /** The dialogs suspend functions show over the window (`awaitWindowDialog`), in the order asked. */
+    val dialogRequests = mutableStateListOf<WindowDialog>()
+
+    fun setContent(content: @Composable () -> Unit) = composition.setContent {
+        WindowLocals {
+            content()
+            WindowDialogs(dialogRequests)
+        }
+    }
 
     /** What the window gives its content and its island. */
     @Composable
@@ -480,6 +489,9 @@ internal class RavenWindow(
      */
     fun dispose() {
         host.windows -= this
+        // A dialog waiting for an answer gets none: its caller is cancelled.
+        dialogRequests.toList().forEach { it.continuation?.cancel() }
+        dialogRequests.clear()
         owners.destroy()
         closeIsland()
         composition.dispose()

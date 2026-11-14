@@ -28,20 +28,10 @@ import kotlin.test.assertTrue
 
 class DialogsTest {
     @Test
-    fun eachCallWithoutNativeFailsNamingPhase3() = runBlocking {
-        val calls = listOf<Pair<String, suspend () -> Unit>>(
-            "messageBox" to { messageBox("Quit", "Discard the changes?", MessageButtons.YesNo) },
-            "openFileDialog" to { openFileDialog(listOf(FileFilter("Text", "*.txt")), multiple = true) },
-            "saveFileDialog" to { saveFileDialog(fileName = "notes.txt") },
-            "selectFolderDialog" to { selectFolderDialog() },
-        )
-        for ((name, call) in calls) {
-            val builtOn = if (name == "messageBox") "Dialog" else "Dialog and FileBrowser"
-            assertEquals(
-                "$name needs native = true for now: the default, on $builtOn, arrives in phase 3",
-                assertFailsWith<UnsupportedOperationException> { call() }.message,
-            )
-        }
+    fun aDefaultCallFailsWhenNoApplicationRuns() = runBlocking {
+        assertFailsWith<IllegalStateException> { messageBox("Quit", "Discard the changes?") }
+        assertFailsWith<IllegalStateException> { openFileDialog() }
+        Unit
     }
 
     @Test
