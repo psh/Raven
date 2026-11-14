@@ -45,9 +45,9 @@ samples/notepad/launch-notepad README.md
 ```
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-overlay`,
-`launch-themes`, `launch-animations`, `launch-glass` and `launch-xml-translator`; they share
-`samples/launch-sample`, which picks the target (`macosArm64` on an Apple silicon Mac, `linuxX64`
-on Linux), links the release executable with Gradle and starts it.
+`launch-themes`, `launch-animations`, `launch-glass`, `launch-editor` and `launch-xml-translator`;
+they share `samples/launch-sample`, which picks the target (`macosArm64` on an Apple silicon Mac,
+`linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 Each sample is an executable. Kotlin/Native's run tasks also build and start it:
 
@@ -93,6 +93,11 @@ clear glass floating over a page that scrolls under them, a player whose time mo
 way: `./gradlew :samples:glass:runReleaseExecutableMacosArm64`, or
 `samples/glass/build/bin/<target>/releaseExecutable/glass.kexe`; `glass.kexe light` starts with the
 light glass.
+
+`samples/editor`, the port of Raven's `examples/editor` (an outliner, a scene rendered in software on
+every core, a profiler, properties and a log), runs the same way:
+`./gradlew :samples:editor:runReleaseExecutableMacosArm64`, or
+`samples/editor/build/bin/<target>/releaseExecutable/editor.kexe`.
 
 Running an app (not the tests) needs a Vulkan driver:
 

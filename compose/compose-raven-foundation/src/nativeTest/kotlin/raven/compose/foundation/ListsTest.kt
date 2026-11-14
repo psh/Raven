@@ -158,6 +158,30 @@ class ListsTest {
         assertEquals(-1, Rlist_view_get_selected(list))
     }
 
+    @Test
+    fun aListViewFollowsAStateListChangedInPlace() = runRavenTest {
+        val lines = androidx.compose.runtime.mutableStateListOf("one")
+        setContent { ListView(lines, { it }, -1, {}, Modifier.testTag("list")) }
+        lines += "two"
+        waitForIdle()
+        assertEquals(2, Rlist_view_get_item_count(widget("list")))
+    }
+
+    @Test
+    fun aTreeShowsASelectionGivenWithItsNewItems() = runRavenTest {
+        var roots by mutableStateOf(emptyList<Node>())
+        var selection by mutableStateOf(emptySet<Any>())
+        setContent {
+            TreeView(roots, { it.children }, { it.name }, { it.id }, selection, {}, modifier = Modifier.testTag("tree"))
+        }
+        // Items and their selection in one change, as an app adds and selects an object.
+        roots = listOf(Node(1, "A"), Node(2, "B"))
+        selection = setOf(2)
+        waitForIdle()
+        val tree = widget("tree")
+        assertEquals(setOf(item(tree, 1)), selectedItems(tree))
+    }
+
     private data class Node(val id: Int, val name: String, val children: List<Node> = emptyList())
 
     private fun RavenTestScope.treeTexts(tree: Rid): List<String> {

@@ -13,8 +13,12 @@ import raven.cinterop.Rtree_item_destroy
 import raven.cinterop.Rtree_item_is_expanded
 import raven.cinterop.Rtree_item_set_expanded
 import raven.cinterop.Rtree_item_set_icon
+import raven.cinterop.Rtree_item_set_selected
 import raven.cinterop.Rtree_item_set_text
 import raven.cinterop.Rtree_view_add_item
+import raven.cinterop.Rtree_view_clear_selection
+import raven.cinterop.Rtree_view_get_selection
+import raven.cinterop.Rtree_view_get_selection_count
 import raven.cinterop.Rtree_view_set_multi_select
 import raven.cinterop.Rwidget_get_window
 import raven.compose.ui.ListViewActivated
@@ -68,7 +72,8 @@ public fun <T> ListView(
         set(state) { follower.state = it }
         bind(rowText, ListViewItemText)
         // The rows before the selection: Raven selects nothing for a row it doesn't have.
-        bind(items, ListViewItems)
+        // A copy: a list changed in place, a SnapshotStateList say, is equal to itself.
+        bind(items.toList(), ListViewItems)
         bind(selectedIndex, ListViewSelected)
         bind(onSelectedIndexChange, ListViewSelectionChanged)
         bind(onActivate, ListViewActivated)
@@ -111,7 +116,7 @@ public fun <T> TreeView(
     val reportError = rememberErrorReporter()
     val menu = remember(reportError) { ContextMenu(reportError) }
     DisposableEffect(menu) { onDispose { menu.discard() } }
-    val data = TreeData(mirror, roots, children, itemText, key, initiallyExpanded, itemIcon)
+    val data = TreeData(mirror, roots, children, itemText, key, initiallyExpanded, itemIcon, selection)
     val onContext: (Rid, Float, Float) -> Unit = { item, x, y ->
         val entries = contextMenuItems?.invoke(mirror.itemOf(item)).orEmpty()
         menu.open(entries, Rwidget_get_window(mirror.tree), x, y)
@@ -141,6 +146,7 @@ private class TreeData<T>(
     val key: (T) -> Any,
     val initiallyExpanded: (T) -> Boolean,
     val itemIcon: ((T) -> Painter?)?,
+    val selection: Set<Any>,
 ) {
     fun sync(tree: Rid) = mirror.sync(tree, this)
 
@@ -180,6 +186,14 @@ private class TreeMirror<T> {
         val expanded = byKey.mapValues { (_, item) -> Rtree_item_is_expanded(item.handle) == R_TRUE }
         val keys = HashSet<Any>()
         syncChildren(R_INVALID_ID, roots, data.roots, data, expanded, keys)
+        // The selection's handles were looked up as it composed, before the items new to the tree
+        // were added: the selection is shown again now that they are.
+        val wanted = data.selectedHandles(data.selection)
+        val shown = (0 until Rtree_view_get_selection_count(tree)).mapTo(LinkedHashSet()) { Rtree_view_get_selection(tree, it) }
+        if (wanted != shown) {
+            Rtree_view_clear_selection(tree)
+            wanted.forEach { Rtree_item_set_selected(it, R_TRUE) }
+        }
     }
 
     private fun syncChildren(
