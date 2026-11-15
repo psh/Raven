@@ -322,6 +322,50 @@ static void test_custom_drawing(void) {
 	Rwindow_destroy(window);
 }
 
+static void paint_line_caps(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	/* 10 thick, from x = 100 to 200: rounded, cut, and cut half the thickness past the end */
+	static const float round[] = { 100, 20, 200, 20 };
+	static const float butt[] = { 100, 60, 200, 60 };
+	static const float square[] = { 100, 100, 200, 100 };
+	/* a cut line that turns: its joint is round, with no notch */
+	static const float turn[] = { 240, 20, 270, 20, 270, 60 };
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	Rdraw_polyline(painter, round, 2, 0, 0, 1, 10, R_LINE_CAP_ROUND, 1, 1, 1, 1);
+	Rdraw_polyline(painter, butt, 2, 0, 0, 1, 10, R_LINE_CAP_BUTT, 1, 1, 1, 1);
+	Rdraw_polyline(painter, square, 2, 0, 0, 1, 10, R_LINE_CAP_SQUARE, 1, 1, 1, 1);
+	Rdraw_polyline(painter, turn, 3, 0, 0, 1, 10, R_LINE_CAP_BUTT, 1, 1, 1, 1);
+}
+
+static void test_line_caps(void) {
+	Rid window = window_from(
+		"<Window Width=\"300\" Height=\"120\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_line_caps, NULL);
+	capture(window);
+	/* along each line: lit */
+	CHECK_PIXEL(150, 20, 255, 255, 255);
+	CHECK_PIXEL(150, 60, 255, 255, 255);
+	CHECK_PIXEL(150, 100, 255, 255, 255);
+	/* 4 past the start: inside the round cap and the square one, outside the cut */
+	CHECK_PIXEL(96, 20, 255, 255, 255);
+	CHECK_PIXEL(96, 60, 0, 0, 0);
+	CHECK_PIXEL(96, 100, 255, 255, 255);
+	/* 4 past the end, likewise */
+	CHECK_PIXEL(203, 20, 255, 255, 255);
+	CHECK_PIXEL(203, 60, 0, 0, 0);
+	CHECK_PIXEL(203, 100, 255, 255, 255);
+	/* a square cap's corner is filled, a round one's isn't */
+	CHECK_PIXEL(95, 95, 255, 255, 255);
+	CHECK_PIXEL(95, 15, 0, 0, 0);
+	/* the turn's outer corner is round (inside the arc), the cut ends are cut */
+	CHECK_PIXEL(273, 18, 255, 255, 255);
+	CHECK_PIXEL(236, 20, 0, 0, 0);
+	CHECK_PIXEL(270, 64, 0, 0, 0);
+	Rwindow_destroy(window);
+}
+
 static Rid g_region_texture;
 
 static void paint_image_region(Rid widget, RPainter* painter, float width, float height, void* user_data) {
@@ -440,7 +484,7 @@ static void paint_meshes(Rid widget, RPainter* painter, float width, float heigh
 	Rdraw_triangles(painter, square, 2, 200, 100, 1, 1, 0, 0, 0.5f);
 	Rdraw_triangles(painter, unit, 1, 100, 20, 40, 0, 0, 1, 1);
 	/* two lines in one call, a NaN point between them */
-	Rdraw_polyline(painter, lines, 6, 0, 0, 1, 6, 0, 1, 0, 1);
+	Rdraw_polyline(painter, lines, 6, 0, 0, 1, 6, R_LINE_CAP_ROUND, 0, 1, 0, 1);
 	/* the same square one triangle at a time, below, for its seam */
 	Rdraw_triangle(painter, 20, 120, 80, 120, 80, 180, 1, 0, 0, 1);
 	Rdraw_triangle(painter, 20, 120, 80, 180, 20, 180, 1, 0, 0, 1);
@@ -1176,6 +1220,7 @@ int main(void) {
 	RUN(test_rotated_text);
 	RUN(test_image_region);
 	RUN(test_image_rotated);
+	RUN(test_line_caps);
 	RUN(test_glass);
 	RUN(test_windows_look);
 	RUN(test_glass_theme);

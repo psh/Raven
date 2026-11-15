@@ -625,6 +625,10 @@ void rvn_paint_erase(RPainter* painter, rvn_rect_t rect, const float radii[4], f
 }
 
 void rvn_paint_line(RPainter* painter, float x0, float y0, float x1, float y1, float thickness, rvn_color_t color) {
+	rvn_paint_line_flags(painter, x0, y0, x1, y1, thickness, color, 0u);
+}
+
+void rvn_paint_line_flags(RPainter* painter, float x0, float y0, float x1, float y1, float thickness, rvn_color_t color, uint32_t flags) {
 	RDrawInstance* instance;
 	rvn_box_t bounds;
 	float ax = (painter->ox + x0) * painter->scale, ay = (painter->oy + y0) * painter->scale;
@@ -644,7 +648,7 @@ void rvn_paint_line(RPainter* painter, float x0, float y0, float x1, float y1, f
 	instance->rect[3] = by;
 	instance->radii[0] = width;
 	instance->color = color;
-	instance->flags = R_PRIM_LINE;
+	instance->flags = R_PRIM_LINE | flags;
 }
 
 rvn_vec2_t rvn_curve_point(const float points[8], float t) {
@@ -896,25 +900,42 @@ void Rdraw_line(RPainter* painter, float x0, float y0, float x1, float y1,
 	rvn_paint_line(painter, x0, y0, x1, y1, thickness, rvn_rgba(r, g, b, a));
 }
 
+/* Moves (x, y) by half the line's thickness away from (from_x, from_y): a square cap's reach. */
+static void rvn_line_extend(float* x, float* y, float from_x, float from_y, float half) {
+	float dx = *x - from_x, dy = *y - from_y, length = sqrtf(dx * dx + dy * dy);
+	if (length <= 0.0f) return;
+	*x += dx / length * half;
+	*y += dy / length * half;
+}
+
 void Rdraw_polyline(RPainter* painter, const float* xy, int point_count,
-	float offset_x, float offset_y, float scale, float thickness, float r, float g, float b, float a) {
+	float offset_x, float offset_y, float scale, float thickness, RLineCap cap, float r, float g, float b, float a) {
 	rvn_color_t color;
-	int i, started = 0;
-	float px = 0.0f, py = 0.0f;
+	int start = 0;
+	/* half the thickness drawn, which is a pixel at least, in the painter's units */
+	float half = rvn_maxf(thickness, painter && painter->scale > 0.0f ? 1.0f / painter->scale : 1.0f) * 0.5f;
 	if (!painter || !xy || point_count <= 0) return;
 	color = rvn_rgba(r, g, b, a);
-	for (i = 0; i < point_count; i++) {
-		float x = xy[i * 2], y = xy[i * 2 + 1];
-		if (isnan(x)) {
-			started = 0;
-			continue;
+	while (start < point_count) {
+		int end = start, i;
+		/* one line: from start to the next NaN */
+		while (end < point_count && !isnan(xy[end * 2])) end++;
+		for (i = start; i + 1 < end; i++) {
+			float x0 = offset_x + xy[i * 2] * scale, y0 = offset_y + xy[i * 2 + 1] * scale;
+			float x1 = offset_x + xy[i * 2 + 2] * scale, y1 = offset_y + xy[i * 2 + 3] * scale;
+			uint32_t flags = 0u;
+			/* the line's own ends take the cap; where it turns, the segments meet round */
+			if (cap != R_LINE_CAP_ROUND && i == start) {
+				flags |= R_INSTANCE_BUTT_START;
+				if (cap == R_LINE_CAP_SQUARE) rvn_line_extend(&x0, &y0, x1, y1, half);
+			}
+			if (cap != R_LINE_CAP_ROUND && i + 2 == end) {
+				flags |= R_INSTANCE_BUTT_END;
+				if (cap == R_LINE_CAP_SQUARE) rvn_line_extend(&x1, &y1, x0, y0, half);
+			}
+			rvn_paint_line_flags(painter, x0, y0, x1, y1, thickness, color, flags);
 		}
-		x = offset_x + x * scale;
-		y = offset_y + y * scale;
-		if (started) rvn_paint_line(painter, px, py, x, y, thickness, color);
-		px = x;
-		py = y;
-		started = 1;
+		start = end + 1;
 	}
 }
 

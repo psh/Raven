@@ -66,16 +66,23 @@ extern "C" {
 	RAVEN_API void Rdraw_line(RPainter* painter, float x0, float y0, float x1, float y1,
 		float thickness, float r, float g, float b, float a);
 
+	/** How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it. */
+	typedef enum RLineCap {
+		R_LINE_CAP_ROUND = 0x0570,
+		R_LINE_CAP_BUTT,
+		R_LINE_CAP_SQUARE
+	} RLineCap;
+
 	/**
-	 * @brief Lines through many points, of one color and thickness, in one call: anti-aliased
-	 * segments with round caps, as Rdraw_line draws them.
+	 * @brief Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+	 * round where they turn, and ended as @p cap says.
 	 *
 	 * @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
 	 * offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
-	 * so many lines go in one call.
+	 * so many lines go in one call, such as the dashes of a dashed line.
 	 */
 	RAVEN_API void Rdraw_polyline(RPainter* painter, const float* xy, int point_count,
-		float offset_x, float offset_y, float scale, float thickness, float r, float g, float b, float a);
+		float offset_x, float offset_y, float scale, float thickness, RLineCap cap, float r, float g, float b, float a);
 
 	/** @brief Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points. */
 	RAVEN_API void Rdraw_curve(RPainter* painter, float x0, float y0, float cx0, float cy0, float cx1, float cy1, float x1, float y1,

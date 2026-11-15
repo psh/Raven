@@ -52,6 +52,10 @@
 /** GLYPH: turned about a point: radii[0], [1] = cos, sin of the angle, radii[2], [3] = the point,
  * in pixels; rect and uv are the glyph unturned (Rdraw_text_rotated, Rdraw_image_rotated). */
 #define R_INSTANCE_ROTATED (1u << 7)
+/** LINE: its start, its end, cut square at the point rather than rounded (Rdraw_polyline's caps).
+ * The same bits as R_INSTANCE_ALIASED and R_INSTANCE_ROTATED, which are a triangle's and a glyph's. */
+#define R_INSTANCE_BUTT_START (1u << 6)
+#define R_INSTANCE_BUTT_END (1u << 7)
 
 /**
  * One primitive. All positions are in framebuffer pixels, origin top-left.

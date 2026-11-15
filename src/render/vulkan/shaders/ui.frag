@@ -19,6 +19,8 @@ const uint PRIM_CURVE    = 7u;
 const uint PRIM_MASK     = 15u;
 const uint FLAG_TEXTURED = 16u;
 const uint FLAG_ALIASED = 64u;
+const uint FLAG_BUTT_START = 64u;
+const uint FLAG_BUTT_END = 128u;
 
 layout(set = 0, binding = 0) uniform sampler2D u_texture;
 /* the frame behind the glass primitives, as captured by the last backdrop command */
@@ -283,7 +285,19 @@ void main() {
 		float blur = max(v_border_width, 0.5);
 		coverage = 1.0 - smoothstep(-blur, blur, d);
 	} else if (kind == PRIM_LINE) {
-		float d = sd_segment(p, v_rect.xy, v_rect.zw) - v_radii.x * 0.5;
+		float half_width = v_radii.x * 0.5;
+		float d = sd_segment(p, v_rect.xy, v_rect.zw) - half_width;
+		if ((v_flags & (FLAG_BUTT_START | FLAG_BUTT_END)) != 0u) {
+			/* an end cut square: past it, the distance to the cut, not to the end point */
+			vec2 ba = v_rect.zw - v_rect.xy;
+			float len = max(length(ba), 1e-6);
+			vec2 dir = ba / len;
+			vec2 pa = p - v_rect.xy;
+			float along = dot(pa, dir);
+			float across = abs(dir.x * pa.y - dir.y * pa.x) - half_width;
+			if (along < 0.0 && (v_flags & FLAG_BUTT_START) != 0u) d = max(across, -along);
+			else if (along > len && (v_flags & FLAG_BUTT_END) != 0u) d = max(across, along - len);
+		}
 		coverage = clamp(0.5 - d, 0.0, 1.0);
 	} else if (kind == PRIM_TRIANGLE) {
 		if ((v_flags & FLAG_ALIASED) != 0u) {
