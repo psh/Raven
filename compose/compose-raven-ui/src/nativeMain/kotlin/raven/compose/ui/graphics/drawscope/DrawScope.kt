@@ -4,9 +4,11 @@ package raven.compose.ui.graphics.drawscope
 
 import cnames.structs.RPainter
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.usePinned
 import raven.cinterop.RShaderLook
 import raven.cinterop.R_INVALID_ID
 import raven.cinterop.Rdraw_circle
@@ -14,6 +16,7 @@ import raven.cinterop.Rdraw_curve
 import raven.cinterop.Rdraw_glass
 import raven.cinterop.Rdraw_image
 import raven.cinterop.Rdraw_line
+import raven.cinterop.Rdraw_polyline
 import raven.cinterop.Rdraw_pop_clip_rect
 import raven.cinterop.Rdraw_push_clip_rect
 import raven.cinterop.Rdraw_rect
@@ -21,6 +24,7 @@ import raven.cinterop.Rdraw_rect_outline
 import raven.cinterop.Rdraw_shader
 import raven.cinterop.Rdraw_text
 import raven.cinterop.Rdraw_triangle
+import raven.cinterop.Rdraw_triangles
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.geometry.Offset
@@ -91,6 +95,18 @@ public class DrawScope internal constructor(
     public fun drawLine(color: Color, start: Offset, end: Offset, strokeWidth: Float = 1f): Unit =
         color.toRaven { r, g, b, a -> Rdraw_line(painter, start.x, start.y, end.x, end.y, strokeWidth, r, g, b, a) }
 
+    /**
+     * Lines through many [points] (x, y pairs) of one [color] and [strokeWidth], in one call, each
+     * point drawn at [offset] + its coordinates times [scale], with round caps as [drawLine]. A
+     * NaN x ends a line and the next point starts another. Raven's (`Rdraw_polyline`).
+     */
+    public fun drawPolyline(color: Color, points: FloatArray, offset: Offset = Offset.Zero, scale: Float = 1f, strokeWidth: Float = 1f) {
+        if (points.size < 4) return
+        points.usePinned { pinned ->
+            color.toRaven { r, g, b, a -> Rdraw_polyline(painter, pinned.addressOf(0), points.size / 2, offset.x, offset.y, scale, strokeWidth, r, g, b, a) }
+        }
+    }
+
     /** A cubic Bézier curve from [start] to [end], pulled by [control1] and [control2]. Raven's. */
     public fun drawCubic(color: Color, start: Offset, control1: Offset, control2: Offset, end: Offset, strokeWidth: Float = 1f): Unit =
         color.toRaven { r, g, b, a ->
@@ -100,6 +116,19 @@ public class DrawScope internal constructor(
     /** A filled triangle. Raven's. */
     public fun drawTriangle(color: Color, p0: Offset, p1: Offset, p2: Offset): Unit =
         color.toRaven { r, g, b, a -> Rdraw_triangle(painter, p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, r, g, b, a) }
+
+    /**
+     * Many filled triangles of one [color] in one call, a mesh such as a triangulated polygon:
+     * [vertices] holds six floats a triangle (x0, y0, x1, y1, x2, y2), each point drawn at
+     * [offset] + its coordinates times [scale]. Triangles that share an edge show no seam there.
+     * Raven's (`Rdraw_triangles`).
+     */
+    public fun drawTriangles(color: Color, vertices: FloatArray, offset: Offset = Offset.Zero, scale: Float = 1f) {
+        if (vertices.size < 6) return
+        vertices.usePinned { pinned ->
+            color.toRaven { r, g, b, a -> Rdraw_triangles(painter, pinned.addressOf(0), vertices.size / 6, offset.x, offset.y, scale, r, g, b, a) }
+        }
+    }
 
     /**
      * [text] in [color], its first line's top left corner at [topLeft], at [fontSize] (the theme's when

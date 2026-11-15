@@ -32,7 +32,6 @@ import kotlin.math.PI
 import kotlin.math.asinh
 import kotlin.math.floor
 import kotlin.math.pow
-import kotlin.math.sqrt
 import kotlin.math.tan
 import kotlin.time.TimeSource
 
@@ -72,6 +71,8 @@ class Camera(centerX: Double, centerY: Double, zoom: Double) {
 /** What the last frame drew, and how long the drawing calls took. */
 class DrawStats {
     var drawMs = 0.0
+    var fillMs = 0.0
+    var lineMs = 0.0
     var triangles = 0
     var segments = 0
     var tiles = 0
@@ -94,19 +95,13 @@ fun visibleTiles(camera: Camera, width: Float, height: Float, tileZoom: Int): Li
     return tiles
 }
 
-/** The corner ([x], [y]) moved [SEAM] pixels away from the triangle's centre ([mx], [my]). */
-private fun grow(x: Float, y: Float, mx: Float, my: Float): Offset {
-    val dx = x - mx
-    val dy = y - my
-    val length = sqrt(dx * dx + dy * dy)
-    if (length < 1e-3f) return Offset(x, y)
-    return Offset(x + dx / length * SEAM, y + dy / length * SEAM)
-}
-
-private const val SEAM = 0.5f
-
-/** Draws [store]'s tiles under [camera], layer by layer of [style], and records what it drew in [stats]. */
-fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: DrawStats, minTileZoom: Int, maxTileZoom: Int) {
+/**
+ * Draws [store]'s tiles under [camera], layer by layer of [style], and records what it drew in
+ * [stats]: each tile's fills in one `drawTriangles` call and its lines in one `drawPolyline` call,
+ * or, without [batched], one `drawTriangle` call a triangle and one `drawLine` call a segment, to
+ * compare.
+ */
+fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: DrawStats, minTileZoom: Int, maxTileZoom: Int, batched: Boolean = true) {
     val start = TimeSource.Monotonic.markNow()
     store.version // a tile prepared draws the map again
     drawRect(style.background)
@@ -117,6 +112,8 @@ fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: Dra
         .distinctBy { it.id }
     var triangles = 0
     var segments = 0
+    var fillTime = kotlin.time.Duration.ZERO
+    var lineTime = kotlin.time.Duration.ZERO
     val world = camera.worldSize
     for (layer in style.layers) {
         if (zoom < layer.minZoom || zoom >= layer.maxZoom) continue
@@ -132,44 +129,50 @@ fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: Dra
             val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
             // Tiles carry a buffer past their edges: clipped to the tile, a translucent fill isn't drawn twice there.
             clipRect(ox, oy, ox + scale, oy + scale) {
+                val part = TimeSource.Monotonic.markNow()
                 if (fill) {
-                    val f = bucket.fills
-                    var i = 0
-                    while (i < f.size) {
-                        val ax = ox + f[i] * scale
-                        val ay = oy + f[i + 1] * scale
-                        val bx = ox + f[i + 2] * scale
-                        val by = oy + f[i + 3] * scale
-                        val cx = ox + f[i + 4] * scale
-                        val cy = oy + f[i + 5] * scale
-                        // Raven anti-aliases each triangle's edges, so the background would show
-                        // along the edges neighbours share: each grows half a pixel to cover them.
-                        val mx = (ax + bx + cx) / 3
-                        val my = (ay + by + cy) / 3
-                        drawTriangle(color, grow(ax, ay, mx, my), grow(bx, by, mx, my), grow(cx, cy, mx, my))
-                        i += 6
+                    if (batched) {
+                        drawTriangles(color, bucket.fills, Offset(ox, oy), scale)
+                    } else {
+                        val f = bucket.fills
+                        for (i in f.indices step 6) {
+                            drawTriangle(
+                                color,
+                                Offset(ox + f[i] * scale, oy + f[i + 1] * scale),
+                                Offset(ox + f[i + 2] * scale, oy + f[i + 3] * scale),
+                                Offset(ox + f[i + 4] * scale, oy + f[i + 5] * scale),
+                            )
+                        }
                     }
                     triangles += bucket.triangleCount
+                    fillTime += part.elapsedNow()
                 } else {
-                    for (line in bucket.lines) {
-                        var px = ox + line[0] * scale
-                        var py = oy + line[1] * scale
-                        var i = 2
-                        while (i < line.size) {
-                            val x = ox + line[i] * scale
-                            val y = oy + line[i + 1] * scale
-                            drawLine(color, Offset(px, py), Offset(x, y), width)
-                            px = x
-                            py = y
-                            i += 2
+                    if (batched) {
+                        drawPolyline(color, bucket.packedLines, Offset(ox, oy), scale, width)
+                    } else {
+                        for (line in bucket.lines) {
+                            var px = ox + line[0] * scale
+                            var py = oy + line[1] * scale
+                            var i = 2
+                            while (i < line.size) {
+                                val x = ox + line[i] * scale
+                                val y = oy + line[i + 1] * scale
+                                drawLine(color, Offset(px, py), Offset(x, y), width)
+                                px = x
+                                py = y
+                                i += 2
+                            }
                         }
                     }
                     segments += bucket.segmentCount
+                    lineTime += part.elapsedNow()
                 }
             }
         }
     }
     stats.drawMs = start.elapsedNow().inWholeMicroseconds / 1000.0
+    stats.fillMs = fillTime.inWholeMicroseconds / 1000.0
+    stats.lineMs = lineTime.inWholeMicroseconds / 1000.0
     stats.triangles = triangles
     stats.segments = segments
     stats.tiles = tiles.size
@@ -222,7 +225,7 @@ private fun Stats(stats: DrawStats, camera: Camera, store: TileStore, modifier: 
             lines = listOf(
                 "zoom ${(camera.zoom * 100).toInt() / 100.0}, ${stats.tiles} tiles",
                 "${stats.triangles} triangles, ${stats.segments} line segments",
-                "Kotlin draw calls: ${fmt(stats.drawMs)} ms",
+                "Kotlin draw calls: ${fmt(stats.drawMs)} ms (fills ${fmt(stats.fillMs)}, lines ${fmt(stats.lineMs)})",
                 "Raven: paint ${fmt(frame.paintMs)} ms, render ${fmt(frame.renderMs)} ms, ${frame.primitiveCount} primitives, ${frame.drawCallCount} GPU draws",
                 "${prepared.size} tiles prepared: decode ${fmt(prepared.sumOf { it.decodeMs })} ms, style + triangulate ${fmt(prepared.sumOf { it.prepareMs })} ms",
             )

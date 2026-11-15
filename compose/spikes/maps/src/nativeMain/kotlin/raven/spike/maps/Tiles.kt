@@ -31,6 +31,17 @@ data class TileId(val z: Int, val x: Int, val y: Int) {
 class Bucket(val fills: FloatArray, val lines: List<FloatArray>) {
     val triangleCount: Int get() = fills.size / 6
     val segmentCount: Int get() = lines.sumOf { it.size / 2 - 1 }
+
+    /** [lines] in one array, a NaN point between each, for one `drawPolyline` call. */
+    val packedLines: FloatArray = FloatArray(lines.sumOf { it.size + 2 }).also { packed ->
+        var at = 0
+        for (line in lines) {
+            line.copyInto(packed, at)
+            at += line.size
+            packed[at++] = Float.NaN
+            packed[at++] = Float.NaN
+        }
+    }
 }
 
 /** A tile decoded, filtered by the style at its zoom and triangulated: a [Bucket] per style layer. */

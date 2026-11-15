@@ -3,6 +3,14 @@ package raven.spike.maps
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.toKString
 import platform.posix.getenv
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import raven.compose.foundation.Canvas
+import raven.compose.foundation.layout.size
+import raven.compose.ui.Modifier
+import raven.compose.ui.test.runRavenTest
+import raven.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -91,6 +99,44 @@ class MapsTest {
         for (name in listOf("water", "building-3d", "road_minor", "landcover_grass")) assertTrue(name in tile.buckets, "$name drawn")
     }
 }
+
+/**
+ * Draws the Loop at zoom 14 from fetch-data's tiles, headless, 30 frames with each way of drawing
+ * the fills, and prints what a frame costs: the measure behind `Rdraw_triangles`.
+ */
+class MapsBenchmark {
+    @OptIn(ExperimentalForeignApi::class)
+    @Test
+    fun batchedTrianglesAgainstOneCallEach() = runRavenTest {
+        val directory = getenv("MAPS_DATA")?.toKString() ?: return@runRavenTest
+        val style = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
+        val store = TileStore.open(directory, style)
+        for (id in store.available) store.prepareNow(id)
+        val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
+        val stats = DrawStats()
+        var batched by mutableStateOf(true)
+        setContent {
+            Canvas(Modifier.size(1200.dp, 800.dp)) {
+                drawMap(style, store, camera, stats, 12, 14, batched)
+            }
+        }
+        for (mode in listOf(true, false, true, false)) {
+            batched = mode
+            val fills = ArrayList<Double>()
+            val lines = ArrayList<Double>()
+            repeat(30) {
+                // A pan of a hundredth of a pixel: the same picture, drawn again.
+                camera.centerX += 1e-2 / camera.worldSize
+                waitForIdle()
+                fills += stats.fillMs
+                lines += stats.lineMs
+            }
+            println("${if (mode) "batched     " else "one call each"}: ${stats.triangles} triangles, fills ${median(fills)} ms, ${stats.segments} segments, lines ${median(lines)} ms (medians of 30 frames)")
+        }
+    }
+}
+
+private fun median(values: List<Double>): Double = values.sorted()[values.size / 2]
 
 private fun trianglesArea(coords: FloatArray, triangles: IntArray): Double {
     var sum = 0.0
