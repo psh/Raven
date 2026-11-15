@@ -133,6 +133,8 @@ fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: Dra
                 if (fill) {
                     if (batched) {
                         drawTriangles(color, bucket.fills, Offset(ox, oy), scale)
+                        // One device pixel (Raven's thinnest line) over the mesh's aliased edges.
+                        if (layer.antialias) layer.outlineColor(zoom)?.let { drawPolyline(it, bucket.packedLines, Offset(ox, oy), scale, 0f) }
                     } else {
                         val f = bucket.fills
                         for (i in f.indices step 6) {

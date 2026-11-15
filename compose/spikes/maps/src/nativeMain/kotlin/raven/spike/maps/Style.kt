@@ -26,6 +26,18 @@ class StyleLayer(
     /** A fill, or a 3D extrusion, which the map, seen straight from above, draws as its fill. */
     val isFill: Boolean get() = type == "fill" || type == "fill-extrusion"
 
+    /**
+     * Whether a fill draws its outline over its edges, which the mesh leaves aliased: `fill-antialias`,
+     * on by default. A flat extrusion has one too.
+     */
+    val antialias: Boolean get() = isFill && paint["fill-antialias"] != false
+
+    /** The colour of a fill's outline at [zoom]: `fill-outline-color`, else the fill's own. */
+    fun outlineColor(zoom: Double): Color? {
+        if (type != "fill" || "fill-outline-color" !in paint) return drawColor(zoom)
+        return color("fill-outline-color", zoom, "fill-opacity")
+    }
+
     /** The colour and opacity a fill or a line draws in at [zoom]. */
     fun drawColor(zoom: Double): Color? = when (type) {
         "fill" -> color("fill-color", zoom, "fill-opacity")

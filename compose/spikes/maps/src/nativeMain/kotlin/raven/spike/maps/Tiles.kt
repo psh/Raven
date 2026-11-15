@@ -26,7 +26,8 @@ data class TileId(val z: Int, val x: Int, val y: Int) {
 
 /**
  * What one style layer draws of one tile, in the tile's unit square (0 to 1 across): [fills] as
- * triangles, x, y for each corner; [lines] as polylines of x, y pairs.
+ * triangles, x, y for each corner; [lines] as polylines of x, y pairs: a line layer's lines, or a
+ * fill layer's outlines.
  */
 class Bucket(val fills: FloatArray, val lines: List<FloatArray>) {
     val triangleCount: Int get() = fills.size / 6
@@ -131,18 +132,12 @@ fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {
             if (!accepts(styleLayer.filter, EvaluationContext(zoom, feature.properties, feature.type))) continue
             val rings = feature.rings()
             if (styleLayer.isFill) {
-                if (feature.type == GeometryType.Polygon) fills += triangulate(rings, scale)
+                if (feature.type != GeometryType.Polygon) continue
+                fills += triangulate(rings, scale)
+                // The rings, closed, for the outline that smooths the mesh's aliased edges.
+                if (styleLayer.antialias) for (ring in rings) lineOf(ring, scale, closed = true)?.let { lines += it }
             } else {
-                for (ring in rings) {
-                    val closed = feature.type == GeometryType.Polygon
-                    val points = FloatArray(ring.size + if (closed) 2 else 0)
-                    for (i in ring.indices) points[i] = ring[i] * scale
-                    if (closed) {
-                        points[ring.size] = ring[0] * scale
-                        points[ring.size + 1] = ring[1] * scale
-                    }
-                    if (points.size >= 4) lines += points
-                }
+                for (ring in rings) lineOf(ring, scale, closed = feature.type == GeometryType.Polygon)?.let { lines += it }
             }
         }
         if (fills.isNotEmpty() || lines.isNotEmpty()) {
@@ -156,6 +151,17 @@ fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {
         }
     }
     return PreparedTile(id, buckets, bytes.size, decoded.inWholeMicroseconds / 1000.0, (start.elapsedNow() - decoded).inWholeMicroseconds / 1000.0)
+}
+
+/** [ring] scaled by [scale], its first point repeated at the end if [closed]; null if it has fewer than two points. */
+private fun lineOf(ring: FloatArray, scale: Float, closed: Boolean): FloatArray? {
+    val points = FloatArray(ring.size + if (closed) 2 else 0)
+    for (i in ring.indices) points[i] = ring[i] * scale
+    if (closed) {
+        points[ring.size] = ring[0] * scale
+        points[ring.size + 1] = ring[1] * scale
+    }
+    return points.takeIf { it.size >= 4 }
 }
 
 /**
