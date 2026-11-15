@@ -1,15 +1,16 @@
 package raven.spike.maps
 
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.StrokeCap
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
 // MapLibre's style JSON (https://maplibre.org/maplibre-style-spec/), the part fill and line layers
 // need: a layer's source layer, zoom range, filter and paint, and the expressions they are written
-// in. A fill extrusion is drawn as a flat fill, as from straight above. Left out: symbol layers
-// (labels and icons), patterns, dashes, line gaps and offsets, and data-driven paint (a paint value
-// that reads a feature's properties).
+// in. A fill extrusion is drawn as a flat fill, as from straight above. Labels and icons are
+// Labels.kt's, dashes and line gaps LineStyle.kt's. Left out: patterns, `line-offset`, and
+// data-driven paint (a paint value that reads a feature's properties).
 
 class StyleLayer(
     val id: String,
@@ -49,6 +50,13 @@ class StyleLayer(
 
     /** Where the layer's symbols go at [zoom]: "point", or "line" for along its lines (an expression for road shields). */
     fun placementAt(zoom: Double): String = layout("symbol-placement", zoom) as? String ?: "point"
+
+    /** How the layer's lines end at [zoom]: `line-cap`, butt by default. */
+    fun lineCap(zoom: Double): StrokeCap = when (layout("line-cap", zoom)) {
+        "round" -> StrokeCap.Round
+        "square" -> StrokeCap.Square
+        else -> StrokeCap.Butt
+    }
 
     /** A layout property at [zoom], for every feature alike. */
     fun layout(name: String, zoom: Double): Any? = layout[name]?.let { evaluate(it, EvaluationContext(zoom)) }

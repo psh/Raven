@@ -18,6 +18,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import raven.compose.ui.graphics.Color
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -88,6 +89,28 @@ class MapsTest {
         assertEquals("THE LOOP", labelText(layer(mapOf("text-field" to field, "text-transform" to "uppercase")), EvaluationContext(14.0, mapOf("name" to "The Loop"))))
         assertEquals("Route 66", labelText(layer(mapOf("text-field" to "Route {ref}")), EvaluationContext(14.0, mapOf("ref" to 66.0))))
         assertEquals(null, labelText(plain, EvaluationContext(14.0)), "no name, no label")
+    }
+
+    @Test
+    fun dashesFollowThePatternAlongLinesAndAcrossTurns() {
+        // A line 10 long, then a second one 4 long: 3 on, 2 off, starting again on each line.
+        val lines = floatArrayOf(0f, 0f, 10f, 0f, Float.NaN, Float.NaN, 0f, 5f, 0f, 9f, Float.NaN, Float.NaN)
+        val dashes = pieces(dash(lines, listOf(3f, 2f)))
+        assertEquals(listOf(listOf(0f, 0f, 3f, 0f), listOf(5f, 0f, 8f, 0f), listOf(0f, 5f, 0f, 8f)), dashes)
+        // Across a turn, a dash keeps the turn's point: 3 on from (0, 0) along (2, 0) then down.
+        assertEquals(listOf(0f, 0f, 2f, 0f, 2f, 1f), pieces(dash(floatArrayOf(0f, 0f, 2f, 0f, 2f, 9f, Float.NaN, Float.NaN), listOf(3f, 100f))).first())
+        // No gap at all draws the line whole.
+        assertEquals(null, styleLayer(listOf(1.0, 0.0)).dashes(14.0))
+        assertEquals(listOf(1f, 1.5f), styleLayer(listOf(1.0, 1.5)).dashes(14.0))
+    }
+
+    @Test
+    fun anOffsetLineKeepsItsDistanceAtCorners() {
+        // Along x, its left (y down) is up: offset by 2, it moves to y = -2.
+        assertEquals(listOf(0f, -2f, 10f, -2f), pieces(offset(floatArrayOf(0f, 0f, 10f, 0f, Float.NaN, Float.NaN), 2f)).single())
+        // Right then down: the corner's mitre keeps it 2 from both legs, at (12, -2).
+        val corner = pieces(offset(floatArrayOf(0f, 0f, 10f, 0f, 10f, 10f, Float.NaN, Float.NaN), 2f)).single()
+        assertEquals(listOf(0f, -2f, 12f, -2f, 12f, 10f), corner.map { (it * 1000).roundToInt() / 1000f })
     }
 
     @Test
@@ -322,6 +345,25 @@ private fun waterTile(): ByteArray {
 }
 
 private fun median(values: List<Double>): Double = values.sorted()[values.size / 2]
+
+/** Packed lines (a NaN pair between them) as lists of their coordinates. */
+private fun pieces(packed: FloatArray): List<List<Float>> {
+    val out = ArrayList<List<Float>>()
+    var current = ArrayList<Float>()
+    for (i in packed.indices step 2) {
+        if (packed[i].isNaN()) {
+            if (current.isNotEmpty()) out += current
+            current = ArrayList()
+        } else {
+            current += packed[i]
+            current += packed[i + 1]
+        }
+    }
+    if (current.isNotEmpty()) out += current
+    return out
+}
+
+private fun styleLayer(dasharray: List<Double>) = StyleLayer("l", "line", "x", 0.0, 24.0, null, mapOf("line-dasharray" to dasharray), emptyMap())
 
 private fun trianglesArea(coords: FloatArray, triangles: IntArray): Double {
     var sum = 0.0

@@ -146,6 +146,11 @@ internal class FloatList {
     }
 
     fun toArray(): FloatArray = data.copyOf(size)
+
+    /** Drops what was added past the first [count] floats. */
+    fun truncate(count: Int) {
+        size = count
+    }
 }
 
 /** A protobuf reader over [bytes] from [pos] to [end]: varints, fixed numbers, strings and sub-messages. */

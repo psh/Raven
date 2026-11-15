@@ -113,6 +113,7 @@ fun DrawScope.drawMap(
     labelCache: LabelCache = LabelCache(),
     settled: Boolean = false,
     sprites: SpriteSheet? = null,
+    lineShapes: LineShapes = LineShapes(),
 ) {
     val start = TimeSource.Monotonic.markNow()
     store.version // a tile prepared draws the map again
@@ -123,6 +124,7 @@ fun DrawScope.drawMap(
     val tiles = wanted.mapNotNull { store.bestReady(it) }.distinctBy { it.id }
     // Tiles panned or zoomed past stop being fetched.
     store.retain(wanted)
+    lineShapes.retain(tiles.map { it.id })
     var triangles = 0
     var segments = 0
     var fillTime = kotlin.time.Duration.ZERO
@@ -163,7 +165,19 @@ fun DrawScope.drawMap(
                     fillTime += part.elapsedNow()
                 } else {
                     if (batched) {
-                        drawPolyline(color, bucket.packedLines, Offset(ox, oy), scale, width)
+                        // Dashed, or drawn either side of a gap: cut for the width drawn, kept while it holds.
+                        val pattern = layer.dashes(zoom)
+                        val gap = layer.number("line-gap-width", zoom, 0.0).toFloat()
+                        val cap = layer.lineCap(zoom)
+                        if (gap > 0f) {
+                            // Each side's middle is half the gap and half its own width from the line's.
+                            val side = gap / 2 / width.coerceAtLeast(1f) + 0.5f
+                            for (s in listOf(side, -side)) {
+                                drawPolyline(color, lineShapes.shape(tile.id, layer.id, bucket, pattern, s, width, scale), Offset(ox, oy), scale, width, cap)
+                            }
+                        } else {
+                            drawPolyline(color, lineShapes.shape(tile.id, layer.id, bucket, pattern, 0f, width, scale), Offset(ox, oy), scale, width, cap)
+                        }
                     } else {
                         for (line in bucket.lines) {
                             var px = ox + line[0] * scale
@@ -201,6 +215,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, sprite: Sprite? = 
     val labelStats = remember { LabelStats() }
     val measure = remember { TextMeasure() }
     val labelCache = remember { LabelCache() }
+    val lineShapes = remember { LineShapes() }
     // The sprite sheet's image, decoded once Raven runs.
     val sprites = remember(sprite) { sprite?.let { SpriteSheet(it, it.png.decodeToImageBitmap()) } }
     // The camera at rest for a moment: the labels are placed again where it stopped.
@@ -230,7 +245,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, sprite: Sprite? = 
                 },
         ) {
             size = Offset(this.size.width, this.size.height)
-            drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled, sprites = sprites)
+            drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled, sprites = sprites, lineShapes = lineShapes)
         }
         Stats(stats, labelStats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
         Surface(Modifier.align(Alignment.BottomEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCCFFFFFF)) {

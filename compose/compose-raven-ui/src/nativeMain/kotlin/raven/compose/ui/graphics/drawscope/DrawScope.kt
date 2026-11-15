@@ -12,6 +12,9 @@ import kotlinx.cinterop.usePinned
 import raven.cinterop.RShaderLook
 import raven.cinterop.R_FONT_REGULAR
 import raven.cinterop.R_INVALID_ID
+import raven.cinterop.R_LINE_CAP_BUTT
+import raven.cinterop.R_LINE_CAP_ROUND
+import raven.cinterop.R_LINE_CAP_SQUARE
 import raven.cinterop.R_TRUE
 import raven.cinterop.Rdraw_circle
 import raven.cinterop.Rdraw_curve
@@ -41,6 +44,7 @@ import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.EffectStyle
 import raven.compose.ui.graphics.ImageBitmap
 import raven.compose.ui.graphics.ShaderEffect
+import raven.compose.ui.graphics.StrokeCap
 import raven.compose.ui.graphics.painter.Painter
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.text.font.FontFamily
@@ -113,13 +117,26 @@ public class DrawScope internal constructor(
 
     /**
      * Lines through many [points] (x, y pairs) of one [color] and [strokeWidth], in one call, each
-     * point drawn at [offset] + its coordinates times [scale], with round caps as [drawLine]. A
-     * NaN x ends a line and the next point starts another. Raven's (`Rdraw_polyline`).
+     * point drawn at [offset] + its coordinates times [scale], joined round where they turn and
+     * ended with [cap]. A NaN x ends a line and the next point starts another, so the dashes of a
+     * dashed line go in one call. Raven's (`Rdraw_polyline`).
      */
-    public fun drawPolyline(color: Color, points: FloatArray, offset: Offset = Offset.Zero, scale: Float = 1f, strokeWidth: Float = 1f) {
+    public fun drawPolyline(
+        color: Color,
+        points: FloatArray,
+        offset: Offset = Offset.Zero,
+        scale: Float = 1f,
+        strokeWidth: Float = 1f,
+        cap: StrokeCap = StrokeCap.Round,
+    ) {
         if (points.size < 4) return
+        val ravenCap = when (cap) {
+            StrokeCap.Butt -> R_LINE_CAP_BUTT
+            StrokeCap.Round -> R_LINE_CAP_ROUND
+            StrokeCap.Square -> R_LINE_CAP_SQUARE
+        }
         points.usePinned { pinned ->
-            color.toRaven { r, g, b, a -> Rdraw_polyline(painter, pinned.addressOf(0), points.size / 2, offset.x, offset.y, scale, strokeWidth, r, g, b, a) }
+            color.toRaven { r, g, b, a -> Rdraw_polyline(painter, pinned.addressOf(0), points.size / 2, offset.x, offset.y, scale, strokeWidth, ravenCap, r, g, b, a) }
         }
     }
 
