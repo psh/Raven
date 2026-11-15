@@ -322,6 +322,50 @@ static void test_custom_drawing(void) {
 	Rwindow_destroy(window);
 }
 
+static void paint_meshes(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	/* a square of two triangles, their shared edge on the diagonal through pixel centres */
+	static const float square[] = { 20, 20, 80, 20, 80, 80, 20, 20, 80, 80, 20, 80 };
+	/* a triangle of the unit square, placed by offset and scale */
+	static const float unit[] = { 0, 0, 1, 0, 0, 1 };
+	float lines[12] = { 160, 30, 220, 30, 0, 0, 160, 70, 220, 70, 0, 0 };
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	lines[4] = lines[5] = NAN;
+	lines[10] = lines[11] = NAN;
+	Rdraw_triangles(painter, square, 2, 0, 0, 1, 1, 0, 0, 1);
+	Rdraw_triangles(painter, unit, 1, 100, 20, 40, 0, 0, 1, 1);
+	/* two lines in one call, a NaN point between them */
+	Rdraw_polyline(painter, lines, 6, 0, 0, 1, 6, 0, 1, 0, 1);
+	/* the same square one triangle at a time, below, for its seam */
+	Rdraw_triangle(painter, 20, 120, 80, 120, 80, 180, 1, 0, 0, 1);
+	Rdraw_triangle(painter, 20, 120, 80, 180, 20, 180, 1, 0, 0, 1);
+}
+
+static void test_meshes(void) {
+	Rid window = window_from(
+		"<Window Width=\"300\" Height=\"200\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	const uint8_t* seam;
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_meshes, NULL);
+	capture(window);
+	/* the shared edge is covered: no seam on the diagonal */
+	CHECK_PIXEL(50, 50, 255, 0, 0);
+	CHECK_PIXEL(30, 70, 255, 0, 0);
+	CHECK_PIXEL(70, 30, 255, 0, 0);
+	/* drawn one at a time, the two edges' anti-aliasing leaves the diagonal lighter */
+	seam = pixel_at(50, 150);
+	CHECK(seam[0] < 250);
+	/* offset and scale */
+	CHECK_PIXEL(110, 30, 0, 0, 255);
+	CHECK_PIXEL(135, 55, 0, 0, 0);
+	/* both lines, and nothing between the end of one and the start of the next */
+	CHECK_PIXEL(190, 30, 0, 255, 0);
+	CHECK_PIXEL(190, 70, 0, 255, 0);
+	CHECK_PIXEL(190, 50, 0, 0, 0);
+	Rwindow_destroy(window);
+}
+
 static void paint_glass(Rid widget, RPainter* painter, float width, float height, void* user_data) {
 	(void)widget;
 	(void)width;
@@ -1016,6 +1060,7 @@ int main(void) {
 	RUN(test_text);
 	RUN(test_label_foreground);
 	RUN(test_custom_drawing);
+	RUN(test_meshes);
 	RUN(test_glass);
 	RUN(test_windows_look);
 	RUN(test_glass_theme);

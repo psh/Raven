@@ -66,12 +66,34 @@ extern "C" {
 	RAVEN_API void Rdraw_line(RPainter* painter, float x0, float y0, float x1, float y1,
 		float thickness, float r, float g, float b, float a);
 
+	/**
+	 * @brief Lines through many points, of one color and thickness, in one call: anti-aliased
+	 * segments with round caps, as Rdraw_line draws them.
+	 *
+	 * @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+	 * offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+	 * so many lines go in one call.
+	 */
+	RAVEN_API void Rdraw_polyline(RPainter* painter, const float* xy, int point_count,
+		float offset_x, float offset_y, float scale, float thickness, float r, float g, float b, float a);
+
 	/** @brief Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points. */
 	RAVEN_API void Rdraw_curve(RPainter* painter, float x0, float y0, float cx0, float cy0, float cx1, float cy1, float x1, float y1,
 		float thickness, float r, float g, float b, float a);
 
 	RAVEN_API void Rdraw_triangle(RPainter* painter, float x0, float y0, float x1, float y1,
 		float x2, float y2, float r, float g, float b, float a);
+
+	/**
+	 * @brief Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+	 *
+	 * @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+	 * point is drawn at (offset_x + x * scale, offset_y + y * scale). Each triangle grows by half a
+	 * device pixel past its edges, so triangles that share an edge show no seam where their
+	 * anti-aliased edges meet; with a translucent color, that half pixel is drawn twice.
+	 */
+	RAVEN_API void Rdraw_triangles(RPainter* painter, const float* xy, int count,
+		float offset_x, float offset_y, float scale, float r, float g, float b, float a);
 
 	/** @brief Texture stretched to a rectangle and multiplied by a tint color. */
 	RAVEN_API void Rdraw_image(RPainter* painter, Rid texture, float x, float y, float width, float height,
