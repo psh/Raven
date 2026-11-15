@@ -12,19 +12,30 @@ import raven.compose.ui.geometry.Offset
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.drawscope.DrawScope
 import raven.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import kotlin.time.TimeSource
 
-// Point labels, as MapLibre's symbol layers place them, in part: the text of `text-field`, at
-// `text-size`, wrapped at `text-max-width`, placed by `text-anchor` and `text-offset`, in
-// `text-color` with a `text-halo-color` halo `text-halo-width` wide, and kept apart by collision,
-// the layers higher in the style first. Left out: icons (they need the style's sprite sheet), the
-// style's fonts (Liberty's Noto Sans faces; Raven's default font draws every label), letter
-// spacing, halo blur, fading in and out, and labels along lines (they need rotated text).
+// Labels, as MapLibre's symbol layers place them, in part: the text of `text-field`, at
+// `text-size`, in `text-color` with a `text-halo-color` halo `text-halo-width` wide, and kept apart
+// by collision, the layers higher in the style first. At a point, wrapped at `text-max-width` and
+// placed by `text-anchor` and `text-offset`; along a line, every `symbol-spacing`, each glyph turned
+// to the line where it stands (Raven's rotated text), reading left to right, and left out where the
+// line bends more than 45 degrees between two glyphs. Left out: icons (they need the style's sprite
+// sheet), the style's fonts (Liberty's Noto Sans faces; Raven's default font draws every label),
+// letter spacing, halo blur, and fading in and out.
 
 /** A label of a tile: its text, at a point of the tile's unit square. */
 class Label(val text: String, val x: Float, val y: Float)
+
+/** A label along a line of a tile: its text, and the line's x, y pairs in the tile's unit square. */
+class LineLabel(val text: String, val points: FloatArray)
 
 /** The text a symbol layer gives a feature: `text-field`, with `text-transform`; null if empty. */
 fun labelText(layer: StyleLayer, context: EvaluationContext): String? {
@@ -47,13 +58,18 @@ fun labelText(layer: StyleLayer, context: EvaluationContext): String? {
 class TextMeasure {
     private val widths = HashMap<String, Float>()
 
-    fun width(text: String, size: Float): Float = widths.getOrPut("$size|$text") {
-        memScoped {
-            val width = alloc<FloatVar>()
-            val height = alloc<FloatVar>()
-            Rfont_measure_text(Rfont_get_default(), size, text, width.ptr, height.ptr)
-            width.value
-        }
+    private val heights = HashMap<Float, Float>()
+
+    fun width(text: String, size: Float): Float = widths.getOrPut("$size|$text") { measure(text, size).first }
+
+    /** The height of a line of text at [size]. */
+    fun height(size: Float): Float = heights.getOrPut(size) { measure("Ag", size).second }
+
+    private fun measure(text: String, size: Float): Pair<Float, Float> = memScoped {
+        val width = alloc<FloatVar>()
+        val height = alloc<FloatVar>()
+        Rfont_measure_text(Rfont_get_default(), size, text, width.ptr, height.ptr)
+        width.value to height.value
     }
 }
 
@@ -74,11 +90,16 @@ private class CollisionGrid(private val cell: Float = 64f) {
         }
     }
 
-    fun place(box: Box): Boolean {
+    fun fits(box: Box): Boolean {
         forCells(box) { k -> if (cells[k]?.any { it.overlaps(box) } == true) return false }
-        forCells(box) { k -> cells.getOrPut(k) { ArrayList() } += box }
         return true
     }
+
+    fun insert(box: Box) {
+        forCells(box) { k -> cells.getOrPut(k) { ArrayList() } += box }
+    }
+
+    fun place(box: Box): Boolean = fits(box).also { if (it) insert(box) }
 }
 
 /** Words of [text] in lines no wider than [maxWidth], its own line breaks kept. */
@@ -130,12 +151,18 @@ fun DrawScope.drawLabels(style: Style, tiles: List<PreparedTile>, camera: Camera
         val halo = parseColor(layer.paint("text-halo-color", zoom))
         val haloWidth = (layer.paint("text-halo-width", zoom) as? Double ?: 0.0).toFloat()
         val lineHeight = textSize * 1.2f
+        val spacing = (layer.layout("symbol-spacing", zoom) as? Double ?: 250.0).toFloat()
+        val style = GlyphStyle(textSize, measure.height(textSize), color, halo, haloWidth, padding)
         for (tile in tiles) {
             val bucket = tile.buckets[layer.id] ?: continue
             val n = (1 shl tile.id.z).toDouble()
             val scale = (world / n).toFloat()
             val ox = ((tile.id.x / n - camera.centerX) * world + size.width / 2).toFloat()
             val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
+            for (label in bucket.lineLabels) {
+                candidates++
+                if (placeAlong(label, ox, oy, scale, spacing, style, measure, grid, seen)) placed++
+            }
             for (label in bucket.labels) {
                 val x = ox + label.x * scale
                 val y = oy + label.y * scale
@@ -179,6 +206,114 @@ fun DrawScope.drawLabels(style: Style, tiles: List<PreparedTile>, camera: Camera
     stats.candidates = candidates
     stats.ms = start.elapsedNow().inWholeMicroseconds / 1000.0
 }
+
+/** How a layer's glyphs look along a line. */
+private class GlyphStyle(val size: Float, val height: Float, val color: Color, val halo: Color?, val haloWidth: Float, val padding: Float)
+
+/** A point of a line on screen, and the line's direction there, in radians. */
+private class Along(val x: Float, val y: Float, val angle: Float)
+
+/**
+ * Places [label] along its line, on screen at ([ox], [oy]) plus its points times [scale]: at the
+ * middle of every [spacing] of line long enough for it, glyph by glyph, each turned to the line
+ * where it stands. Returns whether it placed it once at least.
+ */
+private fun DrawScope.placeAlong(
+    label: LineLabel,
+    ox: Float,
+    oy: Float,
+    scale: Float,
+    spacing: Float,
+    style: GlyphStyle,
+    measure: TextMeasure,
+    grid: CollisionGrid,
+    seen: HashSet<String>,
+): Boolean {
+    val count = label.points.size / 2
+    val xs = FloatArray(count) { ox + label.points[it * 2] * scale }
+    val ys = FloatArray(count) { oy + label.points[it * 2 + 1] * scale }
+    // Off screen, nothing to place.
+    if (xs.max() < 0 || xs.min() > size.width || ys.max() < 0 || ys.min() > size.height) return false
+    val cumulative = FloatArray(count)
+    for (i in 1 until count) cumulative[i] = cumulative[i - 1] + hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1])
+    val length = cumulative.last()
+    val text = label.text.replace('\n', ' ')
+    val width = measure.width(text, style.size)
+    if (width + style.size > length) return false
+    // Each glyph's advance, from the widths of the text up to it, so kerning is kept.
+    val starts = FloatArray(text.length + 1) { if (it == 0) 0f else measure.width(text.substring(0, it), style.size) }
+    var any = false
+    val repeats = maxOf(1, (length / spacing).toInt())
+    for (r in 0 until repeats) {
+        val center = (r + 0.5f) * length / repeats
+        if (center - width / 2 < 0 || center + width / 2 > length) continue
+        // Reading left to right: along the line, or back along it when it runs leftward.
+        val reversed = cos(along(xs, ys, cumulative, center).angle) < 0
+        val glyphs = ArrayList<Pair<Int, Along>>()
+        var previous: Float? = null
+        var ok = true
+        for (i in text.indices) {
+            val middle = (starts[i] + starts[i + 1]) / 2 - width / 2
+            val at = along(xs, ys, cumulative, if (reversed) center - middle else center + middle)
+            val angle = if (reversed) at.angle + PI.toFloat() else at.angle
+            if (previous != null && abs(turn(angle, previous)) > MAX_TURN) {
+                ok = false
+                break
+            }
+            previous = angle
+            glyphs += i to Along(at.x, at.y, angle)
+        }
+        if (!ok) continue
+        val half = style.height / 2 + style.padding
+        val boxes = glyphs.map { (_, at) -> Box(at.x - half, at.y - half, at.x + half, at.y + half) }
+        // The same name placed nearby already, from the next tile's buffer or a piece of the same street.
+        val key = "$text|${(glyphs[glyphs.size / 2].second.x / 64).roundToInt()}|${(glyphs[glyphs.size / 2].second.y / 64).roundToInt()}"
+        if (key in seen || !boxes.all { grid.fits(it) }) continue
+        boxes.forEach { grid.insert(it) }
+        seen += key
+        any = true
+        for ((i, at) in glyphs) {
+            val c = text[i]
+            if (c == ' ') continue
+            val advance = starts[i + 1] - starts[i]
+            val degrees = at.angle * 180f / PI.toFloat()
+            // The glyph's top left corner, so its middle sits on the line.
+            val cosA = cos(at.angle)
+            val sinA = sin(at.angle)
+            val dx = -advance / 2
+            val dy = -style.height / 2
+            val left = at.x + dx * cosA - dy * sinA
+            val top = at.y + dx * sinA + dy * cosA
+            val glyph = c.toString()
+            if (style.halo != null && style.haloWidth > 0f) {
+                val d = max(style.haloWidth * 0.75f, 0.5f)
+                for ((hx, hy) in HALO) drawText(glyph, Offset(left + hx * d, top + hy * d), style.halo, style.size.sp, rotation = degrees)
+            }
+            drawText(glyph, Offset(left, top), style.color, style.size.sp, rotation = degrees)
+        }
+    }
+    return any
+}
+
+/** The point [distance] along the line of [xs], [ys], and its direction there. */
+private fun along(xs: FloatArray, ys: FloatArray, cumulative: FloatArray, distance: Float): Along {
+    var i = 1
+    while (i < cumulative.size - 1 && cumulative[i] < distance) i++
+    val segment = cumulative[i] - cumulative[i - 1]
+    val t = if (segment > 0f) ((distance - cumulative[i - 1]) / segment).coerceIn(0f, 1f) else 0f
+    return Along(xs[i - 1] + (xs[i] - xs[i - 1]) * t, ys[i - 1] + (ys[i] - ys[i - 1]) * t, atan2(ys[i] - ys[i - 1], xs[i] - xs[i - 1]))
+}
+
+/** The turn from [from] to [to], between -pi and pi. */
+private fun turn(to: Float, from: Float): Float {
+    var d = to - from
+    while (d > PI) d -= 2 * PI.toFloat()
+    while (d < -PI) d += 2 * PI.toFloat()
+    return d
+}
+
+/** MapLibre's `text-max-angle`: the most a line may turn between two glyphs of a label. */
+private const val MAX_TURN = (45 * PI / 180).toFloat()
 
 /** Eight directions around a letter, for its halo. */
 private val HALO = listOf(-1f to -1f, 0f to -1f, 1f to -1f, -1f to 0f, 1f to 0f, -1f to 1f, 0f to 1f, 1f to 1f)

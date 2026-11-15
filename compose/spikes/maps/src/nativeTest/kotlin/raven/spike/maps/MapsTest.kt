@@ -111,6 +111,9 @@ class MapsTest {
         for ((id, bucket) in tile.buckets.entries.sortedBy { it.key }) println("  $id: ${bucket.triangleCount} triangles, ${bucket.segmentCount} segments")
         // From zoom 14, Liberty's buildings are its 3D layer, drawn flat; this tile's parks are only label points.
         for (name in listOf("water", "building-3d", "road_minor", "landcover_grass")) assertTrue(name in tile.buckets, "$name drawn")
+        // Street names run along their lines; place names stand at points.
+        assertTrue(tile.buckets["highway-name-major"]?.lineLabels.orEmpty().isNotEmpty(), "street names along lines")
+        assertTrue(tile.buckets.values.any { it.labels.isNotEmpty() }, "labels at points")
     }
 }
 

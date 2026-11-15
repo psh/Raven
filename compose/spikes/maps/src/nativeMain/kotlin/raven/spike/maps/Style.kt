@@ -47,6 +47,9 @@ class StyleLayer(
         else -> color("line-color", zoom, "line-opacity")
     }
 
+    /** Whether the layer's labels run along its lines. */
+    val alongLines: Boolean get() = layout["symbol-placement"] == "line"
+
     /** A layout property at [zoom], for every feature alike. */
     fun layout(name: String, zoom: Double): Any? = layout[name]?.let { evaluate(it, EvaluationContext(zoom)) }
 
@@ -87,10 +90,10 @@ class Style(val background: Color, val layers: List<StyleLayer>, val symbols: Li
                 it.visible && layerSource(root, it, source) &&
                     ((it.type == "fill" && "fill-pattern" !in it.paint) || it.type == "fill-extrusion" || it.type == "line")
             }
-            // Labels at points; those along lines (street and river names) need rotated text.
+            // Labels at points and along lines; road shields, placed by an expression, are icons first.
             val symbols = all.filter {
                 it.visible && layerSource(root, it, source) && it.type == "symbol" &&
-                    "text-field" in it.layout && (it.layout["symbol-placement"] ?: "point") == "point"
+                    "text-field" in it.layout && (it.layout["symbol-placement"] ?: "point") in listOf("point", "line")
             }
             return Style(background, drawn, symbols)
         }

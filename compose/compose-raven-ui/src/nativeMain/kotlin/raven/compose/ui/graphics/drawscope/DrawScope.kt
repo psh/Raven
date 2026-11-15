@@ -23,6 +23,7 @@ import raven.cinterop.Rdraw_rect
 import raven.cinterop.Rdraw_rect_outline
 import raven.cinterop.Rdraw_shader
 import raven.cinterop.Rdraw_text
+import raven.cinterop.Rdraw_text_rotated
 import raven.cinterop.Rdraw_triangle
 import raven.cinterop.Rdraw_triangles
 import raven.compose.ui.InternalComposeRavenApi
@@ -38,6 +39,7 @@ import raven.compose.ui.text.font.FontFamily
 import raven.compose.ui.text.font.font
 import raven.compose.ui.unit.TextUnit
 import raven.compose.ui.unit.isSpecified
+import kotlin.math.PI
 
 /** How a shape is drawn: filled, or its outline. */
 public sealed interface DrawStyle
@@ -133,7 +135,8 @@ public class DrawScope internal constructor(
 
     /**
      * [text] in [color], its first line's top left corner at [topLeft], at [fontSize] (the theme's when
-     * unspecified) in [fontFamily] (the theme's when null).
+     * unspecified) in [fontFamily] (the theme's when null), turned by [rotation] degrees clockwise
+     * about [topLeft] (Raven's `Rdraw_text_rotated`).
      */
     public fun drawText(
         text: String,
@@ -141,10 +144,17 @@ public class DrawScope internal constructor(
         color: Color,
         fontSize: TextUnit = TextUnit.Unspecified,
         fontFamily: FontFamily? = null,
+        rotation: Float = 0f,
     ) {
         val font = fontFamily?.let { host.font(it) } ?: R_INVALID_ID
         val size = if (fontSize.isSpecified) fontSize.value else 0f
-        color.toRaven { r, g, b, a -> Rdraw_text(painter, font, size, topLeft.x, topLeft.y, text, r, g, b, a) }
+        color.toRaven { r, g, b, a ->
+            if (rotation == 0f) {
+                Rdraw_text(painter, font, size, topLeft.x, topLeft.y, text, r, g, b, a)
+            } else {
+                Rdraw_text_rotated(painter, font, size, topLeft.x, topLeft.y, rotation * (PI.toFloat() / 180f), text, r, g, b, a)
+            }
+        }
     }
 
     /**

@@ -27,9 +27,9 @@ data class TileId(val z: Int, val x: Int, val y: Int) {
 /**
  * What one style layer draws of one tile, in the tile's unit square (0 to 1 across): [fills] as
  * triangles, x, y for each corner; [lines] as polylines of x, y pairs: a line layer's lines, or a
- * fill layer's outlines; and a symbol layer's [labels].
+ * fill layer's outlines; and a symbol layer's [labels], at points or [lineLabels] along lines.
  */
-class Bucket(val fills: FloatArray, val lines: List<FloatArray>, val labels: List<Label> = emptyList()) {
+class Bucket(val fills: FloatArray, val lines: List<FloatArray>, val labels: List<Label> = emptyList(), val lineLabels: List<LineLabel> = emptyList()) {
     val triangleCount: Int get() = fills.size / 6
     val segmentCount: Int get() = lines.sumOf { it.size / 2 - 1 }
 
@@ -125,14 +125,22 @@ fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {
         val layer = layers[styleLayer.sourceLayer] ?: continue
         if (zoom + 1 <= styleLayer.minZoom || zoom >= styleLayer.maxZoom) continue
         val labels = ArrayList<Label>()
+        val lineLabels = ArrayList<LineLabel>()
+        val wanted = if (styleLayer.alongLines) GeometryType.LineString else GeometryType.Point
         for (feature in layer.features) {
-            if (feature.type != GeometryType.Point) continue
+            if (feature.type != wanted) continue
             val context = EvaluationContext(zoom, feature.properties, feature.type)
             if (!accepts(styleLayer.filter, context)) continue
             val text = labelText(styleLayer, context) ?: continue
-            for (ring in feature.rings()) labels += Label(text, ring[0] / layer.extent, ring[1] / layer.extent)
+            for (ring in feature.rings()) {
+                if (styleLayer.alongLines) {
+                    if (ring.size >= 4) lineLabels += LineLabel(text, FloatArray(ring.size) { ring[it] / layer.extent })
+                } else {
+                    labels += Label(text, ring[0] / layer.extent, ring[1] / layer.extent)
+                }
+            }
         }
-        if (labels.isNotEmpty()) buckets[styleLayer.id] = Bucket(FloatArray(0), emptyList(), labels)
+        if (labels.isNotEmpty() || lineLabels.isNotEmpty()) buckets[styleLayer.id] = Bucket(FloatArray(0), emptyList(), labels, lineLabels)
     }
     for (styleLayer in style.layers) {
         val layer = layers[styleLayer.sourceLayer] ?: continue
