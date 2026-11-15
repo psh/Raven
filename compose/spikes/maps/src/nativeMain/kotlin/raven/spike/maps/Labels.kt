@@ -6,11 +6,26 @@ import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
+import raven.cinterop.R_FONT_BOLD
+import raven.cinterop.R_FONT_BOLD_ITALIC
+import raven.cinterop.R_FONT_ITALIC
+import raven.cinterop.R_INVALID_ID
+import raven.cinterop.R_TRUE
 import raven.cinterop.Rfont_get_default
+import raven.cinterop.Rfont_get_variant
+import raven.cinterop.Rfont_is_valid
 import raven.cinterop.Rfont_measure_text
+import raven.cinterop.Rid
+import raven.cinterop.Rtheme_get_font
 import raven.compose.ui.geometry.Offset
+import raven.compose.ui.geometry.Size
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.ImageBitmap
 import raven.compose.ui.graphics.drawscope.DrawScope
+import raven.compose.ui.text.font.FontStyle
+import raven.compose.ui.text.font.FontWeight
+import raven.compose.ui.unit.IntOffset
+import raven.compose.ui.unit.IntSize
 import raven.compose.ui.unit.sp
 import kotlin.math.PI
 import kotlin.math.abs
@@ -24,19 +39,22 @@ import kotlin.math.sin
 import kotlin.time.TimeSource
 
 // Labels, as MapLibre's symbol layers place them, in part: the text of `text-field`, at
-// `text-size`, in `text-color` with a `text-halo-color` halo `text-halo-width` wide, and kept apart
-// by collision, the layers higher in the style first. At a point, wrapped at `text-max-width` and
-// placed by `text-anchor` and `text-offset`; along a line, every `symbol-spacing`, each glyph turned
-// to the line where it stands (Raven's rotated text), reading left to right, and left out where the
-// line bends more than 45 degrees between two glyphs. Left out: icons (they need the style's sprite
-// sheet), the style's fonts (Liberty's Noto Sans faces; Raven's default font draws every label),
+// `text-size`, in the face `text-font` names (regular, bold or italic: Raven's default font, with the
+// faces it derives), in `text-color` with a `text-halo-color` halo `text-halo-width` wide, with the
+// `icon-image` of the style's sprite sheet at `icon-size`, and kept apart by collision, the layers
+// higher in the style first. At a point, the icon on it and the text wrapped at `text-max-width`
+// and placed by `text-anchor` and `text-offset`; along a line, every `symbol-spacing`: glyph by
+// glyph, each turned to the line where it stands (Raven's rotated text), reading left to right, and
+// left out where the line bends more than 45 degrees between two glyphs; or upright, an icon with
+// its text, where the text keeps to the viewport (road shields). Left out: icons turned with the
+// map (one-way arrows: Raven doesn't turn images), the style's own fonts (Liberty's Noto Sans),
 // letter spacing, halo blur, and fading in and out.
 
-/** A label of a tile: its text, at a point of the tile's unit square. */
-class Label(val text: String, val x: Float, val y: Float)
+/** A symbol of a tile at a point of its unit square: its text, its icon, either of them null. */
+class Label(val text: String?, val x: Float, val y: Float, val icon: String? = null)
 
-/** A label along a line of a tile: its text, and the line's x, y pairs in the tile's unit square. */
-class LineLabel(val text: String, val points: FloatArray)
+/** A symbol along a line of a tile: its text and icon, and the line's x, y pairs in the tile's unit square. */
+class LineLabel(val text: String?, val points: FloatArray, val icon: String? = null)
 
 /** The text a symbol layer gives a feature: `text-field`, with `text-transform`; null if empty. */
 fun labelText(layer: StyleLayer, context: EvaluationContext): String? {
@@ -54,22 +72,85 @@ fun labelText(layer: StyleLayer, context: EvaluationContext): String? {
     return text.ifEmpty { null }
 }
 
-/** Widths of texts measured with Raven's default font, by size and text: labels repeat across frames. */
+/** The name of the sprite a symbol layer gives a feature: `icon-image`; null if none. */
+fun iconName(layer: StyleLayer, context: EvaluationContext): String? =
+    layer.layout["icon-image"]?.let { evaluate(it, context) }?.let(::text)?.ifEmpty { null }
+
+/** One icon of a sprite sheet: where it is in the sheet, in its pixels, and how many of them a logical pixel holds. */
+class SpriteIcon(val x: Int, val y: Int, val width: Int, val height: Int, val pixelRatio: Float) {
+    val logicalWidth: Float get() = width / pixelRatio
+    val logicalHeight: Float get() = height / pixelRatio
+}
+
+/** A style's sprite sheet: its icons by name, as its JSON index says, and the PNG they are in. */
+class Sprite(val icons: Map<String, SpriteIcon>, val png: ByteArray) {
+    companion object {
+        fun parse(json: String, png: ByteArray): Sprite {
+            @Suppress("UNCHECKED_CAST")
+            val index = parseJson(json) as Map<String, Map<String, Any?>>
+            val icons = index.mapValues { (_, v) ->
+                SpriteIcon(
+                    (v["x"] as Double).toInt(), (v["y"] as Double).toInt(),
+                    (v["width"] as Double).toInt(), (v["height"] as Double).toInt(),
+                    (v["pixelRatio"] as? Double ?: 1.0).toFloat(),
+                )
+            }
+            return Sprite(icons, png)
+        }
+    }
+}
+
+/** A face of the default font, as a style's `text-font` names it ("Noto Sans Bold Italic"). */
+enum class Face(val weight: FontWeight?, val style: FontStyle?) {
+    Regular(null, null),
+    Bold(FontWeight.Bold, null),
+    Italic(null, FontStyle.Italic),
+    BoldItalic(FontWeight.Bold, FontStyle.Italic);
+
+    companion object {
+        fun of(fonts: Any?): Face {
+            val name = (fonts as? List<*>)?.firstOrNull() as? String ?: return Regular
+            val bold = "Bold" in name
+            val italic = "Italic" in name
+            return when {
+                bold && italic -> BoldItalic
+                bold -> Bold
+                italic -> Italic
+                else -> Regular
+            }
+        }
+    }
+}
+
+/**
+ * Widths of texts measured as `drawText` draws them: the theme's font, or the face of it Raven
+ * derives, by size, face and text, since labels repeat across frames.
+ */
 @OptIn(ExperimentalForeignApi::class)
 class TextMeasure {
     private val widths = HashMap<String, Float>()
-
     private val heights = HashMap<Float, Float>()
+    private val fonts = HashMap<Face, Rid>()
 
-    fun width(text: String, size: Float): Float = widths.getOrPut("$size|$text") { measure(text, size).first }
+    fun width(text: String, size: Float, face: Face = Face.Regular): Float = widths.getOrPut("$size|${face.ordinal}|$text") { measure(text, size, face).first }
 
     /** The height of a line of text at [size]. */
-    fun height(size: Float): Float = heights.getOrPut(size) { measure("Ag", size).second }
+    fun height(size: Float): Float = heights.getOrPut(size) { measure("Ag", size, Face.Regular).second }
 
-    private fun measure(text: String, size: Float): Pair<Float, Float> = memScoped {
+    private fun font(face: Face): Rid = fonts.getOrPut(face) {
+        if (face == Face.Regular) return R_INVALID_ID
+        val base = Rtheme_get_font().takeIf { Rfont_is_valid(it) == R_TRUE } ?: Rfont_get_default()
+        Rfont_get_variant(base, when (face) {
+            Face.Bold -> R_FONT_BOLD
+            Face.Italic -> R_FONT_ITALIC
+            else -> R_FONT_BOLD_ITALIC
+        })
+    }
+
+    private fun measure(text: String, size: Float, face: Face): Pair<Float, Float> = memScoped {
         val width = alloc<FloatVar>()
         val height = alloc<FloatVar>()
-        Rfont_measure_text(Rfont_get_default(), size, text, width.ptr, height.ptr)
+        Rfont_measure_text(font(face), size, text, width.ptr, height.ptr)
         width.value to height.value
     }
 }
@@ -99,18 +180,16 @@ private class CollisionGrid(private val cell: Float = 64f) {
     fun insert(box: Box) {
         forCells(box) { k -> cells.getOrPut(k) { ArrayList() } += box }
     }
-
-    fun place(box: Box): Boolean = fits(box).also { if (it) insert(box) }
 }
 
 /** Words of [text] in lines no wider than [maxWidth], its own line breaks kept. */
-private fun wrap(text: String, size: Float, maxWidth: Float, measure: TextMeasure): List<String> {
+private fun wrap(text: String, size: Float, face: Face, maxWidth: Float, measure: TextMeasure): List<String> {
     val lines = ArrayList<String>()
     for (paragraph in text.split('\n')) {
         var line = ""
         for (word in paragraph.split(' ').filter { it.isNotEmpty() }) {
             val candidate = if (line.isEmpty()) word else "$line $word"
-            if (line.isNotEmpty() && measure.width(candidate, size) > maxWidth) {
+            if (line.isNotEmpty() && measure.width(candidate, size, face) > maxWidth) {
                 lines += line
                 line = word
             } else {
@@ -126,6 +205,7 @@ private fun wrap(text: String, size: Float, maxWidth: Float, measure: TextMeasur
 class LabelStats {
     var placed = 0
     var candidates = 0
+    var icons = 0
     var ms = 0.0
     var placeMs = 0.0
 
@@ -133,8 +213,23 @@ class LabelStats {
     var reused = false
 }
 
-/** A text to draw: a line of a label at a point, or a glyph of one along a line. */
-internal class TextOp(val text: String, val x: Float, val y: Float, val rotation: Float, val style: GlyphStyle)
+/** How a layer's texts look. */
+internal class GlyphStyle(
+    val size: Float,
+    val height: Float,
+    val color: Color,
+    val halo: Color?,
+    val haloWidth: Float,
+    val padding: Float,
+    val face: Face,
+)
+
+/** What placement leaves to draw: a text (a line of a label at a point, or a glyph along a line), or an icon. */
+internal sealed class DrawOp(val x: Float, val y: Float)
+
+internal class TextOp(val text: String, x: Float, y: Float, val rotation: Float, val style: GlyphStyle) : DrawOp(x, y)
+
+internal class IconOp(val icon: SpriteIcon, x: Float, y: Float, val width: Float, val height: Float) : DrawOp(x, y)
 
 /**
  * The last placement, and what it was made for: the zoom, the view's size, the prepared tiles
@@ -147,15 +242,19 @@ class LabelCache {
     internal var version = -1
     internal var centerX = 0.0
     internal var centerY = 0.0
-    internal var ops: List<TextOp> = emptyList()
+    internal var ops: List<DrawOp> = emptyList()
 }
 
+/** A sprite sheet ready to draw: its icons, and the image it was decoded into. */
+class SpriteSheet(val sprite: Sprite, val image: ImageBitmap)
+
 /**
- * Draws the labels of [tiles] under [camera]. The placement is kept in [cache] while the view and
- * the tiles ready ([version]) stay as they were, and moves with the map, as MapLibre's labels do
- * between placements: a pan of up to a quarter of the view, or a zoom of up to a quarter of a
- * level, about the view's centre, the text keeping its size. Past those, or once the camera has
- * [settled] somewhere else than where it was placed, the labels are placed again.
+ * Draws the labels of [tiles] under [camera], their icons from [sprites]. The placement is kept in
+ * [cache] while the view and the tiles ready ([version]) stay as they were, and moves with the map,
+ * as MapLibre's labels do between placements: a pan of up to a quarter of the view, or a zoom of
+ * up to a quarter of a level, about the view's centre, the text and icons keeping their size. Past
+ * those, or once the camera has [settled] somewhere else than where it was placed, the labels are
+ * placed again.
  */
 fun DrawScope.drawLabels(
     style: Style,
@@ -166,6 +265,7 @@ fun DrawScope.drawLabels(
     cache: LabelCache,
     version: Int,
     settled: Boolean = false,
+    sprites: SpriteSheet? = null,
 ) {
     val start = TimeSource.Monotonic.markNow()
     val world = camera.worldSize
@@ -177,7 +277,7 @@ fun DrawScope.drawLabels(
         cache.version != version || abs(dx) > size.width / 4 || abs(dy) > size.height / 4 || (settled && moved)
     var scale = k
     if (stale) {
-        cache.ops = placeLabels(style, tiles, camera, measure, stats)
+        cache.ops = placeLabels(style, tiles, camera, measure, stats, sprites?.sprite)
         cache.zoom = camera.zoom
         cache.width = size.width
         cache.height = size.height
@@ -194,43 +294,82 @@ fun DrawScope.drawLabels(
     val cx = size.width / 2
     val cy = size.height / 2
     for (op in cache.ops) {
-        val st = op.style
         val x = cx + (op.x - cx) * scale + dx
         val y = cy + (op.y - cy) * scale + dy
-        if (st.halo != null && st.haloWidth > 0f) {
-            val d = max(st.haloWidth * 0.75f, 0.5f)
-            for ((hx, hy) in HALO) drawText(op.text, Offset(x + hx * d, y + hy * d), st.halo, st.size.sp, rotation = op.rotation)
+        when (op) {
+            is IconOp -> sprites?.let {
+                drawImage(it.image, IntOffset(op.icon.x, op.icon.y), IntSize(op.icon.width, op.icon.height), Offset(x, y), Size(op.width, op.height))
+            }
+            is TextOp -> {
+                val st = op.style
+                if (st.halo != null && st.haloWidth > 0f) {
+                    val d = max(st.haloWidth * 0.75f, 0.5f)
+                    for ((hx, hy) in HALO) {
+                        drawText(op.text, Offset(x + hx * d, y + hy * d), st.halo, st.size.sp, rotation = op.rotation, fontWeight = st.face.weight, fontStyle = st.face.style)
+                    }
+                }
+                drawText(op.text, Offset(x, y), st.color, st.size.sp, rotation = op.rotation, fontWeight = st.face.weight, fontStyle = st.face.style)
+            }
         }
-        drawText(op.text, Offset(x, y), st.color, st.size.sp, rotation = op.rotation)
     }
     stats.ms = start.elapsedNow().inWholeMicroseconds / 1000.0
 }
 
-/**
- * Places the labels of [tiles] under [camera]: layer by layer, the style's last first, each label
- * only where its box, padded, overlaps none placed before it. Returns what to draw.
- */
-private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camera: Camera, measure: TextMeasure, stats: LabelStats): List<TextOp> {
-    val zoom = camera.zoom
-    val world = camera.worldSize
-    val grid = CollisionGrid()
+/** What a layer's symbols are, at a zoom: read once a placement, not once a symbol. */
+private class SymbolStyle(
+    val text: GlyphStyle,
+    val maxWidth: Float,
+    val anchor: String,
+    val offset: List<Float>,
+    val lineHeight: Float,
+    val spacing: Float,
+    val iconSize: Float,
+    val iconOverlaps: Boolean,
+    /** Along a line, each glyph turned to it; else upright, at points along it. */
+    val alongLine: Boolean,
+    val upright: Boolean,
+)
+
+/** What a placement shares: the collision grid, the names placed, the operations, the counts. */
+private class Placement(val grid: CollisionGrid, val sprite: Sprite?, val measure: TextMeasure) {
+    val seen = HashSet<String>()
+    val ops = ArrayList<DrawOp>()
     var placed = 0
     var candidates = 0
-    val seen = HashSet<String>()
-    val ops = ArrayList<TextOp>()
+    var icons = 0
+}
+
+/**
+ * Places the labels of [tiles] under [camera]: layer by layer, the style's last first, each label
+ * only where its boxes, padded, overlap none placed before it. Returns what to draw.
+ */
+private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camera: Camera, measure: TextMeasure, stats: LabelStats, sprite: Sprite?): List<DrawOp> {
+    val zoom = camera.zoom
+    val world = camera.worldSize
+    val placement = Placement(CollisionGrid(), sprite, measure)
     for (layer in style.symbols.asReversed()) {
         if (zoom < layer.minZoom || zoom >= layer.maxZoom) continue
         val textSize = (layer.layout("text-size", zoom) as? Double ?: 16.0).toFloat()
-        val maxWidth = (layer.layout("text-max-width", zoom) as? Double ?: 10.0).toFloat() * textSize
-        val anchor = layer.layout("text-anchor", zoom) as? String ?: "center"
-        val offset = (layer.layout("text-offset", zoom) as? List<*>)?.map { (it as Double).toFloat() * textSize } ?: listOf(0f, 0f)
-        val padding = (layer.layout("text-padding", zoom) as? Double ?: 2.0).toFloat()
-        val color = parseColor(layer.paint("text-color", zoom)) ?: Color.Black
-        val halo = parseColor(layer.paint("text-halo-color", zoom))
-        val haloWidth = (layer.paint("text-halo-width", zoom) as? Double ?: 0.0).toFloat()
-        val lineHeight = textSize * 1.2f
-        val spacing = (layer.layout("symbol-spacing", zoom) as? Double ?: 250.0).toFloat()
-        val glyphStyle = GlyphStyle(textSize, measure.height(textSize), color, halo, haloWidth, padding)
+        val glyphStyle = GlyphStyle(
+            textSize, measure.height(textSize),
+            parseColor(layer.paint("text-color", zoom)) ?: Color.Black,
+            parseColor(layer.paint("text-halo-color", zoom)),
+            (layer.paint("text-halo-width", zoom) as? Double ?: 0.0).toFloat(),
+            (layer.layout("text-padding", zoom) as? Double ?: 2.0).toFloat(),
+            Face.of(layer.layout("text-font", zoom)),
+        )
+        val symbols = SymbolStyle(
+            glyphStyle,
+            maxWidth = (layer.layout("text-max-width", zoom) as? Double ?: 10.0).toFloat() * textSize,
+            anchor = layer.layout("text-anchor", zoom) as? String ?: "center",
+            offset = (layer.layout("text-offset", zoom) as? List<*>)?.map { (it as Double).toFloat() * textSize } ?: listOf(0f, 0f),
+            lineHeight = textSize * 1.2f,
+            spacing = (layer.layout("symbol-spacing", zoom) as? Double ?: 250.0).toFloat(),
+            iconSize = (layer.layout("icon-size", zoom) as? Double ?: 1.0).toFloat(),
+            iconOverlaps = layer.layout("icon-allow-overlap", zoom) == true,
+            alongLine = layer.placementAt(zoom) == "line",
+            upright = layer.layout("text-rotation-alignment", zoom) == "viewport",
+        )
         for (tile in tiles) {
             val bucket = tile.buckets[layer.id] ?: continue
             val n = (1 shl tile.id.z).toDouble()
@@ -238,96 +377,136 @@ private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camer
             val ox = ((tile.id.x / n - camera.centerX) * world + size.width / 2).toFloat()
             val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
             for (label in bucket.lineLabels) {
-                candidates++
-                if (placeAlong(label, ox, oy, scale, spacing, glyphStyle, measure, grid, seen, ops)) placed++
+                placement.candidates++
+                val text = label.text
+                val placed = if (symbols.alongLine && !symbols.upright && text != null) {
+                    placeAlong(text, label.points, ox, oy, scale, symbols.spacing, glyphStyle, placement)
+                } else {
+                    placeAtPointsAlong(label, ox, oy, scale, symbols, placement)
+                }
+                if (placed) placement.placed++
             }
             for (label in bucket.labels) {
-                val x = ox + label.x * scale
-                val y = oy + label.y * scale
-                if (x < -maxWidth || y < -maxWidth || x > size.width + maxWidth || y > size.height + maxWidth) continue
-                candidates++
-                val lines = wrap(label.text, textSize, maxWidth, measure)
-                if (lines.isEmpty()) continue
-                val widths = lines.map { measure.width(it, textSize) }
-                val w = widths.max()
-                val h = lineHeight * lines.size
-                // Where the anchor puts the box, then the offset.
-                val left = x + offset[0] - when {
-                    anchor.endsWith("left") -> 0f
-                    anchor.endsWith("right") -> w
-                    else -> w / 2
-                }
-                val top = y + offset[1] - when {
-                    anchor.startsWith("top") -> 0f
-                    anchor.startsWith("bottom") -> h
-                    else -> h / 2
-                }
-                // The same name in the next tile's buffer, or again in the same place, once.
-                val key = "${label.text}|${(left / 8).roundToInt()}|${(top / 8).roundToInt()}"
-                if (key in seen) continue
-                if (!grid.place(Box(left - padding, top - padding, left + w + padding, top + h + padding))) continue
-                seen += key
-                placed++
-                for ((i, line) in lines.withIndex()) {
-                    ops += TextOp(line, left + (w - widths[i]) / 2, top + i * lineHeight, 0f, glyphStyle)
-                }
+                placement.candidates++
+                if (placePoint(label.text, label.icon, ox + label.x * scale, oy + label.y * scale, symbols, placement)) placement.placed++
             }
         }
     }
-    stats.placed = placed
-    stats.candidates = candidates
-    return ops
+    stats.placed = placement.placed
+    stats.candidates = placement.candidates
+    stats.icons = placement.icons
+    return placement.ops
 }
 
-/** How a layer's texts look. */
-internal class GlyphStyle(val size: Float, val height: Float, val color: Color, val halo: Color?, val haloWidth: Float, val padding: Float)
+/**
+ * Places a symbol at ([x], [y]): its icon centred on it, its text placed by the layer's anchor and
+ * offset, both only where they overlap nothing placed. Returns whether it placed it.
+ */
+private fun DrawScope.placePoint(text: String?, iconName: String?, x: Float, y: Float, style: SymbolStyle, placement: Placement): Boolean {
+    val margin = style.maxWidth
+    if (x < -margin || y < -margin || x > size.width + margin || y > size.height + margin) return false
+    val icon = iconName?.let { placement.sprite?.icons?.get(it) }
+    if (text == null && icon == null) return false
+    val boxes = ArrayList<Box>(2)
+    var iconBox: Box? = null
+    if (icon != null) {
+        val w = icon.logicalWidth * style.iconSize
+        val h = icon.logicalHeight * style.iconSize
+        iconBox = Box(x - w / 2, y - h / 2, x + w / 2, y + h / 2)
+        if (!style.iconOverlaps) boxes += iconBox
+    }
+    val st = style.text
+    var lines = emptyList<String>()
+    var widths = emptyList<Float>()
+    var left = 0f
+    var top = 0f
+    var w = 0f
+    if (text != null) {
+        lines = wrap(text, st.size, st.face, style.maxWidth, placement.measure)
+        widths = lines.map { placement.measure.width(it, st.size, st.face) }
+        w = widths.maxOrNull() ?: 0f
+        val h = style.lineHeight * lines.size
+        // Where the anchor puts the box, then the offset.
+        left = x + style.offset[0] - when {
+            style.anchor.endsWith("left") -> 0f
+            style.anchor.endsWith("right") -> w
+            else -> w / 2
+        }
+        top = y + style.offset[1] - when {
+            style.anchor.startsWith("top") -> 0f
+            style.anchor.startsWith("bottom") -> h
+            else -> h / 2
+        }
+        boxes += Box(left - st.padding, top - st.padding, left + w + st.padding, top + h + st.padding)
+    }
+    // The same symbol in the next tile's buffer, or again in the same place, once.
+    val key = "$text|$iconName|${(x / 8).roundToInt()}|${(y / 8).roundToInt()}"
+    if (key in placement.seen || !boxes.all { placement.grid.fits(it) }) return false
+    boxes.forEach { placement.grid.insert(it) }
+    placement.seen += key
+    if (icon != null && iconBox != null) {
+        placement.ops += IconOp(icon, iconBox.left, iconBox.top, iconBox.right - iconBox.left, iconBox.bottom - iconBox.top)
+        placement.icons++
+    }
+    for ((i, line) in lines.withIndex()) placement.ops += TextOp(line, left + (w - widths[i]) / 2, top + i * style.lineHeight, 0f, st)
+    return true
+}
+
+/** The line of [points] on screen, at ([ox], [oy]) plus the points times [scale], with the distance along it at each point. */
+private class ScreenLine(points: FloatArray, ox: Float, oy: Float, scale: Float) {
+    val count = points.size / 2
+    val xs = FloatArray(count) { ox + points[it * 2] * scale }
+    val ys = FloatArray(count) { oy + points[it * 2 + 1] * scale }
+    val cumulative = FloatArray(count).also { for (i in 1 until count) it[i] = it[i - 1] + hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]) }
+    val length: Float get() = cumulative.last()
+
+    fun offScreen(width: Float, height: Float): Boolean = xs.max() < 0 || xs.min() > width || ys.max() < 0 || ys.min() > height
+
+    fun at(distance: Float): Along = along(xs, ys, cumulative, distance)
+}
+
+/** Places [label] upright at the middle of every [SymbolStyle.spacing] of its line: a road shield, its number on its icon. */
+private fun DrawScope.placeAtPointsAlong(label: LineLabel, ox: Float, oy: Float, scale: Float, style: SymbolStyle, placement: Placement): Boolean {
+    val line = ScreenLine(label.points, ox, oy, scale)
+    if (line.offScreen(size.width, size.height)) return false
+    val repeats = maxOf(1, (line.length / style.spacing).toInt())
+    var any = false
+    for (r in 0 until repeats) {
+        val at = line.at((r + 0.5f) * line.length / repeats)
+        if (placePoint(label.text, label.icon, at.x, at.y, style, placement)) any = true
+    }
+    return any
+}
 
 /** A point of a line on screen, and the line's direction there, in radians. */
 private class Along(val x: Float, val y: Float, val angle: Float)
 
 /**
- * Places [label] along its line, on screen at ([ox], [oy]) plus its points times [scale]: at the
- * middle of every [spacing] of line long enough for it, glyph by glyph, each turned to the line
- * where it stands. Returns whether it placed it once at least.
+ * Places [text] along the line of [points], on screen at ([ox], [oy]) plus the points times
+ * [scale]: at the middle of every [spacing] of line long enough for it, glyph by glyph, each turned
+ * to the line where it stands. Returns whether it placed it once at least.
  */
-private fun DrawScope.placeAlong(
-    label: LineLabel,
-    ox: Float,
-    oy: Float,
-    scale: Float,
-    spacing: Float,
-    style: GlyphStyle,
-    measure: TextMeasure,
-    grid: CollisionGrid,
-    seen: HashSet<String>,
-    ops: MutableList<TextOp>,
-): Boolean {
-    val count = label.points.size / 2
-    val xs = FloatArray(count) { ox + label.points[it * 2] * scale }
-    val ys = FloatArray(count) { oy + label.points[it * 2 + 1] * scale }
-    // Off screen, nothing to place.
-    if (xs.max() < 0 || xs.min() > size.width || ys.max() < 0 || ys.min() > size.height) return false
-    val cumulative = FloatArray(count)
-    for (i in 1 until count) cumulative[i] = cumulative[i - 1] + hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1])
-    val length = cumulative.last()
-    val text = label.text.replace('\n', ' ')
-    val width = measure.width(text, style.size)
-    if (width + style.size > length) return false
+private fun DrawScope.placeAlong(text: String, points: FloatArray, ox: Float, oy: Float, scale: Float, spacing: Float, style: GlyphStyle, placement: Placement): Boolean {
+    val line = ScreenLine(points, ox, oy, scale)
+    if (line.offScreen(size.width, size.height)) return false
+    val flat = text.replace('\n', ' ')
+    val width = placement.measure.width(flat, style.size, style.face)
+    if (width + style.size > line.length) return false
     // Each glyph's advance, from the widths of the text up to it, so kerning is kept.
-    val starts = FloatArray(text.length + 1) { if (it == 0) 0f else measure.width(text.substring(0, it), style.size) }
+    val starts = FloatArray(flat.length + 1) { if (it == 0) 0f else placement.measure.width(flat.substring(0, it), style.size, style.face) }
     var any = false
-    val repeats = maxOf(1, (length / spacing).toInt())
+    val repeats = maxOf(1, (line.length / spacing).toInt())
     for (r in 0 until repeats) {
-        val center = (r + 0.5f) * length / repeats
-        if (center - width / 2 < 0 || center + width / 2 > length) continue
+        val center = (r + 0.5f) * line.length / repeats
+        if (center - width / 2 < 0 || center + width / 2 > line.length) continue
         // Reading left to right: along the line, or back along it when it runs leftward.
-        val reversed = cos(along(xs, ys, cumulative, center).angle) < 0
+        val reversed = cos(line.at(center).angle) < 0
         val glyphs = ArrayList<Pair<Int, Along>>()
         var previous: Float? = null
         var ok = true
-        for (i in text.indices) {
+        for (i in flat.indices) {
             val middle = (starts[i] + starts[i + 1]) / 2 - width / 2
-            val at = along(xs, ys, cumulative, if (reversed) center - middle else center + middle)
+            val at = line.at(if (reversed) center - middle else center + middle)
             val angle = if (reversed) at.angle + PI.toFloat() else at.angle
             if (previous != null && abs(turn(angle, previous)) > MAX_TURN) {
                 ok = false
@@ -340,13 +519,14 @@ private fun DrawScope.placeAlong(
         val half = style.height / 2 + style.padding
         val boxes = glyphs.map { (_, at) -> Box(at.x - half, at.y - half, at.x + half, at.y + half) }
         // The same name placed nearby already, from the next tile's buffer or a piece of the same street.
-        val key = "$text|${(glyphs[glyphs.size / 2].second.x / 64).roundToInt()}|${(glyphs[glyphs.size / 2].second.y / 64).roundToInt()}"
-        if (key in seen || !boxes.all { grid.fits(it) }) continue
-        boxes.forEach { grid.insert(it) }
-        seen += key
+        val mid = glyphs[glyphs.size / 2].second
+        val key = "$flat|${(mid.x / 64).roundToInt()}|${(mid.y / 64).roundToInt()}"
+        if (key in placement.seen || !boxes.all { placement.grid.fits(it) }) continue
+        boxes.forEach { placement.grid.insert(it) }
+        placement.seen += key
         any = true
         for ((i, at) in glyphs) {
-            val c = text[i]
+            val c = flat[i]
             if (c == ' ') continue
             val advance = starts[i + 1] - starts[i]
             val degrees = at.angle * 180f / PI.toFloat()
@@ -355,9 +535,7 @@ private fun DrawScope.placeAlong(
             val sinA = sin(at.angle)
             val dx = -advance / 2
             val dy = -style.height / 2
-            val left = at.x + dx * cosA - dy * sinA
-            val top = at.y + dx * sinA + dy * cosA
-            ops += TextOp(c.toString(), left, top, degrees, style)
+            placement.ops += TextOp(c.toString(), at.x + dx * cosA - dy * sinA, at.y + dx * sinA + dy * cosA, degrees, style)
         }
     }
     return any

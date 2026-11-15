@@ -20,6 +20,7 @@ import raven.compose.ui.Alignment
 import raven.compose.ui.Modifier
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.RoundedCornerShape
+import raven.compose.ui.graphics.decodeToImageBitmap
 import raven.compose.ui.geometry.Offset
 import raven.compose.ui.graphics.drawscope.DrawScope
 import raven.compose.ui.input.pointer.PointerEventType
@@ -111,6 +112,7 @@ fun DrawScope.drawMap(
     labelStats: LabelStats = LabelStats(),
     labelCache: LabelCache = LabelCache(),
     settled: Boolean = false,
+    sprites: SpriteSheet? = null,
 ) {
     val start = TimeSource.Monotonic.markNow()
     store.version // a tile prepared draws the map again
@@ -183,7 +185,7 @@ fun DrawScope.drawMap(
             }
         }
     }
-    if (labels != null) drawLabels(style, tiles, camera, labels, labelStats, labelCache, store.version, settled)
+    if (labels != null) drawLabels(style, tiles, camera, labels, labelStats, labelCache, store.version, settled, sprites)
     stats.drawMs = start.elapsedNow().inWholeMicroseconds / 1000.0
     stats.fillMs = fillTime.inWholeMicroseconds / 1000.0
     stats.lineMs = lineTime.inWholeMicroseconds / 1000.0
@@ -194,11 +196,13 @@ fun DrawScope.drawMap(
 
 /** The map, dragged to pan and scrolled to zoom, with what each frame costs over it. */
 @Composable
-fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 2.0, maxZoom: Double = 18.0) {
+fun MapScreen(style: Style, store: TileStore, camera: Camera, sprite: Sprite? = null, minZoom: Double = 2.0, maxZoom: Double = 18.0) {
     val stats = remember { DrawStats() }
     val labelStats = remember { LabelStats() }
     val measure = remember { TextMeasure() }
     val labelCache = remember { LabelCache() }
+    // The sprite sheet's image, decoded once Raven runs.
+    val sprites = remember(sprite) { sprite?.let { SpriteSheet(it, it.png.decodeToImageBitmap()) } }
     // The camera at rest for a moment: the labels are placed again where it stopped.
     var settled by remember { mutableStateOf(true) }
     LaunchedEffect(camera.centerX, camera.centerY, camera.zoom) {
@@ -226,7 +230,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
                 },
         ) {
             size = Offset(this.size.width, this.size.height)
-            drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled)
+            drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled, sprites = sprites)
         }
         Stats(stats, labelStats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
         Surface(Modifier.align(Alignment.BottomEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCCFFFFFF)) {
@@ -248,7 +252,7 @@ private fun Stats(stats: DrawStats, labelStats: LabelStats, camera: Camera, stor
                 "zoom ${(camera.zoom * 100).toInt() / 100.0}, ${stats.tiles} tiles",
                 "${stats.triangles} triangles, ${stats.segments} line segments",
                 "Kotlin draw calls: ${fmt(stats.drawMs)} ms (fills ${fmt(stats.fillMs)}, lines ${fmt(stats.lineMs)}, labels ${fmt(labelStats.ms)})",
-                "${labelStats.placed} labels placed of ${labelStats.candidates}, in ${fmt(labelStats.placeMs)} ms" + if (labelStats.reused) " (reused)" else "",
+                "${labelStats.placed} labels placed of ${labelStats.candidates}, ${labelStats.icons} icons, in ${fmt(labelStats.placeMs)} ms" + if (labelStats.reused) " (reused)" else "",
                 "Raven: paint ${fmt(frame.paintMs)} ms, render ${fmt(frame.renderMs)} ms, ${frame.primitiveCount} primitives, ${frame.drawCallCount} GPU draws",
                 "${prepared.size} tiles prepared: decode ${fmt(prepared.sumOf { it.decodeMs })} ms, style + triangulate ${fmt(prepared.sumOf { it.prepareMs })} ms",
                 "${store.pendingCount} loading, ${store.failures} failed" + ((store.source as? HttpTileSource)?.let { ", ${it.fetched} fetched, ${it.cached} from the cache" } ?: ""),

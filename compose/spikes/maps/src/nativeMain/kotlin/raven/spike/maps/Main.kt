@@ -2,6 +2,7 @@ package raven.spike.maps
 
 import androidx.compose.runtime.remember
 import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.toKString
@@ -36,7 +37,7 @@ fun main() {
     val latitude = env("MAPS_LAT")?.toDoubleOrNull() ?: START_LATITUDE
     val longitude = env("MAPS_LON")?.toDoubleOrNull() ?: START_LONGITUDE
     val zoom = env("MAPS_ZOOM")?.toDoubleOrNull() ?: 14.0
-    val (style, source) = if (env("MAPS_OFFLINE") != null) offline() else online()
+    val (style, source, sprite) = if (env("MAPS_OFFLINE") != null) offline() else online()
     val store = TileStore(source, style)
     application {
         val camera = remember { Camera.at(latitude, longitude, zoom) }
@@ -44,26 +45,37 @@ fun main() {
             onCloseRequest = ::exitApplication,
             state = rememberWindowState(size = DpSize(1200.dp, 800.dp)),
             title = "Raven maps spike",
-        ) { MapScreen(style, store, camera) }
+        ) { MapScreen(style, store, camera, sprite) }
     }
 }
 
-private fun offline(): Pair<Style, TileSource> {
+/** What the map draws: its style, where its tiles come from, and its sprite sheet, if it has one. */
+private data class MapData(val style: Style, val source: TileSource, val sprite: Sprite?)
+
+private fun offline(): MapData {
     val directory = env("MAPS_DATA") ?: "data"
     val style = Style.parse(readFile("$directory/liberty.json")?.decodeToString() ?: error("no $directory/liberty.json: run fetch-data"))
     val source = FileTileSource(directory)
     check(!source.isEmpty) { "no tiles listed in $directory/tiles.txt: run fetch-data" }
-    return style to source
+    val json = readFile("$directory/sprite@2x.json")?.decodeToString()
+    val png = readFile("$directory/sprite@2x.png")
+    return MapData(style, source, if (json != null && png != null) Sprite.parse(json, png) else null)
 }
 
-private fun online(): Pair<Style, TileSource> = runBlocking {
+private fun online(): MapData = runBlocking {
     val client = HttpTileSource.client()
     val json = client.get(env("MAPS_STYLE") ?: LIBERTY_STYLE).bodyAsText()
     val style = Style.parse(json)
     @Suppress("UNCHECKED_CAST")
-    val sources = (parseJson(json) as Map<String, Any?>)["sources"] as Map<String, Map<String, Any?>>
+    val root = parseJson(json) as Map<String, Any?>
+    @Suppress("UNCHECKED_CAST")
+    val sources = root["sources"] as Map<String, Map<String, Any?>>
     val tileJson = sources.getValue("openmaptiles")["url"] as String
-    style to HttpTileSource.fromTileJson(client, tileJson, env("MAPS_CACHE") ?: cacheDirectory())
+    // The sheet at twice the pixels, sharp on a Retina display.
+    val sprite = (root["sprite"] as? String)?.let { url ->
+        Sprite.parse(client.get("$url@2x.json").bodyAsText(), client.get("$url@2x.png").bodyAsBytes())
+    }
+    MapData(style, HttpTileSource.fromTileJson(client, tileJson, env("MAPS_CACHE") ?: cacheDirectory()), sprite)
 }
 
 /** The user's cache folder for the spike's tiles: Library/Caches on macOS, else XDG's. */

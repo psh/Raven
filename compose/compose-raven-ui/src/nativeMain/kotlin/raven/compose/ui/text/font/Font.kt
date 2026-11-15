@@ -220,4 +220,4 @@ public fun rememberRavenFont(family: FontFamily?, weight: FontWeight?, style: Fo
     }
 }
 
-private fun Rid.styled(style: RFontStyle): Rid = if (style == R_FONT_REGULAR) this else Rfont_get_variant(this, style)
+internal fun Rid.styled(style: RFontStyle): Rid = if (style == R_FONT_REGULAR) this else Rfont_get_variant(this, style)

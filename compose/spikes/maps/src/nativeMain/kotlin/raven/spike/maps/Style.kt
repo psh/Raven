@@ -47,8 +47,8 @@ class StyleLayer(
         else -> color("line-color", zoom, "line-opacity")
     }
 
-    /** Whether the layer's labels run along its lines. */
-    val alongLines: Boolean get() = layout["symbol-placement"] == "line"
+    /** Where the layer's symbols go at [zoom]: "point", or "line" for along its lines (an expression for road shields). */
+    fun placementAt(zoom: Double): String = layout("symbol-placement", zoom) as? String ?: "point"
 
     /** A layout property at [zoom], for every feature alike. */
     fun layout(name: String, zoom: Double): Any? = layout[name]?.let { evaluate(it, EvaluationContext(zoom)) }
@@ -90,10 +90,11 @@ class Style(val background: Color, val layers: List<StyleLayer>, val symbols: Li
                 it.visible && layerSource(root, it, source) &&
                     ((it.type == "fill" && "fill-pattern" !in it.paint) || it.type == "fill-extrusion" || it.type == "line")
             }
-            // Labels at points and along lines; road shields, placed by an expression, are icons first.
+            // Labels and icons at points and along lines. Left out: icons alone along lines (one-way
+            // arrows), which turn with the map, and Raven turns no images.
             val symbols = all.filter {
                 it.visible && layerSource(root, it, source) && it.type == "symbol" &&
-                    "text-field" in it.layout && (it.layout["symbol-placement"] ?: "point") in listOf("point", "line")
+                    ("text-field" in it.layout || ("icon-image" in it.layout && it.layout["symbol-placement"] != "line"))
             }
             return Style(background, drawn, symbols)
         }

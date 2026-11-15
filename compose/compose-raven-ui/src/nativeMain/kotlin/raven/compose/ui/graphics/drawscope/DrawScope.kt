@@ -10,11 +10,14 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
 import raven.cinterop.RShaderLook
+import raven.cinterop.R_FONT_REGULAR
 import raven.cinterop.R_INVALID_ID
+import raven.cinterop.R_TRUE
 import raven.cinterop.Rdraw_circle
 import raven.cinterop.Rdraw_curve
 import raven.cinterop.Rdraw_glass
 import raven.cinterop.Rdraw_image
+import raven.cinterop.Rdraw_image_region
 import raven.cinterop.Rdraw_line
 import raven.cinterop.Rdraw_polyline
 import raven.cinterop.Rdraw_pop_clip_rect
@@ -26,17 +29,27 @@ import raven.cinterop.Rdraw_text
 import raven.cinterop.Rdraw_text_rotated
 import raven.cinterop.Rdraw_triangle
 import raven.cinterop.Rdraw_triangles
+import raven.cinterop.Rfont_get_default
+import raven.cinterop.Rfont_is_valid
+import raven.cinterop.Rtheme_get_font
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.geometry.Offset
 import raven.compose.ui.geometry.Size
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.EffectStyle
+import raven.compose.ui.graphics.ImageBitmap
 import raven.compose.ui.graphics.ShaderEffect
 import raven.compose.ui.graphics.painter.Painter
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.text.font.FontFamily
+import raven.compose.ui.text.font.FontStyle
+import raven.compose.ui.text.font.FontWeight
 import raven.compose.ui.text.font.font
+import raven.compose.ui.text.font.ravenStyle
+import raven.compose.ui.text.font.styled
+import raven.compose.ui.unit.IntOffset
+import raven.compose.ui.unit.IntSize
 import raven.compose.ui.unit.TextUnit
 import raven.compose.ui.unit.isSpecified
 import kotlin.math.PI
@@ -135,8 +148,9 @@ public class DrawScope internal constructor(
 
     /**
      * [text] in [color], its first line's top left corner at [topLeft], at [fontSize] (the theme's when
-     * unspecified) in [fontFamily] (the theme's when null), turned by [rotation] degrees clockwise
-     * about [topLeft] (Raven's `Rdraw_text_rotated`).
+     * unspecified) in [fontFamily] (the theme's when null), [fontWeight] and [fontStyle] choosing its
+     * bold or italic face (Raven draws them from the regular one when the family has none), turned by
+     * [rotation] degrees clockwise about [topLeft] (Raven's `Rdraw_text_rotated`).
      */
     public fun drawText(
         text: String,
@@ -145,8 +159,15 @@ public class DrawScope internal constructor(
         fontSize: TextUnit = TextUnit.Unspecified,
         fontFamily: FontFamily? = null,
         rotation: Float = 0f,
+        fontWeight: FontWeight? = null,
+        fontStyle: FontStyle? = null,
     ) {
-        val font = fontFamily?.let { host.font(it) } ?: R_INVALID_ID
+        val style = ravenStyle(fontWeight, fontStyle)
+        val font = when {
+            fontFamily != null -> host.font(fontFamily).styled(style)
+            style == R_FONT_REGULAR -> R_INVALID_ID
+            else -> (Rtheme_get_font().takeIf { Rfont_is_valid(it) == R_TRUE } ?: Rfont_get_default()).styled(style)
+        }
         val size = if (fontSize.isSpecified) fontSize.value else 0f
         color.toRaven { r, g, b, a ->
             if (rotation == 0f) {
@@ -154,6 +175,30 @@ public class DrawScope internal constructor(
             } else {
                 Rdraw_text_rotated(painter, font, size, topLeft.x, topLeft.y, rotation * (PI.toFloat() / 180f), text, r, g, b, a)
             }
+        }
+    }
+
+    /**
+     * The part of [image] from [srcOffset], [srcSize] large (in its pixels), stretched over [size]
+     * at [topLeft] and multiplied by [tint]: one icon of a sprite sheet. Raven's
+     * (`Rdraw_image_region`).
+     */
+    public fun drawImage(
+        image: ImageBitmap,
+        srcOffset: IntOffset,
+        srcSize: IntSize,
+        topLeft: Offset,
+        size: Size,
+        tint: Color = Color.White,
+    ) {
+        if (image.width <= 0 || image.height <= 0) return
+        val w = image.width.toFloat()
+        val h = image.height.toFloat()
+        tint.toRaven { r, g, b, a ->
+            Rdraw_image_region(
+                painter, image.texture, topLeft.x, topLeft.y, size.width, size.height,
+                srcOffset.x / w, srcOffset.y / h, (srcOffset.x + srcSize.width) / w, (srcOffset.y + srcSize.height) / h, r, g, b, a,
+            )
         }
     }
 

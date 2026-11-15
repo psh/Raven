@@ -97,7 +97,7 @@ class TileStore(val source: TileSource, private val style: Style, private val ca
         val scope = scope ?: return null
         pending[id] = scope.launch {
             try {
-                val tile = withContext(Dispatchers.Default) { source.fetch(id)?.let { prepareTile(id, it, style) } }
+                val tile = withContext(Dispatchers.Default) { source.fetch(id)?.let { prepareTile(id, it, style, deepest = id.z >= source.maxZoom) } }
                 // No tile there: an empty one, so it isn't asked for again.
                 prepared[id] = tile ?: PreparedTile(id, emptyMap(), 0, 0.0, 0.0)
                 failed -= id
@@ -116,7 +116,7 @@ class TileStore(val source: TileSource, private val style: Style, private val ca
     }
 
     /** Fetches and prepares the tile on this thread, for tests. */
-    fun prepareNow(id: TileId): PreparedTile? = prepared[id] ?: runBlocking { source.fetch(id) }?.let { prepareTile(id, it, style) }?.also { prepared[id] = it }
+    fun prepareNow(id: TileId): PreparedTile? = prepared[id] ?: runBlocking { source.fetch(id) }?.let { prepareTile(id, it, style, deepest = id.z >= source.maxZoom) }?.also { prepared[id] = it }
 
     /** The tile if it is ready, else the nearest ancestor that is, down to the source's [minZoom]. */
     fun bestReady(id: TileId): PreparedTile? {
@@ -162,8 +162,12 @@ class TileStore(val source: TileSource, private val style: Style, private val ca
 /** How long a tile that failed waits before it is asked for again. */
 private val RETRY_AFTER = 10.seconds
 
-/** Decodes [bytes] and fills each style layer's bucket from the features its filter keeps, at the tile's zoom. */
-fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {
+/**
+ * Decodes [bytes] and fills each style layer's bucket from the features its filter keeps, at the
+ * tile's zoom: the layers drawn at that zoom or the next, or, for a tile of the source's [deepest]
+ * zoom, which draws every zoom past it too, every layer drawn from it on.
+ */
+fun prepareTile(id: TileId, bytes: ByteArray, style: Style, deepest: Boolean = false): PreparedTile {
     val clock = TimeSource.Monotonic
     val start = clock.markNow()
     val layers = decodeTile(bytes).associateBy { it.name }
@@ -172,20 +176,27 @@ fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {
     val zoom = id.z.toDouble()
     for (styleLayer in style.symbols) {
         val layer = layers[styleLayer.sourceLayer] ?: continue
-        if (zoom + 1 <= styleLayer.minZoom || zoom >= styleLayer.maxZoom) continue
+        if ((zoom + 1 <= styleLayer.minZoom && !deepest) || zoom >= styleLayer.maxZoom) continue
         val labels = ArrayList<Label>()
         val lineLabels = ArrayList<LineLabel>()
-        val wanted = if (styleLayer.alongLines) GeometryType.LineString else GeometryType.Point
+        val alongLines = styleLayer.placementAt(zoom) == "line"
         for (feature in layer.features) {
-            if (feature.type != wanted) continue
+            // Along lines, a line's symbols; at points, a point's, or a line's at its middle (a shield at low zoom).
+            if (alongLines && feature.type != GeometryType.LineString) continue
+            if (!alongLines && feature.type != GeometryType.Point && feature.type != GeometryType.LineString) continue
             val context = EvaluationContext(zoom, feature.properties, feature.type)
             if (!accepts(styleLayer.filter, context)) continue
-            val text = labelText(styleLayer, context) ?: continue
+            val text = labelText(styleLayer, context)
+            val icon = iconName(styleLayer, context)
+            if (text == null && icon == null) continue
             for (ring in feature.rings()) {
-                if (styleLayer.alongLines) {
-                    if (ring.size >= 4) lineLabels += LineLabel(text, FloatArray(ring.size) { ring[it] / layer.extent })
-                } else {
-                    labels += Label(text, ring[0] / layer.extent, ring[1] / layer.extent)
+                when {
+                    alongLines -> if (ring.size >= 4) lineLabels += LineLabel(text, FloatArray(ring.size) { ring[it] / layer.extent }, icon)
+                    feature.type == GeometryType.Point -> labels += Label(text, ring[0] / layer.extent, ring[1] / layer.extent, icon)
+                    else -> {
+                        val middle = (ring.size / 4) * 2
+                        labels += Label(text, ring[middle] / layer.extent, ring[middle + 1] / layer.extent, icon)
+                    }
                 }
             }
         }
@@ -193,7 +204,7 @@ fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {
     }
     for (styleLayer in style.layers) {
         val layer = layers[styleLayer.sourceLayer] ?: continue
-        if (zoom + 1 <= styleLayer.minZoom || zoom >= styleLayer.maxZoom) continue
+        if ((zoom + 1 <= styleLayer.minZoom && !deepest) || zoom >= styleLayer.maxZoom) continue
         val scale = 1f / layer.extent
         val fills = ArrayList<FloatArray>()
         val lines = ArrayList<FloatArray>()
