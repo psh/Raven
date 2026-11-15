@@ -18,6 +18,7 @@ import raven.cinterop.Rdraw_curve
 import raven.cinterop.Rdraw_glass
 import raven.cinterop.Rdraw_image
 import raven.cinterop.Rdraw_image_region
+import raven.cinterop.Rdraw_image_rotated
 import raven.cinterop.Rdraw_line
 import raven.cinterop.Rdraw_polyline
 import raven.cinterop.Rdraw_pop_clip_rect
@@ -180,8 +181,8 @@ public class DrawScope internal constructor(
 
     /**
      * The part of [image] from [srcOffset], [srcSize] large (in its pixels), stretched over [size]
-     * at [topLeft] and multiplied by [tint]: one icon of a sprite sheet. Raven's
-     * (`Rdraw_image_region`).
+     * at [topLeft] and multiplied by [tint], turned by [rotation] degrees clockwise about its centre:
+     * one icon of a sprite sheet. Raven's (`Rdraw_image_region`, `Rdraw_image_rotated`).
      */
     public fun drawImage(
         image: ImageBitmap,
@@ -190,15 +191,21 @@ public class DrawScope internal constructor(
         topLeft: Offset,
         size: Size,
         tint: Color = Color.White,
+        rotation: Float = 0f,
     ) {
         if (image.width <= 0 || image.height <= 0) return
         val w = image.width.toFloat()
         val h = image.height.toFloat()
+        val u0 = srcOffset.x / w
+        val v0 = srcOffset.y / h
+        val u1 = (srcOffset.x + srcSize.width) / w
+        val v1 = (srcOffset.y + srcSize.height) / h
         tint.toRaven { r, g, b, a ->
-            Rdraw_image_region(
-                painter, image.texture, topLeft.x, topLeft.y, size.width, size.height,
-                srcOffset.x / w, srcOffset.y / h, (srcOffset.x + srcSize.width) / w, (srcOffset.y + srcSize.height) / h, r, g, b, a,
-            )
+            if (rotation == 0f) {
+                Rdraw_image_region(painter, image.texture, topLeft.x, topLeft.y, size.width, size.height, u0, v0, u1, v1, r, g, b, a)
+            } else {
+                Rdraw_image_rotated(painter, image.texture, topLeft.x, topLeft.y, size.width, size.height, u0, v0, u1, v1, rotation * (PI.toFloat() / 180f), r, g, b, a)
+            }
         }
     }
 

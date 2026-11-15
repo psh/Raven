@@ -90,11 +90,10 @@ class Style(val background: Color, val layers: List<StyleLayer>, val symbols: Li
                 it.visible && layerSource(root, it, source) &&
                     ((it.type == "fill" && "fill-pattern" !in it.paint) || it.type == "fill-extrusion" || it.type == "line")
             }
-            // Labels and icons at points and along lines. Left out: icons alone along lines (one-way
-            // arrows), which turn with the map, and Raven turns no images.
+            // Labels and icons, at points and along lines.
             val symbols = all.filter {
                 it.visible && layerSource(root, it, source) && it.type == "symbol" &&
-                    ("text-field" in it.layout || ("icon-image" in it.layout && it.layout["symbol-placement"] != "line"))
+                    ("text-field" in it.layout || "icon-image" in it.layout)
             }
             return Style(background, drawn, symbols)
         }

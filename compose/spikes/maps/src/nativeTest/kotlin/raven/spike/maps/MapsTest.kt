@@ -124,6 +124,8 @@ class MapsTest {
         // street names (from 15) are prepared from them too.
         assertTrue(tile.buckets["poi_r1"]?.labels.orEmpty().isNotEmpty(), "points of interest from zoom 15")
         assertTrue(tile.buckets["highway-name-minor"]?.lineLabels.orEmpty().isNotEmpty(), "minor street names from zoom 15")
+        // One-way arrows: icons alone along their roads (from zoom 16).
+        assertTrue(tile.buckets["road_one_way_arrow"]?.lineLabels.orEmpty().any { it.icon == "arrow" && it.text == null }, "one-way arrows along roads")
         // Street names run along their lines; place names stand at points.
         assertTrue(tile.buckets["highway-name-major"]?.lineLabels.orEmpty().isNotEmpty(), "street names along lines")
         assertTrue(tile.buckets.values.any { it.labels.isNotEmpty() }, "labels at points")

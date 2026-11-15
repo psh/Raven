@@ -46,9 +46,9 @@ import kotlin.time.TimeSource
 // and placed by `text-anchor` and `text-offset`; along a line, every `symbol-spacing`: glyph by
 // glyph, each turned to the line where it stands (Raven's rotated text), reading left to right, and
 // left out where the line bends more than 45 degrees between two glyphs; or upright, an icon with
-// its text, where the text keeps to the viewport (road shields). Left out: icons turned with the
-// map (one-way arrows: Raven doesn't turn images), the style's own fonts (Liberty's Noto Sans),
-// letter spacing, halo blur, and fading in and out.
+// its text, where the text keeps to the viewport (road shields); or, an icon alone, turned to the
+// line where it stands, plus `icon-rotate` (one-way arrows: Raven's turned images). Left out: the
+// style's own fonts (Liberty's Noto Sans), letter spacing, halo blur, and fading in and out.
 
 /** A symbol of a tile at a point of its unit square: its text, its icon, either of them null. */
 class Label(val text: String?, val x: Float, val y: Float, val icon: String? = null)
@@ -229,7 +229,7 @@ internal sealed class DrawOp(val x: Float, val y: Float)
 
 internal class TextOp(val text: String, x: Float, y: Float, val rotation: Float, val style: GlyphStyle) : DrawOp(x, y)
 
-internal class IconOp(val icon: SpriteIcon, x: Float, y: Float, val width: Float, val height: Float) : DrawOp(x, y)
+internal class IconOp(val icon: SpriteIcon, x: Float, y: Float, val width: Float, val height: Float, val rotation: Float = 0f) : DrawOp(x, y)
 
 /**
  * The last placement, and what it was made for: the zoom, the view's size, the prepared tiles
@@ -298,7 +298,7 @@ fun DrawScope.drawLabels(
         val y = cy + (op.y - cy) * scale + dy
         when (op) {
             is IconOp -> sprites?.let {
-                drawImage(it.image, IntOffset(op.icon.x, op.icon.y), IntSize(op.icon.width, op.icon.height), Offset(x, y), Size(op.width, op.height))
+                drawImage(it.image, IntOffset(op.icon.x, op.icon.y), IntSize(op.icon.width, op.icon.height), Offset(x, y), Size(op.width, op.height), rotation = op.rotation)
             }
             is TextOp -> {
                 val st = op.style
@@ -328,6 +328,8 @@ private class SymbolStyle(
     /** Along a line, each glyph turned to it; else upright, at points along it. */
     val alongLine: Boolean,
     val upright: Boolean,
+    /** Degrees an icon turns, past the line it follows. */
+    val iconRotate: Float,
 )
 
 /** What a placement shares: the collision grid, the names placed, the operations, the counts. */
@@ -369,6 +371,7 @@ private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camer
             iconOverlaps = layer.layout("icon-allow-overlap", zoom) == true,
             alongLine = layer.placementAt(zoom) == "line",
             upright = layer.layout("text-rotation-alignment", zoom) == "viewport",
+            iconRotate = (layer.layout("icon-rotate", zoom) as? Double ?: 0.0).toFloat(),
         )
         for (tile in tiles) {
             val bucket = tile.buckets[layer.id] ?: continue
@@ -379,10 +382,10 @@ private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camer
             for (label in bucket.lineLabels) {
                 placement.candidates++
                 val text = label.text
-                val placed = if (symbols.alongLine && !symbols.upright && text != null) {
-                    placeAlong(text, label.points, ox, oy, scale, symbols.spacing, glyphStyle, placement)
-                } else {
-                    placeAtPointsAlong(label, ox, oy, scale, symbols, placement)
+                val placed = when {
+                    symbols.alongLine && !symbols.upright && text != null -> placeAlong(text, label.points, ox, oy, scale, symbols.spacing, glyphStyle, placement)
+                    symbols.alongLine && text == null && label.icon != null -> placeIconsAlong(label, ox, oy, scale, symbols, placement)
+                    else -> placeAtPointsAlong(label, ox, oy, scale, symbols, placement)
                 }
                 if (placed) placement.placed++
             }
@@ -474,6 +477,34 @@ private fun DrawScope.placeAtPointsAlong(label: LineLabel, ox: Float, oy: Float,
     for (r in 0 until repeats) {
         val at = line.at((r + 0.5f) * line.length / repeats)
         if (placePoint(label.text, label.icon, at.x, at.y, style, placement)) any = true
+    }
+    return any
+}
+
+/**
+ * Places [label]'s icon at the middle of every [SymbolStyle.spacing] of its line, turned to the
+ * line where it stands, plus [SymbolStyle.iconRotate]: never flipped, since the way the line runs is
+ * what a one-way arrow shows.
+ */
+private fun DrawScope.placeIconsAlong(label: LineLabel, ox: Float, oy: Float, scale: Float, style: SymbolStyle, placement: Placement): Boolean {
+    val icon = label.icon?.let { placement.sprite?.icons?.get(it) } ?: return false
+    val line = ScreenLine(label.points, ox, oy, scale)
+    if (line.offScreen(size.width, size.height)) return false
+    val w = icon.logicalWidth * style.iconSize
+    val h = icon.logicalHeight * style.iconSize
+    if (line.length < w * 2) return false
+    var any = false
+    val repeats = maxOf(1, (line.length / style.spacing).toInt())
+    for (r in 0 until repeats) {
+        val at = line.at((r + 0.5f) * line.length / repeats)
+        // A turned icon stays within its half diagonal of its centre.
+        val reach = hypot(w, h) / 2
+        val box = Box(at.x - reach, at.y - reach, at.x + reach, at.y + reach)
+        if (!placement.grid.fits(box)) continue
+        placement.grid.insert(box)
+        placement.ops += IconOp(icon, at.x - w / 2, at.y - h / 2, w, h, at.angle * 180f / PI.toFloat() + style.iconRotate)
+        placement.icons++
+        any = true
     }
     return any
 }
