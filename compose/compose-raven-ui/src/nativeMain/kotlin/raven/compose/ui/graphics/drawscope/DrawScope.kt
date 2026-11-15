@@ -120,8 +120,9 @@ public class DrawScope internal constructor(
     /**
      * Many filled triangles of one [color] in one call, a mesh such as a triangulated polygon:
      * [vertices] holds six floats a triangle (x0, y0, x1, y1, x2, y2), each point drawn at
-     * [offset] + its coordinates times [scale]. Triangles that share an edge show no seam there.
-     * Raven's (`Rdraw_triangles`).
+     * [offset] + its coordinates times [scale]. They are filled without anti-aliasing, so
+     * triangles that share an edge show no seam there and cover no pixel twice; the mesh's outer
+     * edges are aliased too, and an outline drawn over them smooths them. Raven's (`Rdraw_triangles`).
      */
     public fun drawTriangles(color: Color, vertices: FloatArray, offset: Offset = Offset.Zero, scale: Float = 1f) {
         if (vertices.size < 6) return
