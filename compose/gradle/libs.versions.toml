@@ -6,6 +6,8 @@ lifecycle = "2.10.0"
 savedstate = "1.4.0"
 navigationevent = "1.1.1"
 navigation3 = "1.2.1"
+# The maps spike's tiles over HTTP: the Darwin engine on macOS, curl on Linux.
+ktor = "3.6.1"
 
 [libraries]
 compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "compose-runtime" }
@@ -14,6 +16,9 @@ lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-com
 savedstate-compose = { module = "androidx.savedstate:savedstate-compose", version.ref = "savedstate" }
 navigationevent = { module = "androidx.navigationevent:navigationevent", version.ref = "navigationevent" }
 navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-curl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]

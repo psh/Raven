@@ -11,7 +11,16 @@ import raven.compose.foundation.layout.size
 import raven.compose.ui.Modifier
 import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.unit.dp
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import raven.compose.ui.graphics.Color
 import kotlin.math.abs
+import kotlin.random.Random
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -105,7 +114,7 @@ class MapsTest {
     fun theDownloadedTilesPrepareWithEveryKindOfFeature() {
         val directory = getenv("MAPS_DATA")?.toKString() ?: return
         val style = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
-        val store = TileStore.open(directory, style)
+        val store = TileStore(FileTileSource(directory), style)
         val tile = store.prepareNow(TileId(14, 4203, 6089))!!
         println("${tile.bytes} bytes: decode ${tile.decodeMs} ms, prepare ${tile.prepareMs} ms, ${tile.triangleCount} triangles, ${tile.segmentCount} segments")
         for ((id, bucket) in tile.buckets.entries.sortedBy { it.key }) println("  $id: ${bucket.triangleCount} triangles, ${bucket.segmentCount} segments")
@@ -127,14 +136,15 @@ class MapsBenchmark {
     fun batchedTrianglesAgainstOneCallEach() = runRavenTest {
         val directory = getenv("MAPS_DATA")?.toKString() ?: return@runRavenTest
         val style = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
-        val store = TileStore.open(directory, style)
-        for (id in store.available) store.prepareNow(id)
+        val source = FileTileSource(directory)
+        val store = TileStore(source, style)
+        for (id in source.tiles) store.prepareNow(id)
         val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
         val stats = DrawStats()
         var batched by mutableStateOf(true)
         setContent {
             Canvas(Modifier.size(1200.dp, 800.dp)) {
-                drawMap(style, store, camera, stats, 12, 14, batched)
+                drawMap(style, store, camera, stats, batched)
             }
         }
         for (mode in listOf(true, false, true, false)) {
@@ -164,8 +174,9 @@ class LabelsBenchmark {
     fun keptPlacementAgainstPlacingEveryFrame() = runRavenTest {
         val directory = getenv("MAPS_DATA")?.toKString() ?: return@runRavenTest
         val style = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
-        val store = TileStore.open(directory, style)
-        for (id in store.available) store.prepareNow(id)
+        val source = FileTileSource(directory)
+        val store = TileStore(source, style)
+        for (id in source.tiles) store.prepareNow(id)
         val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
         val stats = DrawStats()
         val labelStats = LabelStats()
@@ -174,7 +185,7 @@ class LabelsBenchmark {
         var settled by mutableStateOf(false)
         setContent {
             Canvas(Modifier.size(1200.dp, 800.dp)) {
-                drawMap(style, store, camera, stats, 12, 14, labels = measure, labelStats = labelStats, labelCache = cache, settled = settled)
+                drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = cache, settled = settled)
             }
         }
         // Panning, zooming in steps of a hundredth of a level, and at rest every frame (each placed again).
@@ -197,6 +208,111 @@ class LabelsBenchmark {
             println("${mode.padEnd(7)}: ${labelStats.placed} labels of ${labelStats.candidates}, ${median(costs)} ms a frame, $reused of 30 frames reused (medians of 30 frames)")
         }
     }
+}
+
+/** The tile store against a source of hand-made tiles: loading, cancelling, eviction, failures. */
+class TileStoreTest {
+    private val style = Style(Color.White, emptyList())
+
+    /** A source of one small tile anywhere, that waits for [gate] where it holds one, and fails where [failing]. */
+    private class FakeSource(val gate: Map<TileId, CompletableDeferred<Unit>> = emptyMap(), val failing: Set<TileId> = emptySet()) : TileSource {
+        override val minZoom = 0
+        override val maxZoom = 14
+        var fetches = 0
+
+        override suspend fun fetch(id: TileId): ByteArray? {
+            fetches++
+            gate[id]?.await()
+            if (id in failing) error("no network")
+            return waterTile()
+        }
+    }
+
+    /** Runs [block] until [done], or fails after two seconds. */
+    private suspend fun waitFor(done: () -> Boolean) {
+        withTimeout(2000) { while (!done()) delay(5) }
+    }
+
+    @Test
+    fun aTileIsAskedForOnceAndLandsReady() = runBlocking {
+        val source = FakeSource()
+        val store = TileStore(source, style).also { it.scope = this }
+        val id = TileId(14, 1, 2)
+        assertNull(store.ready(id), "not ready at first")
+        assertNull(store.ready(id), "asked for again while it loads")
+        waitFor { store.version > 0 }
+        assertNotNull(store.ready(id))
+        assertEquals(1, source.fetches, "fetched once")
+        assertEquals(store.ready(id), store.bestReady(TileId(14, 1, 2)))
+    }
+
+    @Test
+    fun aTileNoLongerWantedStopsLoading() = runBlocking {
+        val wanted = TileId(14, 1, 1)
+        val gone = TileId(14, 9, 9)
+        val source = FakeSource(gate = mapOf(gone to CompletableDeferred()))
+        val store = TileStore(source, style).also { it.scope = this }
+        store.ready(gone)
+        store.ready(wanted)
+        waitFor { store.ready(wanted) != null }
+        assertEquals(1, store.pendingCount)
+        // Panned away: the tile still loading, and its ancestors, are no longer wanted.
+        store.retain(listOf(wanted))
+        waitFor { store.pendingCount == 0 }
+        assertNull(store.ready(gone).also { store.retain(emptyList()) }, "asked for again from the start")
+        assertEquals(0, store.failures, "a cancelled tile is no failure")
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun theTilesUsedLeastRecentlyGoPastTheCapacity() = runBlocking {
+        val store = TileStore(FakeSource(), style, capacity = 2).also { it.scope = this }
+        val tiles = List(4) { TileId(14, it, 0) }
+        for (id in tiles) {
+            // A frame wanting this tile alone, until it is ready.
+            store.ready(id)
+            store.retain(listOf(id))
+            waitFor { store.preparedTiles.any { it.id == id } }
+        }
+        assertEquals(listOf(2, 3), store.preparedTiles.map { it.id.x }.sorted())
+    }
+
+    @Test
+    fun aTileThatFailedWaitsBeforeItIsAskedForAgain() = runBlocking {
+        val id = TileId(14, 5, 5)
+        val source = FakeSource(failing = setOf(id))
+        val store = TileStore(source, style).also { it.scope = this }
+        store.ready(id)
+        waitFor { store.failures == 1 && store.pendingCount == 0 }
+        assertNull(store.ready(id))
+        assertEquals(0, store.pendingCount, "not asked for again at once")
+        assertEquals(1, source.fetches)
+    }
+
+    @Test
+    fun theDiskCacheKeepsTilesEmptyOnesIncluded() = runBlocking {
+        val directory = "${getenv("TMPDIR")?.toKString()?.trimEnd('/') ?: "/tmp"}/compose-raven-maps-test-${Random.nextInt(1_000_000)}"
+        val cache = DiskCache(directory)
+        assertNull(cache.read("14/1/2.pbf"))
+        cache.write("14/1/2.pbf", waterTile())
+        cache.write("14/1/3.pbf", ByteArray(0))
+        assertEquals(waterTile().toList(), cache.read("14/1/2.pbf")?.toList())
+        assertEquals(0, cache.read("14/1/3.pbf")?.size, "an empty tile is kept, as a tile with nothing in it")
+        // Found in the cache, a tile is not fetched: the client is never used.
+        val source = HttpTileSource(HttpTileSource.client(), "http://localhost:1/{z}/{x}/{y}.pbf", 0, 14, cache)
+        assertEquals(waterTile().toList(), source.fetch(TileId(14, 1, 2))?.toList())
+        assertEquals(1, source.cached)
+        assertEquals(0, source.fetched)
+    }
+}
+
+/** A tile with one layer, "water", holding a square. */
+private fun waterTile(): ByteArray {
+    val geometry = intArrayOf(command(1, 1), zz(2), zz(2), command(2, 3), zz(4), zz(0), zz(0), zz(4), zz(-4), zz(0), command(7, 1))
+    val feature = message(2, packed(intArrayOf(0, 0))) + varintField(3, 3) + message(4, packed(geometry))
+    val layer = message(1, "water".encodeToByteArray()) + message(2, feature) + message(3, "class".encodeToByteArray()) +
+        message(4, message(1, "lake".encodeToByteArray())) + varintField(5, 4096) + varintField(15, 2)
+    return message(3, layer)
 }
 
 private fun median(values: List<Double>): Double = values.sorted()[values.size / 2]

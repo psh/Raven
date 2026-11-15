@@ -7,9 +7,12 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import platform.posix.SEEK_END
 import platform.posix.SEEK_SET
@@ -18,6 +21,8 @@ import platform.posix.fopen
 import platform.posix.fread
 import platform.posix.fseek
 import platform.posix.ftell
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
 data class TileId(val z: Int, val x: Int, val y: Int) {
@@ -52,13 +57,22 @@ class PreparedTile(val id: TileId, val buckets: Map<String, Bucket>, val bytes: 
 }
 
 /**
- * The tiles of [directory] (`z-x-y.pbf`), prepared for [style] on a background thread the first
- * time each is asked for: until then, [bestReady] gives an ancestor that is ready, and [version]
- * changes as each lands, so a map reading it draws again.
+ * The tiles of [source], prepared for [style] on worker threads the first time each is asked for:
+ * until then, [bestReady] gives an ancestor that is ready, and [version] changes as each lands, so
+ * a map reading it draws again. A tile no longer wanted ([retain]) stops being fetched and
+ * prepared; past [capacity] prepared tiles, those used least recently go.
  */
-class TileStore(private val directory: String, private val style: Style, val available: Set<TileId>) {
-    private val prepared = HashMap<TileId, PreparedTile?>()
-    private val pending = HashSet<TileId>()
+class TileStore(val source: TileSource, private val style: Style, private val capacity: Int = 160) {
+    private val prepared = HashMap<TileId, PreparedTile>()
+    private val pending = HashMap<TileId, Job>()
+    private val lastUsed = HashMap<TileId, Long>()
+
+    // Tiles that failed (a network error), and when: asked for again after a while.
+    private val failed = HashMap<TileId, TimeMark>()
+    private var clock = 0L
+
+    val minZoom: Int get() = source.minZoom
+    val maxZoom: Int get() = source.maxZoom
 
     /** Where tiles are prepared from: the map's composition. */
     var scope: CoroutineScope? = null
@@ -67,51 +81,86 @@ class TileStore(private val directory: String, private val style: Style, val ava
     var version by mutableIntStateOf(0)
         private set
 
-    val preparedTiles: Collection<PreparedTile> get() = prepared.values.filterNotNull()
+    /** Tiles that failed, so far. */
+    var failures = 0
+        private set
+
+    val preparedTiles: Collection<PreparedTile> get() = prepared.values
+    val pendingCount: Int get() = pending.size
 
     /** The tile if it is ready; otherwise asks for it and returns null. */
     fun ready(id: TileId): PreparedTile? {
-        if (id in prepared) return prepared[id]
-        if (id !in available) return null
-        val scope = scope ?: return prepareNow(id)
-        if (pending.add(id)) {
-            scope.launch {
-                val tile = withContext(Dispatchers.Default) { load(id) }
-                prepared[id] = tile
-                pending -= id
+        lastUsed[id] = clock
+        prepared[id]?.let { return it }
+        if (id.z !in source.minZoom..source.maxZoom || id in pending) return null
+        failed[id]?.let { if (it.elapsedNow() < RETRY_AFTER) return null }
+        val scope = scope ?: return null
+        pending[id] = scope.launch {
+            try {
+                val tile = withContext(Dispatchers.Default) { source.fetch(id)?.let { prepareTile(id, it, style) } }
+                // No tile there: an empty one, so it isn't asked for again.
+                prepared[id] = tile ?: PreparedTile(id, emptyMap(), 0, 0.0, 0.0)
+                failed -= id
                 version++
+                evict()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failed[id] = TimeSource.Monotonic.markNow()
+                failures++
+            } finally {
+                pending -= id
             }
         }
         return null
     }
 
-    /** Prepares the tile on this thread, for tests and when no scope is given. */
-    fun prepareNow(id: TileId): PreparedTile? = prepared.getOrPut(id) { if (id in available) load(id) else null }
+    /** Fetches and prepares the tile on this thread, for tests. */
+    fun prepareNow(id: TileId): PreparedTile? = prepared[id] ?: runBlocking { source.fetch(id) }?.let { prepareTile(id, it, style) }?.also { prepared[id] = it }
 
-    private fun load(id: TileId): PreparedTile? =
-        readFile("$directory/${id.z}-${id.x}-${id.y}.pbf")?.let { prepareTile(id, it, style) }
-
-    /** The tile if it is ready, else the nearest ancestor that is, down to zoom [minZoom]. */
-    fun bestReady(id: TileId, minZoom: Int): PreparedTile? {
+    /** The tile if it is ready, else the nearest ancestor that is, down to the source's [minZoom]. */
+    fun bestReady(id: TileId): PreparedTile? {
         var current = id
-        while (current.z >= minZoom) {
+        while (current.z >= source.minZoom) {
             ready(current)?.let { return it }
+            if (current.z == 0) break
             current = current.parent
         }
         return null
     }
 
-    companion object {
-        /** The tiles listed in [directory]/tiles.txt ("z x y" lines), found in [directory]/tiles. */
-        fun open(directory: String, style: Style): TileStore {
-            val list = readFile("$directory/tiles.txt")?.decodeToString().orEmpty()
-            val ids = list.lines().mapNotNull { line ->
-                line.trim().split(' ').takeIf { it.size == 3 }?.let { TileId(it[0].toInt(), it[1].toInt(), it[2].toInt()) }
-            }.toSet()
-            return TileStore("$directory/tiles", style, ids)
+    /**
+     * Keeps fetching and preparing only [wanted] and their ancestors; the rest stop. A frame calls
+     * it with the tiles it needs, then the next starts a new round of use for eviction.
+     */
+    fun retain(wanted: Collection<TileId>) {
+        val keep = HashSet<TileId>()
+        for (id in wanted) {
+            var current = id
+            while (true) {
+                keep += current
+                if (current.z == 0) break
+                current = current.parent
+            }
+        }
+        for ((id, job) in pending.entries.toList()) if (id !in keep) job.cancel()
+        clock++
+    }
+
+    private fun evict() {
+        if (prepared.size <= capacity) return
+        val oldest = prepared.keys.sortedBy { lastUsed[it] ?: 0L }.take(prepared.size - capacity)
+        for (id in oldest) {
+            // The tiles of the last frame stay: it drew them, and the next will again.
+            if ((lastUsed[id] ?: 0L) >= clock - 1) continue
+            prepared -= id
+            lastUsed -= id
         }
     }
 }
+
+/** How long a tile that failed waits before it is asked for again. */
+private val RETRY_AFTER = 10.seconds
 
 /** Decodes [bytes] and fills each style layer's bucket from the features its filter keeps, at the tile's zoom. */
 fun prepareTile(id: TileId, bytes: ByteArray, style: Style): PreparedTile {

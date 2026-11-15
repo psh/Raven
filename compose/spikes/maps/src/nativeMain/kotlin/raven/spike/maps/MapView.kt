@@ -106,8 +106,6 @@ fun DrawScope.drawMap(
     store: TileStore,
     camera: Camera,
     stats: DrawStats,
-    minTileZoom: Int,
-    maxTileZoom: Int,
     batched: Boolean = true,
     labels: TextMeasure? = null,
     labelStats: LabelStats = LabelStats(),
@@ -118,10 +116,11 @@ fun DrawScope.drawMap(
     store.version // a tile prepared draws the map again
     drawRect(style.background)
     val zoom = camera.zoom
-    val tileZoom = floor(zoom).toInt().coerceIn(minTileZoom, maxTileZoom)
-    val tiles = visibleTiles(camera, size.width, size.height, tileZoom)
-        .mapNotNull { store.bestReady(it, minTileZoom) }
-        .distinctBy { it.id }
+    val tileZoom = floor(zoom).toInt().coerceIn(store.minZoom, store.maxZoom)
+    val wanted = visibleTiles(camera, size.width, size.height, tileZoom)
+    val tiles = wanted.mapNotNull { store.bestReady(it) }.distinctBy { it.id }
+    // Tiles panned or zoomed past stop being fetched.
+    store.retain(wanted)
     var triangles = 0
     var segments = 0
     var fillTime = kotlin.time.Duration.ZERO
@@ -195,7 +194,7 @@ fun DrawScope.drawMap(
 
 /** The map, dragged to pan and scrolled to zoom, with what each frame costs over it. */
 @Composable
-fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 11.0, maxZoom: Double = 17.0) {
+fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 2.0, maxZoom: Double = 18.0) {
     val stats = remember { DrawStats() }
     val labelStats = remember { LabelStats() }
     val measure = remember { TextMeasure() }
@@ -211,8 +210,6 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
     var size by remember { mutableStateOf(Offset(0f, 0f)) }
     val scope = rememberCoroutineScope()
     remember(store) { store.scope = scope }
-    val minTileZoom = store.available.minOf { it.z }
-    val maxTileZoom = store.available.maxOf { it.z }
     Box(Modifier.fillMaxSize()) {
         Canvas(
             Modifier.fillMaxSize().testTag("map")
@@ -229,7 +226,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
                 },
         ) {
             size = Offset(this.size.width, this.size.height)
-            drawMap(style, store, camera, stats, minTileZoom, maxTileZoom, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled)
+            drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled)
         }
         Stats(stats, labelStats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
         Surface(Modifier.align(Alignment.BottomEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCCFFFFFF)) {
@@ -254,6 +251,7 @@ private fun Stats(stats: DrawStats, labelStats: LabelStats, camera: Camera, stor
                 "${labelStats.placed} labels placed of ${labelStats.candidates}, in ${fmt(labelStats.placeMs)} ms" + if (labelStats.reused) " (reused)" else "",
                 "Raven: paint ${fmt(frame.paintMs)} ms, render ${fmt(frame.renderMs)} ms, ${frame.primitiveCount} primitives, ${frame.drawCallCount} GPU draws",
                 "${prepared.size} tiles prepared: decode ${fmt(prepared.sumOf { it.decodeMs })} ms, style + triangulate ${fmt(prepared.sumOf { it.prepareMs })} ms",
+                "${store.pendingCount} loading, ${store.failures} failed" + ((store.source as? HttpTileSource)?.let { ", ${it.fetched} fetched, ${it.cached} from the cache" } ?: ""),
             )
             delay(500)
         }
