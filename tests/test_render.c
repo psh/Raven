@@ -322,6 +322,40 @@ static void test_custom_drawing(void) {
 	Rwindow_destroy(window);
 }
 
+static Rid g_region_texture;
+
+static void paint_image_region(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	/* the top right quarter, green, stretched over a square; the whole texture beside it */
+	Rdraw_image_region(painter, g_region_texture, 10, 10, 40, 40, 0.5f, 0.0f, 1.0f, 0.5f, 1, 1, 1, 1);
+	Rdraw_image(painter, g_region_texture, 70, 10, 40, 40, 1, 1, 1, 1);
+}
+
+static void test_image_region(void) {
+	/* red, green on the top row; blue, white below */
+	static const unsigned char pixels[] = { 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255 };
+	Rid window = window_from(
+		"<Window Width=\"200\" Height=\"80\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	g_region_texture = Rtexture_create_from_pixels(pixels, 2, 2);
+	Rtexture_set_filter(g_region_texture, R_FILTER_NEAREST);
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_image_region, NULL);
+	capture(window);
+	/* the region: green all over */
+	CHECK_PIXEL(14, 14, 0, 255, 0);
+	CHECK_PIXEL(30, 30, 0, 255, 0);
+	CHECK_PIXEL(46, 46, 0, 255, 0);
+	/* the whole texture: its four colours */
+	CHECK_PIXEL(75, 15, 255, 0, 0);
+	CHECK_PIXEL(105, 15, 0, 255, 0);
+	CHECK_PIXEL(75, 45, 0, 0, 255);
+	CHECK_PIXEL(105, 45, 255, 255, 255);
+	Rwindow_destroy(window);
+	Rtexture_destroy(g_region_texture);
+}
+
 static void paint_rotated_text(Rid widget, RPainter* painter, float width, float height, void* user_data) {
 	(void)widget;
 	(void)width;
@@ -1110,6 +1144,7 @@ int main(void) {
 	RUN(test_custom_drawing);
 	RUN(test_meshes);
 	RUN(test_rotated_text);
+	RUN(test_image_region);
 	RUN(test_glass);
 	RUN(test_windows_look);
 	RUN(test_glass_theme);

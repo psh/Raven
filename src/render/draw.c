@@ -959,6 +959,17 @@ void Rdraw_image(RPainter* painter, Rid texture, float x, float y, float width, 
 	rvn_paint_image(painter, rvn_rect(x, y, width, height), texture, NULL, rvn_rgba(r, g, b, a), 0.0f);
 }
 
+void Rdraw_image_region(RPainter* painter, Rid texture, float x, float y, float width, float height,
+	float u0, float v0, float u1, float v1, float r, float g, float b, float a) {
+	float uv[4];
+	if (!painter) return;
+	uv[0] = u0;
+	uv[1] = v0;
+	uv[2] = u1;
+	uv[3] = v1;
+	rvn_paint_image(painter, rvn_rect(x, y, width, height), texture, uv, rvn_rgba(r, g, b, a), 0.0f);
+}
+
 void Rdraw_text(RPainter* painter, Rid font, float size, float x, float y,
 	const char* text, float r, float g, float b, float a) {
 	rvn_font_t* resolved;

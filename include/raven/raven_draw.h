@@ -101,6 +101,14 @@ extern "C" {
 		float r, float g, float b, float a);
 
 	/**
+	 * @brief Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+	 * (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+	 * of a sprite sheet.
+	 */
+	RAVEN_API void Rdraw_image_region(RPainter* painter, Rid texture, float x, float y, float width, float height,
+		float u0, float v0, float u1, float v1, float r, float g, float b, float a);
+
+	/**
 	 * @brief Draws UTF-8 text; (x, y) is the top-left corner of the first line.
 	 * @param font R_INVALID_ID uses the theme font.
 	 * @param size 0 uses R_METRIC_FONT_SIZE.
