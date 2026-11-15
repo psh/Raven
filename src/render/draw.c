@@ -679,6 +679,11 @@ void rvn_paint_curve(RPainter* painter, const float points[8], const rvn_curve_t
 }
 
 void rvn_paint_triangle(RPainter* painter, float x0, float y0, float x1, float y1, float x2, float y2, rvn_color_t color) {
+	rvn_paint_triangle_flags(painter, x0, y0, x1, y1, x2, y2, color, 0u);
+}
+
+void rvn_paint_triangle_flags(RPainter* painter, float x0, float y0, float x1, float y1, float x2, float y2,
+	rvn_color_t color, uint32_t flags) {
 	RDrawInstance* instance;
 	rvn_box_t bounds;
 	float ax = (painter->ox + x0) * painter->scale, ay = (painter->oy + y0) * painter->scale;
@@ -698,7 +703,7 @@ void rvn_paint_triangle(RPainter* painter, float x0, float y0, float x1, float y
 	instance->radii[0] = cx;
 	instance->radii[1] = cy;
 	instance->color = color;
-	instance->flags = R_PRIM_TRIANGLE;
+	instance->flags = R_PRIM_TRIANGLE | flags;
 }
 
 void rvn_paint_image(RPainter* painter, rvn_rect_t rect, Rid texture, const float uv[4],
@@ -914,56 +919,17 @@ void Rdraw_triangle(RPainter* painter, float x0, float y0, float x1, float y1,
 	rvn_paint_triangle(painter, x0, y0, x1, y1, x2, y2, rvn_rgba(r, g, b, a));
 }
 
-/* Moves (x, y), a corner of a triangle between the edges toward (px, py) and (nx, ny), out by
- * grow along both edges' outward normals, as a miter, limited to four times grow at sharp corners. */
-static void rvn_triangle_grow_corner(float x, float y, float px, float py, float nx, float ny,
-	float winding, float grow, float* out_x, float* out_y) {
-	float ax = x - px, ay = y - py, bx = nx - x, by = ny - y;
-	float la = sqrtf(ax * ax + ay * ay), lb = sqrtf(bx * bx + by * by);
-	float n1x, n1y, n2x, n2y, mx, my, d, length;
-	*out_x = x;
-	*out_y = y;
-	if (la < 1e-6f || lb < 1e-6f) return;
-	/* the outward normals of the edge coming in and the edge going out */
-	n1x = ay / la * winding;
-	n1y = -ax / la * winding;
-	n2x = by / lb * winding;
-	n2y = -bx / lb * winding;
-	d = 1.0f + n1x * n2x + n1y * n2y;
-	if (d < 1e-4f) return;
-	mx = (n1x + n2x) * grow / d;
-	my = (n1y + n2y) * grow / d;
-	length = sqrtf(mx * mx + my * my);
-	if (length > grow * 4.0f) {
-		mx *= grow * 4.0f / length;
-		my *= grow * 4.0f / length;
-	}
-	*out_x = x + mx;
-	*out_y = y + my;
-}
-
 void Rdraw_triangles(RPainter* painter, const float* xy, int count,
 	float offset_x, float offset_y, float scale, float r, float g, float b, float a) {
 	rvn_color_t color;
-	float grow;
 	int i;
 	if (!painter || !xy || count <= 0) return;
 	color = rvn_rgba(r, g, b, a);
-	/* half a device pixel, in the painter's units */
-	grow = painter->scale > 0.0f ? 0.5f / painter->scale : 0.5f;
 	for (i = 0; i < count; i++) {
 		const float* t = xy + i * 6;
-		float x0 = offset_x + t[0] * scale, y0 = offset_y + t[1] * scale;
-		float x1 = offset_x + t[2] * scale, y1 = offset_y + t[3] * scale;
-		float x2 = offset_x + t[4] * scale, y2 = offset_y + t[5] * scale;
-		float cross = (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0);
-		float winding = cross > 0.0f ? 1.0f : -1.0f;
-		float gx0, gy0, gx1, gy1, gx2, gy2;
-		if (cross == 0.0f) continue;
-		rvn_triangle_grow_corner(x0, y0, x2, y2, x1, y1, winding, grow, &gx0, &gy0);
-		rvn_triangle_grow_corner(x1, y1, x0, y0, x2, y2, winding, grow, &gx1, &gy1);
-		rvn_triangle_grow_corner(x2, y2, x1, y1, x0, y0, winding, grow, &gx2, &gy2);
-		rvn_paint_triangle(painter, gx0, gy0, gx1, gy1, gx2, gy2, color);
+		rvn_paint_triangle_flags(painter, offset_x + t[0] * scale, offset_y + t[1] * scale,
+			offset_x + t[2] * scale, offset_y + t[3] * scale, offset_x + t[4] * scale, offset_y + t[5] * scale,
+			color, R_INSTANCE_ALIASED);
 	}
 }
 

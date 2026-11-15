@@ -335,6 +335,8 @@ static void paint_meshes(Rid widget, RPainter* painter, float width, float heigh
 	lines[4] = lines[5] = NAN;
 	lines[10] = lines[11] = NAN;
 	Rdraw_triangles(painter, square, 2, 0, 0, 1, 1, 0, 0, 1);
+	/* the same square, half transparent */
+	Rdraw_triangles(painter, square, 2, 200, 100, 1, 1, 0, 0, 0.5f);
 	Rdraw_triangles(painter, unit, 1, 100, 20, 40, 0, 0, 1, 1);
 	/* two lines in one call, a NaN point between them */
 	Rdraw_polyline(painter, lines, 6, 0, 0, 1, 6, 0, 1, 0, 1);
@@ -347,12 +349,21 @@ static void test_meshes(void) {
 	Rid window = window_from(
 		"<Window Width=\"300\" Height=\"200\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
 	const uint8_t* seam;
+	const uint8_t* inside;
+	int i;
 	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_meshes, NULL);
 	capture(window);
 	/* the shared edge is covered: no seam on the diagonal */
 	CHECK_PIXEL(50, 50, 255, 0, 0);
 	CHECK_PIXEL(30, 70, 255, 0, 0);
 	CHECK_PIXEL(70, 30, 255, 0, 0);
+	/* translucent, the diagonal is covered once, as the inside is: drawn neither twice nor not at all */
+	inside = pixel_at(260, 130);
+	CHECK(inside[0] > 100 && inside[0] < 160);
+	for (i = 0; i < 60; i++) {
+		const uint8_t* diagonal = pixel_at(220.0f + (float)i, 120.0f + (float)i);
+		CHECK(abs((int)diagonal[0] - (int)inside[0]) <= 3);
+	}
 	/* drawn one at a time, the two edges' anti-aliasing leaves the diagonal lighter */
 	seam = pixel_at(50, 150);
 	CHECK(seam[0] < 250);

@@ -46,6 +46,9 @@
 #define R_INSTANCE_TEXTURED (1u << 4)
 /** SHADER: the effect is told nothing of the pointer (RShaderLook::pointer = R_FALSE). */
 #define R_INSTANCE_NO_POINTER (1u << 5)
+/** TRIANGLE: filled with no edge anti-aliasing, so the triangles of a mesh cover the pixels along
+ * the edges they share exactly once (Rdraw_triangles). */
+#define R_INSTANCE_ALIASED (1u << 6)
 
 /**
  * One primitive. All positions are in framebuffer pixels, origin top-left.

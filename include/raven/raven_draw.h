@@ -88,9 +88,10 @@ extern "C" {
 	 * @brief Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
 	 *
 	 * @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
-	 * point is drawn at (offset_x + x * scale, offset_y + y * scale). Each triangle grows by half a
-	 * device pixel past its edges, so triangles that share an edge show no seam where their
-	 * anti-aliased edges meet; with a translucent color, that half pixel is drawn twice.
+	 * point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+	 * without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+	 * belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+	 * Its outer edges are aliased too; draw an outline over them to smooth them.
 	 */
 	RAVEN_API void Rdraw_triangles(RPainter* painter, const float* xy, int count,
 		float offset_x, float offset_y, float scale, float r, float g, float b, float a);
