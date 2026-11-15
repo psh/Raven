@@ -36,7 +36,7 @@ import kotlin.math.tan
 import kotlin.time.TimeSource
 
 /** The tile size MapLibre's styles are written for: line widths are pixels on a 512-pixel tile. */
-private const val TILE_SIZE = 512.0
+internal const val TILE_SIZE = 512.0
 
 /**
  * Where the map looks: its centre in Web Mercator's unit square (0 to 1 across, from the
@@ -111,6 +111,8 @@ fun DrawScope.drawMap(
     batched: Boolean = true,
     labels: TextMeasure? = null,
     labelStats: LabelStats = LabelStats(),
+    labelCache: LabelCache = LabelCache(),
+    settled: Boolean = false,
 ) {
     val start = TimeSource.Monotonic.markNow()
     store.version // a tile prepared draws the map again
@@ -182,7 +184,7 @@ fun DrawScope.drawMap(
             }
         }
     }
-    if (labels != null) drawLabels(style, tiles, camera, labels, labelStats)
+    if (labels != null) drawLabels(style, tiles, camera, labels, labelStats, labelCache, store.version, settled)
     stats.drawMs = start.elapsedNow().inWholeMicroseconds / 1000.0
     stats.fillMs = fillTime.inWholeMicroseconds / 1000.0
     stats.lineMs = lineTime.inWholeMicroseconds / 1000.0
@@ -197,6 +199,14 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
     val stats = remember { DrawStats() }
     val labelStats = remember { LabelStats() }
     val measure = remember { TextMeasure() }
+    val labelCache = remember { LabelCache() }
+    // The camera at rest for a moment: the labels are placed again where it stopped.
+    var settled by remember { mutableStateOf(true) }
+    LaunchedEffect(camera.centerX, camera.centerY, camera.zoom) {
+        settled = false
+        delay(200)
+        settled = true
+    }
     var dragging by remember { mutableStateOf<Offset?>(null) }
     var size by remember { mutableStateOf(Offset(0f, 0f)) }
     val scope = rememberCoroutineScope()
@@ -219,7 +229,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
                 },
         ) {
             size = Offset(this.size.width, this.size.height)
-            drawMap(style, store, camera, stats, minTileZoom, maxTileZoom, labels = measure, labelStats = labelStats)
+            drawMap(style, store, camera, stats, minTileZoom, maxTileZoom, labels = measure, labelStats = labelStats, labelCache = labelCache, settled = settled)
         }
         Stats(stats, labelStats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
         Surface(Modifier.align(Alignment.BottomEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCCFFFFFF)) {
@@ -241,7 +251,7 @@ private fun Stats(stats: DrawStats, labelStats: LabelStats, camera: Camera, stor
                 "zoom ${(camera.zoom * 100).toInt() / 100.0}, ${stats.tiles} tiles",
                 "${stats.triangles} triangles, ${stats.segments} line segments",
                 "Kotlin draw calls: ${fmt(stats.drawMs)} ms (fills ${fmt(stats.fillMs)}, lines ${fmt(stats.lineMs)}, labels ${fmt(labelStats.ms)})",
-                "${labelStats.placed} labels placed of ${labelStats.candidates}",
+                "${labelStats.placed} labels placed of ${labelStats.candidates}, in ${fmt(labelStats.placeMs)} ms" + if (labelStats.reused) " (reused)" else "",
                 "Raven: paint ${fmt(frame.paintMs)} ms, render ${fmt(frame.renderMs)} ms, ${frame.primitiveCount} primitives, ${frame.drawCallCount} GPU draws",
                 "${prepared.size} tiles prepared: decode ${fmt(prepared.sumOf { it.decodeMs })} ms, style + triangulate ${fmt(prepared.sumOf { it.prepareMs })} ms",
             )

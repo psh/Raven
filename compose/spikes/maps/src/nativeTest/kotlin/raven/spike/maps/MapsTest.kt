@@ -153,6 +153,52 @@ class MapsBenchmark {
     }
 }
 
+/**
+ * The labels of the Loop at zoom 14, headless, 30 frames panned a little and 30 zoomed in a
+ * hundredth of a level at a time (the placement moved), and 30 at rest each frame somewhere new
+ * (placed again each frame): what labels cost a frame each way.
+ */
+class LabelsBenchmark {
+    @OptIn(ExperimentalForeignApi::class)
+    @Test
+    fun keptPlacementAgainstPlacingEveryFrame() = runRavenTest {
+        val directory = getenv("MAPS_DATA")?.toKString() ?: return@runRavenTest
+        val style = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
+        val store = TileStore.open(directory, style)
+        for (id in store.available) store.prepareNow(id)
+        val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
+        val stats = DrawStats()
+        val labelStats = LabelStats()
+        val measure = TextMeasure()
+        val cache = LabelCache()
+        var settled by mutableStateOf(false)
+        setContent {
+            Canvas(Modifier.size(1200.dp, 800.dp)) {
+                drawMap(style, store, camera, stats, 12, 14, labels = measure, labelStats = labelStats, labelCache = cache, settled = settled)
+            }
+        }
+        // Panning, zooming in steps of a hundredth of a level, and at rest every frame (each placed again).
+        for (mode in listOf("panned", "zoomed", "settled", "panned", "zoomed", "settled")) {
+            val costs = ArrayList<Double>()
+            var reused = 0
+            settled = mode == "settled"
+            camera.zoom = 14.0
+            waitForIdle()
+            repeat(30) {
+                when (mode) {
+                    "panned" -> camera.centerX += 1.0 / camera.worldSize
+                    "zoomed" -> camera.zoom += 0.01
+                    else -> camera.centerX += 1.0 / camera.worldSize
+                }
+                waitForIdle()
+                costs += labelStats.ms
+                if (labelStats.reused) reused++
+            }
+            println("${mode.padEnd(7)}: ${labelStats.placed} labels of ${labelStats.candidates}, ${median(costs)} ms a frame, $reused of 30 frames reused (medians of 30 frames)")
+        }
+    }
+}
+
 private fun median(values: List<Double>): Double = values.sorted()[values.size / 2]
 
 private fun trianglesArea(coords: FloatArray, triangles: IntArray): Double {

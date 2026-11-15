@@ -18,6 +18,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.time.TimeSource
@@ -121,25 +122,102 @@ private fun wrap(text: String, size: Float, maxWidth: Float, measure: TextMeasur
     return lines
 }
 
-/** What the labels of the last frame cost. */
+/** What the labels of the last frame cost: [ms] in all; [placeMs] the last placement's. */
 class LabelStats {
     var placed = 0
     var candidates = 0
     var ms = 0.0
+    var placeMs = 0.0
+
+    /** Whether the last frame drew the placement before it, moved, rather than placing again. */
+    var reused = false
+}
+
+/** A text to draw: a line of a label at a point, or a glyph of one along a line. */
+internal class TextOp(val text: String, val x: Float, val y: Float, val rotation: Float, val style: GlyphStyle)
+
+/**
+ * The last placement, and what it was made for: the zoom, the view's size, the prepared tiles
+ * ([TileStore.version]) and the camera's centre. Panning moves it rather than placing again.
+ */
+class LabelCache {
+    internal var zoom = Double.NaN
+    internal var width = 0f
+    internal var height = 0f
+    internal var version = -1
+    internal var centerX = 0.0
+    internal var centerY = 0.0
+    internal var ops: List<TextOp> = emptyList()
 }
 
 /**
- * Places and draws the point labels of [tiles] under [camera]: layer by layer, the style's last
- * first, each label only where its box, padded, overlaps none placed before it.
+ * Draws the labels of [tiles] under [camera]. The placement is kept in [cache] while the view and
+ * the tiles ready ([version]) stay as they were, and moves with the map, as MapLibre's labels do
+ * between placements: a pan of up to a quarter of the view, or a zoom of up to a quarter of a
+ * level, about the view's centre, the text keeping its size. Past those, or once the camera has
+ * [settled] somewhere else than where it was placed, the labels are placed again.
  */
-fun DrawScope.drawLabels(style: Style, tiles: List<PreparedTile>, camera: Camera, measure: TextMeasure, stats: LabelStats) {
+fun DrawScope.drawLabels(
+    style: Style,
+    tiles: List<PreparedTile>,
+    camera: Camera,
+    measure: TextMeasure,
+    stats: LabelStats,
+    cache: LabelCache,
+    version: Int,
+    settled: Boolean = false,
+) {
     val start = TimeSource.Monotonic.markNow()
+    val world = camera.worldSize
+    val k = (world / (TILE_SIZE * 2.0.pow(cache.zoom))).toFloat()
+    var dx = ((cache.centerX - camera.centerX) * world).toFloat()
+    var dy = ((cache.centerY - camera.centerY) * world).toFloat()
+    val moved = cache.zoom != camera.zoom || dx != 0f || dy != 0f
+    val stale = cache.zoom.isNaN() || abs(camera.zoom - cache.zoom) > 0.25 || cache.width != size.width || cache.height != size.height ||
+        cache.version != version || abs(dx) > size.width / 4 || abs(dy) > size.height / 4 || (settled && moved)
+    var scale = k
+    if (stale) {
+        cache.ops = placeLabels(style, tiles, camera, measure, stats)
+        cache.zoom = camera.zoom
+        cache.width = size.width
+        cache.height = size.height
+        cache.version = version
+        cache.centerX = camera.centerX
+        cache.centerY = camera.centerY
+        stats.placeMs = start.elapsedNow().inWholeMicroseconds / 1000.0
+        dx = 0f
+        dy = 0f
+        scale = 1f
+    }
+    stats.reused = !stale
+    // A point placed at p0 is now at the view's centre plus (p0 - centre) scaled, plus the pan.
+    val cx = size.width / 2
+    val cy = size.height / 2
+    for (op in cache.ops) {
+        val st = op.style
+        val x = cx + (op.x - cx) * scale + dx
+        val y = cy + (op.y - cy) * scale + dy
+        if (st.halo != null && st.haloWidth > 0f) {
+            val d = max(st.haloWidth * 0.75f, 0.5f)
+            for ((hx, hy) in HALO) drawText(op.text, Offset(x + hx * d, y + hy * d), st.halo, st.size.sp, rotation = op.rotation)
+        }
+        drawText(op.text, Offset(x, y), st.color, st.size.sp, rotation = op.rotation)
+    }
+    stats.ms = start.elapsedNow().inWholeMicroseconds / 1000.0
+}
+
+/**
+ * Places the labels of [tiles] under [camera]: layer by layer, the style's last first, each label
+ * only where its box, padded, overlaps none placed before it. Returns what to draw.
+ */
+private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camera: Camera, measure: TextMeasure, stats: LabelStats): List<TextOp> {
     val zoom = camera.zoom
     val world = camera.worldSize
     val grid = CollisionGrid()
     var placed = 0
     var candidates = 0
     val seen = HashSet<String>()
+    val ops = ArrayList<TextOp>()
     for (layer in style.symbols.asReversed()) {
         if (zoom < layer.minZoom || zoom >= layer.maxZoom) continue
         val textSize = (layer.layout("text-size", zoom) as? Double ?: 16.0).toFloat()
@@ -152,7 +230,7 @@ fun DrawScope.drawLabels(style: Style, tiles: List<PreparedTile>, camera: Camera
         val haloWidth = (layer.paint("text-halo-width", zoom) as? Double ?: 0.0).toFloat()
         val lineHeight = textSize * 1.2f
         val spacing = (layer.layout("symbol-spacing", zoom) as? Double ?: 250.0).toFloat()
-        val style = GlyphStyle(textSize, measure.height(textSize), color, halo, haloWidth, padding)
+        val glyphStyle = GlyphStyle(textSize, measure.height(textSize), color, halo, haloWidth, padding)
         for (tile in tiles) {
             val bucket = tile.buckets[layer.id] ?: continue
             val n = (1 shl tile.id.z).toDouble()
@@ -161,7 +239,7 @@ fun DrawScope.drawLabels(style: Style, tiles: List<PreparedTile>, camera: Camera
             val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
             for (label in bucket.lineLabels) {
                 candidates++
-                if (placeAlong(label, ox, oy, scale, spacing, style, measure, grid, seen)) placed++
+                if (placeAlong(label, ox, oy, scale, spacing, glyphStyle, measure, grid, seen, ops)) placed++
             }
             for (label in bucket.labels) {
                 val x = ox + label.x * scale
@@ -191,24 +269,18 @@ fun DrawScope.drawLabels(style: Style, tiles: List<PreparedTile>, camera: Camera
                 seen += key
                 placed++
                 for ((i, line) in lines.withIndex()) {
-                    val lx = left + (w - widths[i]) / 2
-                    val ly = top + i * lineHeight
-                    if (halo != null && haloWidth > 0f) {
-                        val d = max(haloWidth * 0.75f, 0.5f)
-                        for ((dx, dy) in HALO) drawText(line, Offset(lx + dx * d, ly + dy * d), halo, textSize.sp)
-                    }
-                    drawText(line, Offset(lx, ly), color, textSize.sp)
+                    ops += TextOp(line, left + (w - widths[i]) / 2, top + i * lineHeight, 0f, glyphStyle)
                 }
             }
         }
     }
     stats.placed = placed
     stats.candidates = candidates
-    stats.ms = start.elapsedNow().inWholeMicroseconds / 1000.0
+    return ops
 }
 
-/** How a layer's glyphs look along a line. */
-private class GlyphStyle(val size: Float, val height: Float, val color: Color, val halo: Color?, val haloWidth: Float, val padding: Float)
+/** How a layer's texts look. */
+internal class GlyphStyle(val size: Float, val height: Float, val color: Color, val halo: Color?, val haloWidth: Float, val padding: Float)
 
 /** A point of a line on screen, and the line's direction there, in radians. */
 private class Along(val x: Float, val y: Float, val angle: Float)
@@ -228,6 +300,7 @@ private fun DrawScope.placeAlong(
     measure: TextMeasure,
     grid: CollisionGrid,
     seen: HashSet<String>,
+    ops: MutableList<TextOp>,
 ): Boolean {
     val count = label.points.size / 2
     val xs = FloatArray(count) { ox + label.points[it * 2] * scale }
@@ -284,12 +357,7 @@ private fun DrawScope.placeAlong(
             val dy = -style.height / 2
             val left = at.x + dx * cosA - dy * sinA
             val top = at.y + dx * sinA + dy * cosA
-            val glyph = c.toString()
-            if (style.halo != null && style.haloWidth > 0f) {
-                val d = max(style.haloWidth * 0.75f, 0.5f)
-                for ((hx, hy) in HALO) drawText(glyph, Offset(left + hx * d, top + hy * d), style.halo, style.size.sp, rotation = degrees)
-            }
-            drawText(glyph, Offset(left, top), style.color, style.size.sp, rotation = degrees)
+            ops += TextOp(c.toString(), left, top, degrees, style)
         }
     }
     return any
@@ -315,5 +383,5 @@ private fun turn(to: Float, from: Float): Float {
 /** MapLibre's `text-max-angle`: the most a line may turn between two glyphs of a label. */
 private const val MAX_TURN = (45 * PI / 180).toFloat()
 
-/** Eight directions around a letter, for its halo. */
-private val HALO = listOf(-1f to -1f, 0f to -1f, 1f to -1f, -1f to 0f, 1f to 0f, -1f to 1f, 0f to 1f, 1f to 1f)
+/** Four diagonals around a letter, for its halo: as wide as eight directions to the eye, at half the draws. */
+private val HALO = listOf(-1f to -1f, 1f to -1f, -1f to 1f, 1f to 1f)
