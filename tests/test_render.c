@@ -322,6 +322,43 @@ static void test_custom_drawing(void) {
 	Rwindow_destroy(window);
 }
 
+static void paint_rotated_text(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	/* a quarter turn clockwise about its top left corner: it runs down, to the left of x = 150 */
+	Rdraw_text_rotated(painter, R_INVALID_ID, 40, 150, 20, 1.5707963f, "WWWW", 1, 1, 1, 1);
+}
+
+static void test_rotated_text(void) {
+	Rid window = window_from(
+		"<Window Width=\"300\" Height=\"220\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	float text_width, text_height;
+	int lit_inside = 0, lit_outside = 0, px, py;
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_rotated_text, NULL);
+	Rfont_measure_text(Rfont_get_default(), 40, "WWWW", &text_width, &text_height);
+	capture(window);
+	for (py = 0; py < g_height; py++) {
+		for (px = 0; px < g_width; px++) {
+			const uint8_t* p = g_pixels + ((size_t)py * (size_t)g_width + (size_t)px) * 4;
+			float lx = (float)px / g_scale, ly = (float)py / g_scale;
+			/* the strip the turned text covers: its height to the left of x, its width down from y */
+			int inside = lx >= 150 - text_height - 1 && lx < 151 && ly >= 19 && ly < 21 + text_width;
+			if (p[0] > 128) {
+				if (inside) lit_inside++;
+				else lit_outside++;
+			}
+		}
+	}
+	/* four capital letters of 40 units cover several hundred pixels, all in the turned strip, none
+	 * where the text would be unturned (to the right of x = 150) */
+	CHECK(text_width > 100);
+	CHECK(lit_inside > 400);
+	CHECK(lit_outside == 0);
+	Rwindow_destroy(window);
+}
+
 static void paint_meshes(Rid widget, RPainter* painter, float width, float height, void* user_data) {
 	/* a square of two triangles, their shared edge on the diagonal through pixel centres */
 	static const float square[] = { 20, 20, 80, 20, 80, 80, 20, 20, 80, 80, 20, 80 };
@@ -1072,6 +1109,7 @@ int main(void) {
 	RUN(test_label_foreground);
 	RUN(test_custom_drawing);
 	RUN(test_meshes);
+	RUN(test_rotated_text);
 	RUN(test_glass);
 	RUN(test_windows_look);
 	RUN(test_glass_theme);

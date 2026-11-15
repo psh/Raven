@@ -109,6 +109,13 @@ extern "C" {
 		const char* text, float r, float g, float b, float a);
 
 	/**
+	 * @brief Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+	 * top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+	 */
+	RAVEN_API void Rdraw_text_rotated(RPainter* painter, Rid font, float size, float x, float y, float angle,
+		const char* text, float r, float g, float b, float a);
+
+	/**
 	 * @brief Rounded rectangle of glass. It shows what was drawn before it,
 	 * frosted and bent along its rim, under a tint: (r, g, b) is the color of
 	 * the tint and `a` its strength (0 = clear glass, 1 = opaque color).

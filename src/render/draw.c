@@ -211,6 +211,19 @@ static rvn_box_t rvn_instance_bounds(const RDrawInstance* instance) {
 				rvn_maxf(instance->rect[0], instance->rect[2]), rvn_maxf(instance->rect[1], instance->rect[3]));
 			grow = instance->radii[0] * 0.5f + 1.0f;
 			break;
+		case R_PRIM_GLYPH:
+			if (instance->flags & R_INSTANCE_ROTATED) {
+				/* the four corners turned about the point */
+				float c = instance->radii[0], sn = instance->radii[1], px = instance->radii[2], py = instance->radii[3];
+				int k;
+				box = rvn_box(1e30f, 1e30f, -1e30f, -1e30f);
+				for (k = 0; k < 4; k++) {
+					float dx = instance->rect[(k & 1) ? 2 : 0] - px, dy = instance->rect[(k & 2) ? 3 : 1] - py;
+					float x = px + dx * c - dy * sn, y = py + dx * sn + dy * c;
+					box = rvn_box(rvn_minf(box.x0, x), rvn_minf(box.y0, y), rvn_maxf(box.x1, x), rvn_maxf(box.y1, y));
+				}
+			}
+			break;
 		case R_PRIM_TRIANGLE:
 			box = rvn_box(rvn_minf(rvn_minf(instance->rect[0], instance->rect[2]), instance->radii[0]),
 				rvn_minf(rvn_minf(instance->rect[1], instance->rect[3]), instance->radii[1]),
@@ -328,6 +341,13 @@ void rvn_drawlist_transform(rvn_drawlist_t* list, uint32_t first_instance, uint3
 			case R_PRIM_LINE:
 				/* two points and a width */
 				instance->radii[0] *= s;
+				break;
+			case R_PRIM_GLYPH:
+				/* a turned glyph turns about a point that moves with it */
+				if (instance->flags & R_INSTANCE_ROTATED) {
+					instance->radii[2] = instance->radii[2] * sx + tx;
+					instance->radii[3] = instance->radii[3] * sy + ty;
+				}
 				break;
 			case R_PRIM_TRIANGLE:
 				/* the third point is in the radii */
@@ -956,6 +976,50 @@ void Rdraw_text(RPainter* painter, Rid font, float size, float x, float y,
 		if (!newline) break;
 		line = newline + 1;
 		y += metrics.line_height;
+	}
+}
+
+void Rdraw_text_rotated(RPainter* painter, Rid font, float size, float x, float y, float angle,
+	const char* text, float r, float g, float b, float a) {
+	rvn_font_t* resolved;
+	rvn_font_metrics_t metrics;
+	const char* line = text;
+	float c = cosf(angle), sn = sinf(angle);
+	/* the glyphs are laid out unturned, then turn: none is left out for being outside the clip unturned */
+	rvn_box_t everywhere = rvn_box(-1e30f, -1e30f, 1e30f, 1e30f);
+	rvn_color_t color;
+	float px, py, line_height;
+	int i;
+	if (!painter || !text) return;
+	resolved = rvn_font_resolve(font);
+	if (!resolved) return;
+	size = rvn_font_size_resolve(size);
+	rvn_font_metrics(resolved, size, &metrics);
+	color = rvn_paint_color(painter, rvn_rgba(r, g, b, a));
+	px = (painter->ox + x) * painter->scale;
+	py = (painter->oy + y) * painter->scale;
+	line_height = metrics.line_height * painter->scale;
+	for (i = 0;; i++) {
+		const char* newline = strchr(line, '\n');
+		int length = newline ? (int)(newline - line) : (int)strlen(line);
+		uint32_t first = painter->list->instance_count, k;
+		rvn_text_draw(painter->list, resolved, size * painter->scale, px, py + (float)i * line_height,
+			line, length, color, everywhere);
+		for (k = first; k < painter->list->instance_count; k++) {
+			RDrawInstance* instance = &painter->list->instances[k];
+			if ((instance->flags & R_PRIM_MASK) != R_PRIM_GLYPH) continue;
+			instance->radii[0] = c;
+			instance->radii[1] = sn;
+			instance->radii[2] = px;
+			instance->radii[3] = py;
+			instance->clip[0] = painter->clip.x0;
+			instance->clip[1] = painter->clip.y0;
+			instance->clip[2] = painter->clip.x1;
+			instance->clip[3] = painter->clip.y1;
+			instance->flags |= R_INSTANCE_ROTATED;
+		}
+		if (!newline) break;
+		line = newline + 1;
 	}
 }
 

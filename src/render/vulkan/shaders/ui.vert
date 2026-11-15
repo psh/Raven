@@ -19,6 +19,7 @@ const uint PRIM_BLUR     = 6u;
 const uint PRIM_CURVE    = 7u;
 const uint PRIM_SHADER   = 8u;
 const uint PRIM_MASK     = 15u;
+const uint FLAG_ROTATED  = 128u;
 
 layout(push_constant) uniform PushConstants {
 	/* pixels -> clip space */
@@ -87,6 +88,12 @@ void main() {
 	/* texture coordinates follow the rectangle, also outside of it */
 	vec2 size = max(in_rect.zw - in_rect.xy, vec2(1e-6));
 	v_uv = mix(in_uv.xy, in_uv.zw, (position - in_rect.xy) / size);
+
+	/* a turned glyph: its quad turns about the point in radii.zw, its texture with it */
+	if (kind == PRIM_GLYPH && (in_flags & FLAG_ROTATED) != 0u) {
+		vec2 d = position - in_radii.zw;
+		position = in_radii.zw + vec2(d.x * in_radii.x - d.y * in_radii.y, d.x * in_radii.y + d.y * in_radii.x);
+	}
 
 	v_rect = in_rect;
 	v_clip = in_clip;
