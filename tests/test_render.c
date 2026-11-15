@@ -356,6 +356,36 @@ static void test_image_region(void) {
 	Rtexture_destroy(g_region_texture);
 }
 
+static Rid g_rotated_texture;
+
+static void paint_rotated_image(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	/* 40 x 20 about its centre (100, 50), a quarter turn clockwise: its left half goes up */
+	Rdraw_image_rotated(painter, g_rotated_texture, 80, 40, 40, 20, 0, 0, 1, 1, 1.5707963f, 1, 1, 1, 1);
+}
+
+static void test_image_rotated(void) {
+	/* red on the left, green on the right */
+	static const unsigned char pixels[] = { 255, 0, 0, 255, 0, 255, 0, 255 };
+	Rid window = window_from(
+		"<Window Width=\"200\" Height=\"100\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	g_rotated_texture = Rtexture_create_from_pixels(pixels, 2, 1);
+	Rtexture_set_filter(g_rotated_texture, R_FILTER_NEAREST);
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_rotated_image, NULL);
+	capture(window);
+	/* turned, it is 20 wide and 40 high: red above the centre, green below */
+	CHECK_PIXEL(100, 38, 255, 0, 0);
+	CHECK_PIXEL(100, 62, 0, 255, 0);
+	/* nothing where it was unturned, left and right of the turned strip */
+	CHECK_PIXEL(84, 50, 0, 0, 0);
+	CHECK_PIXEL(116, 50, 0, 0, 0);
+	Rwindow_destroy(window);
+	Rtexture_destroy(g_rotated_texture);
+}
+
 static void paint_rotated_text(Rid widget, RPainter* painter, float width, float height, void* user_data) {
 	(void)widget;
 	(void)width;
@@ -1145,6 +1175,7 @@ int main(void) {
 	RUN(test_meshes);
 	RUN(test_rotated_text);
 	RUN(test_image_region);
+	RUN(test_image_rotated);
 	RUN(test_glass);
 	RUN(test_windows_look);
 	RUN(test_glass_theme);

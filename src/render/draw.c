@@ -970,6 +970,44 @@ void Rdraw_image_region(RPainter* painter, Rid texture, float x, float y, float 
 	rvn_paint_image(painter, rvn_rect(x, y, width, height), texture, uv, rvn_rgba(r, g, b, a), 0.0f);
 }
 
+void Rdraw_image_rotated(RPainter* painter, Rid texture, float x, float y, float width, float height,
+	float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a) {
+	rvn_texture_t* object = rvn_texture_get(texture);
+	RDrawInstance* instance;
+	rvn_color_t tint;
+	float x0, y0, x1, y1, cx, cy, c = cosf(angle), sn = sinf(angle), reach;
+	if (!painter) return;
+	/* a texture still being decoded draws nothing */
+	if (!object || !object->created) return;
+	tint = rvn_paint_color(painter, rvn_rgba(r, g, b, a));
+	if (rvn_color_a(tint) == 0) return;
+	x0 = (painter->ox + x) * painter->scale;
+	y0 = (painter->oy + y) * painter->scale;
+	x1 = (painter->ox + x + width) * painter->scale;
+	y1 = (painter->oy + y + height) * painter->scale;
+	cx = (x0 + x1) * 0.5f;
+	cy = (y0 + y1) * 0.5f;
+	/* turned, it stays within its half diagonal of the centre */
+	reach = 0.5f * sqrtf((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)) + 1.0f;
+	instance = rvn_paint_emit(painter, rvn_box(cx - reach, cy - reach, cx + reach, cy + reach), texture);
+	if (!instance) return;
+	/* a glyph's quad: a texture times the tint, which the vertex shader turns (R_INSTANCE_ROTATED) */
+	instance->rect[0] = x0;
+	instance->rect[1] = y0;
+	instance->rect[2] = x1;
+	instance->rect[3] = y1;
+	instance->uv[0] = u0;
+	instance->uv[1] = v0;
+	instance->uv[2] = u1;
+	instance->uv[3] = v1;
+	instance->radii[0] = c;
+	instance->radii[1] = sn;
+	instance->radii[2] = cx;
+	instance->radii[3] = cy;
+	instance->color = tint;
+	instance->flags = R_PRIM_GLYPH | R_INSTANCE_TEXTURED | R_INSTANCE_ROTATED;
+}
+
 void Rdraw_text(RPainter* painter, Rid font, float size, float x, float y,
 	const char* text, float r, float g, float b, float a) {
 	rvn_font_t* resolved;

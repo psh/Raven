@@ -50,7 +50,7 @@
  * the edges they share exactly once (Rdraw_triangles). */
 #define R_INSTANCE_ALIASED (1u << 6)
 /** GLYPH: turned about a point: radii[0], [1] = cos, sin of the angle, radii[2], [3] = the point,
- * in pixels; rect and uv are the glyph unturned (Rdraw_text_rotated). */
+ * in pixels; rect and uv are the glyph unturned (Rdraw_text_rotated, Rdraw_image_rotated). */
 #define R_INSTANCE_ROTATED (1u << 7)
 
 /**

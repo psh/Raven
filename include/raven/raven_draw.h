@@ -109,6 +109,15 @@ extern "C" {
 		float u0, float v0, float u1, float v1, float r, float g, float b, float a);
 
 	/**
+	 * @brief Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+	 * clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+	 * the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+	 * them smooth.
+	 */
+	RAVEN_API void Rdraw_image_rotated(RPainter* painter, Rid texture, float x, float y, float width, float height,
+		float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a);
+
+	/**
 	 * @brief Draws UTF-8 text; (x, y) is the top-left corner of the first line.
 	 * @param font R_INVALID_ID uses the theme font.
 	 * @param size 0 uses R_METRIC_FONT_SIZE.
