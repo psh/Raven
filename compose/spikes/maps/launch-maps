@@ -1,0 +1,7 @@
+#!/bin/sh
+# Builds the maps spike for this machine and runs it on the data fetch-data downloaded.
+set -e
+here=$(cd "$(dirname "$0")" && pwd)
+[ -d "$here/data/tiles" ] || "$here/fetch-data"
+"$here/../../gradlew" -p "$here/../.." --quiet :spikes:maps:linkReleaseExecutableMacosArm64
+MAPS_DATA="$here/data" exec "$here/build/bin/macosArm64/releaseExecutable/maps.kexe" "$@"

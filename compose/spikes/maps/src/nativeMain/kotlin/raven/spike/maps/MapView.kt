@@ -1,0 +1,240 @@
+package raven.spike.maps
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import raven.compose.foundation.Canvas
+import raven.compose.foundation.Surface
+import raven.compose.foundation.Text
+import raven.compose.foundation.layout.Box
+import raven.compose.foundation.layout.Column
+import raven.compose.foundation.layout.fillMaxSize
+import raven.compose.foundation.layout.padding
+import raven.compose.ui.Alignment
+import raven.compose.ui.Modifier
+import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.RoundedCornerShape
+import raven.compose.ui.geometry.Offset
+import raven.compose.ui.graphics.drawscope.DrawScope
+import raven.compose.ui.input.pointer.PointerEventType
+import raven.compose.ui.input.pointer.onPointerEvent
+import raven.compose.ui.platform.LocalWindowInfo
+import raven.compose.ui.testTag
+import raven.compose.ui.unit.dp
+import raven.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.asinh
+import kotlin.math.floor
+import kotlin.math.pow
+import kotlin.math.sqrt
+import kotlin.math.tan
+import kotlin.time.TimeSource
+
+/** The tile size MapLibre's styles are written for: line widths are pixels on a 512-pixel tile. */
+private const val TILE_SIZE = 512.0
+
+/**
+ * Where the map looks: its centre in Web Mercator's unit square (0 to 1 across, from the
+ * antimeridian and the north edge), and the zoom, fractional.
+ */
+class Camera(centerX: Double, centerY: Double, zoom: Double) {
+    var centerX by mutableDoubleStateOf(centerX)
+    var centerY by mutableDoubleStateOf(centerY)
+    var zoom by mutableDoubleStateOf(zoom)
+
+    val worldSize: Double get() = TILE_SIZE * 2.0.pow(zoom)
+
+    /** Zooms by [delta] keeping the point under ([x], [y]) of a [width] by [height] view where it is. */
+    fun zoomAt(delta: Double, x: Float, y: Float, width: Float, height: Float, minZoom: Double, maxZoom: Double) {
+        val before = worldSize
+        val wx = centerX + (x - width / 2) / before
+        val wy = centerY + (y - height / 2) / before
+        zoom = (zoom + delta).coerceIn(minZoom, maxZoom)
+        centerX = wx - (x - width / 2) / worldSize
+        centerY = wy - (y - height / 2) / worldSize
+    }
+
+    companion object {
+        fun at(latitude: Double, longitude: Double, zoom: Double): Camera = Camera(
+            (longitude + 180) / 360,
+            (1 - asinh(tan(latitude * PI / 180)) / PI) / 2,
+            zoom,
+        )
+    }
+}
+
+/** What the last frame drew, and how long the drawing calls took. */
+class DrawStats {
+    var drawMs = 0.0
+    var triangles = 0
+    var segments = 0
+    var tiles = 0
+}
+
+/** The tiles at the zoom the map draws from that cover a [width] by [height] view of [camera]. */
+fun visibleTiles(camera: Camera, width: Float, height: Float, tileZoom: Int): List<TileId> {
+    val n = 1 shl tileZoom
+    val half = camera.worldSize
+    val left = camera.centerX - width / 2 / half
+    val right = camera.centerX + width / 2 / half
+    val top = camera.centerY - height / 2 / half
+    val bottom = camera.centerY + height / 2 / half
+    val tiles = ArrayList<TileId>()
+    for (x in floor(left * n).toInt()..floor(right * n).toInt()) {
+        for (y in floor(top * n).toInt()..floor(bottom * n).toInt()) {
+            if (x in 0 until n && y in 0 until n) tiles += TileId(tileZoom, x, y)
+        }
+    }
+    return tiles
+}
+
+/** The corner ([x], [y]) moved [SEAM] pixels away from the triangle's centre ([mx], [my]). */
+private fun grow(x: Float, y: Float, mx: Float, my: Float): Offset {
+    val dx = x - mx
+    val dy = y - my
+    val length = sqrt(dx * dx + dy * dy)
+    if (length < 1e-3f) return Offset(x, y)
+    return Offset(x + dx / length * SEAM, y + dy / length * SEAM)
+}
+
+private const val SEAM = 0.5f
+
+/** Draws [store]'s tiles under [camera], layer by layer of [style], and records what it drew in [stats]. */
+fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: DrawStats, minTileZoom: Int, maxTileZoom: Int) {
+    val start = TimeSource.Monotonic.markNow()
+    store.version // a tile prepared draws the map again
+    drawRect(style.background)
+    val zoom = camera.zoom
+    val tileZoom = floor(zoom).toInt().coerceIn(minTileZoom, maxTileZoom)
+    val tiles = visibleTiles(camera, size.width, size.height, tileZoom)
+        .mapNotNull { store.bestReady(it, minTileZoom) }
+        .distinctBy { it.id }
+    var triangles = 0
+    var segments = 0
+    val world = camera.worldSize
+    for (layer in style.layers) {
+        if (zoom < layer.minZoom || zoom >= layer.maxZoom) continue
+        val fill = layer.isFill
+        val color = layer.drawColor(zoom) ?: continue
+        if (color.alpha <= 0f) continue
+        val width = if (fill) 0f else layer.number("line-width", zoom, 1.0).toFloat()
+        for (tile in tiles) {
+            val bucket = tile.buckets[layer.id] ?: continue
+            val n = (1 shl tile.id.z).toDouble()
+            val scale = (world / n).toFloat()
+            val ox = ((tile.id.x / n - camera.centerX) * world + size.width / 2).toFloat()
+            val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
+            // Tiles carry a buffer past their edges: clipped to the tile, a translucent fill isn't drawn twice there.
+            clipRect(ox, oy, ox + scale, oy + scale) {
+                if (fill) {
+                    val f = bucket.fills
+                    var i = 0
+                    while (i < f.size) {
+                        val ax = ox + f[i] * scale
+                        val ay = oy + f[i + 1] * scale
+                        val bx = ox + f[i + 2] * scale
+                        val by = oy + f[i + 3] * scale
+                        val cx = ox + f[i + 4] * scale
+                        val cy = oy + f[i + 5] * scale
+                        // Raven anti-aliases each triangle's edges, so the background would show
+                        // along the edges neighbours share: each grows half a pixel to cover them.
+                        val mx = (ax + bx + cx) / 3
+                        val my = (ay + by + cy) / 3
+                        drawTriangle(color, grow(ax, ay, mx, my), grow(bx, by, mx, my), grow(cx, cy, mx, my))
+                        i += 6
+                    }
+                    triangles += bucket.triangleCount
+                } else {
+                    for (line in bucket.lines) {
+                        var px = ox + line[0] * scale
+                        var py = oy + line[1] * scale
+                        var i = 2
+                        while (i < line.size) {
+                            val x = ox + line[i] * scale
+                            val y = oy + line[i + 1] * scale
+                            drawLine(color, Offset(px, py), Offset(x, y), width)
+                            px = x
+                            py = y
+                            i += 2
+                        }
+                    }
+                    segments += bucket.segmentCount
+                }
+            }
+        }
+    }
+    stats.drawMs = start.elapsedNow().inWholeMicroseconds / 1000.0
+    stats.triangles = triangles
+    stats.segments = segments
+    stats.tiles = tiles.size
+}
+
+/** The map, dragged to pan and scrolled to zoom, with what each frame costs over it. */
+@Composable
+fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 11.0, maxZoom: Double = 17.0) {
+    val stats = remember { DrawStats() }
+    var dragging by remember { mutableStateOf<Offset?>(null) }
+    var size by remember { mutableStateOf(Offset(0f, 0f)) }
+    val scope = rememberCoroutineScope()
+    remember(store) { store.scope = scope }
+    val minTileZoom = store.available.minOf { it.z }
+    val maxTileZoom = store.available.maxOf { it.z }
+    Box(Modifier.fillMaxSize()) {
+        Canvas(
+            Modifier.fillMaxSize().testTag("map")
+                .onPointerEvent(PointerEventType.Press) { dragging = it.position }
+                .onPointerEvent(PointerEventType.Release) { dragging = null }
+                .onPointerEvent(PointerEventType.Move) { event ->
+                    val from = dragging ?: return@onPointerEvent
+                    camera.centerX -= (event.position.x - from.x) / camera.worldSize
+                    camera.centerY -= (event.position.y - from.y) / camera.worldSize
+                    dragging = event.position
+                }
+                .onPointerEvent(PointerEventType.Scroll) { event ->
+                    camera.zoomAt(-event.scrollDelta.y * 0.25, event.position.x, event.position.y, size.x, size.y, minZoom, maxZoom)
+                },
+        ) {
+            size = Offset(this.size.width, this.size.height)
+            drawMap(style, store, camera, stats, minTileZoom, maxTileZoom)
+        }
+        Stats(stats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
+        Surface(Modifier.align(Alignment.BottomEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCCFFFFFF)) {
+            Text("© OpenFreeMap © OpenMapTiles Data from OpenStreetMap", Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = Color(0xFF333333), fontSize = 11.sp)
+        }
+    }
+}
+
+/** What the last frame drew and cost, read twice a second. */
+@Composable
+private fun Stats(stats: DrawStats, camera: Camera, store: TileStore, modifier: Modifier) {
+    val info = LocalWindowInfo.current
+    var lines by remember { mutableStateOf(listOf<String>()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val frame = info.frameStats()
+            val prepared = store.preparedTiles
+            lines = listOf(
+                "zoom ${(camera.zoom * 100).toInt() / 100.0}, ${stats.tiles} tiles",
+                "${stats.triangles} triangles, ${stats.segments} line segments",
+                "Kotlin draw calls: ${fmt(stats.drawMs)} ms",
+                "Raven: paint ${fmt(frame.paintMs)} ms, render ${fmt(frame.renderMs)} ms, ${frame.primitiveCount} primitives, ${frame.drawCallCount} GPU draws",
+                "${prepared.size} tiles prepared: decode ${fmt(prepared.sumOf { it.decodeMs })} ms, style + triangulate ${fmt(prepared.sumOf { it.prepareMs })} ms",
+            )
+            delay(500)
+        }
+    }
+    Surface(modifier, shape = RoundedCornerShape(6.dp), color = Color(0xDD222222)) {
+        Column(Modifier.padding(8.dp)) {
+            for (line in lines) Text(line, color = Color.White, fontSize = 12.sp)
+        }
+    }
+}
+
+private fun fmt(ms: Double): String = ((ms * 10).toInt() / 10.0).toString()
+

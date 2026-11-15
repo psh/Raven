@@ -36,6 +36,7 @@ include(
     ":samples:workspace",
     ":samples:xml-translator",
     ":spikes:nested-frames",
+    ":spikes:maps",
     ":spikes:navigation3",
     ":spikes:thorvg",
 )
