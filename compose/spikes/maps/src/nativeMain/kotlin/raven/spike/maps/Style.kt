@@ -47,6 +47,9 @@ class StyleLayer(
         else -> color("line-color", zoom, "line-opacity")
     }
 
+    /** A layout property at [zoom], for every feature alike. */
+    fun layout(name: String, zoom: Double): Any? = layout[name]?.let { evaluate(it, EvaluationContext(zoom)) }
+
     /** A paint property at [zoom], for every feature alike. */
     fun paint(name: String, zoom: Double): Any? = paint[name]?.let { evaluate(it, EvaluationContext(zoom)) }
 
@@ -59,7 +62,7 @@ class StyleLayer(
     fun number(name: String, zoom: Double, default: Double): Double = paint(name, zoom) as? Double ?: default
 }
 
-class Style(val background: Color, val layers: List<StyleLayer>) {
+class Style(val background: Color, val layers: List<StyleLayer>, val symbols: List<StyleLayer> = emptyList()) {
     companion object {
         /** The background, and the fill and line layers of [json] that draw from [source]; the others are left out. */
         fun parse(json: String, source: String = "openmaptiles"): Style {
@@ -84,7 +87,12 @@ class Style(val background: Color, val layers: List<StyleLayer>) {
                 it.visible && layerSource(root, it, source) &&
                     ((it.type == "fill" && "fill-pattern" !in it.paint) || it.type == "fill-extrusion" || it.type == "line")
             }
-            return Style(background, drawn)
+            // Labels at points; those along lines (street and river names) need rotated text.
+            val symbols = all.filter {
+                it.visible && layerSource(root, it, source) && it.type == "symbol" &&
+                    "text-field" in it.layout && (it.layout["symbol-placement"] ?: "point") == "point"
+            }
+            return Style(background, drawn, symbols)
         }
 
         private fun layerSource(root: Map<String, Any?>, layer: StyleLayer, source: String): Boolean {
@@ -175,6 +183,9 @@ fun evaluate(expression: Any?, context: EvaluationContext): Any? {
             arg(expression.size - 1)
         }
         "coalesce" -> (1 until expression.size).firstNotNullOfOrNull { arg(it) }
+        "concat" -> (1 until expression.size).joinToString("") { arg(it)?.let(::text).orEmpty() }
+        "upcase" -> (arg(1) as? String)?.uppercase()
+        "downcase" -> (arg(1) as? String)?.lowercase()
         "interpolate" -> interpolate(expression, context)
         "step" -> {
             val input = arg(1) as Double
@@ -192,10 +203,13 @@ fun evaluate(expression: Any?, context: EvaluationContext): Any? {
             is Boolean -> if (v) 1.0 else 0.0
             else -> 0.0
         }
-        "to-string" -> arg(1)?.toString() ?: ""
+        "to-string" -> arg(1)?.let(::text) ?: ""
         else -> null
     }
 }
+
+/** A value as text: a whole number without its ".0". */
+fun text(value: Any): String = if (value is Double && value % 1.0 == 0.0 && kotlin.math.abs(value) < 1e15) value.toLong().toString() else value.toString()
 
 /** Equality as the style spec has it: numbers compare as numbers, whether a tile stored 1 or 1.0. */
 private fun same(a: Any?, b: Any?): Boolean = a == b || (a is Number && b is Number && a.toDouble() == b.toDouble())

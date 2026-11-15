@@ -68,6 +68,20 @@ class MapsTest {
     }
 
     @Test
+    fun aLabelsTextFollowsTheStylesExpressionAndTransform() {
+        val field = listOf("case", listOf("has", "name:nonlatin"), listOf("concat", listOf("get", "name:latin"), "\n", listOf("get", "name:nonlatin")),
+            listOf("coalesce", listOf("get", "name_en"), listOf("get", "name")))
+        fun layer(layout: Map<String, Any?>) = StyleLayer("l", "symbol", "place", 0.0, 24.0, null, emptyMap(), layout)
+        val plain = layer(mapOf("text-field" to field))
+        assertEquals("Chicago", labelText(plain, EvaluationContext(14.0, mapOf("name" to "Chicago"))))
+        assertEquals("Chicago", labelText(plain, EvaluationContext(14.0, mapOf("name" to "Chicago (city)", "name_en" to "Chicago"))))
+        assertEquals("Tokyo\n東京", labelText(plain, EvaluationContext(14.0, mapOf("name:latin" to "Tokyo", "name:nonlatin" to "東京"))))
+        assertEquals("THE LOOP", labelText(layer(mapOf("text-field" to field, "text-transform" to "uppercase")), EvaluationContext(14.0, mapOf("name" to "The Loop"))))
+        assertEquals("Route 66", labelText(layer(mapOf("text-field" to "Route {ref}")), EvaluationContext(14.0, mapOf("ref" to 66.0))))
+        assertEquals(null, labelText(plain, EvaluationContext(14.0)), "no name, no label")
+    }
+
+    @Test
     fun coloursParseInTheStylesForms() {
         assertEquals("#f8f4f0ff", parseColor("#f8f4f0")!!.hex())
         assertEquals("#ffddeeff", parseColor("#fde")!!.hex())

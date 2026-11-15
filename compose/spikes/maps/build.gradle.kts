@@ -19,6 +19,8 @@ kotlin {
     }
     sourceSets.nativeMain.dependencies {
         implementation(project(":compose-raven-foundation"))
+        // Labels measure their text with Raven's fonts (Rfont_measure_text).
+        implementation(project(":compose-raven-native"))
     }
     sourceSets.nativeTest.dependencies {
         implementation(project(":compose-raven-test"))

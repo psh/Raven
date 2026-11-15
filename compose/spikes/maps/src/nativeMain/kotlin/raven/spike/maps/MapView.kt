@@ -99,9 +99,19 @@ fun visibleTiles(camera: Camera, width: Float, height: Float, tileZoom: Int): Li
  * Draws [store]'s tiles under [camera], layer by layer of [style], and records what it drew in
  * [stats]: each tile's fills in one `drawTriangles` call and its lines in one `drawPolyline` call,
  * or, without [batched], one `drawTriangle` call a triangle and one `drawLine` call a segment, to
- * compare.
+ * compare. With [labels], the point labels go over them, measured by it.
  */
-fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: DrawStats, minTileZoom: Int, maxTileZoom: Int, batched: Boolean = true) {
+fun DrawScope.drawMap(
+    style: Style,
+    store: TileStore,
+    camera: Camera,
+    stats: DrawStats,
+    minTileZoom: Int,
+    maxTileZoom: Int,
+    batched: Boolean = true,
+    labels: TextMeasure? = null,
+    labelStats: LabelStats = LabelStats(),
+) {
     val start = TimeSource.Monotonic.markNow()
     store.version // a tile prepared draws the map again
     drawRect(style.background)
@@ -172,6 +182,7 @@ fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: Dra
             }
         }
     }
+    if (labels != null) drawLabels(style, tiles, camera, labels, labelStats)
     stats.drawMs = start.elapsedNow().inWholeMicroseconds / 1000.0
     stats.fillMs = fillTime.inWholeMicroseconds / 1000.0
     stats.lineMs = lineTime.inWholeMicroseconds / 1000.0
@@ -184,6 +195,8 @@ fun DrawScope.drawMap(style: Style, store: TileStore, camera: Camera, stats: Dra
 @Composable
 fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 11.0, maxZoom: Double = 17.0) {
     val stats = remember { DrawStats() }
+    val labelStats = remember { LabelStats() }
+    val measure = remember { TextMeasure() }
     var dragging by remember { mutableStateOf<Offset?>(null) }
     var size by remember { mutableStateOf(Offset(0f, 0f)) }
     val scope = rememberCoroutineScope()
@@ -206,9 +219,9 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
                 },
         ) {
             size = Offset(this.size.width, this.size.height)
-            drawMap(style, store, camera, stats, minTileZoom, maxTileZoom)
+            drawMap(style, store, camera, stats, minTileZoom, maxTileZoom, labels = measure, labelStats = labelStats)
         }
-        Stats(stats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
+        Stats(stats, labelStats, camera, store, Modifier.align(Alignment.TopStart).padding(12.dp))
         Surface(Modifier.align(Alignment.BottomEnd).padding(6.dp), shape = RoundedCornerShape(4.dp), color = Color(0xCCFFFFFF)) {
             Text("© OpenFreeMap © OpenMapTiles Data from OpenStreetMap", Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = Color(0xFF333333), fontSize = 11.sp)
         }
@@ -217,7 +230,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, minZoom: Double = 
 
 /** What the last frame drew and cost, read twice a second. */
 @Composable
-private fun Stats(stats: DrawStats, camera: Camera, store: TileStore, modifier: Modifier) {
+private fun Stats(stats: DrawStats, labelStats: LabelStats, camera: Camera, store: TileStore, modifier: Modifier) {
     val info = LocalWindowInfo.current
     var lines by remember { mutableStateOf(listOf<String>()) }
     LaunchedEffect(Unit) {
@@ -227,7 +240,8 @@ private fun Stats(stats: DrawStats, camera: Camera, store: TileStore, modifier: 
             lines = listOf(
                 "zoom ${(camera.zoom * 100).toInt() / 100.0}, ${stats.tiles} tiles",
                 "${stats.triangles} triangles, ${stats.segments} line segments",
-                "Kotlin draw calls: ${fmt(stats.drawMs)} ms (fills ${fmt(stats.fillMs)}, lines ${fmt(stats.lineMs)})",
+                "Kotlin draw calls: ${fmt(stats.drawMs)} ms (fills ${fmt(stats.fillMs)}, lines ${fmt(stats.lineMs)}, labels ${fmt(labelStats.ms)})",
+                "${labelStats.placed} labels placed of ${labelStats.candidates}",
                 "Raven: paint ${fmt(frame.paintMs)} ms, render ${fmt(frame.renderMs)} ms, ${frame.primitiveCount} primitives, ${frame.drawCallCount} GPU draws",
                 "${prepared.size} tiles prepared: decode ${fmt(prepared.sumOf { it.decodeMs })} ms, style + triangulate ${fmt(prepared.sumOf { it.prepareMs })} ms",
             )
