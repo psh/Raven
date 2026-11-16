@@ -193,6 +193,60 @@ class MapsBenchmark {
 }
 
 /**
+ * What the native Map widget's benchmark (tests/map_benchmark.c, 0140) measures, measured the same
+ * way here: the densest tile prepared ten times, every tile once, then the Loop at zoom 14 drawn 30
+ * times. Tiles are prepared with the style's labels and without them: the native widget has none yet.
+ * Run optimised, from build/bin/macosArm64/releaseTest/test.kexe.
+ */
+class NativeComparisonBenchmark {
+    @OptIn(ExperimentalForeignApi::class)
+    @Test
+    fun asTheNativeBenchmarkMeasures() = runRavenTest {
+        val directory = getenv("MAPS_DATA")?.toKString() ?: return@runRavenTest
+        val full = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
+        val noLabels = Style(full.background, full.layers)
+        val source = FileTileSource(directory)
+        val dense = TileId(14, 4203, 6089)
+        val bytes = readFile("$directory/tiles/${dense.z}-${dense.x}-${dense.y}.pbf")!!
+        for ((name, style) in listOf("with labels" to full, "without labels" to noLabels)) {
+            val decode = ArrayList<Double>()
+            val prepare = ArrayList<Double>()
+            repeat(10) {
+                val tile = prepareTile(dense, bytes, style, deepest = true)
+                decode += tile.decodeMs
+                prepare += tile.prepareMs
+            }
+            println("dense tile ${dense.z}/${dense.x}/${dense.y} $name: decode ${median(decode)} ms, style + triangulate ${median(prepare)} ms (medians of 10)")
+        }
+        val store = TileStore(source, noLabels)
+        val tiles = source.tiles.mapNotNull { store.prepareNow(it) }
+        println("${tiles.size} tiles without labels: decode ${tiles.sumOf { it.decodeMs }} ms, style + triangulate ${tiles.sumOf { it.prepareMs }} ms in all")
+        val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
+        val stats = DrawStats()
+        var drawn = ""
+        setContent {
+            Canvas(Modifier.size(1200.dp, 800.dp)) {
+                drawn = "${size.width} x ${size.height}"
+                drawMap(noLabels, store, camera, stats)
+            }
+        }
+        waitForIdle()
+        println("canvas $drawn")
+        val fills = ArrayList<Double>()
+        val lines = ArrayList<Double>()
+        val draws = ArrayList<Double>()
+        repeat(30) {
+            camera.centerX += 1e-2 / camera.worldSize
+            waitForIdle()
+            fills += stats.fillMs
+            lines += stats.lineMs
+            draws += stats.drawMs
+        }
+        println("zoom 14, 1200 x 800: ${stats.tiles} tiles, ${stats.triangles} triangles, fills ${median(fills)} ms, ${stats.segments} segments, lines ${median(lines)} ms, map ${median(draws)} ms (medians of 30 frames)")
+    }
+}
+
+/**
  * The labels of the Loop at zoom 14, headless, 30 frames panned a little and 30 zoomed in a
  * hundredth of a level at a time (the placement moved), and 30 at rest each frame somewhere new
  * (placed again each frame): what labels cost a frame each way.

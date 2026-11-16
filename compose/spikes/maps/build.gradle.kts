@@ -17,6 +17,9 @@ kotlin {
             entryPoint = "raven.spike.maps.main"
             baseName = "maps"
         }
+        // An optimised test binary too, to measure against the native Map widget (0140):
+        // linkReleaseTestMacosArm64, then build/bin/macosArm64/releaseTest/test.kexe.
+        binaries.test(listOf(org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.RELEASE))
     }
     sourceSets.nativeMain.dependencies {
         implementation(project(":compose-raven-foundation"))
