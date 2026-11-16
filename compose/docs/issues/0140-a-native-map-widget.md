@@ -226,7 +226,10 @@ for again. Chicago's 61 tiles compressed draw the same triangles, segments and l
 | Chicago tiles | Dense tile decoded | All 61 ready |
 |---|---|---|
 | Uncompressed (8.1 MB) | 0.9 ms | 30 ms |
-| gzip (4.9 MB), CRC-32 verified | 4.7 ms (3.3 unverified) | 39 ms |
-| zlib, Adler-32 verified | 3.6 ms | 37 ms |
+| gzip (4.9 MB), CRC-32 verified | 3.4 ms (3.3 unverified) | 35 ms |
+| zlib, Adler-32 verified | 3.6 ms | 36 ms |
+
+CRC-32 runs on ARMv8's CRC32 instructions where the compiler targets them (`3e2b7ce`), and on a byte
+table elsewhere (4.7 ms on the dense tile; x86's `crc32` is another polynomial).
 
 `test_map` 181 checks, clean under ThreadSanitizer.
