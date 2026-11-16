@@ -50,7 +50,8 @@ void   Rmap_get_center(Rid map, double* latitude, double* longitude);
 void   Rmap_set_zoom(Rid map, double zoom);
 double Rmap_get_zoom(Rid map);
 
-/* Tiles come from the app: the map asks, the app answers whenever it can, from any thread. */
+/* Tiles come from the app: the map asks, the app answers whenever it can, from any thread.
+   (Built as sketched in step 2, with Rmap_set_tile_capacity beside it.) */
 typedef void (*RMapTileRequestCallback)(Rid map, int z, int x, int y, void* user_data);
 typedef void (*RMapTileCancelCallback)(Rid map, int z, int x, int y, void* user_data);
 void Rmap_set_tile_source(Rid map, int min_zoom, int max_zoom,
@@ -95,11 +96,12 @@ panned a hundredth of a unit.
 | Dense tile: style and triangulate, without labels | 37.0 ms | 5.7 ms |
 | Dense tile: style and triangulate, with labels | 57.0 ms | (step 3) |
 | All 61 tiles, without labels: decode, then style and triangulate | 155 + 916 ms | 14 + 138 ms |
+| All 61 tiles prepared together, on worker threads: until all are ready | 340 ms (`Dispatchers.Default`) | 25 ms (8 workers) |
 | 800 × 600 at zoom 14 (4 tiles, 43,903 triangles, 36,140 segments): fills | 0.52 ms | 0.49 ms |
 | Same view: lines | 3.40 ms | 0.74 ms |
 | 1200 × 800 at zoom 14 (12 tiles, 110,212 triangles, 75,614 segments): fills, lines | not run | 1.18, 1.46 ms |
 | Labels a frame, placement reused / placed every frame | | (step 3) |
-| Memory for 160 prepared tiles | | (step 2) |
+| Memory held by prepared tiles | not measured (garbage-collected) | 24.1 MB for the 61, about 0.4 MB a tile: about 60 MB at the 160 kept |
 
 Measured 2026-11-15, step 1. Findings:
 
@@ -113,6 +115,8 @@ Measured 2026-11-15, step 1. Findings:
   0.82 ms; batched, its `LineShapes` builds a string key per tile and layer and re-reads the
   style per tile each frame. The C widget keeps a fixed slot per tile and layer.
 - **Preparing tiles is where the languages differ: 6 to 14 times faster in C.**
+- **Prepared together, the gap widens to 13 times** (step 2, 2026-11-15): C's 8 workers finish
+  6.6 times faster than its summed preparation time, Kotlin's `Dispatchers.Default` about 3 times.
 
 ## Progress
 
@@ -123,6 +127,16 @@ Measured 2026-11-15, step 1. Findings:
   spike has); `Rmap_tile_loaded` prepares at once on the UI thread until step 2; gzipped tiles
   are not read yet (the offline set isn't compressed). `test_shell` and `test_themes` fail on this
   machine with or without the map.
+- **Step 2, done (2026-11-15)**: `Rmap_set_tile_source` (request and cancel callbacks, told outside
+  painting), `Rmap_tile_loaded` and `Rmap_tile_failed` thread-safe (bytes posted to the interface,
+  prepared on a worker with a reference to the style, posted back; a map or style gone meanwhile
+  frees what lands), `Rmap_set_tile_capacity` (160), stand-in ancestors, cancellation, retry after
+  10 s, memory in `RMapStats`. `test_map` ports the spike's `TileStoreTest` (139 checks), clean
+  under ThreadSanitizer and over 30 runs; `examples/map` reads tiles as the map asks. One change
+  from the spike: below the source's lowest zoom the map draws and asks for nothing, as MapLibre
+  does; listing tiles there cost millions of lookups a frame far out (the spike has the same flaw).
+  A tile handed in unasked is kept, and never cancelled. The disk cache stays with the
+  application, as the HTTP client does.
 
 ## Deliverables
 
