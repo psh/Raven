@@ -242,6 +242,9 @@ same map. The port draws and labels the same map as the Kotlin spike and is fast
 can differ (see [Performance comparison](#performance-comparison) and [Verdict](#verdict)). Since
 the verdict, tiles may be gzip or zlib compressed, their checksums verified.
 
-The work stays on `spike/maps-native`, unmerged. Not done here, and not yet ticketed: Windows and
-Linux builds of the widget, proposing the drawing additions and then the widget upstream, and
-retiring the spike's Kotlin drawing or keeping it as a test reference.
+The work stays on `spike/maps-native`, unmerged. Not done here, and ticketed as follow-ups:
+
+- [The Map widget on Windows and Linux](../0141-map-widget-on-windows-and-linux.md)
+- [The maps spike's own Kotlin drawing: retire it or keep it as a reference](../0142-the-map-spikes-kotlin-drawing.md)
+- [Propose the maps spike's drawing additions upstream](../0143-propose-the-drawing-additions-upstream.md)
+- [Propose the Map widget upstream](../0144-propose-the-map-widget-upstream.md), after the other three
