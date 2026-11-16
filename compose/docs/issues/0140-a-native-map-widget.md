@@ -163,8 +163,8 @@ Measured 2026-11-15, step 1. Findings:
       `NativeComparisonBenchmark` and `NativeLabelsBenchmark`), with results filled into the table.
 - [x] Step 4: compose-raven's `VectorMap` over the widget (`compose-raven-map`), and Python showing
       a map (`bindings/python/map_example.py`, tested as `binding_python_map`).
-- [ ] A verdict: keep the map in C, keep it in Kotlin, or split it, and which Raven changes to
-      propose upstream.
+- [x] A verdict: keep the map in C, keep it in Kotlin, or split it, and which Raven changes to
+      propose upstream. See [Verdict](#verdict).
 
 ## Step 4 (2026-11-15)
 
@@ -182,6 +182,21 @@ Measured 2026-11-15, step 1. Findings:
 - **Python**: `map_example.py` shows Chicago from the spike's files in about 120 lines with no map
   logic of its own, the same labels and icons; `--test` runs headless on a tile it writes.
 - compose-raven-ui (136), foundation (270), map (5) and the spike (19) tests pass.
+
+## Verdict
+
+**Decided 2026-11-15: the map stays in C, as Raven's Map widget.** compose-raven keeps only what is
+Kotlin's to do (the `VectorMap` composable, its state, and fetching tiles), and every other binding
+gets the same map through `Rmap_*`. The reasons are those of the recommendation below: the same
+map as the spike, in every language, and faster wherever the two can differ.
+
+**The style's JSON is parsed in C too**, by the map's own reader (`src/map/json.c`), not by each
+client and not by a vendored library. The style's expressions are evaluated per feature on Raven's
+workers, so the style has to live in C whoever reads it; reading it in each client would mean a
+value-building API in Raven and a tree walker in every binding, to save about 300 lines. Raven
+already reads XML with its own parser (`src/xml/xml_parser.c`) and keeps text formats out of
+`third_party/`; the JSON reader follows it. If apps need to change a style at run time, targeted
+calls (a layer's visibility, a paint property) are the way, not client-side parsing.
 
 ## Recommendation for the verdict
 
