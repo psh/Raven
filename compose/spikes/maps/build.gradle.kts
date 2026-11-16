@@ -23,6 +23,8 @@ kotlin {
     }
     sourceSets.nativeMain.dependencies {
         implementation(project(":compose-raven-foundation"))
+        // The map drawn by Raven's native Map widget (0140), the spike's Kotlin drawing kept beside it.
+        implementation(project(":compose-raven-map"))
         // Labels measure their text with Raven's fonts (Rfont_measure_text).
         implementation(project(":compose-raven-native"))
         implementation(libs.ktor.client.core)

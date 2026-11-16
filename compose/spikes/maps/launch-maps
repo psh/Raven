@@ -2,7 +2,8 @@
 # Builds the maps spike for this machine and runs it. Online by default: the tiles come from
 # OpenFreeMap as the map needs them, through a disk cache. MAPS_OFFLINE=1 draws fetch-data's tiles
 # of central Chicago instead, fetching them first if they aren't there. MAPS_LAT, MAPS_LON and
-# MAPS_ZOOM say where the map opens.
+# MAPS_ZOOM say where the map opens. Raven's native Map widget draws it (compose-raven-map, 0140);
+# MAPS_KOTLIN=1 draws it with the spike's own Kotlin, to compare.
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
 if [ -n "$MAPS_OFFLINE" ] && [ ! -d "$here/data/tiles" ]; then "$here/fetch-data"; fi

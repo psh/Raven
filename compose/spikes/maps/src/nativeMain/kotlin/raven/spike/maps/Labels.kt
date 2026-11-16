@@ -82,8 +82,8 @@ class SpriteIcon(val x: Int, val y: Int, val width: Int, val height: Int, val pi
     val logicalHeight: Float get() = height / pixelRatio
 }
 
-/** A style's sprite sheet: its icons by name, as its JSON index says, and the PNG they are in. */
-class Sprite(val icons: Map<String, SpriteIcon>, val png: ByteArray) {
+/** A style's sprite sheet: its icons by name, as its JSON index says, and the PNG they are in; the index's [json] kept for the native map. */
+class Sprite(val icons: Map<String, SpriteIcon>, val png: ByteArray, val json: String = "") {
     companion object {
         fun parse(json: String, png: ByteArray): Sprite {
             @Suppress("UNCHECKED_CAST")
@@ -95,7 +95,7 @@ class Sprite(val icons: Map<String, SpriteIcon>, val png: ByteArray) {
                     (v["pixelRatio"] as? Double ?: 1.0).toFloat(),
                 )
             }
-            return Sprite(icons, png)
+            return Sprite(icons, png, json)
         }
     }
 }

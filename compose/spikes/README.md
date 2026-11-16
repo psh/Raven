@@ -13,7 +13,7 @@ macOS (arm64) against Raven 0.2.1 at `8b1e7d4`, unless a row gives its own date.
 | [`macos-child-views/`](macos-child-views/) | `macos-child-views/run.sh`, on macOS with MoltenVK | GL and Metal in Raven's native child views, in a real window, read back and captured on screen |
 | [`thorvg/`](thorvg/) | `thorvg/run.sh` (a real window, macOS) and `./gradlew :spikes:thorvg:allTests`, after `brew install thorvg` | ThorVG's C API rendering a Lottie animation over a custom-drawn widget, and from Kotlin/Native |
 | [`navigation3/`](navigation3/) | `./gradlew :spikes:navigation3:allTests`, from `compose/` | Navigation 3's back stack and saveable-state decorator under the host, with the serialization plugin |
-| [`maps/`](maps/) | `maps/launch-maps` (a real window, macOS; online, or `MAPS_OFFLINE=1` after `maps/fetch-data`) and `./gradlew :spikes:maps:allTests` | OpenStreetMap vector tiles drawn by compose-raven itself on a `Canvas`, styled by MapLibre's style JSON, fetched as the map needs them |
+| [`maps/`](maps/) | `maps/launch-maps` (a real window, macOS; online, or `MAPS_OFFLINE=1` after `maps/fetch-data`; drawn by Raven's native Map widget through compose-raven-map, or by the spike's Kotlin with `MAPS_KOTLIN=1`) and `./gradlew :spikes:maps:allTests` | OpenStreetMap vector tiles drawn by compose-raven itself on a `Canvas`, styled by MapLibre's style JSON, fetched as the map needs them |
 
 ## Results
 
