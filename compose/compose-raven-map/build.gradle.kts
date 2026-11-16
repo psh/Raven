@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// The opt-in map module: VectorMap, a composable over Raven's Map widget, which decodes, styles and
+// The opt-in map module: MapView, a composable over Raven's Map widget, which decodes, styles and
 // draws vector tiles in C. The app brings its tiles (TileSource): the module fetches nothing itself.
 
 kotlin {

@@ -32,7 +32,7 @@ private fun env(name: String): String? = getenv(name)?.toKString()
  * map needs them and kept in a cache (`MAPS_CACHE`, else the user's cache folder). `MAPS_OFFLINE`
  * draws fetch-data's tiles instead (`MAPS_DATA`, else `data`). `MAPS_LAT`, `MAPS_LON` and
  * `MAPS_ZOOM` say where the map opens. Raven's native Map widget draws it, through compose-raven-map's
- * VectorMap (0140); `MAPS_KOTLIN` draws it with the spike's own Kotlin instead, to compare.
+ * MapView (0140); `MAPS_KOTLIN` draws it with the spike's own Kotlin instead, to compare.
  */
 fun main() {
     val latitude = env("MAPS_LAT")?.toDoubleOrNull() ?: START_LATITUDE

@@ -37,7 +37,7 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 @OptIn(ExperimentalForeignApi::class)
-class VectorMapTest {
+class MapViewTest {
     /** A source of the water tile anywhere, counting what it is asked; [gate] holds a tile until completed, [failing] throws. */
     private class FakeSource(
         val gate: CompletableDeferred<Unit>? = null,
@@ -80,9 +80,9 @@ class VectorMapTest {
     fun aMapAsksForItsTilesAndDrawsThem() = runRavenTest {
         val source = FakeSource()
         val (lat, lon) = tileCenter(4203, 6089)
-        val state = VectorMapState(lat, lon, 14.0)
+        val state = MapViewState(lat, lon, 14.0)
         setContent {
-            VectorMap(MapStyle(STYLE), source, Modifier.size(500.dp, 400.dp).testTag("map"), state, attribution = "© test")
+            MapView(MapStyle(STYLE), source, Modifier.size(500.dp, 400.dp).testTag("map"), state, attribution = "© test")
         }
         waitUntil("the tile") { state.stats()?.preparedTiles == 1 }
         frame()
@@ -95,8 +95,8 @@ class VectorMapTest {
     @Test
     fun theStateMovesTheMapAndTheUserMovesTheState() = runRavenTest {
         val (lat, lon) = tileCenter(4203, 6089)
-        val state = VectorMapState(lat, lon, 14.0)
-        setContent { VectorMap(MapStyle(STYLE), FakeSource(), Modifier.size(500.dp, 400.dp).testTag("map"), state) }
+        val state = MapViewState(lat, lon, 14.0)
+        setContent { MapView(MapStyle(STYLE), FakeSource(), Modifier.size(500.dp, 400.dp).testTag("map"), state) }
         waitForIdle()
         val widget = onNodeWithTag("map").fetchWidget()
         // written by the app
@@ -132,8 +132,8 @@ class VectorMapTest {
         val gate = CompletableDeferred<Unit>()
         val source = FakeSource(gate = gate)
         val (lat, lon) = tileCenter(4203, 6089)
-        val state = VectorMapState(lat, lon, 14.0)
-        setContent { VectorMap(MapStyle(STYLE), source, Modifier.size(500.dp, 400.dp), state) }
+        val state = MapViewState(lat, lon, 14.0)
+        setContent { MapView(MapStyle(STYLE), source, Modifier.size(500.dp, 400.dp), state) }
         waitUntil("the request") { source.asked == 1 }
         // panned far away: the tile still loading is cancelled
         val (lat2, lon2) = tileCenter(4300, 6089)
@@ -147,8 +147,8 @@ class VectorMapTest {
     @Test
     fun aTileThatCannotBeFetchedCountsAsFailed() = runRavenTest {
         val (lat, lon) = tileCenter(4203, 6089)
-        val state = VectorMapState(lat, lon, 14.0)
-        setContent { VectorMap(MapStyle(STYLE), FakeSource(failing = true), Modifier.size(500.dp, 400.dp), state) }
+        val state = MapViewState(lat, lon, 14.0)
+        setContent { MapView(MapStyle(STYLE), FakeSource(failing = true), Modifier.size(500.dp, 400.dp), state) }
         waitUntil("the failure") { state.stats()?.failedTiles == 1 }
         assertEquals(0, state.stats()?.preparedTiles)
         assertTrue(abs(Rmap_get_zoom(state.widget) - 14.0) < 1e-9)
@@ -161,7 +161,7 @@ class VectorMapTest {
         val (lat, lon) = tileCenter(4203, 6089)
         var shown by mutableStateOf(true)
         setContent {
-            if (shown) VectorMap(MapStyle(STYLE), source, Modifier.size(500.dp, 400.dp), rememberVectorMapState(lat, lon, 14.0))
+            if (shown) MapView(MapStyle(STYLE), source, Modifier.size(500.dp, 400.dp), rememberMapViewState(lat, lon, 14.0))
         }
         waitUntil("the request") { source.asked == 1 }
         shown = false

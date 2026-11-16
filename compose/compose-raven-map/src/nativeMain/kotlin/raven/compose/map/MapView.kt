@@ -101,10 +101,10 @@ public data class MapStats(
 )
 
 /**
- * Where a [VectorMap] looks: its centre in degrees and its zoom, fractional. The app moves the map
+ * Where a [MapView] looks: its centre in degrees and its zoom, fractional. The app moves the map
  * by writing them; the user's drags and scrolls write them too.
  */
-public class VectorMapState(latitude: Double, longitude: Double, zoom: Double) {
+public class MapViewState(latitude: Double, longitude: Double, zoom: Double) {
     public var latitude: Double by mutableDoubleStateOf(latitude)
     public var longitude: Double by mutableDoubleStateOf(longitude)
     public var zoom: Double by mutableDoubleStateOf(zoom)
@@ -127,12 +127,12 @@ public class VectorMapState(latitude: Double, longitude: Double, zoom: Double) {
     }
 }
 
-/** A [VectorMapState] remembered, opening at [latitude], [longitude] and [zoom]. */
+/** A [MapViewState] remembered, opening at [latitude], [longitude] and [zoom]. */
 @Composable
-public fun rememberVectorMapState(latitude: Double, longitude: Double, zoom: Double): VectorMapState =
-    remember { VectorMapState(latitude, longitude, zoom) }
+public fun rememberMapViewState(latitude: Double, longitude: Double, zoom: Double): MapViewState =
+    remember { MapViewState(latitude, longitude, zoom) }
 
-private val MapWidget = WidgetDescriptor("VectorMap", R_WIDGET_MAP, events = listOf(MapCameraChanged))
+private val MapWidget = WidgetDescriptor("MapView", R_WIDGET_MAP, events = listOf(MapCameraChanged))
 
 private val StyleProperty = Property<MapStyle> { widget, style ->
     Rmap_set_style_json(widget, style.json, -1, style.source)
@@ -263,11 +263,11 @@ private val onCancel = staticCFunction { _: Rid, z: Int, x: Int, y: Int, userDat
  */
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-public fun VectorMap(
+public fun MapView(
     style: MapStyle,
     tiles: TileSource,
     modifier: Modifier = Modifier,
-    state: VectorMapState = rememberVectorMapState(0.0, 0.0, 2.0),
+    state: MapViewState = rememberMapViewState(0.0, 0.0, 2.0),
     attribution: String? = null,
     zoomRange: ClosedFloatingPointRange<Double> = 2.0..18.0,
     capacity: Int = 160,

@@ -14,9 +14,9 @@ import raven.compose.foundation.layout.Column
 import raven.compose.foundation.layout.fillMaxSize
 import raven.compose.foundation.layout.padding
 import raven.compose.map.MapStyle
-import raven.compose.map.VectorMap
-import raven.compose.map.VectorMapState
-import raven.compose.map.rememberVectorMapState
+import raven.compose.map.MapView
+import raven.compose.map.MapViewState
+import raven.compose.map.rememberMapViewState
 import raven.compose.ui.Alignment
 import raven.compose.ui.Modifier
 import raven.compose.ui.graphics.Color
@@ -37,7 +37,7 @@ private class NativeTiles(private val source: TileSource) : MapTileSource {
 }
 
 /**
- * The map drawn by Raven's native Map widget, through compose-raven-map's VectorMap: the style's
+ * The map drawn by Raven's native Map widget, through compose-raven-map's MapView: the style's
  * [json] and [sprite] handed to it, the tiles fetched from [source] as it asks for them, with what
  * each frame costs over it, as [MapScreen] shows for the Kotlin drawing.
  */
@@ -45,9 +45,9 @@ private class NativeTiles(private val source: TileSource) : MapTileSource {
 fun NativeMapScreen(json: String, source: TileSource, sprite: Sprite?, latitude: Double, longitude: Double, zoom: Double) {
     val style = remember(json, sprite) { MapStyle(json, spriteIndex = sprite?.json, spritePng = sprite?.png) }
     val tiles = remember(source) { NativeTiles(source) }
-    val state = rememberVectorMapState(latitude, longitude, zoom)
+    val state = rememberMapViewState(latitude, longitude, zoom)
     Box(Modifier.fillMaxSize()) {
-        VectorMap(
+        MapView(
             style,
             tiles,
             Modifier.fillMaxSize().testTag("map"),
@@ -60,7 +60,7 @@ fun NativeMapScreen(json: String, source: TileSource, sprite: Sprite?, latitude:
 
 /** What the native map's last frame drew and cost, read twice a second. */
 @Composable
-private fun NativeStats(state: VectorMapState, source: TileSource, modifier: Modifier) {
+private fun NativeStats(state: MapViewState, source: TileSource, modifier: Modifier) {
     val info = LocalWindowInfo.current
     var lines by remember { mutableStateOf(listOf<String>()) }
     LaunchedEffect(Unit) {
