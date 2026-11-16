@@ -402,6 +402,18 @@ static void tile_center(int z, int x, int y, double* latitude, double* longitude
 	*latitude = atan(sinh(pi * (1.0 - 2.0 * (y + 0.5) / n))) * 180.0 / pi;
 }
 
+/* Draws frames until no tile handed in or asked for is still being prepared (at most two seconds). */
+static void wait_for_tiles(Rid map) {
+	RMapStats stats;
+	int i;
+	for (i = 0; i < 400; i++) {
+		Rdraw_frame();
+		Rmap_get_stats(map, &stats);
+		if (stats.pending_tiles == 0) return;
+		Rwait_frame(0.005);
+	}
+}
+
 static void test_map_widget(void) {
 	uint8_t bytes[1024];
 	size_t length = water_tile(bytes, sizeof(bytes));
@@ -412,18 +424,26 @@ static void test_map_widget(void) {
 	Rwindow_set_content(g_window, map);
 	Rmap_set_camera_changed_callback(map, on_camera, NULL);
 
-	/* a tile before a style is refused */
+	/* a tile before a style is dropped as it lands; a style that isn't JSON is refused */
+	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	wait_for_tiles(map);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.prepared_tiles == 0);
 	EXPECT_ERRORS_BEGIN();
-	CHECK(!Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
 	CHECK(!Rmap_set_style_json(map, "{\"layers\": [", -1, NULL));
-	EXPECT_ERRORS_END(2);
+	EXPECT_ERRORS_END(1);
 
 	CHECK(Rmap_set_style_json(map, g_style, -1, NULL));
 	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
 	EXPECT_ERRORS_BEGIN();
 	CHECK(!Rmap_tile_loaded(map, 14, 1 << 14, 0, bytes, length));
 	EXPECT_ERRORS_END(1);
-	CHECK(!Rmap_tile_loaded(map, 14, 4203, 6090, bytes, length - 3));
+	/* a tile that can't be decoded counts as failed when it lands */
+	CHECK(Rmap_tile_loaded(map, 14, 4203, 6090, bytes, length - 3));
+	wait_for_tiles(map);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.failed_tiles == 1);
+	CHECK(stats.prepared_tiles == 1);
 
 	tile_center(14, 4203, 6089, &latitude, &longitude);
 	Rmap_set_center(map, latitude, longitude);
@@ -441,6 +461,7 @@ static void test_map_widget(void) {
 
 	/* a tile not held is drawn from its nearest ancestor that is */
 	CHECK(Rmap_tile_loaded(map, 13, 4203 / 2, 6089 / 2, bytes, length));
+	wait_for_tiles(map);
 	tile_center(14, 4202, 6089, &latitude, &longitude);
 	Rmap_set_center(map, latitude, longitude);
 	Rdraw_frame();
@@ -477,6 +498,200 @@ static void test_map_widget(void) {
 	Rwindow_set_content(g_window, R_INVALID_ID);
 }
 
+/* ---------------------------------------------------------------------------
+ *  The tile store, as the spike's TileStoreTest has it
+ * ------------------------------------------------------------------------- */
+
+#define MAX_ASKED 64
+
+static struct {
+	int requests, cancels;
+	int requested[MAX_ASKED][3];
+	int cancelled[MAX_ASKED][3];
+} g_source;
+
+static void on_request(Rid map, int z, int x, int y, void* user_data) {
+	(void)map;
+	(void)user_data;
+	if (g_source.requests < MAX_ASKED) {
+		g_source.requested[g_source.requests][0] = z;
+		g_source.requested[g_source.requests][1] = x;
+		g_source.requested[g_source.requests][2] = y;
+	}
+	g_source.requests++;
+}
+
+static void on_cancel(Rid map, int z, int x, int y, void* user_data) {
+	(void)map;
+	(void)user_data;
+	if (g_source.cancels < MAX_ASKED) {
+		g_source.cancelled[g_source.cancels][0] = z;
+		g_source.cancelled[g_source.cancels][1] = x;
+		g_source.cancelled[g_source.cancels][2] = y;
+	}
+	g_source.cancels++;
+}
+
+static int was_asked(int list[][3], int count, int z, int x, int y) {
+	int i;
+	for (i = 0; i < count && i < MAX_ASKED; i++) {
+		if (list[i][0] == z && list[i][1] == x && list[i][2] == y) return 1;
+	}
+	return 0;
+}
+
+/* A map of the test style looking at the middle of tile 14/x/y: a 500 by 400 view at zoom 14 wants it alone. */
+static Rid source_map(int min_zoom, int x, int y) {
+	Rid map = Rwidget_create(R_WIDGET_MAP);
+	double latitude, longitude;
+	memset(&g_source, 0, sizeof(g_source));
+	Rwindow_set_content(g_window, map);
+	CHECK(Rmap_set_style_json(map, g_style, -1, NULL));
+	Rmap_set_tile_source(map, min_zoom, 14, on_request, on_cancel, NULL);
+	tile_center(14, x, y, &latitude, &longitude);
+	Rmap_set_center(map, latitude, longitude);
+	Rmap_set_zoom(map, 14.0);
+	return map;
+}
+
+static void look_at(Rid map, int x, int y) {
+	double latitude, longitude;
+	tile_center(14, x, y, &latitude, &longitude);
+	Rmap_set_center(map, latitude, longitude);
+}
+
+static void test_tile_asked_for_once(void) {
+	uint8_t bytes[1024];
+	size_t length = water_tile(bytes, sizeof(bytes));
+	Rid map = source_map(12, 4203, 6089);
+	RMapStats stats;
+	/* the tile and its ancestors down to the source's lowest zoom, asked for once, outside painting */
+	Rdraw_frame();
+	Rdraw_frame();
+	Rwidget_invalidate(map);
+	Rdraw_frame();
+	CHECK(g_source.requests == 3);
+	CHECK(was_asked(g_source.requested, g_source.requests, 14, 4203, 6089));
+	CHECK(was_asked(g_source.requested, g_source.requests, 13, 2101, 3044));
+	CHECK(was_asked(g_source.requested, g_source.requests, 12, 1050, 1522));
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.pending_tiles == 3 && stats.requested_tiles == 3 && stats.tiles == 0);
+	/* the ancestor lands first, and stands in */
+	CHECK(Rmap_tile_loaded(map, 12, 1050, 1522, bytes, length));
+	wait_for_tiles(map);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.prepared_tiles == 1 && stats.tiles == 1);
+	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_tile_loaded(map, 13, 2101, 3044, NULL, 0));
+	wait_for_tiles(map);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.prepared_tiles == 3 && stats.pending_tiles == 0);
+	CHECK(stats.tiles == 1 && stats.triangles == 2);
+	CHECK(g_source.requests == 3 && g_source.cancels == 0);
+	CHECK(stats.memory_bytes > 0);
+	Rwindow_set_content(g_window, R_INVALID_ID);
+}
+
+static void test_tile_no_longer_wanted(void) {
+	Rid map = source_map(14, 4203, 6089);
+	RMapStats stats;
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == 1);
+	/* panned away: the tile still loading is cancelled, and the new one asked for */
+	look_at(map, 4300, 6089);
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.cancels == 1 && was_asked(g_source.cancelled, g_source.cancels, 14, 4203, 6089));
+	CHECK(g_source.requests == 2 && was_asked(g_source.requested, g_source.requests, 14, 4300, 6089));
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.pending_tiles == 1);
+	/* a cancelled tile is no failure, and is asked for again from the start */
+	CHECK(stats.failed_tiles == 0);
+	look_at(map, 4203, 6089);
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == 3);
+	/* zoomed out past the source's lowest zoom: nothing is drawn or asked for, and what loads stops */
+	Rmap_set_zoom(map, 3.0);
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == 3 && g_source.cancels == 3);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.pending_tiles == 0 && stats.tiles == 0);
+	Rwindow_set_content(g_window, R_INVALID_ID);
+}
+
+static void test_tiles_used_least_recently_go(void) {
+	uint8_t bytes[1024];
+	size_t length = water_tile(bytes, sizeof(bytes));
+	Rid map = source_map(14, 100, 200);
+	RMapStats stats;
+	int i, requests;
+	Rmap_set_tile_capacity(map, 2);
+	for (i = 0; i < 4; i++) {
+		/* frames wanting this tile alone, until it is ready */
+		look_at(map, 100 + i * 4, 200);
+		Rdraw_frame();
+		Rdraw_frame();
+		CHECK(Rmap_tile_loaded(map, 14, 100 + i * 4, 200, bytes, length));
+		wait_for_tiles(map);
+		Rwidget_invalidate(map);
+		Rdraw_frame();
+	}
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.prepared_tiles == 2);
+	/* the last two stayed: looking at them asks for nothing; the first two went */
+	requests = g_source.requests;
+	look_at(map, 112, 200);
+	Rdraw_frame();
+	look_at(map, 108, 200);
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == requests);
+	look_at(map, 100, 200);
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == requests + 1);
+	Rwindow_set_content(g_window, R_INVALID_ID);
+}
+
+static void test_tile_failed_waits(void) {
+	Rid map = source_map(14, 4203, 6089);
+	RMapStats stats;
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == 1);
+	Rmap_tile_failed(map, 14, 4203, 6089);
+	wait_for_tiles(map);
+	Rwidget_invalidate(map);
+	Rdraw_frame();
+	Rdraw_frame();
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.failed_tiles == 1 && stats.pending_tiles == 0);
+	/* not asked for again at once */
+	CHECK(g_source.requests == 1);
+	Rwindow_set_content(g_window, R_INVALID_ID);
+}
+
+static void test_tile_for_an_old_style(void) {
+	uint8_t bytes[1024];
+	size_t length = water_tile(bytes, sizeof(bytes));
+	Rid map = source_map(14, 4203, 6089);
+	RMapStats stats;
+	/* handed in, then the style changes before it lands: it is dropped, and the map destroyed
+	   with a tile on its way frees it as it lands */
+	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	Rdraw_frame();
+	CHECK(Rmap_set_style_json(map, g_style, -1, NULL));
+	wait_for_tiles(map);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.prepared_tiles == 0);
+	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	Rwindow_set_content(g_window, R_INVALID_ID);
+	Rdraw_frame();
+}
+
 int main(void) {
 	if (!test_init(0)) {
 		printf("cannot initialize Raven\n");
@@ -492,6 +707,11 @@ int main(void) {
 	RUN(test_dashes_and_offsets);
 	RUN(test_style);
 	RUN(test_map_widget);
+	RUN(test_tile_asked_for_once);
+	RUN(test_tile_no_longer_wanted);
+	RUN(test_tiles_used_least_recently_go);
+	RUN(test_tile_failed_waits);
+	RUN(test_tile_for_an_old_style);
 
 	Rdraw_frame();
 	Rshutdown();

@@ -937,6 +937,14 @@ extern "C" {
 	 * of the network: the application hands it the style and each tile's
 	 * bytes, from wherever it gets them.
 	 *
+	 * Tiles come from a tile source (Rmap_set_tile_source): as the view moves,
+	 * the map asks for the tiles it needs, and the application answers with
+	 * Rmap_tile_loaded or Rmap_tile_failed whenever it can, from any thread.
+	 * Each tile is decoded and prepared on a worker thread; until it is ready,
+	 * the nearest ancestor ready stands in. A tile the view has moved past is
+	 * cancelled; past the capacity, the tiles used least recently go; a tile
+	 * that failed is asked for again after 10 seconds.
+	 *
 	 * The user moves the map by dragging it and zooms around the pointer with
 	 * the wheel; a trackpad moves it, with Ctrl it zooms. Fingers move and
 	 * pinch it.
@@ -957,12 +965,32 @@ extern "C" {
 	/** @brief The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. */
 	RAVEN_API void Rmap_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom);
 
+	/** Asks for a tile. Called on the thread of the interface, outside painting. */
+	typedef void (*RMapTileRequestCallback)(Rid map, int z, int x, int y, void* user_data);
+	/** Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting. */
+	typedef void (*RMapTileCancelCallback)(Rid map, int z, int x, int y, void* user_data);
+	/**
+	 * @brief Where the tiles come from: the zooms the source has (as
+	 * Rmap_set_tile_zoom_range), @p request called for each tile the map
+	 * needs, once until it is answered, and @p cancel (may be NULL) for a tile
+	 * asked for that the view no longer needs. NULL @p request: the map asks
+	 * for nothing and draws what it is handed.
+	 */
+	RAVEN_API void Rmap_set_tile_source(Rid map, int min_zoom, int max_zoom,
+		RMapTileRequestCallback request, RMapTileCancelCallback cancel, void* user_data);
+
 	/**
 	 * @brief Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
-	 * Tile, not compressed): decoded and prepared for the style at once.
-	 * The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+	 * Tile, not compressed; NULL and 0: there is no tile there), asked for or
+	 * not. Thread-safe: the bytes are copied, then decoded and prepared on a
+	 * worker thread. A tile that can't be decoded counts as failed.
+	 * Returns R_FALSE for a tile outside the world.
 	 */
 	RAVEN_API int Rmap_tile_loaded(Rid map, int z, int x, int y, const void* bytes, size_t length);
+	/** @brief Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe. */
+	RAVEN_API void Rmap_tile_failed(Rid map, int z, int x, int y);
+	/** @brief How many prepared tiles the map keeps (default 160): past it, those used least recently go. */
+	RAVEN_API void Rmap_set_tile_capacity(Rid map, int capacity);
 
 	/** @brief Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). */
 	RAVEN_API void Rmap_set_center(Rid map, double latitude, double longitude);
@@ -985,6 +1013,12 @@ extern "C" {
 		/** The tiles held, and what decoding and preparing them took in all. */
 		int prepared_tiles;
 		double decode_ms, prepare_ms;
+		/** Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far. */
+		int pending_tiles;
+		int failed_tiles;
+		int requested_tiles;
+		/** The memory the prepared tiles hold, in bytes. */
+		size_t memory_bytes;
 	} RMapStats;
 	RAVEN_API void Rmap_get_stats(Rid map, RMapStats* stats);
 

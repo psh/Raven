@@ -13,6 +13,7 @@
 #define RVN_MAP_H
 
 #include "../core/base.h"
+#include "../core/thread.h"
 
 /* ---------------------------------------------------------------------------
  *  Values (map/json.c): a JSON document, a tile's property values, and what
@@ -175,11 +176,18 @@ typedef struct rvn_map_style_t {
 	/** The fill and line layers drawn, in order. */
 	rvn_map_style_layer_t* layers;
 	uint32_t layer_count;
+	/** Held by the map and by each tile being prepared with it, on any thread. */
+	rvn_atomic_t references;
 } rvn_map_style_t;
 
 /** Parses a style, keeping the layers drawn from `source` (NULL: its first vector source). R_FALSE on bad JSON. */
 int  rvn_map_style_parse(rvn_map_style_t* style, const char* json, size_t length, const char* source);
 void rvn_map_style_free(rvn_map_style_t* style);
+/** A style parsed on the heap, with one reference; NULL on bad JSON. */
+rvn_map_style_t* rvn_map_style_create(const char* json, size_t length, const char* source);
+void rvn_map_style_retain(rvn_map_style_t* style);
+/** Drops a reference: the last one frees the style. Thread-safe. */
+void rvn_map_style_release(rvn_map_style_t* style);
 
 /** What an expression reads: the zoom, and the feature's properties and geometry type. */
 typedef struct rvn_map_context_t {
@@ -257,6 +265,8 @@ typedef struct rvn_map_prepared_t {
 int  rvn_map_prepare(rvn_map_prepared_t* tile, const rvn_map_style_t* style, int z, int x, int y,
 	const uint8_t* bytes, size_t length, int deepest);
 void rvn_map_prepared_free(rvn_map_prepared_t* tile);
+/** The bytes a prepared tile holds: its buckets and the line shapes cut so far. */
+size_t rvn_map_prepared_memory(const rvn_map_prepared_t* tile);
 
 /* ---------------------------------------------------------------------------
  *  Dashes and line gaps (map/lines.c)

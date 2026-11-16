@@ -45,6 +45,21 @@ static char* read_file(const char* path, size_t* size) {
 	return data;
 }
 
+/* Draws frames until every tile handed in is prepared (they are, on worker threads). */
+static void wait_for_tiles(Rid map) {
+	RMapStats stats;
+	for (;;) {
+		Rdraw_frame();
+		Rmap_get_stats(map, &stats);
+		if (stats.pending_tiles == 0) return;
+		Rwait_frame(0.001);
+	}
+}
+
+static double now_ms(void) {
+	return Rget_time() * 1000.0;
+}
+
 static int compare(const void* a, const void* b) {
 	double x = *(const double*)a, y = *(const double*)b;
 	return x < y ? -1 : x > y;
@@ -79,7 +94,7 @@ int main(int argc, char** argv) {
 	RFrameStats frame;
 	Rid window, map;
 	double decode[PREPARES], prepare[PREPARES], fills[FRAMES], lines[FRAMES], draws[FRAMES], paints[FRAMES];
-	double latitude, longitude, world;
+	double latitude, longitude, world, start;
 	int i, size, tiles = 0;
 
 	if (!data) {
@@ -112,6 +127,7 @@ int main(int argc, char** argv) {
 			printf("no tile %d/%d/%d\n", DENSE_Z, DENSE_X, DENSE_Y);
 			return 1;
 		}
+		wait_for_tiles(map);
 		Rmap_get_stats(map, &stats);
 		decode[i] = stats.decode_ms;
 		prepare[i] = stats.prepare_ms;
@@ -119,14 +135,18 @@ int main(int argc, char** argv) {
 	printf("dense tile %d/%d/%d: decode %.1f ms, style + triangulate %.1f ms (medians of %d)\n",
 		DENSE_Z, DENSE_X, DENSE_Y, median(decode, PREPARES), median(prepare, PREPARES), PREPARES);
 
-	/* every tile */
+	/* every tile, prepared on the worker threads together */
 	Rmap_set_style_json(map, style, -1, NULL);
+	start = now_ms();
 	for (line = strtok(list, "\n"); line; line = strtok(NULL, "\n")) {
 		int z, x, y;
 		if (sscanf(line, "%d %d %d", &z, &x, &y) == 3 && load_tile(map, data, z, x, y)) tiles++;
 	}
+	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
-	printf("%d tiles: decode %.1f ms, style + triangulate %.1f ms in all\n", tiles, stats.decode_ms, stats.prepare_ms);
+	printf("%d tiles: decode %.1f ms, style + triangulate %.1f ms in all; all ready in %.1f ms on %d worker threads;"
+		" %.1f MB held\n", tiles, stats.decode_ms, stats.prepare_ms, now_ms() - start, Rget_worker_thread_count(),
+		(double)stats.memory_bytes / (1024.0 * 1024.0));
 
 	/* the Loop at zoom 14, drawn again and again, panned a hundredth of a unit each frame: 800 by 600
 	   (the Kotlin spike's test window) and 1200 by 800 */

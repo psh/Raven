@@ -9,8 +9,10 @@
  * The folder defaults to MAPS_DATA, else the spike's own data/ folder.
  * MAPS_LAT, MAPS_LON and MAPS_ZOOM say where the map opens.
  *
- * Drag to move the map, scroll to zoom. What each frame costs is shown over
- * it, twice a second.
+ * The tiles come from a tile source: the map asks for each tile as the view
+ * needs it, and the example reads it from the folder and hands it back (a
+ * tile not in the folder is no tile). Drag to move the map, scroll to zoom.
+ * What each frame costs is shown over it, twice a second.
  */
 
 #include "../common/example.h"
@@ -42,36 +44,35 @@ static char* read_file(const char* path, size_t* size) {
 	return data;
 }
 
-/* Hands the map every tile listed in tiles.txt. Returns how many it took. */
-static int load_tiles(const char* folder) {
+/* The source: a tile asked for is read from the folder, or is no tile there. */
+static void request_tile(Rid map, int z, int x, int y, void* user_data) {
+	const char* folder = (const char*)user_data;
+	char path[1024];
+	size_t size = 0;
+	char* bytes;
+	snprintf(path, sizeof(path), "%s/tiles/%d-%d-%d.pbf", folder, z, x, y);
+	bytes = read_file(path, &size);
+	Rmap_tile_loaded(map, z, x, y, bytes, bytes ? size : 0);
+	free(bytes);
+}
+
+/* The zooms the folder's tiles.txt lists. */
+static void zoom_range(const char* folder, int* min_zoom, int* max_zoom) {
 	char path[1024];
 	char* list;
 	char* line;
-	int count = 0, min_zoom = 30, max_zoom = 0;
+	*min_zoom = 30;
+	*max_zoom = 0;
 	snprintf(path, sizeof(path), "%s/tiles.txt", folder);
 	list = read_file(path, NULL);
-	if (!list) return 0;
-	/* the zoom range first: the deepest tiles are prepared for the zooms past theirs */
-	for (line = list; *line; line++) {
+	for (line = list ? strtok(list, "\n") : NULL; line; line = strtok(NULL, "\n")) {
 		int z, x, y;
-		if ((line == list || line[-1] == '\n') && sscanf(line, "%d %d %d", &z, &x, &y) == 3) {
-			if (z < min_zoom) min_zoom = z;
-			if (z > max_zoom) max_zoom = z;
-		}
-	}
-	if (min_zoom <= max_zoom) Rmap_set_tile_zoom_range(app.map, min_zoom, max_zoom);
-	for (line = strtok(list, "\n"); line; line = strtok(NULL, "\n")) {
-		int z, x, y;
-		size_t size;
-		char* bytes;
 		if (sscanf(line, "%d %d %d", &z, &x, &y) != 3) continue;
-		snprintf(path, sizeof(path), "%s/tiles/%d-%d-%d.pbf", folder, z, x, y);
-		bytes = read_file(path, &size);
-		if (bytes && Rmap_tile_loaded(app.map, z, x, y, bytes, size)) count++;
-		free(bytes);
+		if (z < *min_zoom) *min_zoom = z;
+		if (z > *max_zoom) *max_zoom = z;
 	}
 	free(list);
-	return count;
+	if (*min_zoom > *max_zoom) *min_zoom = *max_zoom = 14;
 }
 
 static void show_stats(Rid timer, void* user_data) {
@@ -87,10 +88,12 @@ static void show_stats(Rid timer, void* user_data) {
 		"%d triangles, %d line segments\n"
 		"C draw calls: %.1f ms (fills %.1f, lines %.1f)\n"
 		"Raven: paint %.1f ms, render %.1f ms, %u primitives, %u GPU draws\n"
-		"%d tiles prepared: decode %.1f ms, style + triangulate %.1f ms",
+		"%d tiles prepared (%.1f MB): decode %.1f ms, style + triangulate %.1f ms\n"
+		"%d asked for, %d loading, %d failed",
 		Rmap_get_zoom(app.map), stats.tiles, stats.triangles, stats.segments, stats.draw_ms, stats.fill_ms, stats.line_ms,
 		frame.paint_ms, frame.render_ms, frame.instance_count, frame.draw_call_count,
-		stats.prepared_tiles, stats.decode_ms, stats.prepare_ms);
+		stats.prepared_tiles, (double)stats.memory_bytes / (1024.0 * 1024.0), stats.decode_ms, stats.prepare_ms,
+		stats.requested_tiles, stats.pending_tiles, stats.failed_tiles);
 	Rlabel_set_text(app.stats, text);
 }
 
@@ -104,7 +107,7 @@ int main(int argc, char** argv) {
 	char path[1024];
 	char* style;
 	Rid overlay, panel;
-	int tiles;
+	int min_zoom, max_zoom;
 
 	if (!folder) folder = RAVEN_EXAMPLE_DIR "/../../compose/spikes/maps/data";
 	snprintf(path, sizeof(path), "%s/liberty.json", folder);
@@ -122,8 +125,8 @@ int main(int argc, char** argv) {
 	if (!Rmap_set_style_json(app.map, style, -1, NULL)) return 1;
 	free(style);
 	Rmap_set_attribution(app.map, "\xc2\xa9 OpenFreeMap \xc2\xa9 OpenMapTiles Data from OpenStreetMap");
-	tiles = load_tiles(folder);
-	printf("%d tiles\n", tiles);
+	zoom_range(folder, &min_zoom, &max_zoom);
+	Rmap_set_tile_source(app.map, min_zoom, max_zoom, request_tile, NULL, (void*)folder);
 	Rmap_set_center(app.map, env_number("MAPS_LAT", 41.882), env_number("MAPS_LON", -87.630));
 	Rmap_set_zoom(app.map, env_number("MAPS_ZOOM", 14.0));
 

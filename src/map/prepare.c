@@ -182,3 +182,13 @@ void rvn_map_prepared_free(rvn_map_prepared_t* tile) {
 	rvn_free(tile->shapes);
 	memset(tile, 0, sizeof(*tile));
 }
+
+size_t rvn_map_prepared_memory(const rvn_map_prepared_t* tile) {
+	size_t bytes = sizeof(*tile) + (sizeof(rvn_map_bucket_t) + sizeof(rvn_map_shape_t) * RVN_MAP_SHAPES) * tile->bucket_count;
+	uint32_t i;
+	for (i = 0; i < tile->bucket_count; i++) {
+		bytes += sizeof(float) * (tile->buckets[i].triangle_count * 6 + tile->buckets[i].line_point_count * 2);
+	}
+	for (i = 0; tile->shapes && i < tile->bucket_count * RVN_MAP_SHAPES; i++) bytes += sizeof(float) * tile->shapes[i].point_count * 2;
+	return bytes;
+}

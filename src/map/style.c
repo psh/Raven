@@ -567,3 +567,23 @@ void rvn_map_style_free(rvn_map_style_t* style) {
 	rvn_arena_free(&style->arena);
 	memset(style, 0, sizeof(*style));
 }
+
+rvn_map_style_t* rvn_map_style_create(const char* json, size_t length, const char* source) {
+	rvn_map_style_t* style = (rvn_map_style_t*)rvn_alloc(sizeof(rvn_map_style_t));
+	if (!rvn_map_style_parse(style, json, length, source)) {
+		rvn_free(style);
+		return NULL;
+	}
+	rvn_atomic_store(&style->references, 1);
+	return style;
+}
+
+void rvn_map_style_retain(rvn_map_style_t* style) {
+	rvn_atomic_add(&style->references, 1);
+}
+
+void rvn_map_style_release(rvn_map_style_t* style) {
+	if (!style || rvn_atomic_add(&style->references, -1) != 0) return;
+	rvn_map_style_free(style);
+	rvn_free(style);
+}
