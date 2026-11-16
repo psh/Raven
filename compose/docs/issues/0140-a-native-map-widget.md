@@ -212,6 +212,14 @@ compose-raven keeps only what is Kotlin's to do: the composable, state, and fetc
    useful to any custom drawing, map or not.
 2. The Map widget behind `RAVEN_WITH_MAP`, off by default upstream if its size is a concern.
 
-**Left to do before either**: gzipped tiles (servers that send them compressed), Windows and
-Linux builds of the widget (only macOS was run), and the spike's own Kotlin drawing retired or
-kept as a test reference.
+**Left to do before either**: Windows and Linux builds of the widget (only macOS was run), and
+the spike's own Kotlin drawing retired or kept as a test reference.
+
+**Compressed tiles** (done, 2026-11-16, `1e14d04`): `rvn_map_tile_decode` inflates a tile that is
+gzip or zlib compressed before reading it, with the stb_image inflate Raven already builds for PNGs
+(`rvn_inflate`, `render/image_decode.c`), so every path in takes them: `Rmap_tile_loaded`, the
+bindings, `MapView`'s `TileSource`. An uncompressed tile starts with 0x1A, so neither header can be
+mistaken for one; the gzip trailer's size catches a stream cut short (its CRC isn't checked).
+Chicago's 61 tiles gzipped (4.9 MB, from 8.1) draw the same triangles, segments and labels; the
+dense tile decodes in 3.3 ms instead of 0.9 ms, and all 61 are ready in 35 ms instead of 30 ms.
+`test_map` 176 checks, clean under ThreadSanitizer.
