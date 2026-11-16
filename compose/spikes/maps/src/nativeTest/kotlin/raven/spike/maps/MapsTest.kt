@@ -221,6 +221,15 @@ class NativeComparisonBenchmark {
         val store = TileStore(source, noLabels)
         val tiles = source.tiles.mapNotNull { store.prepareNow(it) }
         println("${tiles.size} tiles without labels: decode ${tiles.sumOf { it.decodeMs }} ms, style + triangulate ${tiles.sumOf { it.prepareMs }} ms in all")
+        // The same tiles through a store of their own, prepared together on Dispatchers.Default.
+        val parallel = TileStore(source, noLabels)
+        val wall = kotlin.time.measureTime {
+            runBlocking {
+                parallel.scope = this
+                for (id in source.tiles) parallel.ready(id)
+            }
+        }
+        println("${parallel.preparedTiles.size} tiles without labels, prepared together: all ready in ${wall.inWholeMicroseconds / 1000.0} ms")
         val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
         val stats = DrawStats()
         var drawn = ""
