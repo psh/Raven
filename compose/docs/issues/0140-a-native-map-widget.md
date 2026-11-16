@@ -219,7 +219,14 @@ the spike's own Kotlin drawing retired or kept as a test reference.
 gzip or zlib compressed before reading it, with the stb_image inflate Raven already builds for PNGs
 (`rvn_inflate`, `render/image_decode.c`), so every path in takes them: `Rmap_tile_loaded`, the
 bindings, `MapView`'s `TileSource`. An uncompressed tile starts with 0x1A, so neither header can be
-mistaken for one; the gzip trailer's size catches a stream cut short (its CRC isn't checked).
-Chicago's 61 tiles gzipped (4.9 MB, from 8.1) draw the same triangles, segments and labels; the
-dense tile decodes in 3.3 ms instead of 0.9 ms, and all 61 are ready in 35 ms instead of 30 ms.
-`test_map` 176 checks, clean under ThreadSanitizer.
+mistaken for one. Checksums are verified (2026-11-16, `86952cf`): gzip's CRC-32 and size, and zlib's
+Adler-32, which stb_image's inflate doesn't check; a tile that fails counts as failed and is asked
+for again. Chicago's 61 tiles compressed draw the same triangles, segments and labels:
+
+| Chicago tiles | Dense tile decoded | All 61 ready |
+|---|---|---|
+| Uncompressed (8.1 MB) | 0.9 ms | 30 ms |
+| gzip (4.9 MB), CRC-32 verified | 4.7 ms (3.3 unverified) | 39 ms |
+| zlib, Adler-32 verified | 3.6 ms | 37 ms |
+
+`test_map` 181 checks, clean under ThreadSanitizer.
