@@ -2277,6 +2277,16 @@ namespace Raven
         public int prepared_tiles;
         public double decode_ms;
         public double prepare_ms;
+        /// <summary>
+        /// Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+        /// </summary>
+        public int pending_tiles;
+        public int failed_tiles;
+        public int requested_tiles;
+        /// <summary>
+        /// The memory the prepared tiles hold, in bytes.
+        /// </summary>
+        public UIntPtr memory_bytes;
     }
 
     /// <summary>
@@ -2891,6 +2901,18 @@ namespace Raven
     /// </summary>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void RPlotSeriesCallback(uint plot, int series, int visible, IntPtr user_data);
+
+    /// <summary>
+    /// Asks for a tile. Called on the thread of the interface, outside painting.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RMapTileRequestCallback(uint map, int z, int x, int y, IntPtr user_data);
+
+    /// <summary>
+    /// Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RMapTileCancelCallback(uint map, int z, int x, int y, IntPtr user_data);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void RMapCameraCallback(uint map, IntPtr user_data);
@@ -6586,12 +6608,36 @@ namespace Raven
         public static extern void Rmap_set_tile_zoom_range(uint map, int min_zoom, int max_zoom);
 
         /// <summary>
+        /// Where the tiles come from: the zooms the source has (as
+        /// Rmap_set_tile_zoom_range), @p request called for each tile the map
+        /// needs, once until it is answered, and @p cancel (may be NULL) for a tile
+        /// asked for that the view no longer needs. NULL @p request: the map asks
+        /// for nothing and draws what it is handed.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_tile_source(uint map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, IntPtr user_data);
+
+        /// <summary>
         /// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
-        /// Tile, not compressed): decoded and prepared for the style at once.
-        /// The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+        /// Tile, not compressed; NULL and 0: there is no tile there), asked for or
+        /// not. Thread-safe: the bytes are copied, then decoded and prepared on a
+        /// worker thread. A tile that can't be decoded counts as failed.
+        /// Returns R_FALSE for a tile outside the world.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Rmap_tile_loaded(uint map, int z, int x, int y, byte[] bytes, UIntPtr length);
+
+        /// <summary>
+        /// Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_tile_failed(uint map, int z, int x, int y);
+
+        /// <summary>
+        /// How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_tile_capacity(uint map, int capacity);
 
         /// <summary>
         /// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).

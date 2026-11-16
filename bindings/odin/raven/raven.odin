@@ -1252,6 +1252,10 @@ RPlotViewCallback :: #type proc "c" (plot: Rid, user_data: rawptr)
 RPlotDragLineCallback :: #type proc "c" (plot: Rid, line: i32, value: f64, user_data: rawptr)
 // Called when the user hides or shows a series from the legend.
 RPlotSeriesCallback :: #type proc "c" (plot: Rid, series: i32, visible: i32, user_data: rawptr)
+// Asks for a tile. Called on the thread of the interface, outside painting.
+RMapTileRequestCallback :: #type proc "c" (map_: Rid, z: i32, x: i32, y: i32, user_data: rawptr)
+// Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+RMapTileCancelCallback :: #type proc "c" (map_: Rid, z: i32, x: i32, y: i32, user_data: rawptr)
 RMapCameraCallback :: #type proc "c" (map_: Rid, user_data: rawptr)
 // Called when the user zoomed (to zoom other editors the same, or to keep it for the next time).
 RTextEditorZoomCallback :: #type proc "c" (editor: Rid, zoom: f32, user_data: rawptr)
@@ -1629,6 +1633,12 @@ RMapStats :: struct {
 	prepared_tiles: i32,
 	decode_ms: f64,
 	prepare_ms: f64,
+	// Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+	pending_tiles: i32,
+	failed_tiles: i32,
+	requested_tiles: i32,
+	// The memory the prepared tiles hold, in bytes.
+	memory_bytes: uint,
 }
 
 // What the editor knows of a language. Every field but the name may be NULL.
@@ -3178,10 +3188,22 @@ foreign lib {
 	Rmap_set_style_json :: proc(map_: Rid, json: cstring, length: i32, source: cstring) -> i32 ---
 	// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
 	Rmap_set_tile_zoom_range :: proc(map_: Rid, min_zoom: i32, max_zoom: i32) ---
+	// Where the tiles come from: the zooms the source has (as
+	// Rmap_set_tile_zoom_range), @p request called for each tile the map
+	// needs, once until it is answered, and @p cancel (may be NULL) for a tile
+	// asked for that the view no longer needs. NULL @p request: the map asks
+	// for nothing and draws what it is handed.
+	Rmap_set_tile_source :: proc(map_: Rid, min_zoom: i32, max_zoom: i32, request: RMapTileRequestCallback, cancel: RMapTileCancelCallback, user_data: rawptr) ---
 	// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
-	// Tile, not compressed): decoded and prepared for the style at once.
-	// The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+	// Tile, not compressed; NULL and 0: there is no tile there), asked for or
+	// not. Thread-safe: the bytes are copied, then decoded and prepared on a
+	// worker thread. A tile that can't be decoded counts as failed.
+	// Returns R_FALSE for a tile outside the world.
 	Rmap_tile_loaded :: proc(map_: Rid, z: i32, x: i32, y: i32, bytes: rawptr, length: uint) -> i32 ---
+	// Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+	Rmap_tile_failed :: proc(map_: Rid, z: i32, x: i32, y: i32) ---
+	// How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+	Rmap_set_tile_capacity :: proc(map_: Rid, capacity: i32) ---
 	// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
 	Rmap_set_center :: proc(map_: Rid, latitude: f64, longitude: f64) ---
 	Rmap_get_center :: proc(map_: Rid, latitude: ^f64, longitude: ^f64) ---

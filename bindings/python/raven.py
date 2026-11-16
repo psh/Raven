@@ -1791,6 +1791,10 @@ class RMapStats(ctypes.Structure):
         ("prepared_tiles", ctypes.c_int),
         ("decode_ms", ctypes.c_double),
         ("prepare_ms", ctypes.c_double),
+        ("pending_tiles", ctypes.c_int),
+        ("failed_tiles", ctypes.c_int),
+        ("requested_tiles", ctypes.c_int),
+        ("memory_bytes", ctypes.c_size_t),
     ]
 
 
@@ -2313,6 +2317,22 @@ RPlotSeriesCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctyp
 def _adapt_RPlotSeriesCallback(function):
     def call(plot, series, visible, user_data):
         function(plot, series, visible, user_data)
+    return call
+
+RMapTileRequestCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RMapTileRequestCallback(function):
+    def call(map, z, x, y, user_data):
+        function(map, z, x, y, user_data)
+    return call
+
+RMapTileCancelCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RMapTileCancelCallback(function):
+    def call(map, z, x, y, user_data):
+        function(map, z, x, y, user_data)
     return call
 
 RMapCameraCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void_p)
@@ -8497,15 +8517,48 @@ def Rmap_set_tile_zoom_range(map, min_zoom, max_zoom):
     _lib.Rmap_set_tile_zoom_range(map, min_zoom, max_zoom)
 
 
+_lib.Rmap_set_tile_source.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, RMapTileRequestCallback, RMapTileCancelCallback, ctypes.c_void_p]
+_lib.Rmap_set_tile_source.restype = None
+
+
+def Rmap_set_tile_source(map, min_zoom, max_zoom, request, cancel, user_data=None):
+    """Where the tiles come from: the zooms the source has (as
+    Rmap_set_tile_zoom_range), @p request called for each tile the map
+    needs, once until it is answered, and @p cancel (may be NULL) for a tile
+    asked for that the view no longer needs. NULL @p request: the map asks
+    for nothing and draws what it is handed."""
+    _lib.Rmap_set_tile_source(map, min_zoom, max_zoom, _callback(RMapTileRequestCallback, _adapt_RMapTileRequestCallback, request), _callback(RMapTileCancelCallback, _adapt_RMapTileCancelCallback, cancel), user_data)
+
+
 _lib.Rmap_tile_loaded.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
 _lib.Rmap_tile_loaded.restype = ctypes.c_int
 
 
 def Rmap_tile_loaded(map, z, x, y, bytes, length):
     """Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
-    Tile, not compressed): decoded and prepared for the style at once.
-    The bytes are not kept. Returns R_FALSE if the tile can't be decoded."""
+    Tile, not compressed; NULL and 0: there is no tile there), asked for or
+    not. Thread-safe: the bytes are copied, then decoded and prepared on a
+    worker thread. A tile that can't be decoded counts as failed.
+    Returns R_FALSE for a tile outside the world."""
     return _lib.Rmap_tile_loaded(map, z, x, y, bytes, length)
+
+
+_lib.Rmap_tile_failed.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rmap_tile_failed.restype = None
+
+
+def Rmap_tile_failed(map, z, x, y):
+    """Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe."""
+    _lib.Rmap_tile_failed(map, z, x, y)
+
+
+_lib.Rmap_set_tile_capacity.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rmap_set_tile_capacity.restype = None
+
+
+def Rmap_set_tile_capacity(map, capacity):
+    """How many prepared tiles the map keeps (default 160): past it, those used least recently go."""
+    _lib.Rmap_set_tile_capacity(map, capacity)
 
 
 _lib.Rmap_set_center.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]

@@ -4236,6 +4236,17 @@ func MapSetTileZoomRange(map_ ID, min_zoom int, max_zoom int) {
 	C.Rmap_set_tile_zoom_range(C.Rid(map_), C.int(min_zoom), C.int(max_zoom))
 }
 
+// MapTileFailed: Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+func MapTileFailed(map_ ID, z int, x int, y int) {
+	C.Rmap_tile_failed(C.Rid(map_), C.int(z), C.int(x), C.int(y))
+}
+
+// MapSetTileCapacity: How many prepared tiles the map keeps (default 160): past it, those used least recently
+// go.
+func MapSetTileCapacity(map_ ID, capacity int) {
+	C.Rmap_set_tile_capacity(C.Rid(map_), C.int(capacity))
+}
+
 // MapSetCenter: Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512
 // units).
 func MapSetCenter(map_ ID, latitude float64, longitude float64) {
@@ -6796,19 +6807,19 @@ func HostInjectClose(window ID) {
 // Rdate_picker_set_changed_callback, Rtime_picker_set_changed_callback, Rtoast_set_action_callback
 // Rbreadcrumb_set_clicked_callback, Rrating_set_changed_callback, Rpagination_set_changed_callback
 // Rplot_set_view_changed_callback, Rplot_set_drag_line_callback, Rplot_set_series_toggled_callback
-// Rmap_tile_loaded, Rmap_get_stats, Rmap_set_camera_changed_callback, Rtext_editor_set_zoom_callback
-// Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback, Rtext_editor_set_changed_callback
-// Rdock_area_set_close_callback, Rdock_area_set_changed_callback, Risland_set_changed_callback
-// Rtaskbar_set_jump_list, Rtray_set_icon, Rtray_set_clicked_callback, Rcolor_picker_set_changed_callback
-// Rtimeline_set_time_callback, Rtimeline_set_changed_callback, Rtimeline_set_selection_callback
-// Rtimeline_set_activated_callback, Rtimeline_set_removed_callback, Rnode_graph_set_node_user_data
-// Rnode_graph_get_node_user_data, Rnode_graph_set_connect_callback, Rnode_graph_set_linked_callback
-// Rnode_graph_set_unlinked_callback, Rnode_graph_set_moved_callback, Rnode_graph_set_selection_callback
-// Rnode_graph_set_removed_callback, Rnode_graph_set_activated_callback, Rnode_graph_set_context_callback
-// Rnode_graph_set_canvas_activated_callback, Rnode_graph_set_wire_dropped_callback
-// Rnode_graph_set_pin_clicked_callback, Rblock_editor_set_changed_callback
-// Rblock_editor_set_clicked_callback, Rblock_editor_set_context_callback, Rdialog_open
-// Rdialog_set_dismiss_callback, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save
+// Rmap_set_tile_source, Rmap_tile_loaded, Rmap_get_stats, Rmap_set_camera_changed_callback
+// Rtext_editor_set_zoom_callback, Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback
+// Rtext_editor_set_changed_callback, Rdock_area_set_close_callback, Rdock_area_set_changed_callback
+// Risland_set_changed_callback, Rtaskbar_set_jump_list, Rtray_set_icon, Rtray_set_clicked_callback
+// Rcolor_picker_set_changed_callback, Rtimeline_set_time_callback, Rtimeline_set_changed_callback
+// Rtimeline_set_selection_callback, Rtimeline_set_activated_callback, Rtimeline_set_removed_callback
+// Rnode_graph_set_node_user_data, Rnode_graph_get_node_user_data, Rnode_graph_set_connect_callback
+// Rnode_graph_set_linked_callback, Rnode_graph_set_unlinked_callback, Rnode_graph_set_moved_callback
+// Rnode_graph_set_selection_callback, Rnode_graph_set_removed_callback, Rnode_graph_set_activated_callback
+// Rnode_graph_set_context_callback, Rnode_graph_set_canvas_activated_callback
+// Rnode_graph_set_wire_dropped_callback, Rnode_graph_set_pin_clicked_callback
+// Rblock_editor_set_changed_callback, Rblock_editor_set_clicked_callback, Rblock_editor_set_context_callback
+// Rdialog_open, Rdialog_set_dismiss_callback, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save
 // Rfile_dialog_select_folder, Rfile_read, Rfile_browser_set_filters, Rfile_browser_set_accepted_callback
 // Rfile_browser_set_cancelled_callback, Rfile_browser_set_selection_changed_callback
 // Rnotification_set_fallback, Rnotification_set_clicked_callback, Rviewport_set_draw_callback

@@ -1242,6 +1242,10 @@ pub const RPlotViewCallback = ?*const fn (plot: Rid, user_data: ?*anyopaque) cal
 pub const RPlotDragLineCallback = ?*const fn (plot: Rid, line: c_int, value: f64, user_data: ?*anyopaque) callconv(.c) void;
 /// Called when the user hides or shows a series from the legend.
 pub const RPlotSeriesCallback = ?*const fn (plot: Rid, series: c_int, visible: c_int, user_data: ?*anyopaque) callconv(.c) void;
+/// Asks for a tile. Called on the thread of the interface, outside painting.
+pub const RMapTileRequestCallback = ?*const fn (map: Rid, z: c_int, x: c_int, y: c_int, user_data: ?*anyopaque) callconv(.c) void;
+/// Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+pub const RMapTileCancelCallback = ?*const fn (map: Rid, z: c_int, x: c_int, y: c_int, user_data: ?*anyopaque) callconv(.c) void;
 pub const RMapCameraCallback = ?*const fn (map: Rid, user_data: ?*anyopaque) callconv(.c) void;
 /// Called when the user zoomed (to zoom other editors the same, or to keep it for the next time).
 pub const RTextEditorZoomCallback = ?*const fn (editor: Rid, zoom: f32, user_data: ?*anyopaque) callconv(.c) void;
@@ -1619,6 +1623,12 @@ pub const RMapStats = extern struct {
     prepared_tiles: c_int = 0,
     decode_ms: f64 = 0,
     prepare_ms: f64 = 0,
+    /// Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+    pending_tiles: c_int = 0,
+    failed_tiles: c_int = 0,
+    requested_tiles: c_int = 0,
+    /// The memory the prepared tiles hold, in bytes.
+    memory_bytes: usize = 0,
 };
 
 /// What the editor knows of a language. Every field but the name may be NULL.
@@ -3166,10 +3176,22 @@ pub extern fn Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeries
 pub extern fn Rmap_set_style_json(map: Rid, json: ?[*:0]const u8, length: c_int, source: ?[*:0]const u8) c_int;
 /// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
 pub extern fn Rmap_set_tile_zoom_range(map: Rid, min_zoom: c_int, max_zoom: c_int) void;
+/// Where the tiles come from: the zooms the source has (as
+/// Rmap_set_tile_zoom_range), @p request called for each tile the map
+/// needs, once until it is answered, and @p cancel (may be NULL) for a tile
+/// asked for that the view no longer needs. NULL @p request: the map asks
+/// for nothing and draws what it is handed.
+pub extern fn Rmap_set_tile_source(map: Rid, min_zoom: c_int, max_zoom: c_int, request: RMapTileRequestCallback, cancel: RMapTileCancelCallback, user_data: ?*anyopaque) void;
 /// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
-/// Tile, not compressed): decoded and prepared for the style at once.
-/// The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+/// Tile, not compressed; NULL and 0: there is no tile there), asked for or
+/// not. Thread-safe: the bytes are copied, then decoded and prepared on a
+/// worker thread. A tile that can't be decoded counts as failed.
+/// Returns R_FALSE for a tile outside the world.
 pub extern fn Rmap_tile_loaded(map: Rid, z: c_int, x: c_int, y: c_int, bytes: ?*const anyopaque, length: usize) c_int;
+/// Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+pub extern fn Rmap_tile_failed(map: Rid, z: c_int, x: c_int, y: c_int) void;
+/// How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+pub extern fn Rmap_set_tile_capacity(map: Rid, capacity: c_int) void;
 /// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
 pub extern fn Rmap_set_center(map: Rid, latitude: f64, longitude: f64) void;
 pub extern fn Rmap_get_center(map: Rid, latitude: ?*f64, longitude: ?*f64) void;

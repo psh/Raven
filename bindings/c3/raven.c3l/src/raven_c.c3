@@ -1320,6 +1320,10 @@ alias RPlotViewCallback = fn void(Rid plot, void* user_data);
 alias RPlotDragLineCallback = fn void(Rid plot, CInt line, double value, void* user_data);
 <* Called when the user hides or shows a series from the legend. *>
 alias RPlotSeriesCallback = fn void(Rid plot, CInt series, CInt visible, void* user_data);
+<* Asks for a tile. Called on the thread of the interface, outside painting. *>
+alias RMapTileRequestCallback = fn void(Rid map, CInt z, CInt x, CInt y, void* user_data);
+<* Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting. *>
+alias RMapTileCancelCallback = fn void(Rid map, CInt z, CInt x, CInt y, void* user_data);
 alias RMapCameraCallback = fn void(Rid map, void* user_data);
 <* Called when the user zoomed (to zoom other editors the same, or to keep it for the next time). *>
 alias RTextEditorZoomCallback = fn void(Rid editor, float zoom, void* user_data);
@@ -1742,6 +1746,12 @@ struct RMapStats
 	CInt prepared_tiles;
 	double decode_ms;
 	double prepare_ms;
+	<* Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far. *>
+	CInt pending_tiles;
+	CInt failed_tiles;
+	CInt requested_tiles;
+	<* The memory the prepared tiles hold, in bytes. *>
+	usz memory_bytes;
 }
 
 <*
@@ -4119,11 +4129,28 @@ extern fn CInt r_map_set_style_json(Rid map, char* json, CInt length, char* sour
 extern fn void r_map_set_tile_zoom_range(Rid map, CInt min_zoom, CInt max_zoom) @cname("Rmap_set_tile_zoom_range");
 
 <*
+ Where the tiles come from: the zooms the source has (as
+ Rmap_set_tile_zoom_range), @p request called for each tile the map
+ needs, once until it is answered, and @p cancel (may be NULL) for a tile
+ asked for that the view no longer needs. NULL @p request: the map asks
+ for nothing and draws what it is handed.
+*>
+extern fn void r_map_set_tile_source(Rid map, CInt min_zoom, CInt max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, void* user_data) @cname("Rmap_set_tile_source");
+
+<*
  Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
- Tile, not compressed): decoded and prepared for the style at once.
- The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+ Tile, not compressed; NULL and 0: there is no tile there), asked for or
+ not. Thread-safe: the bytes are copied, then decoded and prepared on a
+ worker thread. A tile that can't be decoded counts as failed.
+ Returns R_FALSE for a tile outside the world.
 *>
 extern fn CInt r_map_tile_loaded(Rid map, CInt z, CInt x, CInt y, void* bytes, usz length) @cname("Rmap_tile_loaded");
+
+<* Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe. *>
+extern fn void r_map_tile_failed(Rid map, CInt z, CInt x, CInt y) @cname("Rmap_tile_failed");
+
+<* How many prepared tiles the map keeps (default 160): past it, those used least recently go. *>
+extern fn void r_map_set_tile_capacity(Rid map, CInt capacity) @cname("Rmap_set_tile_capacity");
 
 <* Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). *>
 extern fn void r_map_set_center(Rid map, double latitude, double longitude) @cname("Rmap_set_center");

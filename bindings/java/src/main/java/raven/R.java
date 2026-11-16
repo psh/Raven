@@ -2804,7 +2804,7 @@ public final class R {
      */
     public static final class RMapStats {
         /** The size of the structure in C, in bytes. */
-        public static final long SIZE = 64;
+        public static final long SIZE = 88;
         private final MemorySegment s;
         private Arena arena;
 
@@ -2879,6 +2879,24 @@ public final class R {
 
         public double prepare_ms() { return s.get(JAVA_DOUBLE, 56); }
         public RMapStats prepare_ms(double value) { s.set(JAVA_DOUBLE, 56, value); return this; }
+
+        /**
+         * Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+         */
+        public int pending_tiles() { return s.get(JAVA_INT, 64); }
+        public RMapStats pending_tiles(int value) { s.set(JAVA_INT, 64, value); return this; }
+
+        public int failed_tiles() { return s.get(JAVA_INT, 68); }
+        public RMapStats failed_tiles(int value) { s.set(JAVA_INT, 68, value); return this; }
+
+        public int requested_tiles() { return s.get(JAVA_INT, 72); }
+        public RMapStats requested_tiles(int value) { s.set(JAVA_INT, 72, value); return this; }
+
+        /**
+         * The memory the prepared tiles hold, in bytes.
+         */
+        public long memory_bytes() { return s.get(JAVA_LONG, 80); }
+        public RMapStats memory_bytes(long value) { s.set(JAVA_LONG, 80, value); return this; }
     }
 
     /**
@@ -4748,6 +4766,48 @@ public final class R {
 
     private static MemorySegment upcall(RPlotSeriesCallback f) {
         return stub(f, RPlotSeriesCallback.class, "RPlotSeriesCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
+     * Asks for a tile. Called on the thread of the interface, outside painting.
+     */
+    @FunctionalInterface
+    public interface RMapTileRequestCallback {
+        void invoke(int map, int z, int x, int y, MemorySegment user_data);
+    }
+
+    private static void RMapTileRequestCallback$raw(RMapTileRequestCallback f, int map, int z, int x, int y, MemorySegment user_data) {
+        try {
+            f.invoke(map, z, x, y, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RMapTileRequestCallback f) {
+        return stub(f, RMapTileRequestCallback.class, "RMapTileRequestCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
+     * Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+     */
+    @FunctionalInterface
+    public interface RMapTileCancelCallback {
+        void invoke(int map, int z, int x, int y, MemorySegment user_data);
+    }
+
+    private static void RMapTileCancelCallback$raw(RMapTileCancelCallback f, int map, int z, int x, int y, MemorySegment user_data) {
+        try {
+            f.invoke(map, z, x, y, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RMapTileCancelCallback f) {
+        return stub(f, RMapTileCancelCallback.class, "RMapTileCancelCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
     }
 
     @FunctionalInterface
@@ -15232,12 +15292,44 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rmap_set_tile_source$;
+
+    /**
+     * Where the tiles come from: the zooms the source has (as
+     * Rmap_set_tile_zoom_range), &#64;p request called for each tile the map
+     * needs, once until it is answered, and &#64;p cancel (may be NULL) for a tile
+     * asked for that the view no longer needs. NULL &#64;p request: the map asks
+     * for nothing and draws what it is handed.
+     */
+    public static void Rmap_set_tile_source(int map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, MemorySegment user_data) {
+        MethodHandle $h = Rmap_set_tile_source$;
+        if ($h == null) Rmap_set_tile_source$ = $h = find("Rmap_set_tile_source", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(map, min_zoom, max_zoom, upcall(request), upcall(cancel), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Where the tiles come from: the zooms the source has (as
+     * Rmap_set_tile_zoom_range), &#64;p request called for each tile the map
+     * needs, once until it is answered, and &#64;p cancel (may be NULL) for a tile
+     * asked for that the view no longer needs. NULL &#64;p request: the map asks
+     * for nothing and draws what it is handed.
+     */
+    public static void Rmap_set_tile_source(int map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel) {
+        Rmap_set_tile_source(map, min_zoom, max_zoom, request, cancel, (MemorySegment) null);
+    }
+
     private static MethodHandle Rmap_tile_loaded$;
 
     /**
      * Hands the map the bytes of tile &#64;p z / &#64;p x / &#64;p y (a Mapbox Vector
-     * Tile, not compressed): decoded and prepared for the style at once.
-     * The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+     * Tile, not compressed; NULL and 0: there is no tile there), asked for or
+     * not. Thread-safe: the bytes are copied, then decoded and prepared on a
+     * worker thread. A tile that can't be decoded counts as failed.
+     * Returns R_FALSE for a tile outside the world.
      */
     public static int Rmap_tile_loaded(int map, int z, int x, int y, MemorySegment bytes, long length) {
         MethodHandle $h = Rmap_tile_loaded$;
@@ -15245,6 +15337,36 @@ public final class R {
         try {
             int $r = (int) $h.invokeExact(map, z, x, y, (MemorySegment) (bytes == null ? MemorySegment.NULL : bytes), length);
             return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_tile_failed$;
+
+    /**
+     * Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+     */
+    public static void Rmap_tile_failed(int map, int z, int x, int y) {
+        MethodHandle $h = Rmap_tile_failed$;
+        if ($h == null) Rmap_tile_failed$ = $h = find("Rmap_tile_failed", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(map, z, x, y);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_tile_capacity$;
+
+    /**
+     * How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+     */
+    public static void Rmap_set_tile_capacity(int map, int capacity) {
+        MethodHandle $h = Rmap_set_tile_capacity$;
+        if ($h == null) Rmap_set_tile_capacity$ = $h = find("Rmap_set_tile_capacity", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(map, capacity);
         } catch (Throwable $t) {
             throw fail($t);
         }

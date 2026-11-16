@@ -833,6 +833,8 @@ typedef void (*RPageChangedCallback)(Rid pagination, int page, void* user_data);
 typedef void (*RPlotViewCallback)(Rid plot, void* user_data);
 typedef void (*RPlotDragLineCallback)(Rid plot, int line, double value, void* user_data);
 typedef void (*RPlotSeriesCallback)(Rid plot, int series, int visible, void* user_data);
+typedef void (*RMapTileRequestCallback)(Rid map, int z, int x, int y, void* user_data);
+typedef void (*RMapTileCancelCallback)(Rid map, int z, int x, int y, void* user_data);
 typedef void (*RMapCameraCallback)(Rid map, void* user_data);
 typedef void (*RTextEditorZoomCallback)(Rid editor, float zoom, void* user_data);
 typedef void (*RCompletionCallback)(Rid editor, const char* prefix, void* user_data);
@@ -1025,6 +1027,10 @@ struct RMapStats {
 	int prepared_tiles;
 	double decode_ms;
 	double prepare_ms;
+	int pending_tiles;
+	int failed_tiles;
+	int requested_tiles;
+	size_t memory_bytes;
 };
 struct RLanguageDesc {
 	const char* name;
@@ -1759,7 +1765,10 @@ void Rplot_set_drag_line_callback(Rid plot, RPlotDragLineCallback callback, void
 void Rplot_set_series_toggled_callback(Rid plot, RPlotSeriesCallback callback, void* user_data);
 int Rmap_set_style_json(Rid map, const char* json, int length, const char* source);
 void Rmap_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom);
+void Rmap_set_tile_source(Rid map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, void* user_data);
 int Rmap_tile_loaded(Rid map, int z, int x, int y, const void* bytes, size_t length);
+void Rmap_tile_failed(Rid map, int z, int x, int y);
+void Rmap_set_tile_capacity(Rid map, int capacity);
 void Rmap_set_center(Rid map, double latitude, double longitude);
 void Rmap_get_center(Rid map, double* latitude, double* longitude);
 void Rmap_set_zoom(Rid map, double zoom);

@@ -2071,7 +2071,7 @@ export class RTileItem extends RStruct {
 }
 
 export class RMapStats extends RStruct {
-	static SIZE = 64;
+	static SIZE = 88;
 
 	constructor(pointer) {
 		super(RMapStats.SIZE, pointer);
@@ -2143,6 +2143,34 @@ export class RMapStats extends RStruct {
 	}
 	set prepare_ms(value) {
 		this._view.setFloat64(56, value, true);
+	}
+
+	get pending_tiles() {
+		return this._view.getInt32(64, true);
+	}
+	set pending_tiles(value) {
+		this._view.setInt32(64, value, true);
+	}
+
+	get failed_tiles() {
+		return this._view.getInt32(68, true);
+	}
+	set failed_tiles(value) {
+		this._view.setInt32(68, value, true);
+	}
+
+	get requested_tiles() {
+		return this._view.getInt32(72, true);
+	}
+	set requested_tiles(value) {
+		this._view.setInt32(72, value, true);
+	}
+
+	get memory_bytes() {
+		return Number(this._view.getBigUint64(80, true));
+	}
+	set memory_bytes(value) {
+		this._view.setBigUint64(80, BigInt(value), true);
 	}
 }
 
@@ -3575,7 +3603,10 @@ export const Rplot_set_drag_line_callback = _lib.Rplot_set_drag_line_callback;
 export const Rplot_set_series_toggled_callback = _lib.Rplot_set_series_toggled_callback;
 export const Rmap_set_style_json = _lib.Rmap_set_style_json;
 export const Rmap_set_tile_zoom_range = _lib.Rmap_set_tile_zoom_range;
+export const Rmap_set_tile_source = _lib.Rmap_set_tile_source;
 export const Rmap_tile_loaded = _lib.Rmap_tile_loaded;
+export const Rmap_tile_failed = _lib.Rmap_tile_failed;
+export const Rmap_set_tile_capacity = _lib.Rmap_set_tile_capacity;
 export const Rmap_set_center = _lib.Rmap_set_center;
 export const Rmap_get_center = _lib.Rmap_get_center;
 export const Rmap_set_zoom = _lib.Rmap_set_zoom;

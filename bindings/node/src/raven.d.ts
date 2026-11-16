@@ -2300,7 +2300,7 @@ export class RTileItem extends RStruct {
 
 /** What the last frame drew, and what preparing the tiles cost. */
 export class RMapStats extends RStruct {
-	static readonly SIZE = 64;
+	static readonly SIZE = 88;
 	constructor(pointer?: Pointer);
 	/** The structure at an address of the library, or null. */
 	static from(pointer: Pointer | null): RMapStats | null;
@@ -2326,6 +2326,16 @@ export class RMapStats extends RStruct {
 	set decode_ms(value: number);
 	get prepare_ms(): number;
 	set prepare_ms(value: number);
+	/** Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far. */
+	get pending_tiles(): number;
+	set pending_tiles(value: number);
+	get failed_tiles(): number;
+	set failed_tiles(value: number);
+	get requested_tiles(): number;
+	set requested_tiles(value: number);
+	/** The memory the prepared tiles hold, in bytes. */
+	get memory_bytes(): number;
+	set memory_bytes(value: number);
 }
 
 /**
@@ -2833,6 +2843,12 @@ export type RPlotDragLineCallback = (plot: Rid, line: number, value: number, use
 
 /** Called when the user hides or shows a series from the legend. */
 export type RPlotSeriesCallback = (plot: Rid, series: number, visible: number, user_data: Pointer | null) => void;
+
+/** Asks for a tile. Called on the thread of the interface, outside painting. */
+export type RMapTileRequestCallback = (map: Rid, z: number, x: number, y: number, user_data: Pointer | null) => void;
+
+/** Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting. */
+export type RMapTileCancelCallback = (map: Rid, z: number, x: number, y: number, user_data: Pointer | null) => void;
 
 export type RMapCameraCallback = (map: Rid, user_data: Pointer | null) => void;
 
@@ -5217,11 +5233,28 @@ export function Rmap_set_style_json(map: Rid, json: string | null, length: numbe
 export function Rmap_set_tile_zoom_range(map: Rid, min_zoom: number, max_zoom: number): void;
 
 /**
+ * Where the tiles come from: the zooms the source has (as
+ * Rmap_set_tile_zoom_range), @p request called for each tile the map
+ * needs, once until it is answered, and @p cancel (may be NULL) for a tile
+ * asked for that the view no longer needs. NULL @p request: the map asks
+ * for nothing and draws what it is handed.
+ */
+export function Rmap_set_tile_source(map: Rid, min_zoom: number, max_zoom: number, request: RMapTileRequestCallback | Pointer | null, cancel: RMapTileCancelCallback | Pointer | null, user_data?: RPointer): void;
+
+/**
  * Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
- * Tile, not compressed): decoded and prepared for the style at once.
- * The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+ * Tile, not compressed; NULL and 0: there is no tile there), asked for or
+ * not. Thread-safe: the bytes are copied, then decoded and prepared on a
+ * worker thread. A tile that can't be decoded counts as failed.
+ * Returns R_FALSE for a tile outside the world.
  */
 export function Rmap_tile_loaded(map: Rid, z: number, x: number, y: number, bytes: RPointer, length: number): number;
+
+/** Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe. */
+export function Rmap_tile_failed(map: Rid, z: number, x: number, y: number): void;
+
+/** How many prepared tiles the map keeps (default 160): past it, those used least recently go. */
+export function Rmap_set_tile_capacity(map: Rid, capacity: number): void;
 
 /** Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). */
 export function Rmap_set_center(map: Rid, latitude: number, longitude: number): void;

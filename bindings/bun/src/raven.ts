@@ -792,7 +792,10 @@ const _symbols = {
 	Rplot_set_series_toggled_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rmap_set_style_json: { args: ["u32", "ptr", "i32", "ptr"], returns: "i32" },
 	Rmap_set_tile_zoom_range: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rmap_set_tile_source: { args: ["u32", "i32", "i32", "ptr", "ptr", "ptr"], returns: "void" },
 	Rmap_tile_loaded: { args: ["u32", "i32", "i32", "i32", "ptr", "usize"], returns: "i32" },
+	Rmap_tile_failed: { args: ["u32", "i32", "i32", "i32"], returns: "void" },
+	Rmap_set_tile_capacity: { args: ["u32", "i32"], returns: "void" },
 	Rmap_set_center: { args: ["u32", "f64", "f64"], returns: "void" },
 	Rmap_get_center: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rmap_set_zoom: { args: ["u32", "f64"], returns: "void" },
@@ -4364,7 +4367,7 @@ export class RTileItem extends RStruct {
 
 /** What the last frame drew, and what preparing the tiles cost. */
 export class RMapStats extends RStruct {
-	static readonly SIZE = 64;
+	static readonly SIZE = 88;
 
 	constructor(pointer?: Pointer) {
 		super(RMapStats.SIZE, pointer);
@@ -4440,6 +4443,36 @@ export class RMapStats extends RStruct {
 	}
 	set prepare_ms(value: number) {
 		this._view.setFloat64(56, value, true);
+	}
+
+	/** Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far. */
+	get pending_tiles(): number {
+		return this._view.getInt32(64, true);
+	}
+	set pending_tiles(value: number) {
+		this._view.setInt32(64, value, true);
+	}
+
+	get failed_tiles(): number {
+		return this._view.getInt32(68, true);
+	}
+	set failed_tiles(value: number) {
+		this._view.setInt32(68, value, true);
+	}
+
+	get requested_tiles(): number {
+		return this._view.getInt32(72, true);
+	}
+	set requested_tiles(value: number) {
+		this._view.setInt32(72, value, true);
+	}
+
+	/** The memory the prepared tiles hold, in bytes. */
+	get memory_bytes(): number {
+		return Number(this._view.getBigUint64(80, true));
+	}
+	set memory_bytes(value: number) {
+		this._view.setBigUint64(80, BigInt(value), true);
 	}
 }
 
@@ -5999,6 +6032,38 @@ function _adapt_RPlotSeriesCallback(function_: RPlotSeriesCallback | Pointer | n
 			_report(error as Error);
 		}
 	}, { args: ["u32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Asks for a tile. Called on the thread of the interface, outside painting. */
+export type RMapTileRequestCallback = (map: Rid, z: number, x: number, y: number, user_data: Pointer | null) => void;
+
+function _adapt_RMapTileRequestCallback(function_: RMapTileRequestCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((map: number, z: number, x: number, y: number, user_data: Pointer | null): void => {
+		try {
+			function_(map, z, x, y, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/** Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting. */
+export type RMapTileCancelCallback = (map: Rid, z: number, x: number, y: number, user_data: Pointer | null) => void;
+
+function _adapt_RMapTileCancelCallback(function_: RMapTileCancelCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((map: number, z: number, x: number, y: number, user_data: Pointer | null): void => {
+		try {
+			function_(map, z, x, y, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
 }
 
 export type RMapCameraCallback = (map: Rid, user_data: Pointer | null) => void;
@@ -10148,12 +10213,35 @@ export function Rmap_set_tile_zoom_range(map: Rid, min_zoom: number, max_zoom: n
 }
 
 /**
+ * Where the tiles come from: the zooms the source has (as
+ * Rmap_set_tile_zoom_range), @p request called for each tile the map
+ * needs, once until it is answered, and @p cancel (may be NULL) for a tile
+ * asked for that the view no longer needs. NULL @p request: the map asks
+ * for nothing and draws what it is handed.
+ */
+export function Rmap_set_tile_source(map: Rid, min_zoom: number, max_zoom: number, request: RMapTileRequestCallback | Pointer | null, cancel: RMapTileCancelCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rmap_set_tile_source(map, min_zoom, max_zoom, _adapt_RMapTileRequestCallback(request), _adapt_RMapTileCancelCallback(cancel), user_data);
+}
+
+/**
  * Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
- * Tile, not compressed): decoded and prepared for the style at once.
- * The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+ * Tile, not compressed; NULL and 0: there is no tile there), asked for or
+ * not. Thread-safe: the bytes are copied, then decoded and prepared on a
+ * worker thread. A tile that can't be decoded counts as failed.
+ * Returns R_FALSE for a tile outside the world.
  */
 export function Rmap_tile_loaded(map: Rid, z: number, x: number, y: number, bytes: RPointer, length: number): number {
 	return _lib.Rmap_tile_loaded(map, z, x, y, bytes, length);
+}
+
+/** Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe. */
+export function Rmap_tile_failed(map: Rid, z: number, x: number, y: number): void {
+	_lib.Rmap_tile_failed(map, z, x, y);
+}
+
+/** How many prepared tiles the map keeps (default 160): past it, those used least recently go. */
+export function Rmap_set_tile_capacity(map: Rid, capacity: number): void {
+	_lib.Rmap_set_tile_capacity(map, capacity);
 }
 
 /** Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). */
