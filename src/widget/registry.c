@@ -59,6 +59,9 @@ static const rvn_widget_class_t* const g_classes[] = {
 	&rvn_class_rating,
 	&rvn_class_pagination,
 	&rvn_class_plot
+#ifdef RAVEN_WITH_MAP
+	, &rvn_class_map
+#endif
 };
 
 /** Other tags accepted in XML, for people coming from Slate / UMG. */

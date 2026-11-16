@@ -928,6 +928,70 @@ extern "C" {
 	typedef void (*RPlotSeriesCallback)(Rid plot, int series, int visible, void* user_data);
 	RAVEN_API void Rplot_set_series_toggled_callback(Rid plot, RPlotSeriesCallback callback, void* user_data);
 
+	/* ============================================================================
+	 *  MAP (vector tiles, styled)
+	 *
+	 * Mapbox Vector Tiles drawn as a MapLibre style JSON says, in part: its
+	 * background, fill, fill-extrusion (flat, as from above) and line layers,
+	 * their filters and their paint at the zoom drawn. The map knows nothing
+	 * of the network: the application hands it the style and each tile's
+	 * bytes, from wherever it gets them.
+	 *
+	 * The user moves the map by dragging it and zooms around the pointer with
+	 * the wheel; a trackpad moves it, with Ctrl it zooms. Fingers move and
+	 * pinch it.
+	 *
+	 * Only in a library built with RAVEN_WITH_MAP; without it, creating a map
+	 * fails and these functions report an error.
+	 * ============================================================================ */
+
+	/**
+	 * @brief Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+	 * @param source The vector source the map draws, by its name in the style's
+	 *               "sources"; NULL: the first vector source.
+	 * Forgets the tiles handed in so far: they are prepared for a style.
+	 * Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+	 */
+	RAVEN_API int Rmap_set_style_json(Rid map, const char* json, int length, const char* source);
+
+	/** @brief The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. */
+	RAVEN_API void Rmap_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom);
+
+	/**
+	 * @brief Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+	 * Tile, not compressed): decoded and prepared for the style at once.
+	 * The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+	 */
+	RAVEN_API int Rmap_tile_loaded(Rid map, int z, int x, int y, const void* bytes, size_t length);
+
+	/** @brief Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). */
+	RAVEN_API void Rmap_set_center(Rid map, double latitude, double longitude);
+	RAVEN_API void Rmap_get_center(Rid map, double* latitude, double* longitude);
+	RAVEN_API void Rmap_set_zoom(Rid map, double zoom);
+	RAVEN_API double Rmap_get_zoom(Rid map);
+	/** @brief How far the user can zoom out and in (default 2 to 18). */
+	RAVEN_API void Rmap_set_zoom_range(Rid map, double min_zoom, double max_zoom);
+
+	/** @brief Text shown in the bottom right corner, such as the data's attribution. NULL: none. */
+	RAVEN_API void Rmap_set_attribution(Rid map, const char* text);
+
+	/** What the last frame drew, and what preparing the tiles cost. */
+	typedef struct RMapStats {
+		int tiles;
+		int triangles;
+		int segments;
+		/** The map's own drawing calls, in milliseconds: all, the fills, the lines. */
+		double draw_ms, fill_ms, line_ms;
+		/** The tiles held, and what decoding and preparing them took in all. */
+		int prepared_tiles;
+		double decode_ms, prepare_ms;
+	} RMapStats;
+	RAVEN_API void Rmap_get_stats(Rid map, RMapStats* stats);
+
+	typedef void (*RMapCameraCallback)(Rid map, void* user_data);
+	/** @brief Called when the user moves or zooms the map. */
+	RAVEN_API void Rmap_set_camera_changed_callback(Rid map, RMapCameraCallback callback, void* user_data);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

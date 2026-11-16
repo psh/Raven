@@ -39,6 +39,7 @@ option(RAVEN_BUILD_WEB "Compile the web pages (raven_web.h: they drive an instal
 option(RAVEN_BACKEND_VULKAN "Compile the Vulkan backend" ON)
 option(RAVEN_WITH_STB_IMAGE "Decode PNG / JPEG / BMP / TGA textures with stb_image" ON)
 option(RAVEN_WITH_SVG "Draw SVG images (icons) with nanosvg" ON)
+option(RAVEN_WITH_MAP "The Map widget: vector tiles drawn as a MapLibre style says" ON)
 option(RAVEN_FETCH_VULKAN_HEADERS "Download the Vulkan headers when no Vulkan SDK is found" ON)
 option(RAVEN_REBUILD_SHADERS "Recompile the GLSL shaders (needs glslangValidator or glslc)" OFF)
 option(RAVEN_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
@@ -254,7 +255,21 @@ set(RAVEN_WIDGETS_SOURCES
 	src/widgets/rating.c
 	src/widgets/pagination.c
 	src/widgets/plot.c
+	src/widgets/map.c
 )
+
+set(RAVEN_MAP_SOURCES "")
+if(RAVEN_WITH_MAP)
+	set(RAVEN_MAP_SOURCES
+		src/map/map.h
+		src/map/json.c
+		src/map/tile.c
+		src/map/earcut.c
+		src/map/style.c
+		src/map/lines.c
+		src/map/prepare.c
+	)
+endif()
 
 set(RAVEN_XML_SOURCES
 	src/xml/xml.h
@@ -396,6 +411,9 @@ if(RAVEN_BACKEND_VULKAN)
 	endif()
 endif()
 
+if(RAVEN_WITH_MAP)
+	list(APPEND RAVEN_DEFINITIONS RAVEN_WITH_MAP)
+endif()
 if(RAVEN_WITH_SVG)
 	list(APPEND RAVEN_DEFINITIONS RAVEN_WITH_SVG)
 endif()
@@ -444,10 +462,11 @@ target_sources(raven PRIVATE
 	${RAVEN_WIDGET_SOURCES}
 	${RAVEN_WIDGETS_SOURCES}
 	${RAVEN_XML_SOURCES}
+	${RAVEN_MAP_SOURCES}
 )
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
 	${RAVEN_PUBLIC_HEADERS} ${RAVEN_CORE_SOURCES} ${RAVEN_PLATFORM_SOURCES} ${RAVEN_RENDER_SOURCES}
-	${RAVEN_WIDGET_SOURCES} ${RAVEN_WIDGETS_SOURCES} ${RAVEN_XML_SOURCES})
+	${RAVEN_WIDGET_SOURCES} ${RAVEN_WIDGETS_SOURCES} ${RAVEN_XML_SOURCES} ${RAVEN_MAP_SOURCES})
 
 target_include_directories(raven
 	PUBLIC
