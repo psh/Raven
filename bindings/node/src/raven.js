@@ -2071,7 +2071,7 @@ export class RTileItem extends RStruct {
 }
 
 export class RMapStats extends RStruct {
-	static SIZE = 88;
+	static SIZE = 128;
 
 	constructor(pointer) {
 		super(RMapStats.SIZE, pointer);
@@ -2171,6 +2171,48 @@ export class RMapStats extends RStruct {
 	}
 	set memory_bytes(value) {
 		this._view.setBigUint64(80, BigInt(value), true);
+	}
+
+	get labels_placed() {
+		return this._view.getInt32(88, true);
+	}
+	set labels_placed(value) {
+		this._view.setInt32(88, value, true);
+	}
+
+	get label_candidates() {
+		return this._view.getInt32(92, true);
+	}
+	set label_candidates(value) {
+		this._view.setInt32(92, value, true);
+	}
+
+	get icons() {
+		return this._view.getInt32(96, true);
+	}
+	set icons(value) {
+		this._view.setInt32(96, value, true);
+	}
+
+	get labels_ms() {
+		return this._view.getFloat64(104, true);
+	}
+	set labels_ms(value) {
+		this._view.setFloat64(104, value, true);
+	}
+
+	get place_ms() {
+		return this._view.getFloat64(112, true);
+	}
+	set place_ms(value) {
+		this._view.setFloat64(112, value, true);
+	}
+
+	get labels_reused() {
+		return this._view.getInt32(120, true);
+	}
+	set labels_reused(value) {
+		this._view.setInt32(120, value, true);
 	}
 }
 
@@ -3602,6 +3644,7 @@ export const Rplot_set_view_changed_callback = _lib.Rplot_set_view_changed_callb
 export const Rplot_set_drag_line_callback = _lib.Rplot_set_drag_line_callback;
 export const Rplot_set_series_toggled_callback = _lib.Rplot_set_series_toggled_callback;
 export const Rmap_set_style_json = _lib.Rmap_set_style_json;
+export const Rmap_set_sprite = _lib.Rmap_set_sprite;
 export const Rmap_set_tile_zoom_range = _lib.Rmap_set_tile_zoom_range;
 export const Rmap_set_tile_source = _lib.Rmap_set_tile_source;
 export const Rmap_tile_loaded = _lib.Rmap_tile_loaded;

@@ -6807,7 +6807,7 @@ func HostInjectClose(window ID) {
 // Rdate_picker_set_changed_callback, Rtime_picker_set_changed_callback, Rtoast_set_action_callback
 // Rbreadcrumb_set_clicked_callback, Rrating_set_changed_callback, Rpagination_set_changed_callback
 // Rplot_set_view_changed_callback, Rplot_set_drag_line_callback, Rplot_set_series_toggled_callback
-// Rmap_set_tile_source, Rmap_tile_loaded, Rmap_get_stats, Rmap_set_camera_changed_callback
+// Rmap_set_sprite, Rmap_set_tile_source, Rmap_tile_loaded, Rmap_get_stats, Rmap_set_camera_changed_callback
 // Rtext_editor_set_zoom_callback, Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback
 // Rtext_editor_set_changed_callback, Rdock_area_set_close_callback, Rdock_area_set_changed_callback
 // Risland_set_changed_callback, Rtaskbar_set_jump_list, Rtray_set_icon, Rtray_set_clicked_callback

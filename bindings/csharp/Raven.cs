@@ -2287,6 +2287,30 @@ namespace Raven
         /// The memory the prepared tiles hold, in bytes.
         /// </summary>
         public UIntPtr memory_bytes;
+        /// <summary>
+        /// The labels: placed of the candidates and the icons among them, at the last placement.
+        /// </summary>
+        public int labels_placed;
+        /// <summary>
+        /// The labels: placed of the candidates and the icons among them, at the last placement.
+        /// </summary>
+        public int label_candidates;
+        /// <summary>
+        /// The labels: placed of the candidates and the icons among them, at the last placement.
+        /// </summary>
+        public int icons;
+        /// <summary>
+        /// What the labels cost the last frame, and the last placement, in milliseconds.
+        /// </summary>
+        public double labels_ms;
+        /// <summary>
+        /// What the labels cost the last frame, and the last placement, in milliseconds.
+        /// </summary>
+        public double place_ms;
+        /// <summary>
+        /// Whether the last frame drew the placement before it, moved, rather than placing again.
+        /// </summary>
+        public int labels_reused;
     }
 
     /// <summary>
@@ -6600,6 +6624,15 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Rmap_set_style_json(uint map, [MarshalAs(Utf8.Str)] string json, int length, [MarshalAs(Utf8.Str)] string source);
+
+        /// <summary>
+        /// Sets the sprite sheet the style's icons come from: its JSON index
+        /// (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+        /// the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+        /// no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rmap_set_sprite(uint map, [MarshalAs(Utf8.Str)] string index_json, int index_length, byte[] png, UIntPtr png_length);
 
         /// <summary>
         /// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.

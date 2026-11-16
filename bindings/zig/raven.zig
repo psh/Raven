@@ -1629,6 +1629,18 @@ pub const RMapStats = extern struct {
     requested_tiles: c_int = 0,
     /// The memory the prepared tiles hold, in bytes.
     memory_bytes: usize = 0,
+    /// The labels: placed of the candidates and the icons among them, at the last placement.
+    labels_placed: c_int = 0,
+    /// The labels: placed of the candidates and the icons among them, at the last placement.
+    label_candidates: c_int = 0,
+    /// The labels: placed of the candidates and the icons among them, at the last placement.
+    icons: c_int = 0,
+    /// What the labels cost the last frame, and the last placement, in milliseconds.
+    labels_ms: f64 = 0,
+    /// What the labels cost the last frame, and the last placement, in milliseconds.
+    place_ms: f64 = 0,
+    /// Whether the last frame drew the placement before it, moved, rather than placing again.
+    labels_reused: c_int = 0,
 };
 
 /// What the editor knows of a language. Every field but the name may be NULL.
@@ -3174,6 +3186,11 @@ pub extern fn Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeries
 /// Forgets the tiles handed in so far: they are prepared for a style.
 /// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
 pub extern fn Rmap_set_style_json(map: Rid, json: ?[*:0]const u8, length: c_int, source: ?[*:0]const u8) c_int;
+/// Sets the sprite sheet the style's icons come from: its JSON index
+/// (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+/// the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+/// no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+pub extern fn Rmap_set_sprite(map: Rid, index_json: ?[*:0]const u8, index_length: c_int, png: ?*const anyopaque, png_length: usize) c_int;
 /// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
 pub extern fn Rmap_set_tile_zoom_range(map: Rid, min_zoom: c_int, max_zoom: c_int) void;
 /// Where the tiles come from: the zooms the source has (as

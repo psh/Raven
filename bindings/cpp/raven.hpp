@@ -3316,6 +3316,12 @@ inline void plot_set_series_toggled_callback(Rid plot, std::function<void(Rid, i
 /// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
 inline int map_set_style_json(Rid map, const char* json, int length, const char* source) { return Rmap_set_style_json(map, json, length, source); }
 
+/// Sets the sprite sheet the style's icons come from: its JSON index
+/// (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+/// the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+/// no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+inline int map_set_sprite(Rid map, const char* index_json, int index_length, const void* png, size_t png_length) { return Rmap_set_sprite(map, index_json, index_length, png, png_length); }
+
 /// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
 inline void map_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom) { Rmap_set_tile_zoom_range(map, min_zoom, max_zoom); }
 

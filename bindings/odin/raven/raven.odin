@@ -1639,6 +1639,18 @@ RMapStats :: struct {
 	requested_tiles: i32,
 	// The memory the prepared tiles hold, in bytes.
 	memory_bytes: uint,
+	// The labels: placed of the candidates and the icons among them, at the last placement.
+	labels_placed: i32,
+	// The labels: placed of the candidates and the icons among them, at the last placement.
+	label_candidates: i32,
+	// The labels: placed of the candidates and the icons among them, at the last placement.
+	icons: i32,
+	// What the labels cost the last frame, and the last placement, in milliseconds.
+	labels_ms: f64,
+	// What the labels cost the last frame, and the last placement, in milliseconds.
+	place_ms: f64,
+	// Whether the last frame drew the placement before it, moved, rather than placing again.
+	labels_reused: i32,
 }
 
 // What the editor knows of a language. Every field but the name may be NULL.
@@ -3186,6 +3198,11 @@ foreign lib {
 	// Forgets the tiles handed in so far: they are prepared for a style.
 	// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
 	Rmap_set_style_json :: proc(map_: Rid, json: cstring, length: i32, source: cstring) -> i32 ---
+	// Sets the sprite sheet the style's icons come from: its JSON index
+	// (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+	// the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+	// no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+	Rmap_set_sprite :: proc(map_: Rid, index_json: cstring, index_length: i32, png: rawptr, png_length: uint) -> i32 ---
 	// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
 	Rmap_set_tile_zoom_range :: proc(map_: Rid, min_zoom: i32, max_zoom: i32) ---
 	// Where the tiles come from: the zooms the source has (as

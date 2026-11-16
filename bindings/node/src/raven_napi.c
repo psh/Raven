@@ -667,6 +667,7 @@ static struct {
 	void (*Rplot_set_drag_line_callback)(Rid, RPlotDragLineCallback, void*);
 	void (*Rplot_set_series_toggled_callback)(Rid, RPlotSeriesCallback, void*);
 	int (*Rmap_set_style_json)(Rid, const char*, int, const char*);
+	int (*Rmap_set_sprite)(Rid, const char*, int, const void*, size_t);
 	void (*Rmap_set_tile_zoom_range)(Rid, int, int);
 	void (*Rmap_set_tile_source)(Rid, int, int, RMapTileRequestCallback, RMapTileCancelCallback, void*);
 	int (*Rmap_tile_loaded)(Rid, int, int, int, const void*, size_t);
@@ -1825,6 +1826,7 @@ static const struct {
 	{"Rplot_set_drag_line_callback", offsetof(__typeof__(rn), Rplot_set_drag_line_callback)},
 	{"Rplot_set_series_toggled_callback", offsetof(__typeof__(rn), Rplot_set_series_toggled_callback)},
 	{"Rmap_set_style_json", offsetof(__typeof__(rn), Rmap_set_style_json)},
+	{"Rmap_set_sprite", offsetof(__typeof__(rn), Rmap_set_sprite)},
 	{"Rmap_set_tile_zoom_range", offsetof(__typeof__(rn), Rmap_set_tile_zoom_range)},
 	{"Rmap_set_tile_source", offsetof(__typeof__(rn), Rmap_set_tile_source)},
 	{"Rmap_tile_loaded", offsetof(__typeof__(rn), Rmap_tile_loaded)},
@@ -14711,6 +14713,30 @@ done:
 	return result_;
 }
 
+static napi_value rn_w_Rmap_set_sprite(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	int a2;
+	void* a3;
+	uint64_t a4;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_ptr(env, argv[3], &a3)) goto done;
+	if (!rn_get_uint64(env, argv[4], &a4)) goto done;
+	int value_ = rn.Rmap_set_sprite((Rid)a0, a1.p, (int)a2, (const void*)a3, (size_t)a4);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
 static napi_value rn_w_Rmap_set_tile_zoom_range(napi_env env, napi_callback_info info) {
 	size_t argc = 3;
 	napi_value argv[3];
@@ -24201,6 +24227,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rplot_set_drag_line_callback", NULL, rn_w_Rplot_set_drag_line_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rplot_set_series_toggled_callback", NULL, rn_w_Rplot_set_series_toggled_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmap_set_style_json", NULL, rn_w_Rmap_set_style_json, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_set_sprite", NULL, rn_w_Rmap_set_sprite, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmap_set_tile_zoom_range", NULL, rn_w_Rmap_set_tile_zoom_range, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmap_set_tile_source", NULL, rn_w_Rmap_set_tile_source, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmap_tile_loaded", NULL, rn_w_Rmap_tile_loaded, NULL, NULL, NULL, napi_enumerable, NULL},

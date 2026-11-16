@@ -2300,7 +2300,7 @@ export class RTileItem extends RStruct {
 
 /** What the last frame drew, and what preparing the tiles cost. */
 export class RMapStats extends RStruct {
-	static readonly SIZE = 88;
+	static readonly SIZE = 128;
 	constructor(pointer?: Pointer);
 	/** The structure at an address of the library, or null. */
 	static from(pointer: Pointer | null): RMapStats | null;
@@ -2336,6 +2336,24 @@ export class RMapStats extends RStruct {
 	/** The memory the prepared tiles hold, in bytes. */
 	get memory_bytes(): number;
 	set memory_bytes(value: number);
+	/** The labels: placed of the candidates and the icons among them, at the last placement. */
+	get labels_placed(): number;
+	set labels_placed(value: number);
+	/** The labels: placed of the candidates and the icons among them, at the last placement. */
+	get label_candidates(): number;
+	set label_candidates(value: number);
+	/** The labels: placed of the candidates and the icons among them, at the last placement. */
+	get icons(): number;
+	set icons(value: number);
+	/** What the labels cost the last frame, and the last placement, in milliseconds. */
+	get labels_ms(): number;
+	set labels_ms(value: number);
+	/** What the labels cost the last frame, and the last placement, in milliseconds. */
+	get place_ms(): number;
+	set place_ms(value: number);
+	/** Whether the last frame drew the placement before it, moved, rather than placing again. */
+	get labels_reused(): number;
+	set labels_reused(value: number);
 }
 
 /**
@@ -5228,6 +5246,14 @@ export function Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeri
  * Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
  */
 export function Rmap_set_style_json(map: Rid, json: string | null, length: number, source: string | null): number;
+
+/**
+ * Sets the sprite sheet the style's icons come from: its JSON index
+ * (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+ * the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+ * no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+ */
+export function Rmap_set_sprite(map: Rid, index_json: string | null, index_length: number, png: RPointer, png_length: number): number;
 
 /** The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. */
 export function Rmap_set_tile_zoom_range(map: Rid, min_zoom: number, max_zoom: number): void;

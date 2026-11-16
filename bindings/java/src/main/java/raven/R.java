@@ -2804,7 +2804,7 @@ public final class R {
      */
     public static final class RMapStats {
         /** The size of the structure in C, in bytes. */
-        public static final long SIZE = 88;
+        public static final long SIZE = 128;
         private final MemorySegment s;
         private Arena arena;
 
@@ -2897,6 +2897,42 @@ public final class R {
          */
         public long memory_bytes() { return s.get(JAVA_LONG, 80); }
         public RMapStats memory_bytes(long value) { s.set(JAVA_LONG, 80, value); return this; }
+
+        /**
+         * The labels: placed of the candidates and the icons among them, at the last placement.
+         */
+        public int labels_placed() { return s.get(JAVA_INT, 88); }
+        public RMapStats labels_placed(int value) { s.set(JAVA_INT, 88, value); return this; }
+
+        /**
+         * The labels: placed of the candidates and the icons among them, at the last placement.
+         */
+        public int label_candidates() { return s.get(JAVA_INT, 92); }
+        public RMapStats label_candidates(int value) { s.set(JAVA_INT, 92, value); return this; }
+
+        /**
+         * The labels: placed of the candidates and the icons among them, at the last placement.
+         */
+        public int icons() { return s.get(JAVA_INT, 96); }
+        public RMapStats icons(int value) { s.set(JAVA_INT, 96, value); return this; }
+
+        /**
+         * What the labels cost the last frame, and the last placement, in milliseconds.
+         */
+        public double labels_ms() { return s.get(JAVA_DOUBLE, 104); }
+        public RMapStats labels_ms(double value) { s.set(JAVA_DOUBLE, 104, value); return this; }
+
+        /**
+         * What the labels cost the last frame, and the last placement, in milliseconds.
+         */
+        public double place_ms() { return s.get(JAVA_DOUBLE, 112); }
+        public RMapStats place_ms(double value) { s.set(JAVA_DOUBLE, 112, value); return this; }
+
+        /**
+         * Whether the last frame drew the placement before it, moved, rather than placing again.
+         */
+        public int labels_reused() { return s.get(JAVA_INT, 120); }
+        public RMapStats labels_reused(int value) { s.set(JAVA_INT, 120, value); return this; }
     }
 
     /**
@@ -15271,6 +15307,26 @@ public final class R {
             MemorySegment json$ = json == null ? MemorySegment.NULL : utf8($a, json);
             MemorySegment source$ = source == null ? MemorySegment.NULL : utf8($a, source);
             int $r = (int) $h.invokeExact(map, json$, length, source$);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_sprite$;
+
+    /**
+     * Sets the sprite sheet the style's icons come from: its JSON index
+     * (&#64;p index_length bytes, -1: null-terminated) and its PNG image, such as
+     * the style's "sprite" URL with "&#64;2x.json" and "&#64;2x.png". NULL &#64;p index_json:
+     * no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+     */
+    public static int Rmap_set_sprite(int map, String index_json, int index_length, MemorySegment png, long png_length) {
+        MethodHandle $h = Rmap_set_sprite$;
+        if ($h == null) Rmap_set_sprite$ = $h = find("Rmap_set_sprite", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_LONG));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment index_json$ = index_json == null ? MemorySegment.NULL : utf8($a, index_json);
+            int $r = (int) $h.invokeExact(map, index_json$, index_length, (MemorySegment) (png == null ? MemorySegment.NULL : png), png_length);
             return $r;
         } catch (Throwable $t) {
             throw fail($t);

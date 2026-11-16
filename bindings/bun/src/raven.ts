@@ -791,6 +791,7 @@ const _symbols = {
 	Rplot_set_drag_line_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rplot_set_series_toggled_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rmap_set_style_json: { args: ["u32", "ptr", "i32", "ptr"], returns: "i32" },
+	Rmap_set_sprite: { args: ["u32", "ptr", "i32", "ptr", "usize"], returns: "i32" },
 	Rmap_set_tile_zoom_range: { args: ["u32", "i32", "i32"], returns: "void" },
 	Rmap_set_tile_source: { args: ["u32", "i32", "i32", "ptr", "ptr", "ptr"], returns: "void" },
 	Rmap_tile_loaded: { args: ["u32", "i32", "i32", "i32", "ptr", "usize"], returns: "i32" },
@@ -4367,7 +4368,7 @@ export class RTileItem extends RStruct {
 
 /** What the last frame drew, and what preparing the tiles cost. */
 export class RMapStats extends RStruct {
-	static readonly SIZE = 88;
+	static readonly SIZE = 128;
 
 	constructor(pointer?: Pointer) {
 		super(RMapStats.SIZE, pointer);
@@ -4473,6 +4474,54 @@ export class RMapStats extends RStruct {
 	}
 	set memory_bytes(value: number) {
 		this._view.setBigUint64(80, BigInt(value), true);
+	}
+
+	/** The labels: placed of the candidates and the icons among them, at the last placement. */
+	get labels_placed(): number {
+		return this._view.getInt32(88, true);
+	}
+	set labels_placed(value: number) {
+		this._view.setInt32(88, value, true);
+	}
+
+	/** The labels: placed of the candidates and the icons among them, at the last placement. */
+	get label_candidates(): number {
+		return this._view.getInt32(92, true);
+	}
+	set label_candidates(value: number) {
+		this._view.setInt32(92, value, true);
+	}
+
+	/** The labels: placed of the candidates and the icons among them, at the last placement. */
+	get icons(): number {
+		return this._view.getInt32(96, true);
+	}
+	set icons(value: number) {
+		this._view.setInt32(96, value, true);
+	}
+
+	/** What the labels cost the last frame, and the last placement, in milliseconds. */
+	get labels_ms(): number {
+		return this._view.getFloat64(104, true);
+	}
+	set labels_ms(value: number) {
+		this._view.setFloat64(104, value, true);
+	}
+
+	/** What the labels cost the last frame, and the last placement, in milliseconds. */
+	get place_ms(): number {
+		return this._view.getFloat64(112, true);
+	}
+	set place_ms(value: number) {
+		this._view.setFloat64(112, value, true);
+	}
+
+	/** Whether the last frame drew the placement before it, moved, rather than placing again. */
+	get labels_reused(): number {
+		return this._view.getInt32(120, true);
+	}
+	set labels_reused(value: number) {
+		this._view.setInt32(120, value, true);
 	}
 }
 
@@ -10205,6 +10254,16 @@ export function Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeri
  */
 export function Rmap_set_style_json(map: Rid, json: string | null, length: number, source: string | null): number {
 	return _lib.Rmap_set_style_json(map, _s(json), length, _s(source));
+}
+
+/**
+ * Sets the sprite sheet the style's icons come from: its JSON index
+ * (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+ * the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+ * no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+ */
+export function Rmap_set_sprite(map: Rid, index_json: string | null, index_length: number, png: RPointer, png_length: number): number {
+	return _lib.Rmap_set_sprite(map, _s(index_json), index_length, png, png_length);
 }
 
 /** The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. */

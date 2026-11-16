@@ -1795,6 +1795,12 @@ class RMapStats(ctypes.Structure):
         ("failed_tiles", ctypes.c_int),
         ("requested_tiles", ctypes.c_int),
         ("memory_bytes", ctypes.c_size_t),
+        ("labels_placed", ctypes.c_int),
+        ("label_candidates", ctypes.c_int),
+        ("icons", ctypes.c_int),
+        ("labels_ms", ctypes.c_double),
+        ("place_ms", ctypes.c_double),
+        ("labels_reused", ctypes.c_int),
     ]
 
 
@@ -8506,6 +8512,18 @@ def Rmap_set_style_json(map, json, length, source):
     Forgets the tiles handed in so far: they are prepared for a style.
     Returns R_FALSE (and keeps the style it had) if the JSON can't be read."""
     return _lib.Rmap_set_style_json(map, _s(json), length, _s(source))
+
+
+_lib.Rmap_set_sprite.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
+_lib.Rmap_set_sprite.restype = ctypes.c_int
+
+
+def Rmap_set_sprite(map, index_json, index_length, png, png_length):
+    """Sets the sprite sheet the style's icons come from: its JSON index
+    (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+    the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+    no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read."""
+    return _lib.Rmap_set_sprite(map, _s(index_json), index_length, png, png_length)
 
 
 _lib.Rmap_set_tile_zoom_range.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]

@@ -1031,6 +1031,12 @@ struct RMapStats {
 	int failed_tiles;
 	int requested_tiles;
 	size_t memory_bytes;
+	int labels_placed;
+	int label_candidates;
+	int icons;
+	double labels_ms;
+	double place_ms;
+	int labels_reused;
 };
 struct RLanguageDesc {
 	const char* name;
@@ -1764,6 +1770,7 @@ void Rplot_set_view_changed_callback(Rid plot, RPlotViewCallback callback, void*
 void Rplot_set_drag_line_callback(Rid plot, RPlotDragLineCallback callback, void* user_data);
 void Rplot_set_series_toggled_callback(Rid plot, RPlotSeriesCallback callback, void* user_data);
 int Rmap_set_style_json(Rid map, const char* json, int length, const char* source);
+int Rmap_set_sprite(Rid map, const char* index_json, int index_length, const void* png, size_t png_length);
 void Rmap_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom);
 void Rmap_set_tile_source(Rid map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, void* user_data);
 int Rmap_tile_loaded(Rid map, int z, int x, int y, const void* bytes, size_t length);

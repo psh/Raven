@@ -1989,6 +1989,18 @@ struct MapStats
 	CInt requested_tiles;
 	<* The memory the prepared tiles hold, in bytes. *>
 	usz memory_bytes;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt labels_placed;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt label_candidates;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt icons;
+	<* What the labels cost the last frame, and the last placement, in milliseconds. *>
+	double labels_ms;
+	<* What the labels cost the last frame, and the last placement, in milliseconds. *>
+	double place_ms;
+	<* Whether the last frame drew the placement before it, moved, rather than placing again. *>
+	CInt labels_reused;
 }
 
 <*
@@ -4813,6 +4825,14 @@ fn Map map_create() @inline => (Map)c::r_widget_create(c::R_WIDGET_MAP);
 
 <* Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated). *>
 fn CInt Map.set_style_json(self, ZString json, CInt length, ZString source) @inline => c::r_map_set_style_json((c::Rid)self, (char*)json, length, (char*)source);
+
+<*
+ Sets the sprite sheet the style's icons come from: its JSON index
+ (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+ the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+ no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+*>
+fn CInt Map.set_sprite(self, ZString index_json, CInt index_length, void* png, usz png_length) @inline => c::r_map_set_sprite((c::Rid)self, (char*)index_json, index_length, png, png_length);
 
 <* The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. *>
 fn void Map.set_tile_zoom_range(self, CInt min_zoom, CInt max_zoom) @inline => c::r_map_set_tile_zoom_range((c::Rid)self, min_zoom, max_zoom);

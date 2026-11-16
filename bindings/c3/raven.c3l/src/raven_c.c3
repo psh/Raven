@@ -1752,6 +1752,18 @@ struct RMapStats
 	CInt requested_tiles;
 	<* The memory the prepared tiles hold, in bytes. *>
 	usz memory_bytes;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt labels_placed;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt label_candidates;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt icons;
+	<* What the labels cost the last frame, and the last placement, in milliseconds. *>
+	double labels_ms;
+	<* What the labels cost the last frame, and the last placement, in milliseconds. *>
+	double place_ms;
+	<* Whether the last frame drew the placement before it, moved, rather than placing again. *>
+	CInt labels_reused;
 }
 
 <*
@@ -4124,6 +4136,14 @@ extern fn void r_plot_set_series_toggled_callback(Rid plot, RPlotSeriesCallback 
 
 <* Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated). *>
 extern fn CInt r_map_set_style_json(Rid map, char* json, CInt length, char* source) @cname("Rmap_set_style_json");
+
+<*
+ Sets the sprite sheet the style's icons come from: its JSON index
+ (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+ the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+ no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+*>
+extern fn CInt r_map_set_sprite(Rid map, char* index_json, CInt index_length, void* png, usz png_length) @cname("Rmap_set_sprite");
 
 <* The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. *>
 extern fn void r_map_set_tile_zoom_range(Rid map, CInt min_zoom, CInt max_zoom) @cname("Rmap_set_tile_zoom_range");
