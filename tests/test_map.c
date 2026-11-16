@@ -9,6 +9,7 @@
 
 #include "test.h"
 #include "map/map.h"
+#include "render/renderer.h"
 
 #include <stdlib.h>
 
@@ -245,6 +246,29 @@ static void test_compressed_tiles(void) {
 	memcpy(broken, g_water_gzip, sizeof(broken));
 	broken[sizeof(broken) - 4]++;
 	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(broken), &tile));
+	/* a checksum that isn't the tile's: gzip's CRC-32, zlib's Adler-32 */
+	memcpy(broken, g_water_gzip, sizeof(broken));
+	broken[sizeof(broken) - 8] ^= 1;
+	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(broken), &tile));
+	memcpy(broken, g_water_zlib, sizeof(g_water_zlib));
+	broken[sizeof(g_water_zlib) - 1] ^= 1;
+	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(g_water_zlib), &tile));
+	/*
+	 * One bit flipped in the stream turns "lake" into "like": it inflates, to
+	 * a tile that decodes as well as the first. Only the checksum catches it.
+	 */
+	memcpy(broken, g_water_zlib, sizeof(g_water_zlib));
+	broken[sizeof(g_water_zlib) - 46] ^= 0x80;
+	{
+		size_t size = 0;
+		uint8_t* inflated = rvn_inflate(broken, sizeof(g_water_zlib), R_TRUE, 0, &size);
+		const rvn_map_layer_t* water;
+		CHECK(inflated && rvn_map_tile_decode(&arena, inflated, size, &tile));
+		water = inflated ? rvn_map_tile_layer(&tile, "water") : NULL;
+		CHECK(water && strcmp(water->values[0].as.string, "like") == 0);
+		rvn_free(inflated);
+	}
+	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(g_water_zlib), &tile));
 	/* a method that isn't DEFLATE */
 	memcpy(broken, g_water_gzip, sizeof(broken));
 	broken[2] = 7;
