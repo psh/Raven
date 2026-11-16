@@ -55,6 +55,10 @@ if(RAVEN_BUILD_SHARED AND NOT WIN32)
 	if(Python3_FOUND)
 		add_test(NAME binding_python
 			COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/example.py --test)
+		if(RAVEN_WITH_MAP)
+			add_test(NAME binding_python_map
+				COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/map_example.py --test)
+		endif()
 	endif()
 
 	find_program(RAVEN_CARGO cargo)
