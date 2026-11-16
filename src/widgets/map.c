@@ -40,6 +40,8 @@
 #define RVN_MAP_MAX_DASHES 16
 /* how long a tile that failed waits before it is asked for again */
 #define RVN_MAP_RETRY_SECONDS 10.0
+/* how long the camera rests before the labels are placed again where it stopped */
+#define RVN_MAP_SETTLE_SECONDS 0.2
 
 enum {
 	RVN_MAP_TILE_PENDING,
@@ -90,9 +92,18 @@ typedef struct rvn_map_t {
 	RMapStats stats;
 	RMapCameraCallback camera_callback;
 	void* camera_user;
-	/** The tiles of a frame, reused: indices into entries. */
+	/** The tiles of a frame, reused: indices into entries, then the tiles themselves for the labels. */
 	uint32_t* drawn;
 	uint32_t drawn_cap;
+	const rvn_map_prepared_t** drawn_tiles;
+	uint32_t drawn_tiles_cap;
+	/** The labels, their icons, and what they were placed for: bumped as tiles land and the style or sprite changes. */
+	rvn_map_labels_t* labels;
+	rvn_map_sprite_t* sprite;
+	int label_version;
+	/** When the camera last moved, and the timer that draws again once it has rested. */
+	double moved_at;
+	Rid settle_timer;
 } rvn_map_t;
 
 /** Tile bytes on their way: posted to the interface, prepared on a worker, posted back. */
@@ -322,6 +333,7 @@ static void rvn_map_prepared_task(void* user_data) {
 		e->state = RVN_MAP_TILE_READY;
 		e->last_used = map->clock;
 		a->ok = R_FALSE;
+		map->label_version++;
 		rvn_map_evict(map);
 	}
 	rvn_map_arrival_free(a);
@@ -372,6 +384,8 @@ static void rvn_map_init(rvn_widget_t* widget) {
 	map->zoom = 2.0;
 	map->min_zoom = 2.0;
 	map->max_zoom = 18.0;
+	map->moved_at = -1.0;
+	map->labels = rvn_map_labels_create();
 }
 
 static void rvn_map_destroy(rvn_widget_t* widget) {
@@ -383,6 +397,10 @@ static void rvn_map_destroy(rvn_widget_t* widget) {
 	rvn_free(map->entries);
 	rvn_free(map->messages);
 	rvn_free(map->drawn);
+	rvn_free(map->drawn_tiles);
+	rvn_map_labels_free(map->labels);
+	rvn_map_sprite_free(map->sprite);
+	if (map->settle_timer && Rtimer_is_valid(map->settle_timer)) Rtimer_destroy(map->settle_timer);
 	rvn_map_style_release(map->style);
 	rvn_free(map->attribution);
 }
@@ -567,6 +585,31 @@ static void rvn_map_paint(rvn_widget_t* widget, RPainter* painter) {
 			Rdraw_pop_clip_rect(painter);
 		}
 	}
+	if (style->symbol_count) {
+		/* the labels over everything, placed again once the camera has rested somewhere new */
+		rvn_map_view_t view;
+		rvn_map_label_stats_t label_stats;
+		int settled = map->moved_at < 0.0 || rvn_clock_seconds() - map->moved_at >= RVN_MAP_SETTLE_SECONDS;
+		RVN_ARRAY_RESERVE(map->drawn_tiles, map->drawn_tiles_cap, drawn + 1);
+		for (i = 0; i < drawn; i++) map->drawn_tiles[i] = &map->entries[map->drawn[i]].tile;
+		view.center_x = map->center_x;
+		view.center_y = map->center_y;
+		view.zoom = zoom;
+		view.width = width;
+		view.height = height;
+		memset(&label_stats, 0, sizeof(label_stats));
+		label_stats.placed = map->stats.labels_placed;
+		label_stats.candidates = map->stats.label_candidates;
+		label_stats.icons = map->stats.icons;
+		label_stats.place_ms = map->stats.place_ms;
+		rvn_map_labels_draw(map->labels, painter, style, map->drawn_tiles, drawn, &view, map->label_version, settled, map->sprite, &label_stats);
+		map->stats.labels_placed = label_stats.placed;
+		map->stats.label_candidates = label_stats.candidates;
+		map->stats.icons = label_stats.icons;
+		map->stats.labels_ms = label_stats.ms;
+		map->stats.place_ms = label_stats.place_ms;
+		map->stats.labels_reused = label_stats.reused;
+	}
 	rvn_map_paint_attribution(map, painter);
 	rvn_paint_pop_clip(painter);
 
@@ -582,9 +625,24 @@ static void rvn_map_paint(rvn_widget_t* widget, RPainter* painter) {
  *  Moving the camera
  * ------------------------------------------------------------------------- */
 
+static void rvn_map_settled(Rid timer, void* user_data) {
+	rvn_map_t* map = rvn_map_from((Rid)(uintptr_t)user_data);
+	if (!map || map->settle_timer != timer) return;
+	map->settle_timer = 0;
+	rvn_widget_invalidate_paint(&map->base);
+}
+
+/* The camera moved: the labels move with it, and are placed again once it has rested a moment. */
+static void rvn_map_moved(rvn_map_t* map) {
+	map->moved_at = rvn_clock_seconds();
+	if (map->settle_timer && Rtimer_is_valid(map->settle_timer)) Rtimer_destroy(map->settle_timer);
+	map->settle_timer = Rtimer_create(RVN_MAP_SETTLE_SECONDS, R_FALSE, rvn_map_settled, (void*)(uintptr_t)map->base.id);
+	rvn_widget_invalidate_paint(&map->base);
+}
+
 static void rvn_map_camera_changed(rvn_widget_t* widget) {
 	rvn_map_t* map = (rvn_map_t*)widget;
-	rvn_widget_invalidate_paint(widget);
+	rvn_map_moved(map);
 	if (map->camera_callback) map->camera_callback(widget->id, map->camera_user);
 }
 
@@ -697,6 +755,30 @@ int Rmap_set_style_json(Rid id, const char* json, int length, const char* source
 	rvn_map_style_release(map->style);
 	map->style = style;
 	map->style_version++;
+	map->label_version++;
+	rvn_widget_invalidate_paint(widget);
+	return R_TRUE;
+}
+
+int Rmap_set_sprite(Rid id, const char* index_json, int index_length, const void* png, size_t png_length) {
+	rvn_map_t* map;
+	rvn_map_sprite_t* sprite = NULL;
+	RVN_WIDGET(widget, id, R_WIDGET_MAP, R_FALSE);
+	map = (rvn_map_t*)widget;
+	if (index_json) {
+		if (!png || !png_length) {
+			rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rmap_set_sprite: no PNG");
+			return R_FALSE;
+		}
+		sprite = rvn_map_sprite_create(index_json, index_length < 0 ? strlen(index_json) : (size_t)index_length, png, png_length);
+		if (!sprite) {
+			rvn_error(R_ERROR_INVALID_FILE_FORMAT, R_SEVERITY_ERROR, "Rmap_set_sprite: the index or the image can't be read");
+			return R_FALSE;
+		}
+	}
+	rvn_map_sprite_free(map->sprite);
+	map->sprite = sprite;
+	map->label_version++;
 	rvn_widget_invalidate_paint(widget);
 	return R_TRUE;
 }
@@ -778,7 +860,7 @@ void Rmap_set_center(Rid id, double latitude, double longitude) {
 	latitude = rvn_map_clampd(latitude, -85.0511287798, 85.0511287798);
 	map->center_x = (longitude + 180.0) / 360.0;
 	map->center_y = (1.0 - asinh(tan(latitude * pi / 180.0)) / pi) / 2.0;
-	rvn_widget_invalidate_paint(widget);
+	rvn_map_moved(map);
 }
 
 void Rmap_get_center(Rid id, double* latitude, double* longitude) {
@@ -793,7 +875,7 @@ void Rmap_get_center(Rid id, double* latitude, double* longitude) {
 void Rmap_set_zoom(Rid id, double zoom) {
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_MAP);
 	((rvn_map_t*)widget)->zoom = rvn_map_clampd(zoom, 0.0, 30.0);
-	rvn_widget_invalidate_paint(widget);
+	rvn_map_moved((rvn_map_t*)widget);
 }
 
 double Rmap_get_zoom(Rid id) {
@@ -856,6 +938,11 @@ static void rvn_map_missing(const char* function) {
 
 int Rmap_set_style_json(Rid id, const char* json, int length, const char* source) {
 	RVN_UNUSED(id); RVN_UNUSED(json); RVN_UNUSED(length); RVN_UNUSED(source);
+	rvn_map_missing(__func__);
+	return R_FALSE;
+}
+int Rmap_set_sprite(Rid id, const char* index_json, int index_length, const void* png, size_t png_length) {
+	RVN_UNUSED(id); RVN_UNUSED(index_json); RVN_UNUSED(index_length); RVN_UNUSED(png); RVN_UNUSED(png_length);
 	rvn_map_missing(__func__);
 	return R_FALSE;
 }

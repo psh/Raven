@@ -932,8 +932,12 @@ extern "C" {
 	 *  MAP (vector tiles, styled)
 	 *
 	 * Mapbox Vector Tiles drawn as a MapLibre style JSON says, in part: its
-	 * background, fill, fill-extrusion (flat, as from above) and line layers,
-	 * their filters and their paint at the zoom drawn. The map knows nothing
+	 * background, fill, fill-extrusion (flat, as from above), line and symbol
+	 * layers, their filters and their paint at the zoom drawn. Symbols are
+	 * labels and icons, at points and along lines, kept apart by collision,
+	 * in Raven's default font and the bold and italic faces it derives (the
+	 * style's own fonts are not loaded), with icons from the style's sprite
+	 * sheet (Rmap_set_sprite). The map knows nothing
 	 * of the network: the application hands it the style and each tile's
 	 * bytes, from wherever it gets them.
 	 *
@@ -961,6 +965,14 @@ extern "C" {
 	 * Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
 	 */
 	RAVEN_API int Rmap_set_style_json(Rid map, const char* json, int length, const char* source);
+
+	/**
+	 * @brief Sets the sprite sheet the style's icons come from: its JSON index
+	 * (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+	 * the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+	 * no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+	 */
+	RAVEN_API int Rmap_set_sprite(Rid map, const char* index_json, int index_length, const void* png, size_t png_length);
 
 	/** @brief The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. */
 	RAVEN_API void Rmap_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom);
@@ -1019,6 +1031,12 @@ extern "C" {
 		int requested_tiles;
 		/** The memory the prepared tiles hold, in bytes. */
 		size_t memory_bytes;
+		/** The labels: placed of the candidates and the icons among them, at the last placement. */
+		int labels_placed, label_candidates, icons;
+		/** What the labels cost the last frame, and the last placement, in milliseconds. */
+		double labels_ms, place_ms;
+		/** Whether the last frame drew the placement before it, moved, rather than placing again. */
+		int labels_reused;
 	} RMapStats;
 	RAVEN_API void Rmap_get_stats(Rid map, RMapStats* stats);
 

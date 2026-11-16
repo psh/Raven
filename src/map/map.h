@@ -176,6 +176,9 @@ typedef struct rvn_map_style_t {
 	/** The fill and line layers drawn, in order. */
 	rvn_map_style_layer_t* layers;
 	uint32_t layer_count;
+	/** The symbol layers (labels and icons), in order: placed from the last. */
+	rvn_map_style_layer_t* symbols;
+	uint32_t symbol_count;
 	/** Held by the map and by each tile being prepared with it, on any thread. */
 	rvn_atomic_t references;
 } rvn_map_style_t;
@@ -242,6 +245,29 @@ typedef struct rvn_map_shape_t {
 	uint32_t point_count;
 } rvn_map_shape_t;
 
+/** A symbol of a tile at a point of its unit square: its text, its icon, either NULL. */
+typedef struct rvn_map_label_t {
+	const char* text;
+	const char* icon;
+	float x, y;
+} rvn_map_label_t;
+
+/** A symbol along a line of a tile: its text and icon, and the line in the tile's unit square. */
+typedef struct rvn_map_line_label_t {
+	const char* text;
+	const char* icon;
+	const float* xy;
+	uint32_t point_count;
+} rvn_map_line_label_t;
+
+/** What one symbol layer places of one tile. */
+typedef struct rvn_map_symbol_bucket_t {
+	rvn_map_label_t* labels;
+	uint32_t label_count;
+	rvn_map_line_label_t* lines;
+	uint32_t line_count;
+} rvn_map_symbol_bucket_t;
+
 /* the shapes kept per bucket: undashed offset 0 is the bucket itself, then the two sides of a gap */
 #define RVN_MAP_SHAPES 3
 
@@ -251,6 +277,11 @@ typedef struct rvn_map_prepared_t {
 	rvn_map_bucket_t* buckets;
 	rvn_map_shape_t* shapes;
 	uint32_t bucket_count;
+	/** One per symbol layer of the style; their texts and lines are in the arena. */
+	rvn_map_symbol_bucket_t* symbols;
+	uint32_t symbol_count;
+	rvn_arena_t arena;
+	size_t arena_bytes;
 	size_t bytes;
 	double decode_ms, prepare_ms;
 	uint32_t triangle_count, segment_count;
@@ -267,6 +298,70 @@ int  rvn_map_prepare(rvn_map_prepared_t* tile, const rvn_map_style_t* style, int
 void rvn_map_prepared_free(rvn_map_prepared_t* tile);
 /** The bytes a prepared tile holds: its buckets and the line shapes cut so far. */
 size_t rvn_map_prepared_memory(const rvn_map_prepared_t* tile);
+
+/** The text a symbol layer gives a feature (text-field, text-transform), in the scratch arena; NULL if empty. */
+const char* rvn_map_label_text(const rvn_map_style_layer_t* layer, const rvn_map_context_t* context);
+/** The name of the icon a symbol layer gives a feature (icon-image); NULL if none. */
+const char* rvn_map_icon_name(const rvn_map_style_layer_t* layer, const rvn_map_context_t* context);
+/** Upper or lower case, in place where it can (ASCII, Latin-1, Greek and Cyrillic): Raven has no full case mapping. */
+char* rvn_map_change_case(rvn_arena_t* arena, const char* text, int upper);
+
+/* ---------------------------------------------------------------------------
+ *  Sprite sheets (map/labels.c)
+ * ------------------------------------------------------------------------- */
+
+typedef struct rvn_map_icon_t {
+	const char* name;
+	int x, y, width, height;
+	/** Pixels of the sheet in a logical unit. */
+	float ratio;
+} rvn_map_icon_t;
+
+typedef struct rvn_map_sprite_t {
+	rvn_arena_t arena;
+	/** Sorted by name. */
+	rvn_map_icon_t* icons;
+	uint32_t icon_count;
+	Rid texture;
+	int width, height;
+} rvn_map_sprite_t;
+
+/** Reads a sprite sheet's JSON index and decodes its PNG into a texture. NULL if either can't be read. */
+rvn_map_sprite_t* rvn_map_sprite_create(const char* json, size_t json_length, const void* png, size_t png_length);
+void rvn_map_sprite_free(rvn_map_sprite_t* sprite);
+const rvn_map_icon_t* rvn_map_sprite_find(const rvn_map_sprite_t* sprite, const char* name);
+
+/* ---------------------------------------------------------------------------
+ *  Labels (map/labels.c): placed as the symbol layers say, in part, kept apart
+ *  by collision, and kept while the camera moves a little
+ * ------------------------------------------------------------------------- */
+
+typedef struct rvn_map_labels_t rvn_map_labels_t;
+
+/** What the labels of the last frame cost. */
+typedef struct rvn_map_label_stats_t {
+	int placed, candidates, icons;
+	/** Whether the frame drew the placement before it, moved, rather than placing again. */
+	int reused;
+	double ms, place_ms;
+} rvn_map_label_stats_t;
+
+/** Where the map looks, for the labels. */
+typedef struct rvn_map_view_t {
+	double center_x, center_y, zoom;
+	float width, height;
+} rvn_map_view_t;
+
+rvn_map_labels_t* rvn_map_labels_create(void);
+void rvn_map_labels_free(rvn_map_labels_t* labels);
+/**
+ * Draws the labels of the tiles, placing them again when the view has moved
+ * too far, the tiles or the sprite changed (`version`), or the camera has
+ * `settled` somewhere other than where they were placed.
+ */
+void rvn_map_labels_draw(rvn_map_labels_t* labels, RPainter* painter, const rvn_map_style_t* style,
+	const rvn_map_prepared_t* const* tiles, uint32_t tile_count, const rvn_map_view_t* view, int version, int settled,
+	const rvn_map_sprite_t* sprite, rvn_map_label_stats_t* stats);
 
 /* ---------------------------------------------------------------------------
  *  Dashes and line gaps (map/lines.c)

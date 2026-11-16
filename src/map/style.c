@@ -485,6 +485,122 @@ int rvn_map_layer_dashes(const rvn_map_style_layer_t* layer, double zoom, float*
 }
 
 /* ---------------------------------------------------------------------------
+ *  Symbols: what a layer's labels say
+ * ------------------------------------------------------------------------- */
+
+/*
+ * Latin Extended-A pairs its letters, capital then small, from an even code
+ * point in 0x100-0x137 and 0x14A-0x177, from an odd one in 0x139-0x148 and
+ * 0x179-0x17E. Returns 1 for a capital, 0 for a small letter, -1 outside.
+ */
+static int rvn_map_latin_a_capital(uint32_t c) {
+	if ((c >= 0x100 && c <= 0x137 && c != 0x130 && c != 0x131) || (c >= 0x14A && c <= 0x177)) return (c & 1) == 0;
+	if ((c >= 0x139 && c <= 0x148) || (c >= 0x179 && c <= 0x17E)) return (c & 1) == 1;
+	return -1;
+}
+
+/* The upper or lower case of a code point, where Raven knows it. */
+static uint32_t rvn_map_case(uint32_t c, int upper) {
+	int capital = rvn_map_latin_a_capital(c);
+	if (upper) {
+		if ((c >= 'a' && c <= 'z') || (c >= 0xE0 && c <= 0xFE && c != 0xF7) || (c >= 0x3B1 && c <= 0x3C9 && c != 0x3C2) || (c >= 0x430 && c <= 0x44F)) return c - 32;
+		if (c >= 0x450 && c <= 0x45F) return c - 80;
+		if (c == 0xFF) return 0x178;
+		if (capital == 0) return c - 1;
+	} else {
+		if ((c >= 'A' && c <= 'Z') || (c >= 0xC0 && c <= 0xDE && c != 0xD7) || (c >= 0x391 && c <= 0x3A9 && c != 0x3A2) || (c >= 0x410 && c <= 0x42F)) return c + 32;
+		if (c >= 0x400 && c <= 0x40F) return c + 80;
+		if (c == 0x178) return 0xFF;
+		if (capital == 1) return c + 1;
+	}
+	return c;
+}
+
+char* rvn_map_change_case(rvn_arena_t* arena, const char* text, int upper) {
+	size_t length = strlen(text), n = 0;
+	const char* p = text;
+	const char* end = text + length;
+	/* a changed code point never takes more bytes than it had: at most as long */
+	char* out = (char*)rvn_arena_alloc(arena, length + 1);
+	if (!out) return NULL;
+	while (p < end) {
+		const char* before = p;
+		uint32_t c = rvn_utf8_decode(&p, end);
+		uint32_t mapped = rvn_map_case(c, upper);
+		char bytes[4];
+		int k = rvn_utf8_encode(mapped, bytes);
+		if (mapped == c || k != (int)(p - before)) {
+			memcpy(out + n, before, (size_t)(p - before));
+			n += (size_t)(p - before);
+		} else {
+			memcpy(out + n, bytes, (size_t)k);
+			n += (size_t)k;
+		}
+	}
+	out[n] = '\0';
+	return out;
+}
+
+const char* rvn_map_label_text(const rvn_map_style_layer_t* layer, const rvn_map_context_t* context) {
+	const rvn_map_value_t* field = rvn_map_member(layer->layout, "text-field");
+	rvn_map_value_t value, transform;
+	const char* text;
+	size_t start, end;
+	if (!field) return NULL;
+	value = rvn_map_evaluate(field, context);
+	if (value.kind == RVN_MV_NULL) return NULL;
+	if (value.kind == RVN_MV_STRING && strchr(value.as.string, '{')) {
+		/* a legacy field: "{name}" tokens replaced by the feature's properties */
+		rvn_text_t out = { NULL, 0, 0 };
+		const char* p = value.as.string;
+		while (*p) {
+			const char* open = strchr(p, '{');
+			const char* close = open ? strchr(open, '}') : NULL;
+			char key[128];
+			const rvn_map_value_t* property;
+			if (!open || !close) {
+				rvn_text_add(&out, p);
+				break;
+			}
+			rvn_text_append(&out, p, (size_t)(open - p));
+			if ((size_t)(close - open - 1) < sizeof(key)) {
+				memcpy(key, open + 1, (size_t)(close - open - 1));
+				key[close - open - 1] = '\0';
+				if (rvn_layer_get(context, key, &property)) {
+					const char* s = rvn_mv_text(*property, context->scratch);
+					if (s) rvn_text_add(&out, s);
+				}
+			}
+			p = close + 1;
+		}
+		text = out.data ? rvn_arena_strndup(context->scratch, out.data, out.length) : "";
+		rvn_free(out.data);
+	} else {
+		text = rvn_mv_text(value, context->scratch);
+	}
+	if (!text) return NULL;
+	/* trimmed */
+	start = 0;
+	end = strlen(text);
+	while (start < end && (text[start] == ' ' || text[start] == '\n' || text[start] == '\t')) start++;
+	while (end > start && (text[end - 1] == ' ' || text[end - 1] == '\n' || text[end - 1] == '\t')) end--;
+	if (start == end) return NULL;
+	if (start > 0 || text[end] != '\0') text = rvn_arena_strndup(context->scratch, text + start, end - start);
+	transform = rvn_map_layer_layout(layer, "text-transform", context->zoom);
+	if (transform.kind == RVN_MV_STRING && strcmp(transform.as.string, "uppercase") == 0) text = rvn_map_change_case(context->scratch, text, 1);
+	else if (transform.kind == RVN_MV_STRING && strcmp(transform.as.string, "lowercase") == 0) text = rvn_map_change_case(context->scratch, text, 0);
+	return text;
+}
+
+const char* rvn_map_icon_name(const rvn_map_style_layer_t* layer, const rvn_map_context_t* context) {
+	const rvn_map_value_t* image = rvn_map_member(layer->layout, "icon-image");
+	const char* name;
+	if (!image) return NULL;
+	name = rvn_mv_text(rvn_map_evaluate(image, context), context->scratch);
+	return name && name[0] ? name : NULL;
+}
+
+/* ---------------------------------------------------------------------------
  *  The style
  * ------------------------------------------------------------------------- */
 
@@ -545,6 +661,7 @@ int rvn_map_style_parse(rvn_map_style_t* style, const char* json, size_t length,
 	layers = rvn_map_member(&style->root, "layers");
 	if (!layers || layers->kind != RVN_MV_ARRAY) return R_TRUE;
 	style->layers = (rvn_map_style_layer_t*)rvn_arena_alloc(&style->arena, sizeof(rvn_map_style_layer_t) * (layers->count ? layers->count : 1));
+	style->symbols = (rvn_map_style_layer_t*)rvn_arena_alloc(&style->arena, sizeof(rvn_map_style_layer_t) * (layers->count ? layers->count : 1));
 	for (i = 0; i < layers->count; i++) {
 		const rvn_map_value_t* json_layer = &layers->as.items[i];
 		const char* layer_source = rvn_map_member_string(json_layer, "source");
@@ -558,6 +675,10 @@ int rvn_map_style_parse(rvn_map_style_t* style, const char* json, size_t length,
 		if ((layer.type == RVN_MAP_LAYER_FILL && !rvn_map_member(layer.paint, "fill-pattern")) ||
 			layer.type == RVN_MAP_LAYER_FILL_EXTRUSION || layer.type == RVN_MAP_LAYER_LINE) {
 			style->layers[style->layer_count++] = layer;
+		}
+		/* labels and icons, at points and along lines */
+		if (layer.type == RVN_MAP_LAYER_SYMBOL && (rvn_map_member(layer.layout, "text-field") || rvn_map_member(layer.layout, "icon-image"))) {
+			style->symbols[style->symbol_count++] = layer;
 		}
 	}
 	return R_TRUE;

@@ -268,6 +268,7 @@ if(RAVEN_WITH_MAP)
 		src/map/style.c
 		src/map/lines.c
 		src/map/prepare.c
+		src/map/labels.c
 	)
 endif()
 

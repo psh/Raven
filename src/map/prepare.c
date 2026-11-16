@@ -73,6 +73,79 @@ static void rvn_triangulate(rvn_floats_t* fills, const rvn_map_rings_t* rings, f
 	}
 }
 
+/* Copies into the tile's arena, counting what it holds. */
+static void* rvn_tile_keep(rvn_map_prepared_t* tile, const void* data, size_t size) {
+	void* copy = rvn_arena_alloc(&tile->arena, size ? size : 1);
+	if (copy && size && data) memcpy(copy, data, size);
+	tile->arena_bytes += size;
+	return copy;
+}
+
+static const char* rvn_tile_keep_string(rvn_map_prepared_t* tile, const char* text) {
+	return text ? (const char*)rvn_tile_keep(tile, text, strlen(text) + 1) : NULL;
+}
+
+/*
+ * One symbol layer's labels of a tile: along lines, a line's symbols; at
+ * points, a point's, or a line's at its middle (a road shield at low zoom).
+ */
+static void rvn_prepare_symbols(rvn_map_prepared_t* tile, rvn_map_symbol_bucket_t* bucket, const rvn_map_style_layer_t* style_layer,
+	const rvn_map_layer_t* layer, rvn_map_context_t* context, rvn_map_rings_t* rings) {
+	rvn_map_label_t* labels = NULL;
+	rvn_map_line_label_t* lines = NULL;
+	uint32_t label_count = 0, label_cap = 0, line_count = 0, line_cap = 0, f, r, i;
+	rvn_map_value_t placement = rvn_map_layer_layout(style_layer, "symbol-placement", context->zoom);
+	int along_lines = placement.kind == RVN_MV_STRING && strcmp(placement.as.string, "line") == 0;
+	float scale = 1.0f / (float)layer->extent;
+	for (f = 0; f < layer->feature_count; f++) {
+		const rvn_map_feature_t* feature = &layer->features[f];
+		const char* text;
+		const char* icon;
+		if (along_lines && feature->type != RVN_MAP_LINESTRING) continue;
+		if (!along_lines && feature->type != RVN_MAP_POINT && feature->type != RVN_MAP_LINESTRING) continue;
+		context->feature = feature;
+		if (!rvn_map_accepts(style_layer->filter, context)) continue;
+		text = rvn_map_label_text(style_layer, context);
+		icon = rvn_map_icon_name(style_layer, context);
+		if (!text && !icon) continue;
+		if (!rvn_map_feature_rings(feature, rings)) continue;
+		text = rvn_tile_keep_string(tile, text);
+		icon = rvn_tile_keep_string(tile, icon);
+		for (r = 0; r < rings->ring_count; r++) {
+			const float* xy = rings->xy + rings->starts[r] * 2;
+			uint32_t points = rings->starts[r + 1] - rings->starts[r];
+			if (along_lines) {
+				float* kept;
+				if (points < 2) continue;
+				kept = (float*)rvn_tile_keep(tile, NULL, sizeof(float) * points * 2);
+				if (!kept) continue;
+				for (i = 0; i < points * 2; i++) kept[i] = xy[i] * scale;
+				RVN_ARRAY_RESERVE(lines, line_cap, line_count + 1);
+				lines[line_count].text = text;
+				lines[line_count].icon = icon;
+				lines[line_count].xy = kept;
+				lines[line_count].point_count = points;
+				line_count++;
+			} else {
+				uint32_t at = feature->type == RVN_MAP_POINT ? 0 : points / 2;
+				if (points == 0) continue;
+				RVN_ARRAY_RESERVE(labels, label_cap, label_count + 1);
+				labels[label_count].text = text;
+				labels[label_count].icon = icon;
+				labels[label_count].x = xy[at * 2] * scale;
+				labels[label_count].y = xy[at * 2 + 1] * scale;
+				label_count++;
+			}
+		}
+	}
+	if (label_count) bucket->labels = (rvn_map_label_t*)rvn_tile_keep(tile, labels, sizeof(*labels) * label_count);
+	if (line_count) bucket->lines = (rvn_map_line_label_t*)rvn_tile_keep(tile, lines, sizeof(*lines) * line_count);
+	bucket->label_count = bucket->labels ? label_count : 0;
+	bucket->line_count = bucket->lines ? line_count : 0;
+	rvn_free(labels);
+	rvn_free(lines);
+}
+
 int rvn_map_prepare(rvn_map_prepared_t* tile, const rvn_map_style_t* style, int z, int x, int y,
 	const uint8_t* bytes, size_t length, int deepest) {
 	rvn_arena_t arena;
@@ -101,6 +174,22 @@ int rvn_map_prepare(rvn_map_prepared_t* tile, const rvn_map_style_t* style, int 
 	tile->bucket_count = style->layer_count;
 	tile->buckets = (rvn_map_bucket_t*)rvn_calloc(sizeof(rvn_map_bucket_t) * (style->layer_count ? style->layer_count : 1));
 	tile->shapes = (rvn_map_shape_t*)rvn_calloc(sizeof(rvn_map_shape_t) * RVN_MAP_SHAPES * (style->layer_count ? style->layer_count : 1));
+	tile->symbol_count = style->symbol_count;
+	tile->symbols = (rvn_map_symbol_bucket_t*)rvn_calloc(sizeof(rvn_map_symbol_bucket_t) * (style->symbol_count ? style->symbol_count : 1));
+	rvn_arena_init(&tile->arena, 16 * 1024);
+
+	for (l = 0; l < style->symbol_count; l++) {
+		const rvn_map_style_layer_t* style_layer = &style->symbols[l];
+		const rvn_map_layer_t* layer = rvn_map_tile_layer(&data, style_layer->source_layer);
+		rvn_map_context_t context;
+		if (!layer) continue;
+		if ((zoom + 1 <= style_layer->min_zoom && !deepest) || zoom >= style_layer->max_zoom) continue;
+		memset(&context, 0, sizeof(context));
+		context.zoom = zoom;
+		context.layer = layer;
+		context.scratch = &arena;
+		rvn_prepare_symbols(tile, &tile->symbols[l], style_layer, layer, &context, &rings);
+	}
 
 	for (l = 0; l < style->layer_count; l++) {
 		const rvn_map_style_layer_t* style_layer = &style->layers[l];
@@ -180,11 +269,14 @@ void rvn_map_prepared_free(rvn_map_prepared_t* tile) {
 	}
 	rvn_free(tile->buckets);
 	rvn_free(tile->shapes);
+	rvn_free(tile->symbols);
+	rvn_arena_free(&tile->arena);
 	memset(tile, 0, sizeof(*tile));
 }
 
 size_t rvn_map_prepared_memory(const rvn_map_prepared_t* tile) {
-	size_t bytes = sizeof(*tile) + (sizeof(rvn_map_bucket_t) + sizeof(rvn_map_shape_t) * RVN_MAP_SHAPES) * tile->bucket_count;
+	size_t bytes = sizeof(*tile) + (sizeof(rvn_map_bucket_t) + sizeof(rvn_map_shape_t) * RVN_MAP_SHAPES) * tile->bucket_count +
+		sizeof(rvn_map_symbol_bucket_t) * tile->symbol_count + tile->arena_bytes;
 	uint32_t i;
 	for (i = 0; i < tile->bucket_count; i++) {
 		bytes += sizeof(float) * (tile->buckets[i].triangle_count * 6 + tile->buckets[i].line_point_count * 2);

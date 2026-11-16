@@ -173,6 +173,62 @@ int main(int argc, char** argv) {
 			median(lines, FRAMES), median(draws, FRAMES), median(paints, FRAMES), FRAMES);
 	}
 
+	/* the labels: the Loop at zoom 14, 800 by 600, with the sprite sheet; 30 frames panned two units
+	   each, 30 zoomed a hundredth of a level each, and 30 each placed again (the camera rested) */
+	{
+		size_t index_size, png_size;
+		char* index;
+		char* png;
+		double ms[FRAMES], place[FRAMES];
+		int mode, reused, placing;
+		snprintf(path, sizeof(path), "%s/sprite@2x.json", data);
+		index = read_file(path, &index_size);
+		snprintf(path, sizeof(path), "%s/sprite@2x.png", data);
+		png = read_file(path, &png_size);
+		if (index && png) Rmap_set_sprite(map, index, (int)index_size, png, png_size);
+		free(index);
+		free(png);
+		Rwindow_set_size(window, 800, 600);
+		for (mode = 0; mode < 3; mode++) {
+			const char* names[] = { "panning", "zooming", "placed every frame" };
+			Rmap_set_center(map, START_LATITUDE, START_LONGITUDE);
+			Rmap_set_zoom(map, 14.0);
+			Rdraw_frame();
+			reused = placing = 0;
+			for (i = 0; i < FRAMES; i++) {
+				Rmap_get_center(map, &latitude, &longitude);
+				if (mode == 1) Rmap_set_zoom(map, 14.0 + 0.01 * (i + 1));
+				else Rmap_set_center(map, latitude, longitude + 2.0 / world * 360.0);
+				if (mode == 2) {
+					/* rested: past the 200 ms after which the labels are placed again where the camera is */
+					double rest = now_ms();
+					while (now_ms() - rest < 210.0) Rwait_frame(0.05);
+				}
+				Rdraw_frame();
+				Rmap_get_stats(map, &stats);
+				ms[i] = stats.labels_ms;
+				reused += stats.labels_reused;
+				if (!stats.labels_reused) place[placing++] = stats.place_ms;
+			}
+			printf("labels %s: %.2f ms a frame, %d of %d frames reusing the placement%s", names[mode], median(ms, FRAMES), reused, FRAMES,
+				placing ? "" : "\n");
+			if (placing) printf(", a placement %.2f ms; %d placed of %d, %d icons\n", median(place, placing), stats.labels_placed,
+				stats.label_candidates, stats.icons);
+		}
+	}
+
+	/* the densest tile prepared with its labels */
+	for (i = 0; i < PREPARES; i++) {
+		Rmap_set_style_json(map, style, -1, NULL);
+		load_tile(map, data, DENSE_Z, DENSE_X, DENSE_Y);
+		wait_for_tiles(map);
+		Rmap_get_stats(map, &stats);
+		decode[i] = stats.decode_ms;
+		prepare[i] = stats.prepare_ms;
+	}
+	printf("dense tile with labels: decode %.1f ms, style + triangulate %.1f ms (medians of %d)\n",
+		median(decode, PREPARES), median(prepare, PREPARES), PREPARES);
+
 	Rshutdown();
 	free(style);
 	free(list);

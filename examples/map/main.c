@@ -89,11 +89,13 @@ static void show_stats(Rid timer, void* user_data) {
 		"C draw calls: %.1f ms (fills %.1f, lines %.1f)\n"
 		"Raven: paint %.1f ms, render %.1f ms, %u primitives, %u GPU draws\n"
 		"%d tiles prepared (%.1f MB): decode %.1f ms, style + triangulate %.1f ms\n"
-		"%d asked for, %d loading, %d failed",
+		"%d asked for, %d loading, %d failed\n"
+		"%d labels placed of %d, %d icons: %.1f ms, placing %.1f ms%s",
 		Rmap_get_zoom(app.map), stats.tiles, stats.triangles, stats.segments, stats.draw_ms, stats.fill_ms, stats.line_ms,
 		frame.paint_ms, frame.render_ms, frame.instance_count, frame.draw_call_count,
 		stats.prepared_tiles, (double)stats.memory_bytes / (1024.0 * 1024.0), stats.decode_ms, stats.prepare_ms,
-		stats.requested_tiles, stats.pending_tiles, stats.failed_tiles);
+		stats.requested_tiles, stats.pending_tiles, stats.failed_tiles,
+		stats.labels_placed, stats.label_candidates, stats.icons, stats.labels_ms, stats.place_ms, stats.labels_reused ? " (reused)" : "");
 	Rlabel_set_text(app.stats, text);
 }
 
@@ -124,6 +126,19 @@ int main(int argc, char** argv) {
 	app.map = Rwidget_add_child(overlay, Rwidget_create(R_WIDGET_MAP));
 	if (!Rmap_set_style_json(app.map, style, -1, NULL)) return 1;
 	free(style);
+	/* the icons, from the style's sprite sheet at twice the pixels */
+	{
+		size_t index_size, png_size;
+		char* index;
+		char* png;
+		snprintf(path, sizeof(path), "%s/sprite@2x.json", folder);
+		index = read_file(path, &index_size);
+		snprintf(path, sizeof(path), "%s/sprite@2x.png", folder);
+		png = read_file(path, &png_size);
+		if (index && png) Rmap_set_sprite(app.map, index, (int)index_size, png, png_size);
+		free(index);
+		free(png);
+	}
 	Rmap_set_attribution(app.map, "\xc2\xa9 OpenFreeMap \xc2\xa9 OpenMapTiles Data from OpenStreetMap");
 	zoom_range(folder, &min_zoom, &max_zoom);
 	Rmap_set_tile_source(app.map, min_zoom, max_zoom, request_tile, NULL, (void*)folder);

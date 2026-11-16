@@ -381,6 +381,97 @@ static void test_style(void) {
 	CHECK(!rvn_map_style_parse(&style, "{\"layers\": [", 12, NULL));
 }
 
+/* A feature of hand-made properties: keys and values side by side, all tagged. */
+typedef struct props_t {
+	const char* keys[8];
+	rvn_map_value_t values[8];
+	uint32_t tags[16];
+	rvn_map_layer_t layer;
+	rvn_map_feature_t feature;
+} props_t;
+
+static void props_init(props_t* p) {
+	memset(p, 0, sizeof(*p));
+	p->layer.keys = p->keys;
+	p->layer.values = p->values;
+	p->feature.tags = p->tags;
+	p->feature.type = RVN_MAP_POINT;
+}
+
+static void props_add(props_t* p, const char* key, const char* text, double number) {
+	uint32_t i = p->layer.key_count;
+	p->keys[i] = key;
+	memset(&p->values[i], 0, sizeof(p->values[i]));
+	if (text) {
+		p->values[i].kind = RVN_MV_STRING;
+		p->values[i].as.string = text;
+		p->values[i].count = (uint32_t)strlen(text);
+	} else {
+		p->values[i].kind = RVN_MV_NUMBER;
+		p->values[i].as.number = number;
+	}
+	p->tags[i * 2] = i;
+	p->tags[i * 2 + 1] = i;
+	p->layer.key_count = p->layer.value_count = i + 1;
+	p->feature.tag_count = (i + 1) * 2;
+}
+
+/* The text a layout gives a feature, or "(null)". */
+static const char* label_of(rvn_arena_t* arena, const char* layout, const props_t* p) {
+	rvn_map_style_layer_t layer;
+	rvn_map_value_t value;
+	rvn_map_context_t c;
+	const char* text;
+	memset(&layer, 0, sizeof(layer));
+	if (!parse(arena, layout, &value)) return "(bad layout)";
+	layer.layout = (const rvn_map_value_t*)rvn_arena_alloc(arena, sizeof(value));
+	memcpy((void*)layer.layout, &value, sizeof(value));
+	memset(&c, 0, sizeof(c));
+	c.zoom = 14.0;
+	c.layer = &p->layer;
+	c.feature = &p->feature;
+	c.scratch = arena;
+	text = rvn_map_label_text(&layer, &c);
+	return text ? text : "(null)";
+}
+
+static void test_label_text(void) {
+	static const char* field = "\"text-field\": [\"case\", [\"has\", \"name:nonlatin\"], [\"concat\", [\"get\", \"name:latin\"], \"\\n\", [\"get\", \"name:nonlatin\"]],"
+		" [\"coalesce\", [\"get\", \"name_en\"], [\"get\", \"name\"]]]";
+	char layout[512], upper[512];
+	rvn_arena_t arena;
+	props_t p;
+	rvn_arena_init(&arena, 4096);
+	snprintf(layout, sizeof(layout), "{%s}", field);
+	snprintf(upper, sizeof(upper), "{%s, \"text-transform\": \"uppercase\"}", field);
+	props_init(&p);
+	props_add(&p, "name", "Chicago", 0.0);
+	CHECK_STR(label_of(&arena, layout, &p), "Chicago");
+	props_init(&p);
+	props_add(&p, "name", "Chicago (city)", 0.0);
+	props_add(&p, "name_en", "Chicago", 0.0);
+	CHECK_STR(label_of(&arena, layout, &p), "Chicago");
+	props_init(&p);
+	props_add(&p, "name:latin", "Tokyo", 0.0);
+	props_add(&p, "name:nonlatin", "\xe6\x9d\xb1\xe4\xba\xac", 0.0);
+	CHECK_STR(label_of(&arena, layout, &p), "Tokyo\n\xe6\x9d\xb1\xe4\xba\xac");
+	props_init(&p);
+	props_add(&p, "name", "The Loop", 0.0);
+	CHECK_STR(label_of(&arena, upper, &p), "THE LOOP");
+	/* a legacy field's tokens, a number written whole */
+	props_init(&p);
+	props_add(&p, "ref", NULL, 66.0);
+	CHECK_STR(label_of(&arena, "{\"text-field\": \"Route {ref}\"}", &p), "Route 66");
+	/* no name, no label */
+	props_init(&p);
+	CHECK_STR(label_of(&arena, layout, &p), "(null)");
+	/* case beyond ASCII, where Raven knows it */
+	CHECK_STR(rvn_map_change_case(&arena, "caf\xc3\xa9 \xc5\x82\xc3\xb3" "d\xc5\xba \xd0\xbc\xd0\xbe\xd1\x81\xd0\xba\xd0\xb2\xd0\xb0 \xce\xb1\xce\xb8\xce\xae\xce\xbd\xce\xb1", 1),
+		"CAF\xc3\x89 \xc5\x81\xc3\x93" "D\xc5\xb9 \xd0\x9c\xd0\x9e\xd0\xa1\xd0\x9a\xd0\x92\xd0\x90 \xce\x91\xce\x98\xce\xae\xce\x9d\xce\x91");
+	CHECK_STR(rvn_map_change_case(&arena, "\xc3\x89" "COLE \xc5\x81\xc3\x93" "D\xc5\xb9", 0), "\xc3\xa9" "cole \xc5\x82\xc3\xb3" "d\xc5\xba");
+	rvn_arena_free(&arena);
+}
+
 /* ---------------------------------------------------------------------------
  *  The widget
  * ------------------------------------------------------------------------- */
@@ -692,6 +783,242 @@ static void test_tile_for_an_old_style(void) {
 	Rdraw_frame();
 }
 
+/* ---------------------------------------------------------------------------
+ *  Labels
+ * ------------------------------------------------------------------------- */
+
+/*
+ * A tile of two layers, extent 4096: "place", two points close together at
+ * the middle (Chicago, then Evanston, which collides with it), and
+ * "road_name", a line across the tile a quarter down, named Main Street.
+ */
+static size_t label_tile(uint8_t* out, size_t cap) {
+	const uint32_t chicago[] = { command(1, 1), zz(2048), zz(2048) };
+	const uint32_t evanston[] = { command(1, 1), zz(2056), zz(2052) };
+	const uint32_t road[] = { command(1, 1), zz(0), zz(1024), command(2, 1), zz(4096), zz(0) };
+	const uint32_t tag0[] = { 0, 0 }, tag1[] = { 0, 1 };
+	buf_t feature, value, layer, tile;
+	tile.length = 0;
+
+	layer.length = 0;
+	put_string(&layer, 1, "place");
+	feature.length = 0;
+	put_packed(&feature, 2, tag0, 2);
+	put_field(&feature, 3, 1);
+	put_packed(&feature, 4, chicago, 3);
+	put_message(&layer, 2, &feature);
+	feature.length = 0;
+	put_packed(&feature, 2, tag1, 2);
+	put_field(&feature, 3, 1);
+	put_packed(&feature, 4, evanston, 3);
+	put_message(&layer, 2, &feature);
+	put_string(&layer, 3, "name");
+	value.length = 0;
+	put_string(&value, 1, "Chicago");
+	put_message(&layer, 4, &value);
+	value.length = 0;
+	put_string(&value, 1, "Evanston");
+	put_message(&layer, 4, &value);
+	put_field(&layer, 5, 4096);
+	put_message(&tile, 3, &layer);
+
+	layer.length = 0;
+	put_string(&layer, 1, "road_name");
+	feature.length = 0;
+	put_packed(&feature, 2, tag0, 2);
+	put_field(&feature, 3, 2);
+	put_packed(&feature, 4, road, 6);
+	put_message(&layer, 2, &feature);
+	put_string(&layer, 3, "name");
+	value.length = 0;
+	put_string(&value, 1, "Main Street");
+	put_message(&layer, 4, &value);
+	put_field(&layer, 5, 4096);
+	put_message(&tile, 3, &layer);
+
+	if (tile.length > cap) return 0;
+	memcpy(out, tile.data, tile.length);
+	return tile.length;
+}
+
+static const char* g_label_style =
+	"{\"version\": 8, \"sources\": {\"openmaptiles\": {\"type\": \"vector\"}},"
+	" \"layers\": ["
+	"  {\"id\": \"background\", \"type\": \"background\", \"paint\": {\"background-color\": \"#ffffff\"}},"
+	"  {\"id\": \"road-name\", \"type\": \"symbol\", \"source\": \"openmaptiles\", \"source-layer\": \"road_name\","
+	"   \"layout\": {\"text-field\": \"{name}\", \"symbol-placement\": \"line\", \"text-size\": 12},"
+	"   \"paint\": {\"text-color\": \"#333\", \"text-halo-color\": \"#fff\", \"text-halo-width\": 1}},"
+	"  {\"id\": \"place\", \"type\": \"symbol\", \"source\": \"openmaptiles\", \"source-layer\": \"place\","
+	"   \"layout\": {\"text-field\": [\"get\", \"name\"], \"text-size\": 14, \"icon-image\": \"dot\", \"text-anchor\": \"top\","
+	"    \"text-offset\": [0, 0.6], \"text-font\": [\"Noto Sans Bold\"]}}"
+	" ]}";
+
+static uint32_t crc32_of(const uint8_t* data, size_t length, uint32_t crc) {
+	size_t i;
+	int k;
+	crc = ~crc;
+	for (i = 0; i < length; i++) {
+		crc ^= data[i];
+		for (k = 0; k < 8; k++) crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
+	}
+	return ~crc;
+}
+
+static void put_be32(buf_t* b, uint32_t v) {
+	put_byte(b, (uint8_t)(v >> 24));
+	put_byte(b, (uint8_t)(v >> 16));
+	put_byte(b, (uint8_t)(v >> 8));
+	put_byte(b, (uint8_t)v);
+}
+
+static void put_chunk(buf_t* b, const char* type, const uint8_t* data, size_t length) {
+	size_t start;
+	put_be32(b, (uint32_t)length);
+	start = b->length;
+	put_bytes(b, type, 4);
+	put_bytes(b, data, length);
+	put_be32(b, crc32_of(b->data + start, length + 4, 0));
+}
+
+/* A 4 by 4 PNG, opaque red, written by hand: one stored deflate block. */
+static size_t red_png(uint8_t* out, size_t cap) {
+	static const uint8_t signature[] = { 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A };
+	uint8_t header[13] = { 0, 0, 0, 4, 0, 0, 0, 4, 8, 6, 0, 0, 0 };
+	uint8_t raw[4 * (1 + 16)], zlib[128];
+	uint32_t a = 1, b = 0;
+	size_t i, n = 0;
+	buf_t png;
+	for (i = 0; i < sizeof(raw); i++) raw[i] = (i % 17 == 0) ? 0 : ((i % 17 - 1) % 4 == 0 || (i % 17 - 1) % 4 == 3) ? 255 : 0;
+	zlib[n++] = 0x78;
+	zlib[n++] = 0x01;
+	zlib[n++] = 1;
+	zlib[n++] = (uint8_t)sizeof(raw);
+	zlib[n++] = 0;
+	zlib[n++] = (uint8_t)~sizeof(raw);
+	zlib[n++] = 0xFF;
+	memcpy(zlib + n, raw, sizeof(raw));
+	n += sizeof(raw);
+	for (i = 0; i < sizeof(raw); i++) {
+		a = (a + raw[i]) % 65521;
+		b = (b + a) % 65521;
+	}
+	zlib[n++] = (uint8_t)(b >> 8);
+	zlib[n++] = (uint8_t)b;
+	zlib[n++] = (uint8_t)(a >> 8);
+	zlib[n++] = (uint8_t)a;
+	png.length = 0;
+	put_bytes(&png, signature, sizeof(signature));
+	put_chunk(&png, "IHDR", header, sizeof(header));
+	put_chunk(&png, "IDAT", zlib, n);
+	put_chunk(&png, "IEND", NULL, 0);
+	if (png.length > cap) return 0;
+	memcpy(out, png.data, png.length);
+	return png.length;
+}
+
+static void test_labels(void) {
+	uint8_t bytes[1024], png[512];
+	size_t length = label_tile(bytes, sizeof(bytes));
+	const char* index = "{\"dot\": {\"x\": 0, \"y\": 0, \"width\": 4, \"height\": 4, \"pixelRatio\": 2}}";
+	Rid map = Rwidget_create(R_WIDGET_MAP);
+	RMapStats stats;
+	double latitude, longitude;
+	Rwindow_set_content(g_window, map);
+	CHECK(Rmap_set_style_json(map, g_label_style, -1, NULL));
+	Rmap_set_tile_zoom_range(map, 14, 14);
+	tile_center(14, 4203, 6089, &latitude, &longitude);
+	Rmap_set_center(map, latitude, longitude);
+	Rmap_set_zoom(map, 14.0);
+	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	wait_for_tiles(map);
+	Rwidget_invalidate(map);
+	Rdraw_frame();
+	Rmap_get_stats(map, &stats);
+	/* Chicago, then Evanston kept off it by collision; Main Street along its line */
+	CHECK(stats.label_candidates == 3);
+	CHECK(stats.labels_placed == 2);
+	CHECK(stats.icons == 0);
+	/* placed as the tile landed: drawn again, the placement is kept */
+	CHECK(stats.labels_reused);
+
+	/* a pan of a few units moves the placement rather than placing again... */
+	Rmap_set_center(map, latitude, longitude + 4.0 / (512.0 * 16384.0) * 360.0);
+	Rdraw_frame();
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.labels_reused);
+	/* ...until the camera has rested there a moment */
+	{
+		double start = Rget_time();
+		while (Rget_time() - start < 0.3) Rwait_frame(0.05);
+	}
+	Rdraw_frame();
+	Rmap_get_stats(map, &stats);
+	CHECK(!stats.labels_reused);
+	CHECK(stats.labels_placed == 2);
+	/* a new sprite places again, with the icon */
+#if !defined(RAVEN_TEST_NO_IMAGE_DECODER)
+	EXPECT_ERRORS_BEGIN();
+	CHECK(!Rmap_set_sprite(map, "{", -1, png, red_png(png, sizeof(png))));
+	EXPECT_ERRORS_END(1);
+	CHECK(Rmap_set_sprite(map, index, -1, png, red_png(png, sizeof(png))));
+	Rdraw_frame();
+	Rmap_get_stats(map, &stats);
+	CHECK(!stats.labels_reused);
+	CHECK(stats.labels_placed == 2 && stats.icons == 1);
+	CHECK(Rmap_set_sprite(map, NULL, 0, NULL, 0));
+#endif
+	Rwindow_set_content(g_window, R_INVALID_ID);
+}
+
+/* Against the maps spike's downloaded tiles, when MAPS_DATA names them: what the Loop's tile prepares. */
+static void test_downloaded_tile(void) {
+	const char* data = getenv("MAPS_DATA");
+	char path[1024];
+	char* json;
+	char* bytes;
+	size_t json_size, size;
+	rvn_map_style_t* style;
+	rvn_map_prepared_t tile;
+	uint32_t i;
+	int poi = 0, minor = 0, arrows = 0, major = 0, points = 0;
+	if (!data) {
+		printf("  (MAPS_DATA unset: skipped)\n");
+		return;
+	}
+	snprintf(path, sizeof(path), "%s/liberty.json", data);
+	json = rvn_read_file(path, &json_size);
+	snprintf(path, sizeof(path), "%s/tiles/14-4203-6089.pbf", data);
+	bytes = rvn_read_file(path, &size);
+	CHECK(json && bytes);
+	if (!json || !bytes) {
+		rvn_free(json);
+		rvn_free(bytes);
+		return;
+	}
+	style = rvn_map_style_create(json, json_size, NULL);
+	CHECK(style != NULL);
+	CHECK(style && rvn_map_prepare(&tile, style, 14, 4203, 6089, (const uint8_t*)bytes, size, R_TRUE));
+	for (i = 0; style && i < style->symbol_count; i++) {
+		const rvn_map_symbol_bucket_t* b = &tile.symbols[i];
+		const char* id = style->symbols[i].id;
+		uint32_t k;
+		points += b->label_count > 0;
+		/* the deepest tiles draw every zoom past theirs: points of interest and minor street names from 15 */
+		if (strcmp(id, "poi_r1") == 0) poi = b->label_count > 0;
+		if (strcmp(id, "highway-name-minor") == 0) minor = b->line_count > 0;
+		if (strcmp(id, "highway-name-major") == 0) major = b->line_count > 0;
+		/* one-way arrows: icons alone along their roads */
+		if (strcmp(id, "road_one_way_arrow") == 0) {
+			for (k = 0; k < b->line_count; k++) arrows |= b->lines[k].icon && strcmp(b->lines[k].icon, "arrow") == 0 && !b->lines[k].text;
+		}
+	}
+	CHECK(poi && minor && major && arrows && points);
+	if (style) rvn_map_prepared_free(&tile);
+	rvn_map_style_release(style);
+	rvn_free(json);
+	rvn_free(bytes);
+}
+
 int main(void) {
 	if (!test_init(0)) {
 		printf("cannot initialize Raven\n");
@@ -706,12 +1033,15 @@ int main(void) {
 	RUN(test_colors);
 	RUN(test_dashes_and_offsets);
 	RUN(test_style);
+	RUN(test_label_text);
 	RUN(test_map_widget);
 	RUN(test_tile_asked_for_once);
 	RUN(test_tile_no_longer_wanted);
 	RUN(test_tiles_used_least_recently_go);
 	RUN(test_tile_failed_waits);
 	RUN(test_tile_for_an_old_style);
+	RUN(test_labels);
+	RUN(test_downloaded_tile);
 
 	Rdraw_frame();
 	Rshutdown();
