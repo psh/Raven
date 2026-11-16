@@ -4,9 +4,15 @@
  * layers of features, each with tags into the layer's keys and values, and a
  * stream of MoveTo, LineTo and ClosePath commands in tile coordinates (0 to
  * the layer's extent, often 4096). Protobuf is read by hand.
+ *
+ * Tiles are often served or stored compressed, gzip (RFC 1952) or zlib
+ * (RFC 1950), and are inflated here with stb_image's inflate. A tile not
+ * compressed starts with a layer, field 3 (0x1A), so neither header can be
+ * mistaken for one.
  */
 
 #include "map.h"
+#include "../render/renderer.h"
 
 #include <string.h>
 
@@ -241,10 +247,9 @@ static int rvn_tile_layer(rvn_proto_t r, rvn_arena_t* arena, rvn_map_layer_t* la
 	return R_TRUE;
 }
 
-int rvn_map_tile_decode(rvn_arena_t* arena, const uint8_t* bytes, size_t length, rvn_map_tile_data_t* out) {
+static int rvn_tile_decode(rvn_arena_t* arena, const uint8_t* bytes, size_t length, rvn_map_tile_data_t* out) {
 	rvn_proto_t r, scan;
 	uint32_t field, wire, layers = 0;
-	memset(out, 0, sizeof(*out));
 	r.p = bytes;
 	r.end = bytes + length;
 	r.ok = R_TRUE;
@@ -267,6 +272,56 @@ int rvn_map_tile_decode(rvn_arena_t* arena, const uint8_t* bytes, size_t length,
 		if (!r.ok) return R_FALSE;
 	}
 	return R_TRUE;
+}
+
+/** The DEFLATE stream of a gzip member after its header, and its size inflated; R_FALSE if the header is malformed. */
+static int rvn_gzip_body(const uint8_t* bytes, size_t length, size_t* start, size_t* inflated) {
+	size_t at = 10;
+	uint8_t flags;
+	if (length < 18 || bytes[2] != 8) return R_FALSE; /* the header, the trailer, and DEFLATE */
+	flags = bytes[3];
+	if (flags & 4) { /* FEXTRA */
+		if (at + 2 > length) return R_FALSE;
+		at += 2 + (size_t)(bytes[at] | (bytes[at + 1] << 8));
+	}
+	if (flags & 8) { /* FNAME */
+		while (at < length && bytes[at]) at++;
+		at++;
+	}
+	if (flags & 16) { /* FCOMMENT */
+		while (at < length && bytes[at]) at++;
+		at++;
+	}
+	if (flags & 2) at += 2; /* FHCRC */
+	if (at + 8 > length) return R_FALSE;
+	*start = at;
+	*inflated = (size_t)bytes[length - 4] | ((size_t)bytes[length - 3] << 8) | ((size_t)bytes[length - 2] << 16) | ((size_t)bytes[length - 1] << 24);
+	return R_TRUE;
+}
+
+int rvn_map_tile_decode(rvn_arena_t* arena, const uint8_t* bytes, size_t length, rvn_map_tile_data_t* out) {
+	uint8_t* inflated = NULL;
+	size_t size = 0;
+	int ok;
+	memset(out, 0, sizeof(*out));
+	if (length >= 2 && bytes[0] == 0x1F && bytes[1] == 0x8B) {
+		size_t start, expected;
+		if (!rvn_gzip_body(bytes, length, &start, &expected)) return R_FALSE;
+		inflated = rvn_inflate(bytes + start, length - start - 8, R_FALSE, expected, &size);
+		/* the trailer's size (modulo 2^32) catches a stream cut short; its CRC is not checked */
+		if (inflated && (uint32_t)size != (uint32_t)expected) {
+			rvn_free(inflated);
+			inflated = NULL;
+		}
+		if (!inflated) return R_FALSE;
+	} else if (length >= 2 && (bytes[0] & 0x0F) == 8 && ((bytes[0] << 8) | bytes[1]) % 31 == 0) {
+		inflated = rvn_inflate(bytes, length, R_TRUE, length * 4, &size);
+		if (!inflated) return R_FALSE;
+	}
+	if (!inflated) return rvn_tile_decode(arena, bytes, length, out);
+	ok = rvn_tile_decode(arena, inflated, size, out);
+	rvn_free(inflated);
+	return ok;
 }
 
 const rvn_map_layer_t* rvn_map_tile_layer(const rvn_map_tile_data_t* tile, const char* name) {

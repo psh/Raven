@@ -15382,7 +15382,7 @@ public final class R {
 
     /**
      * Hands the map the bytes of tile &#64;p z / &#64;p x / &#64;p y (a Mapbox Vector
-     * Tile, not compressed; NULL and 0: there is no tile there), asked for or
+     * Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
      * not. Thread-safe: the bytes are copied, then decoded and prepared on a
      * worker thread. A tile that can't be decoded counts as failed.
      * Returns R_FALSE for a tile outside the world.

@@ -100,6 +100,13 @@ uint8_t* rvn_image_decode(const uint8_t* data, size_t size, int* width, int* hei
  * logical unit of the result: the scale of an SVG, 1 for the other images.
  */
 uint8_t* rvn_image_decode_at(const uint8_t* data, size_t size, float svg_scale, int* width, int* height, float* density);
+/**
+ * Inflates a DEFLATE stream (RFC 1951), behind a zlib header (RFC 1950) when
+ * `zlib_header`, with stb_image's inflate (render/image_decode.c). `size_hint`:
+ * the size expected, 0 if unknown. NULL if it is malformed, or in a library
+ * built without stb_image. Free with rvn_free. Thread-safe.
+ */
+uint8_t* rvn_inflate(const uint8_t* data, size_t size, int zlib_header, size_t size_hint, size_t* out_size);
 /** Pixels per unit an SVG is first drawn at, before it has been shown (then: at the size it is shown, rvn_textures_update_svg). */
 #define RVN_SVG_DENSITY 2.0f
 /**

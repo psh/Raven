@@ -3229,7 +3229,7 @@ extern "C" {
     /// for nothing and draws what it is handed.
     pub fn Rmap_set_tile_source(map: Rid, min_zoom: c_int, max_zoom: c_int, request: RMapTileRequestCallback, cancel: RMapTileCancelCallback, user_data: *mut c_void);
     /// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
-    /// Tile, not compressed; NULL and 0: there is no tile there), asked for or
+    /// Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
     /// not. Thread-safe: the bytes are copied, then decoded and prepared on a
     /// worker thread. A tile that can't be decoded counts as failed.
     /// Returns R_FALSE for a tile outside the world.

@@ -98,7 +98,10 @@ typedef struct rvn_map_tile_data_t {
 	uint32_t layer_count;
 } rvn_map_tile_data_t;
 
-/** Decodes a whole tile into the arena. R_FALSE if it is malformed. */
+/**
+ * Decodes a whole tile into the arena, inflating it first if it is gzip or
+ * zlib compressed. Nothing decoded points into `bytes`. R_FALSE if it is malformed.
+ */
 int rvn_map_tile_decode(rvn_arena_t* arena, const uint8_t* bytes, size_t length, rvn_map_tile_data_t* out);
 const rvn_map_layer_t* rvn_map_tile_layer(const rvn_map_tile_data_t* tile, const char* name);
 

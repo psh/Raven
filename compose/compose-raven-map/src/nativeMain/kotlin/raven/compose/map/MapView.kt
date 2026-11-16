@@ -72,9 +72,9 @@ public interface TileSource {
     public val maxZoom: Int get() = 14
 
     /**
-     * The bytes of tile [z]/[x]/[y] (a Mapbox Vector Tile, not compressed), or null where there is
-     * none. Throws when it can't tell, such as on a network error: the map asks again later. Called
-     * on `Dispatchers.Default`, and cancelled when the map no longer needs the tile.
+     * The bytes of tile [z]/[x]/[y] (a Mapbox Vector Tile, gzip or zlib compressed or not), or null
+     * where there is none. Throws when it can't tell, such as on a network error: the map asks again
+     * later. Called on `Dispatchers.Default`, and cancelled when the map no longer needs the tile.
      */
     public suspend fun tile(z: Int, x: Int, y: Int): ByteArray?
 }

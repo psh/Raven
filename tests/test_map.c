@@ -193,6 +193,69 @@ static void test_tile_decoding(void) {
 	rvn_arena_free(&arena);
 }
 
+/*
+ * The water tile compressed by Python: gzip with a file name in its header,
+ * as gzip(1) writes it, and zlib.
+ */
+static const uint8_t g_water_gzip[] = {
+	0x1F, 0x8B, 0x08, 0x08, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x31, 0x34, 0x2D, 0x34, 0x32, 0x30,
+	0x33, 0x2D, 0x36, 0x30, 0x38, 0x39, 0x2E, 0x70, 0x62, 0x66, 0x00, 0x93, 0xD2, 0xE7, 0x62, 0x2D,
+	0x4F, 0x2C, 0x49, 0x2D, 0x12, 0x12, 0x16, 0x62, 0x62, 0x60, 0x90, 0x60, 0x56, 0xE2, 0xE6, 0x64,
+	0x61, 0x91, 0xE2, 0x60, 0x60, 0xE0, 0x60, 0x67, 0xE0, 0x97, 0x62, 0x4D, 0xCE, 0x49, 0x2C, 0x2E,
+	0x56, 0x62, 0xE3, 0x62, 0xC9, 0x49, 0xCC, 0x4E, 0xD5, 0x10, 0xA8, 0x60, 0x92, 0xD2, 0xE2, 0x62,
+	0x29, 0xCA, 0x4F, 0x4C, 0x11, 0xE2, 0x03, 0xAB, 0x67, 0x52, 0x62, 0xE3, 0x64, 0x10, 0xE0, 0x52,
+	0x60, 0x80, 0x29, 0x65, 0xE7, 0x62, 0xCD, 0xCD, 0xCC, 0xCB, 0x2F, 0x02, 0xA9, 0x05, 0x00, 0x15,
+	0x81, 0xFB, 0x97, 0x5D, 0x00, 0x00, 0x00,
+};
+
+static const uint8_t g_water_zlib[] = {
+	0x78, 0xDA, 0x93, 0xD2, 0xE7, 0x62, 0x2D, 0x4F, 0x2C, 0x49, 0x2D, 0x12, 0x12, 0x16, 0x62, 0x62,
+	0x60, 0x90, 0x60, 0x56, 0xE2, 0xE6, 0x64, 0x61, 0x91, 0xE2, 0x60, 0x60, 0xE0, 0x60, 0x67, 0xE0,
+	0x97, 0x62, 0x4D, 0xCE, 0x49, 0x2C, 0x2E, 0x56, 0x62, 0xE3, 0x62, 0xC9, 0x49, 0xCC, 0x4E, 0xD5,
+	0x10, 0xA8, 0x60, 0x92, 0xD2, 0xE2, 0x62, 0x29, 0xCA, 0x4F, 0x4C, 0x11, 0xE2, 0x03, 0xAB, 0x67,
+	0x52, 0x62, 0xE3, 0x64, 0x10, 0xE0, 0x52, 0x60, 0x80, 0x29, 0x65, 0xE7, 0x62, 0xCD, 0xCD, 0xCC,
+	0xCB, 0x2F, 0x02, 0xA9, 0x05, 0x00, 0xB0, 0xEE, 0x0F, 0xFD,
+};
+
+/** The tile decodes as the water tile: its two layers and the square. */
+static int is_water_tile(rvn_arena_t* arena, const uint8_t* bytes, size_t length) {
+	rvn_map_tile_data_t tile;
+	const rvn_map_layer_t* water;
+	if (!rvn_map_tile_decode(arena, bytes, length, &tile) || tile.layer_count != 2) return 0;
+	water = rvn_map_tile_layer(&tile, "water");
+	return water && water->feature_count == 1 && water->features[0].type == RVN_MAP_POLYGON &&
+		strcmp(water->values[water->features[0].tags[1]].as.string, "lake") == 0 && rvn_map_tile_layer(&tile, "road");
+}
+
+static void test_compressed_tiles(void) {
+	uint8_t bytes[1024], broken[sizeof(g_water_gzip)];
+	size_t length = water_tile(bytes, sizeof(bytes));
+	rvn_arena_t arena;
+	rvn_map_tile_data_t tile;
+	rvn_arena_init(&arena, 4096);
+	CHECK(is_water_tile(&arena, g_water_gzip, sizeof(g_water_gzip)));
+	CHECK(is_water_tile(&arena, g_water_zlib, sizeof(g_water_zlib)));
+	CHECK(is_water_tile(&arena, bytes, length));
+	/* cut short, the stream doesn't inflate, or the trailer is lost */
+	CHECK(!rvn_map_tile_decode(&arena, g_water_gzip, sizeof(g_water_gzip) - 12, &tile));
+	CHECK(!rvn_map_tile_decode(&arena, g_water_gzip, sizeof(g_water_gzip) - 3, &tile));
+	CHECK(!rvn_map_tile_decode(&arena, g_water_zlib, sizeof(g_water_zlib) / 2, &tile));
+	CHECK(!rvn_map_tile_decode(&arena, g_water_gzip, 12, &tile));
+	/* a size in the trailer that isn't the tile's */
+	memcpy(broken, g_water_gzip, sizeof(broken));
+	broken[sizeof(broken) - 4]++;
+	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(broken), &tile));
+	/* a method that isn't DEFLATE */
+	memcpy(broken, g_water_gzip, sizeof(broken));
+	broken[2] = 7;
+	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(broken), &tile));
+	/* the file name never ends */
+	memset(broken + 10, 'a', sizeof(broken) - 10);
+	broken[2] = 8;
+	CHECK(!rvn_map_tile_decode(&arena, broken, sizeof(broken), &tile));
+	rvn_arena_free(&arena);
+}
+
 static double triangles_area(const float* xy, const uint32_t* t, uint32_t count) {
 	double sum = 0.0;
 	uint32_t i;
@@ -550,8 +613,8 @@ static void test_map_widget(void) {
 	CHECK(stats.segments == 1);
 	CHECK(stats.prepared_tiles == 1);
 
-	/* a tile not held is drawn from its nearest ancestor that is */
-	CHECK(Rmap_tile_loaded(map, 13, 4203 / 2, 6089 / 2, bytes, length));
+	/* a tile not held is drawn from its nearest ancestor that is (handed in gzipped, as servers send them) */
+	CHECK(Rmap_tile_loaded(map, 13, 4203 / 2, 6089 / 2, g_water_gzip, sizeof(g_water_gzip)));
 	wait_for_tiles(map);
 	tile_center(14, 4202, 6089, &latitude, &longitude);
 	Rmap_set_center(map, latitude, longitude);
@@ -1028,6 +1091,7 @@ int main(void) {
 
 	RUN(test_json);
 	RUN(test_tile_decoding);
+	RUN(test_compressed_tiles);
 	RUN(test_earcut);
 	RUN(test_expressions);
 	RUN(test_colors);
