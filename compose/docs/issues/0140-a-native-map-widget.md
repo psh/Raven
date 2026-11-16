@@ -153,12 +153,50 @@ Measured 2026-11-15, step 1. Findings:
 
 ## Deliverables
 
-- [ ] `R_WIDGET_MAP` and `Rmap_*` in `raven_controls.h`, behind a build option (`RAVEN_WITH_MAP`)
-      so builds that don't want it, and the vendored JSON parser, leave it out.
-- [ ] `src/widgets/map.c` and its parts (tile decoding, earcut, style, labels, tile store).
-- [ ] Tests in `tests/`, ported from `MapsTest.kt`: decoding, triangulation, filters and
-      expressions, dashes, placement, and the tile store against hand-made tiles.
-- [ ] A benchmark that measures both implementations as above, with results filled into the table.
-- [ ] Step 4: compose-raven's `Map()` over the widget, and a second binding showing a map.
+- [x] `R_WIDGET_MAP` and `Rmap_*` in `raven_controls.h`, behind a build option (`RAVEN_WITH_MAP`)
+      so builds that don't want it leave it out (its JSON reader is its own, not vendored).
+- [x] `src/widgets/map.c` and its parts in `src/map/` (tile decoding, earcut, style, lines,
+      labels, the tile store in the widget).
+- [x] Tests in `tests/test_map.c`, ported from `MapsTest.kt`: decoding, triangulation, filters and
+      expressions, dashes, labels, placement, and the tile store against hand-made tiles.
+- [x] A benchmark that measures both implementations (`tests/map_benchmark.c` and the spike's
+      `NativeComparisonBenchmark` and `NativeLabelsBenchmark`), with results filled into the table.
+- [x] Step 4: compose-raven's `VectorMap` over the widget (`compose-raven-map`), and Python showing
+      a map (`bindings/python/map_example.py`, tested as `binding_python_map`).
 - [ ] A verdict: keep the map in C, keep it in Kotlin, or split it, and which Raven changes to
       propose upstream.
+
+## Step 4 (2026-11-15)
+
+- **`compose-raven-map`**, an opt-in module: `VectorMap(style, tiles, modifier, state,
+  attribution, zoomRange, capacity)` emits `R_WIDGET_MAP`. `MapStyle` carries the style JSON and
+  its sprite sheet; `TileSource` is the app's own fetching (`suspend fun tile(z, x, y)`), run on
+  `Dispatchers.Default` as the widget asks and cancelled when it no longer needs the tile;
+  `VectorMapState` holds the camera, written by the app and by the user (a new binding event,
+  `MapCameraChanged`, in `compose-raven-ui`), and reads the widget's stats. Named `VectorMap`, not
+  `Map`, so as not to shadow `kotlin.collections.Map`. 5 tests (requests, camera both ways,
+  cancellation, failure, leaving the composition), stable over 10 runs.
+- **The spike** draws through `VectorMap` by default, its Ktor source and disk cache feeding it
+  (checked online over Paris and offline over Chicago); `MAPS_KOTLIN=1` keeps the Kotlin drawing as
+  the reference. The window places the same labels as the C example.
+- **Python**: `map_example.py` shows Chicago from the spike's files in about 120 lines with no map
+  logic of its own, the same labels and icons; `--test` runs headless on a tile it writes.
+- compose-raven-ui (136), foundation (270), map (5) and the spike (19) tests pass.
+
+## Recommendation for the verdict
+
+**Keep the map in C, as the widget.** The port draws and labels the same map as the spike, every
+binding gets it, and it is faster everywhere it can differ: tiles 6 to 14 times (13 prepared
+together), label placement 3 to 6 times, reused frames twice; drawing ties, as it should.
+compose-raven keeps only what is Kotlin's to do: the composable, state, and fetching.
+
+**To propose upstream**, in order, each standing alone:
+
+1. The seven drawing additions from the spike (`Rdraw_triangles`, `Rdraw_polyline` with caps,
+   `R_INSTANCE_ALIASED`, `Rdraw_text_rotated`, `Rdraw_image_region`, `Rdraw_image_rotated`):
+   useful to any custom drawing, map or not.
+2. The Map widget behind `RAVEN_WITH_MAP`, off by default upstream if its size is a concern.
+
+**Left to do before either**: gzipped tiles (servers that send them compressed), Windows and
+Linux builds of the widget (only macOS was run), and the spike's own Kotlin drawing retired or
+kept as a test reference.
