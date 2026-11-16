@@ -17,6 +17,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.decodeToImageBitmap
+import androidx.compose.runtime.remember
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -252,6 +254,54 @@ class NativeComparisonBenchmark {
             draws += stats.drawMs
         }
         println("zoom 14, 1200 x 800: ${stats.tiles} tiles, ${stats.triangles} triangles, fills ${median(fills)} ms, ${stats.segments} segments, lines ${median(lines)} ms, map ${median(draws)} ms (medians of 30 frames)")
+    }
+}
+
+/**
+ * The labels, as raven_map_benchmark measures them (0140): the Loop at zoom 14 in the harness's
+ * 800 x 600 window, with the sprite sheet; 30 frames panned two units each, 30 zoomed a hundredth
+ * of a level each, and 30 each placed again (settled).
+ */
+class NativeLabelsBenchmark {
+    @OptIn(ExperimentalForeignApi::class)
+    @Test
+    fun labelsAsTheNativeBenchmarkMeasures() = runRavenTest {
+        val directory = getenv("MAPS_DATA")?.toKString() ?: return@runRavenTest
+        val style = Style.parse(readFile("$directory/liberty.json")!!.decodeToString())
+        val sprite = Sprite.parse(readFile("$directory/sprite@2x.json")!!.decodeToString(), readFile("$directory/sprite@2x.png")!!)
+        val source = FileTileSource(directory)
+        val store = TileStore(source, style)
+        for (id in source.tiles) store.prepareNow(id)
+        val camera = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0)
+        val stats = DrawStats()
+        val labelStats = LabelStats()
+        val measure = TextMeasure()
+        val cache = LabelCache()
+        var settled by mutableStateOf(false)
+        setContent {
+            val sheet = remember { SpriteSheet(sprite, sprite.png.decodeToImageBitmap()) }
+            Canvas(Modifier.size(1200.dp, 800.dp)) {
+                drawMap(style, store, camera, stats, labels = measure, labelStats = labelStats, labelCache = cache, settled = settled, sprites = sheet)
+            }
+        }
+        waitForIdle()
+        for ((mode, name) in listOf("panning", "zooming", "placed every frame").withIndex()) {
+            camera.centerX = Camera.at(START_LATITUDE, START_LONGITUDE, 14.0).centerX
+            camera.zoom = 14.0
+            settled = mode == 2
+            waitForIdle()
+            val ms = ArrayList<Double>()
+            val place = ArrayList<Double>()
+            var reused = 0
+            repeat(30) { i ->
+                if (mode == 1) camera.zoom = 14.0 + 0.01 * (i + 1) else camera.centerX += 2.0 / camera.worldSize
+                waitForIdle()
+                ms += labelStats.ms
+                if (labelStats.reused) reused++ else place += labelStats.placeMs
+            }
+            println("labels $name: ${median(ms)} ms a frame, $reused of 30 frames reusing the placement" +
+                if (place.isEmpty()) "" else ", a placement ${median(place)} ms; ${labelStats.placed} placed of ${labelStats.candidates}, ${labelStats.icons} icons")
+        }
     }
 }
 
