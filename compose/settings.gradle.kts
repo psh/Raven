@@ -22,6 +22,7 @@ include(
     ":compose-raven-foundation",
     ":compose-raven-vulkan",
     ":compose-raven-opengl",
+    ":compose-raven-map",
     ":compose-raven-navigation3",
     ":compose-raven-test",
     ":samples:animations",
