@@ -1,5 +1,5 @@
 ---
-status: open
+status: in-progress
 ---
 
 # A native Map widget in Raven
@@ -84,26 +84,45 @@ Each step ends with the C widget drawing Chicago alongside the Kotlin spike, mea
 ## Performance comparison
 
 Both sides measured on the same machine, same view and same tiles (the `MAPS_OFFLINE` set,
-Chicago). **Both optimised**: the Kotlin release binary (not the test build, which the spike's
-headless numbers came from) against C at `-O2`, so the comparison is about the code and not the
-build. Medians of 30 frames, as in the spike.
+Chicago). **Both optimised**: the Kotlin release test binary (`linkReleaseTestMacosArm64`,
+`NativeComparisonBenchmark`) against C in a Release build (`raven_map_benchmark`), so the
+comparison is about the code and not the build. Medians: 10 preparations, 30 frames, each frame
+panned a hundredth of a unit.
 
-| Measure | Kotlin spike (2026-11-14) | C widget |
+| Measure | Kotlin, optimised | C widget |
 |---|---|---|
-| Preparing the dense 530 KB tile: decode | ~95 ms (test build) | |
-| Preparing the dense tile: style and triangulate | ~210 ms (test build) | |
-| Headless view (43,903 triangles, 36,140 segments): fills | 0.3 ms | |
-| Same view: lines | 2.2 ms | |
-| Labels a frame, placement reused, while panning or zooming | 2.0–2.4 ms (test build) | |
-| Labels a frame, placing every frame | 16.3–17.3 ms (test build) | |
-| In the window, the Loop at zoom 14: frame | 6.2 ms | |
-| In the window: one label placement | 4.2 ms | |
-| Memory for 160 prepared tiles | not measured | |
+| Dense 530 KB tile (14/4203/6089): decode | 12.4 ms | 0.9 ms |
+| Dense tile: style and triangulate, without labels | 37.0 ms | 5.7 ms |
+| Dense tile: style and triangulate, with labels | 57.0 ms | (step 3) |
+| All 61 tiles, without labels: decode, then style and triangulate | 155 + 916 ms | 14 + 138 ms |
+| 800 × 600 at zoom 14 (4 tiles, 43,903 triangles, 36,140 segments): fills | 0.52 ms | 0.49 ms |
+| Same view: lines | 3.40 ms | 0.74 ms |
+| 1200 × 800 at zoom 14 (12 tiles, 110,212 triangles, 75,614 segments): fills, lines | not run | 1.18, 1.46 ms |
+| Labels a frame, placement reused / placed every frame | | (step 3) |
+| Memory for 160 prepared tiles | | (step 2) |
 
-Re-measure the Kotlin column optimised before comparing; the test-build figures are only a
-starting point. The drawing figures should come out close, since both end in the same
-`Rdraw_triangles`/`Rdraw_polyline` calls. Tile preparation and label placement are where the
-languages differ.
+Measured 2026-11-15, step 1. Findings:
+
+- **The spike's earlier figures were from a debug build and a smaller view.** Its ~95 and ~210 ms
+  for the dense tile were the unoptimised test binary; its "headless" view was the test
+  harness's 800 × 600 window, not the 1200 × 800 asked for.
+- **Both draw the same map**: the same triangles and segments at both sizes, and the C widget's
+  window capture looks like the spike's (Liberty without its labels).
+- **Fills cost the same**, as expected: both end in one `Rdraw_triangles` call per tile and layer.
+- **Lines cost the Kotlin side its own bookkeeping, not Raven**: drawing a segment a call, it takes
+  0.82 ms; batched, its `LineShapes` builds a string key per tile and layer and re-reads the
+  style per tile each frame. The C widget keeps a fixed slot per tile and layer.
+- **Preparing tiles is where the languages differ: 6 to 14 times faster in C.**
+
+## Progress
+
+- **Step 1, done (2026-11-15)**, on `spike/maps-native`: `src/map/` (JSON, tile decoding, earcut,
+  style and expressions, dashes and gaps), `src/widgets/map.c`, `RAVEN_WITH_MAP`, the bindings
+  regenerated, `tests/test_map.c` (96 checks), `tests/map_benchmark.c`, `examples/map`.
+  Deviations from the sketch: a small JSON reader of its own instead of a vendored one (as the
+  spike has); `Rmap_tile_loaded` prepares at once on the UI thread until step 2; gzipped tiles
+  are not read yet (the offline set isn't compressed). `test_shell` and `test_themes` fail on this
+  machine with or without the map.
 
 ## Deliverables
 
