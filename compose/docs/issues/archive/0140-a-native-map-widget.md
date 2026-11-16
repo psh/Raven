@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: closed
 ---
 
 # A native Map widget in Raven
@@ -13,7 +13,7 @@ against each other: this is a spike first, and the comparison is part of what it
 **Branch:** `spike/maps-native`, from `spike/maps`, so it has the seven drawing additions and the
 Kotlin spike to compare against.
 
-**Reference:** the maps row of [`spikes/README.md`](../../spikes/README.md) on `spike/maps`, and
+**Reference:** the maps row of [`spikes/README.md`](../../../spikes/README.md) on `spike/maps`, and
 `compose/spikes/maps/` there (about 2,550 lines of Kotlin, tests in `MapsTest.kt`).
 
 ## What moves into C, and what doesn't
@@ -233,3 +233,15 @@ CRC-32 runs on ARMv8's CRC32 instructions where the compiler targets them (`3e2b
 table elsewhere (4.7 ms on the dense tile; x86's `crc32` is another polynomial).
 
 `test_map` 181 checks, clean under ThreadSanitizer.
+
+## Resolution
+
+**Closed 2026-11-16.** The spike answered its question: the map moves into Raven's C code as the
+Map widget (`R_WIDGET_MAP`, `Rmap_*`), compose-raven keeps `MapView` over it, and Python shows the
+same map. The port draws and labels the same map as the Kotlin spike and is faster wherever the two
+can differ (see [Performance comparison](#performance-comparison) and [Verdict](#verdict)). Since
+the verdict, tiles may be gzip or zlib compressed, their checksums verified.
+
+The work stays on `spike/maps-native`, unmerged. Not done here, and not yet ticketed: Windows and
+Linux builds of the widget, proposing the drawing additions and then the widget upstream, and
+retiring the spike's Kotlin drawing or keeping it as a test reference.
