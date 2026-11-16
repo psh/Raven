@@ -656,6 +656,8 @@ Widget_Type :: enum i32 {
 	Pagination = 0x0231,
 	// Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
 	Plot = 0x0232,
+	// A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP).
+	Map = 0x0233,
 }
 
 H_Align :: enum i32 {
@@ -1042,6 +1044,13 @@ Motion :: enum i32 {
 	Bouncy = 0x0322,
 	// Swings several times around the target: things that fly in or get dropped.
 	Wobbly = 0x0323,
+}
+
+// How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it.
+Line_Cap :: enum i32 {
+	Round = 0x0570,
+	Butt = 0x0571,
+	Square = 0x0572,
 }
 
 // The effects that come with Raven (Reffect_get).

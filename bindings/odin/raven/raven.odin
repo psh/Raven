@@ -666,6 +666,8 @@ R_WIDGET_RATING :: 0x0230
 R_WIDGET_PAGINATION :: 0x0231
 // Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
 R_WIDGET_PLOT :: 0x0232
+// A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP).
+R_WIDGET_MAP :: 0x0233
 
 RHAlign :: i32
 R_HALIGN_FILL :: 0x0240
@@ -1015,6 +1017,12 @@ R_MOTION_BOUNCY :: 0x0322
 // Swings several times around the target: things that fly in or get dropped.
 R_MOTION_WOBBLY :: 0x0323
 
+// How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it.
+RLineCap :: i32
+R_LINE_CAP_ROUND :: 0x0570
+R_LINE_CAP_BUTT :: 0x0571
+R_LINE_CAP_SQUARE :: 0x0572
+
 // The effects that come with Raven (Reffect_get).
 REffect :: i32
 // Soft lights that drift slowly: color, color2; params: speed, scale, intensity, -. Animated.
@@ -1244,6 +1252,7 @@ RPlotViewCallback :: #type proc "c" (plot: Rid, user_data: rawptr)
 RPlotDragLineCallback :: #type proc "c" (plot: Rid, line: i32, value: f64, user_data: rawptr)
 // Called when the user hides or shows a series from the legend.
 RPlotSeriesCallback :: #type proc "c" (plot: Rid, series: i32, visible: i32, user_data: rawptr)
+RMapCameraCallback :: #type proc "c" (map_: Rid, user_data: rawptr)
 // Called when the user zoomed (to zoom other editors the same, or to keep it for the next time).
 RTextEditorZoomCallback :: #type proc "c" (editor: Rid, zoom: f32, user_data: rawptr)
 // Called each time the editor gathers its proposals, with the
@@ -1603,6 +1612,23 @@ RTileItem :: struct {
 	icon_radius: f32,
 	// Color of the name; alpha 0 = the theme.
 	text_color: [4]f32,
+}
+
+// What the last frame drew, and what preparing the tiles cost.
+RMapStats :: struct {
+	tiles: i32,
+	triangles: i32,
+	segments: i32,
+	// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+	draw_ms: f64,
+	// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+	fill_ms: f64,
+	// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+	line_ms: f64,
+	// The tiles held, and what decoding and preparing them took in all.
+	prepared_tiles: i32,
+	decode_ms: f64,
+	prepare_ms: f64,
 }
 
 // What the editor knows of a language. Every field but the name may be NULL.
@@ -3144,6 +3170,30 @@ foreign lib {
 	Rplot_set_view_changed_callback :: proc(plot: Rid, callback: RPlotViewCallback, user_data: rawptr) ---
 	Rplot_set_drag_line_callback :: proc(plot: Rid, callback: RPlotDragLineCallback, user_data: rawptr) ---
 	Rplot_set_series_toggled_callback :: proc(plot: Rid, callback: RPlotSeriesCallback, user_data: rawptr) ---
+	// Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+	// source The vector source the map draws, by its name in the style's
+	//               "sources"; NULL: the first vector source.
+	// Forgets the tiles handed in so far: they are prepared for a style.
+	// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+	Rmap_set_style_json :: proc(map_: Rid, json: cstring, length: i32, source: cstring) -> i32 ---
+	// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
+	Rmap_set_tile_zoom_range :: proc(map_: Rid, min_zoom: i32, max_zoom: i32) ---
+	// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+	// Tile, not compressed): decoded and prepared for the style at once.
+	// The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+	Rmap_tile_loaded :: proc(map_: Rid, z: i32, x: i32, y: i32, bytes: rawptr, length: uint) -> i32 ---
+	// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
+	Rmap_set_center :: proc(map_: Rid, latitude: f64, longitude: f64) ---
+	Rmap_get_center :: proc(map_: Rid, latitude: ^f64, longitude: ^f64) ---
+	Rmap_set_zoom :: proc(map_: Rid, zoom: f64) ---
+	Rmap_get_zoom :: proc(map_: Rid) -> f64 ---
+	// How far the user can zoom out and in (default 2 to 18).
+	Rmap_set_zoom_range :: proc(map_: Rid, min_zoom: f64, max_zoom: f64) ---
+	// Text shown in the bottom right corner, such as the data's attribution. NULL: none.
+	Rmap_set_attribution :: proc(map_: Rid, text: cstring) ---
+	Rmap_get_stats :: proc(map_: Rid, stats: ^RMapStats) ---
+	// Called when the user moves or zooms the map.
+	Rmap_set_camera_changed_callback :: proc(map_: Rid, callback: RMapCameraCallback, user_data: rawptr) ---
 	// text Initial content, or NULL.
 	Rtext_editor_create :: proc(text: cstring) -> Rid ---
 	// Replaces the whole text. The history of undo is cleared; the changed callback is not called.
@@ -3936,15 +3986,42 @@ foreign lib {
 	Rdraw_circle :: proc(painter: ^RPainter, center_x: f32, center_y: f32, radius: f32, r: f32, g: f32, b: f32, a: f32) ---
 	// Anti-aliased line with round caps.
 	Rdraw_line :: proc(painter: ^RPainter, x0: f32, y0: f32, x1: f32, y1: f32, thickness: f32, r: f32, g: f32, b: f32, a: f32) ---
+	// Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+	// round where they turn, and ended as @p cap says.
+	//
+	// @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+	// offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+	// so many lines go in one call, such as the dashes of a dashed line.
+	Rdraw_polyline :: proc(painter: ^RPainter, xy: [^]f32, point_count: i32, offset_x: f32, offset_y: f32, scale: f32, thickness: f32, cap_: RLineCap, r: f32, g: f32, b: f32, a: f32) ---
 	// Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points.
 	Rdraw_curve :: proc(painter: ^RPainter, x0: f32, y0: f32, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x1: f32, y1: f32, thickness: f32, r: f32, g: f32, b: f32, a: f32) ---
 	Rdraw_triangle :: proc(painter: ^RPainter, x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, r: f32, g: f32, b: f32, a: f32) ---
+	// Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+	//
+	// @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+	// point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+	// without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+	// belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+	// Its outer edges are aliased too; draw an outline over them to smooth them.
+	Rdraw_triangles :: proc(painter: ^RPainter, xy: [^]f32, count: i32, offset_x: f32, offset_y: f32, scale: f32, r: f32, g: f32, b: f32, a: f32) ---
 	// Texture stretched to a rectangle and multiplied by a tint color.
 	Rdraw_image :: proc(painter: ^RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, r: f32, g: f32, b: f32, a: f32) ---
+	// Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+	// (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+	// of a sprite sheet.
+	Rdraw_image_region :: proc(painter: ^RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, u0: f32, v0: f32, u1: f32, v1: f32, r: f32, g: f32, b: f32, a: f32) ---
+	// Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+	// clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+	// the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+	// them smooth.
+	Rdraw_image_rotated :: proc(painter: ^RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, u0: f32, v0: f32, u1: f32, v1: f32, angle: f32, r: f32, g: f32, b: f32, a: f32) ---
 	// Draws UTF-8 text; (x, y) is the top-left corner of the first line.
 	// font R_INVALID_ID uses the theme font.
 	// size 0 uses R_METRIC_FONT_SIZE.
 	Rdraw_text :: proc(painter: ^RPainter, font: Rid, size: f32, x: f32, y: f32, text: cstring, r: f32, g: f32, b: f32, a: f32) ---
+	// Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+	// top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+	Rdraw_text_rotated :: proc(painter: ^RPainter, font: Rid, size: f32, x: f32, y: f32, angle: f32, text: cstring, r: f32, g: f32, b: f32, a: f32) ---
 	// Rounded rectangle of glass. It shows what was drawn before it,
 	// frosted and bent along its rim, under a tint: (r, g, b) is the color of
 	// the tint and `a` its strength (0 = clear glass, 1 = opaque color).

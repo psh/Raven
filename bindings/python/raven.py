@@ -897,6 +897,7 @@ class RWidgetType(enum.IntEnum):
     R_WIDGET_RATING = 0x0230
     R_WIDGET_PAGINATION = 0x0231
     R_WIDGET_PLOT = 0x0232
+    R_WIDGET_MAP = 0x0233
 
 R_WIDGET_VBOX = RWidgetType.R_WIDGET_VBOX
 R_WIDGET_HBOX = RWidgetType.R_WIDGET_HBOX
@@ -949,6 +950,7 @@ R_WIDGET_BREADCRUMB = RWidgetType.R_WIDGET_BREADCRUMB
 R_WIDGET_RATING = RWidgetType.R_WIDGET_RATING
 R_WIDGET_PAGINATION = RWidgetType.R_WIDGET_PAGINATION
 R_WIDGET_PLOT = RWidgetType.R_WIDGET_PLOT
+R_WIDGET_MAP = RWidgetType.R_WIDGET_MAP
 
 class RHAlign(enum.IntEnum):
     R_HALIGN_FILL = 0x0240
@@ -1410,6 +1412,16 @@ R_MOTION_SMOOTH = RMotion.R_MOTION_SMOOTH
 R_MOTION_BOUNCY = RMotion.R_MOTION_BOUNCY
 R_MOTION_WOBBLY = RMotion.R_MOTION_WOBBLY
 
+class RLineCap(enum.IntEnum):
+    """How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it."""
+    R_LINE_CAP_ROUND = 0x0570
+    R_LINE_CAP_BUTT = 0x0571
+    R_LINE_CAP_SQUARE = 0x0572
+
+R_LINE_CAP_ROUND = RLineCap.R_LINE_CAP_ROUND
+R_LINE_CAP_BUTT = RLineCap.R_LINE_CAP_BUTT
+R_LINE_CAP_SQUARE = RLineCap.R_LINE_CAP_SQUARE
+
 class REffect(enum.IntEnum):
     """The effects that come with Raven (Reffect_get)."""
     R_EFFECT_AURORA = 0x0B40
@@ -1764,6 +1776,21 @@ class RTileItem(ctypes.Structure):
         ("tint", ctypes.c_float * 4),
         ("icon_radius", ctypes.c_float),
         ("text_color", ctypes.c_float * 4),
+    ]
+
+
+class RMapStats(ctypes.Structure):
+    """What the last frame drew, and what preparing the tiles cost."""
+    _fields_ = [
+        ("tiles", ctypes.c_int),
+        ("triangles", ctypes.c_int),
+        ("segments", ctypes.c_int),
+        ("draw_ms", ctypes.c_double),
+        ("fill_ms", ctypes.c_double),
+        ("line_ms", ctypes.c_double),
+        ("prepared_tiles", ctypes.c_int),
+        ("decode_ms", ctypes.c_double),
+        ("prepare_ms", ctypes.c_double),
     ]
 
 
@@ -2286,6 +2313,14 @@ RPlotSeriesCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctyp
 def _adapt_RPlotSeriesCallback(function):
     def call(plot, series, visible, user_data):
         function(plot, series, visible, user_data)
+    return call
+
+RMapCameraCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void_p)
+
+
+def _adapt_RMapCameraCallback(function):
+    def call(map, user_data):
+        function(map, user_data)
     return call
 
 RTextEditorZoomCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_float, ctypes.c_void_p)
@@ -8440,6 +8475,110 @@ def Rplot_set_series_toggled_callback(plot, callback, user_data=None):
     _lib.Rplot_set_series_toggled_callback(plot, _callback(RPlotSeriesCallback, _adapt_RPlotSeriesCallback, callback), user_data)
 
 
+_lib.Rmap_set_style_json.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+_lib.Rmap_set_style_json.restype = ctypes.c_int
+
+
+def Rmap_set_style_json(map, json, length, source):
+    """Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+    source The vector source the map draws, by its name in the style's
+                  "sources"; NULL: the first vector source.
+    Forgets the tiles handed in so far: they are prepared for a style.
+    Returns R_FALSE (and keeps the style it had) if the JSON can't be read."""
+    return _lib.Rmap_set_style_json(map, _s(json), length, _s(source))
+
+
+_lib.Rmap_set_tile_zoom_range.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rmap_set_tile_zoom_range.restype = None
+
+
+def Rmap_set_tile_zoom_range(map, min_zoom, max_zoom):
+    """The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest."""
+    _lib.Rmap_set_tile_zoom_range(map, min_zoom, max_zoom)
+
+
+_lib.Rmap_tile_loaded.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
+_lib.Rmap_tile_loaded.restype = ctypes.c_int
+
+
+def Rmap_tile_loaded(map, z, x, y, bytes, length):
+    """Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+    Tile, not compressed): decoded and prepared for the style at once.
+    The bytes are not kept. Returns R_FALSE if the tile can't be decoded."""
+    return _lib.Rmap_tile_loaded(map, z, x, y, bytes, length)
+
+
+_lib.Rmap_set_center.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]
+_lib.Rmap_set_center.restype = None
+
+
+def Rmap_set_center(map, latitude, longitude):
+    """Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units)."""
+    _lib.Rmap_set_center(map, latitude, longitude)
+
+
+_lib.Rmap_get_center.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
+_lib.Rmap_get_center.restype = None
+
+
+def Rmap_get_center(map):
+    latitude_ = ctypes.c_double()
+    longitude_ = ctypes.c_double()
+    _lib.Rmap_get_center(map, ctypes.byref(latitude_), ctypes.byref(longitude_))
+    return (latitude_.value, longitude_.value)
+
+
+_lib.Rmap_set_zoom.argtypes = [ctypes.c_uint32, ctypes.c_double]
+_lib.Rmap_set_zoom.restype = None
+
+
+def Rmap_set_zoom(map, zoom):
+    _lib.Rmap_set_zoom(map, zoom)
+
+
+_lib.Rmap_get_zoom.argtypes = [ctypes.c_uint32]
+_lib.Rmap_get_zoom.restype = ctypes.c_double
+
+
+def Rmap_get_zoom(map):
+    return _lib.Rmap_get_zoom(map)
+
+
+_lib.Rmap_set_zoom_range.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]
+_lib.Rmap_set_zoom_range.restype = None
+
+
+def Rmap_set_zoom_range(map, min_zoom, max_zoom):
+    """How far the user can zoom out and in (default 2 to 18)."""
+    _lib.Rmap_set_zoom_range(map, min_zoom, max_zoom)
+
+
+_lib.Rmap_set_attribution.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rmap_set_attribution.restype = None
+
+
+def Rmap_set_attribution(map, text):
+    """Text shown in the bottom right corner, such as the data's attribution. NULL: none."""
+    _lib.Rmap_set_attribution(map, _s(text))
+
+
+_lib.Rmap_get_stats.argtypes = [ctypes.c_uint32, ctypes.POINTER(RMapStats)]
+_lib.Rmap_get_stats.restype = None
+
+
+def Rmap_get_stats(map, stats):
+    _lib.Rmap_get_stats(map, _p(stats))
+
+
+_lib.Rmap_set_camera_changed_callback.argtypes = [ctypes.c_uint32, RMapCameraCallback, ctypes.c_void_p]
+_lib.Rmap_set_camera_changed_callback.restype = None
+
+
+def Rmap_set_camera_changed_callback(map, callback, user_data=None):
+    """Called when the user moves or zooms the map."""
+    _lib.Rmap_set_camera_changed_callback(map, _callback(RMapCameraCallback, _adapt_RMapCameraCallback, callback), user_data)
+
+
 _lib.Rtext_editor_create.argtypes = [ctypes.c_char_p]
 _lib.Rtext_editor_create.restype = ctypes.c_uint32
 
@@ -11818,6 +11957,20 @@ def Rdraw_line(painter, x0, y0, x1, y1, thickness, r, g, b, a):
     _lib.Rdraw_line(painter, x0, y0, x1, y1, thickness, r, g, b, a)
 
 
+_lib.Rdraw_polyline.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdraw_polyline.restype = None
+
+
+def Rdraw_polyline(painter, xy, point_count, offset_x, offset_y, scale, thickness, cap, r, g, b, a):
+    """Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+    round where they turn, and ended as @p cap says.
+    
+    @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+    offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+    so many lines go in one call, such as the dashes of a dashed line."""
+    _lib.Rdraw_polyline(painter, _a(ctypes.c_float, xy), point_count, offset_x, offset_y, scale, thickness, int(cap), r, g, b, a)
+
+
 _lib.Rdraw_curve.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
 _lib.Rdraw_curve.restype = None
 
@@ -11835,6 +11988,21 @@ def Rdraw_triangle(painter, x0, y0, x1, y1, x2, y2, r, g, b, a):
     _lib.Rdraw_triangle(painter, x0, y0, x1, y1, x2, y2, r, g, b, a)
 
 
+_lib.Rdraw_triangles.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdraw_triangles.restype = None
+
+
+def Rdraw_triangles(painter, xy, count, offset_x, offset_y, scale, r, g, b, a):
+    """Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+    
+    @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+    point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+    without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+    belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+    Its outer edges are aliased too; draw an outline over them to smooth them."""
+    _lib.Rdraw_triangles(painter, _a(ctypes.c_float, xy), count, offset_x, offset_y, scale, r, g, b, a)
+
+
 _lib.Rdraw_image.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
 _lib.Rdraw_image.restype = None
 
@@ -11842,6 +12010,29 @@ _lib.Rdraw_image.restype = None
 def Rdraw_image(painter, texture, x, y, width, height, r, g, b, a):
     """Texture stretched to a rectangle and multiplied by a tint color."""
     _lib.Rdraw_image(painter, texture, x, y, width, height, r, g, b, a)
+
+
+_lib.Rdraw_image_region.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdraw_image_region.restype = None
+
+
+def Rdraw_image_region(painter, texture, x, y, width, height, u0, v0, u1, v1, r, g, b, a):
+    """Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+    (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+    of a sprite sheet."""
+    _lib.Rdraw_image_region(painter, texture, x, y, width, height, u0, v0, u1, v1, r, g, b, a)
+
+
+_lib.Rdraw_image_rotated.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdraw_image_rotated.restype = None
+
+
+def Rdraw_image_rotated(painter, texture, x, y, width, height, u0, v0, u1, v1, angle, r, g, b, a):
+    """Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+    clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+    the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+    them smooth."""
+    _lib.Rdraw_image_rotated(painter, texture, x, y, width, height, u0, v0, u1, v1, angle, r, g, b, a)
 
 
 _lib.Rdraw_text.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_char_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
@@ -11853,6 +12044,16 @@ def Rdraw_text(painter, font, size, x, y, text, r, g, b, a):
     font R_INVALID_ID uses the theme font.
     size 0 uses R_METRIC_FONT_SIZE."""
     _lib.Rdraw_text(painter, font, size, x, y, _s(text), r, g, b, a)
+
+
+_lib.Rdraw_text_rotated.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_char_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdraw_text_rotated.restype = None
+
+
+def Rdraw_text_rotated(painter, font, size, x, y, angle, text, r, g, b, a):
+    """Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+    top left corner, as Rdraw_text draws it unturned: lines go down the turned text."""
+    _lib.Rdraw_text_rotated(painter, font, size, x, y, angle, _s(text), r, g, b, a)
 
 
 _lib.Rdraw_glass.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]

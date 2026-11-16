@@ -790,6 +790,17 @@ const _symbols = {
 	Rplot_set_view_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rplot_set_drag_line_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rplot_set_series_toggled_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rmap_set_style_json: { args: ["u32", "ptr", "i32", "ptr"], returns: "i32" },
+	Rmap_set_tile_zoom_range: { args: ["u32", "i32", "i32"], returns: "void" },
+	Rmap_tile_loaded: { args: ["u32", "i32", "i32", "i32", "ptr", "usize"], returns: "i32" },
+	Rmap_set_center: { args: ["u32", "f64", "f64"], returns: "void" },
+	Rmap_get_center: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rmap_set_zoom: { args: ["u32", "f64"], returns: "void" },
+	Rmap_get_zoom: { args: ["u32"], returns: "f64" },
+	Rmap_set_zoom_range: { args: ["u32", "f64", "f64"], returns: "void" },
+	Rmap_set_attribution: { args: ["u32", "ptr"], returns: "void" },
+	Rmap_get_stats: { args: ["u32", "ptr"], returns: "void" },
+	Rmap_set_camera_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rtext_editor_create: { args: ["ptr"], returns: "u32" },
 	Rtext_editor_set_text: { args: ["u32", "ptr"], returns: "void" },
 	Rtext_editor_get_text: { args: ["u32"], returns: "cstring" },
@@ -1149,10 +1160,15 @@ const _symbols = {
 	Rdraw_rect_outline: { args: ["ptr", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_circle: { args: ["ptr", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_line: { args: ["ptr", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rdraw_polyline: { args: ["ptr", "ptr", "i32", "f32", "f32", "f32", "f32", "i32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_curve: { args: ["ptr", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_triangle: { args: ["ptr", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rdraw_triangles: { args: ["ptr", "ptr", "i32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_image: { args: ["ptr", "u32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rdraw_image_region: { args: ["ptr", "u32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rdraw_image_rotated: { args: ["ptr", "u32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_text: { args: ["ptr", "u32", "f32", "f32", "f32", "ptr", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rdraw_text_rotated: { args: ["ptr", "u32", "f32", "f32", "f32", "f32", "ptr", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_glass: { args: ["ptr", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rdraw_spring: { args: ["ptr", "ptr", "f32", "i32"], returns: "f32" },
 	Rspring_kick: { args: ["ptr", "f32"], returns: "void" },
@@ -2330,6 +2346,8 @@ export enum RWidgetType {
 	R_WIDGET_PAGINATION = 0x0231,
 	/** Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom. */
 	R_WIDGET_PLOT = 0x0232,
+	/** A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP). */
+	R_WIDGET_MAP = 0x0233,
 }
 
 export const R_WIDGET_VBOX = RWidgetType.R_WIDGET_VBOX;
@@ -2383,6 +2401,7 @@ export const R_WIDGET_BREADCRUMB = RWidgetType.R_WIDGET_BREADCRUMB;
 export const R_WIDGET_RATING = RWidgetType.R_WIDGET_RATING;
 export const R_WIDGET_PAGINATION = RWidgetType.R_WIDGET_PAGINATION;
 export const R_WIDGET_PLOT = RWidgetType.R_WIDGET_PLOT;
+export const R_WIDGET_MAP = RWidgetType.R_WIDGET_MAP;
 
 export enum RHAlign {
 	R_HALIGN_FILL = 0x0240,
@@ -2983,6 +3002,17 @@ export const R_MOTION_SNAPPY = RMotion.R_MOTION_SNAPPY;
 export const R_MOTION_SMOOTH = RMotion.R_MOTION_SMOOTH;
 export const R_MOTION_BOUNCY = RMotion.R_MOTION_BOUNCY;
 export const R_MOTION_WOBBLY = RMotion.R_MOTION_WOBBLY;
+
+/** How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it. */
+export enum RLineCap {
+	R_LINE_CAP_ROUND = 0x0570,
+	R_LINE_CAP_BUTT = 0x0571,
+	R_LINE_CAP_SQUARE = 0x0572,
+}
+
+export const R_LINE_CAP_ROUND = RLineCap.R_LINE_CAP_ROUND;
+export const R_LINE_CAP_BUTT = RLineCap.R_LINE_CAP_BUTT;
+export const R_LINE_CAP_SQUARE = RLineCap.R_LINE_CAP_SQUARE;
 
 /** The effects that come with Raven (Reffect_get). */
 export enum REffect {
@@ -4329,6 +4359,87 @@ export class RTileItem extends RStruct {
 	}
 	set text_color(value: ArrayLike<number>) {
 		this.text_color.set(value);
+	}
+}
+
+/** What the last frame drew, and what preparing the tiles cost. */
+export class RMapStats extends RStruct {
+	static readonly SIZE = 64;
+
+	constructor(pointer?: Pointer) {
+		super(RMapStats.SIZE, pointer);
+	}
+
+	/** The structure at an address of the library, or null. */
+	static from(pointer: Pointer | null): RMapStats | null {
+		return pointer ? new RMapStats(pointer) : null;
+	}
+
+	get tiles(): number {
+		return this._view.getInt32(0, true);
+	}
+	set tiles(value: number) {
+		this._view.setInt32(0, value, true);
+	}
+
+	get triangles(): number {
+		return this._view.getInt32(4, true);
+	}
+	set triangles(value: number) {
+		this._view.setInt32(4, value, true);
+	}
+
+	get segments(): number {
+		return this._view.getInt32(8, true);
+	}
+	set segments(value: number) {
+		this._view.setInt32(8, value, true);
+	}
+
+	/** The map's own drawing calls, in milliseconds: all, the fills, the lines. */
+	get draw_ms(): number {
+		return this._view.getFloat64(16, true);
+	}
+	set draw_ms(value: number) {
+		this._view.setFloat64(16, value, true);
+	}
+
+	/** The map's own drawing calls, in milliseconds: all, the fills, the lines. */
+	get fill_ms(): number {
+		return this._view.getFloat64(24, true);
+	}
+	set fill_ms(value: number) {
+		this._view.setFloat64(24, value, true);
+	}
+
+	/** The map's own drawing calls, in milliseconds: all, the fills, the lines. */
+	get line_ms(): number {
+		return this._view.getFloat64(32, true);
+	}
+	set line_ms(value: number) {
+		this._view.setFloat64(32, value, true);
+	}
+
+	/** The tiles held, and what decoding and preparing them took in all. */
+	get prepared_tiles(): number {
+		return this._view.getInt32(40, true);
+	}
+	set prepared_tiles(value: number) {
+		this._view.setInt32(40, value, true);
+	}
+
+	get decode_ms(): number {
+		return this._view.getFloat64(48, true);
+	}
+	set decode_ms(value: number) {
+		this._view.setFloat64(48, value, true);
+	}
+
+	get prepare_ms(): number {
+		return this._view.getFloat64(56, true);
+	}
+	set prepare_ms(value: number) {
+		this._view.setFloat64(56, value, true);
 	}
 }
 
@@ -5888,6 +5999,21 @@ function _adapt_RPlotSeriesCallback(function_: RPlotSeriesCallback | Pointer | n
 			_report(error as Error);
 		}
 	}, { args: ["u32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+export type RMapCameraCallback = (map: Rid, user_data: Pointer | null) => void;
+
+function _adapt_RMapCameraCallback(function_: RMapCameraCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((map: number, user_data: Pointer | null): void => {
+		try {
+			function_(map, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "ptr"], returns: "void", threadsafe }));
 }
 
 /** Called when the user zoomed (to zoom other editors the same, or to keep it for the next time). */
@@ -10005,6 +10131,70 @@ export function Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeri
 	_lib.Rplot_set_series_toggled_callback(plot, _adapt_RPlotSeriesCallback(callback), user_data);
 }
 
+/**
+ * Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+ * source The vector source the map draws, by its name in the style's
+ *               "sources"; NULL: the first vector source.
+ * Forgets the tiles handed in so far: they are prepared for a style.
+ * Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+ */
+export function Rmap_set_style_json(map: Rid, json: string | null, length: number, source: string | null): number {
+	return _lib.Rmap_set_style_json(map, _s(json), length, _s(source));
+}
+
+/** The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. */
+export function Rmap_set_tile_zoom_range(map: Rid, min_zoom: number, max_zoom: number): void {
+	_lib.Rmap_set_tile_zoom_range(map, min_zoom, max_zoom);
+}
+
+/**
+ * Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+ * Tile, not compressed): decoded and prepared for the style at once.
+ * The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+ */
+export function Rmap_tile_loaded(map: Rid, z: number, x: number, y: number, bytes: RPointer, length: number): number {
+	return _lib.Rmap_tile_loaded(map, z, x, y, bytes, length);
+}
+
+/** Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). */
+export function Rmap_set_center(map: Rid, latitude: number, longitude: number): void {
+	_lib.Rmap_set_center(map, latitude, longitude);
+}
+
+export function Rmap_get_center(map: Rid): [latitude: number, longitude: number] {
+	const latitude_ = new Float64Array(1);
+	const longitude_ = new Float64Array(1);
+	_lib.Rmap_get_center(map, latitude_, longitude_);
+	return [latitude_[0]!, longitude_[0]!];
+}
+
+export function Rmap_set_zoom(map: Rid, zoom: number): void {
+	_lib.Rmap_set_zoom(map, zoom);
+}
+
+export function Rmap_get_zoom(map: Rid): number {
+	return _lib.Rmap_get_zoom(map);
+}
+
+/** How far the user can zoom out and in (default 2 to 18). */
+export function Rmap_set_zoom_range(map: Rid, min_zoom: number, max_zoom: number): void {
+	_lib.Rmap_set_zoom_range(map, min_zoom, max_zoom);
+}
+
+/** Text shown in the bottom right corner, such as the data's attribution. NULL: none. */
+export function Rmap_set_attribution(map: Rid, text: string | null): void {
+	_lib.Rmap_set_attribution(map, _s(text));
+}
+
+export function Rmap_get_stats(map: Rid, stats: RMapStats | null): void {
+	_lib.Rmap_get_stats(map, _p(stats));
+}
+
+/** Called when the user moves or zooms the map. */
+export function Rmap_set_camera_changed_callback(map: Rid, callback: RMapCameraCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rmap_set_camera_changed_callback(map, _adapt_RMapCameraCallback(callback), user_data);
+}
+
 /** text Initial content, or NULL. */
 export function Rtext_editor_create(text: string | null): Rid {
 	return _lib.Rtext_editor_create(_s(text));
@@ -12090,6 +12280,18 @@ export function Rdraw_line(painter: RPointer, x0: number, y0: number, x1: number
 	_lib.Rdraw_line(painter, x0, y0, x1, y1, thickness, r, g, b, a);
 }
 
+/**
+ * Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+ * round where they turn, and ended as @p cap says.
+ *
+ * @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+ * offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+ * so many lines go in one call, such as the dashes of a dashed line.
+ */
+export function Rdraw_polyline(painter: RPointer, xy: Float32Array | readonly number[] | null, point_count: number, offset_x: number, offset_y: number, scale: number, thickness: number, cap: RLineCap, r: number, g: number, b: number, a: number): void {
+	_lib.Rdraw_polyline(painter, _n(xy, (list) => new Float32Array(list)), point_count, offset_x, offset_y, scale, thickness, cap, r, g, b, a);
+}
+
 /** Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points. */
 export function Rdraw_curve(painter: RPointer, x0: number, y0: number, cx0: number, cy0: number, cx1: number, cy1: number, x1: number, y1: number, thickness: number, r: number, g: number, b: number, a: number): void {
 	_lib.Rdraw_curve(painter, x0, y0, cx0, cy0, cx1, cy1, x1, y1, thickness, r, g, b, a);
@@ -12099,9 +12301,41 @@ export function Rdraw_triangle(painter: RPointer, x0: number, y0: number, x1: nu
 	_lib.Rdraw_triangle(painter, x0, y0, x1, y1, x2, y2, r, g, b, a);
 }
 
+/**
+ * Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+ *
+ * @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+ * point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+ * without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+ * belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+ * Its outer edges are aliased too; draw an outline over them to smooth them.
+ */
+export function Rdraw_triangles(painter: RPointer, xy: Float32Array | readonly number[] | null, count: number, offset_x: number, offset_y: number, scale: number, r: number, g: number, b: number, a: number): void {
+	_lib.Rdraw_triangles(painter, _n(xy, (list) => new Float32Array(list)), count, offset_x, offset_y, scale, r, g, b, a);
+}
+
 /** Texture stretched to a rectangle and multiplied by a tint color. */
 export function Rdraw_image(painter: RPointer, texture: Rid, x: number, y: number, width: number, height: number, r: number, g: number, b: number, a: number): void {
 	_lib.Rdraw_image(painter, texture, x, y, width, height, r, g, b, a);
+}
+
+/**
+ * Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+ * (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+ * of a sprite sheet.
+ */
+export function Rdraw_image_region(painter: RPointer, texture: Rid, x: number, y: number, width: number, height: number, u0: number, v0: number, u1: number, v1: number, r: number, g: number, b: number, a: number): void {
+	_lib.Rdraw_image_region(painter, texture, x, y, width, height, u0, v0, u1, v1, r, g, b, a);
+}
+
+/**
+ * Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+ * clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+ * the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+ * them smooth.
+ */
+export function Rdraw_image_rotated(painter: RPointer, texture: Rid, x: number, y: number, width: number, height: number, u0: number, v0: number, u1: number, v1: number, angle: number, r: number, g: number, b: number, a: number): void {
+	_lib.Rdraw_image_rotated(painter, texture, x, y, width, height, u0, v0, u1, v1, angle, r, g, b, a);
 }
 
 /**
@@ -12111,6 +12345,14 @@ export function Rdraw_image(painter: RPointer, texture: Rid, x: number, y: numbe
  */
 export function Rdraw_text(painter: RPointer, font: Rid, size: number, x: number, y: number, text: string | null, r: number, g: number, b: number, a: number): void {
 	_lib.Rdraw_text(painter, font, size, x, y, _s(text), r, g, b, a);
+}
+
+/**
+ * Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+ * top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+ */
+export function Rdraw_text_rotated(painter: RPointer, font: Rid, size: number, x: number, y: number, angle: number, text: string | null, r: number, g: number, b: number, a: number): void {
+	_lib.Rdraw_text_rotated(painter, font, size, x, y, angle, _s(text), r, g, b, a);
 }
 
 /**

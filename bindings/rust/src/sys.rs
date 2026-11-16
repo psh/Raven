@@ -636,6 +636,8 @@ pub const R_WIDGET_RATING: RWidgetType = 0x0230;
 pub const R_WIDGET_PAGINATION: RWidgetType = 0x0231;
 /// Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
 pub const R_WIDGET_PLOT: RWidgetType = 0x0232;
+/// A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP).
+pub const R_WIDGET_MAP: RWidgetType = 0x0233;
 
 pub type RHAlign = c_int;
 pub const R_HALIGN_FILL: RHAlign = 0x0240;
@@ -985,6 +987,12 @@ pub const R_MOTION_BOUNCY: RMotion = 0x0322;
 /// Swings several times around the target: things that fly in or get dropped.
 pub const R_MOTION_WOBBLY: RMotion = 0x0323;
 
+/// How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it.
+pub type RLineCap = c_int;
+pub const R_LINE_CAP_ROUND: RLineCap = 0x0570;
+pub const R_LINE_CAP_BUTT: RLineCap = 0x0571;
+pub const R_LINE_CAP_SQUARE: RLineCap = 0x0572;
+
 /// The effects that come with Raven (Reffect_get).
 pub type REffect = c_int;
 /// Soft lights that drift slowly: color, color2; params: speed, scale, intensity, -. Animated.
@@ -1214,6 +1222,7 @@ pub type RPlotViewCallback = Option<unsafe extern "C" fn(plot: Rid, user_data: *
 pub type RPlotDragLineCallback = Option<unsafe extern "C" fn(plot: Rid, line: c_int, value: f64, user_data: *mut c_void)>;
 /// Called when the user hides or shows a series from the legend.
 pub type RPlotSeriesCallback = Option<unsafe extern "C" fn(plot: Rid, series: c_int, visible: c_int, user_data: *mut c_void)>;
+pub type RMapCameraCallback = Option<unsafe extern "C" fn(map: Rid, user_data: *mut c_void)>;
 /// Called when the user zoomed (to zoom other editors the same, or to keep it for the next time).
 pub type RTextEditorZoomCallback = Option<unsafe extern "C" fn(editor: Rid, zoom: f32, user_data: *mut c_void)>;
 /// Called each time the editor gathers its proposals, with the
@@ -1597,6 +1606,25 @@ pub struct RTileItem {
     pub icon_radius: f32,
     /// Color of the name; alpha 0 = the theme.
     pub text_color: [f32; 4],
+}
+
+/// What the last frame drew, and what preparing the tiles cost.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct RMapStats {
+    pub tiles: c_int,
+    pub triangles: c_int,
+    pub segments: c_int,
+    /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+    pub draw_ms: f64,
+    /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+    pub fill_ms: f64,
+    /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+    pub line_ms: f64,
+    /// The tiles held, and what decoding and preparing them took in all.
+    pub prepared_tiles: c_int,
+    pub decode_ms: f64,
+    pub prepare_ms: f64,
 }
 
 /// What the editor knows of a language. Every field but the name may be NULL.
@@ -3159,6 +3187,30 @@ extern "C" {
     pub fn Rplot_set_view_changed_callback(plot: Rid, callback: RPlotViewCallback, user_data: *mut c_void);
     pub fn Rplot_set_drag_line_callback(plot: Rid, callback: RPlotDragLineCallback, user_data: *mut c_void);
     pub fn Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeriesCallback, user_data: *mut c_void);
+    /// Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+    /// source The vector source the map draws, by its name in the style's
+    ///               "sources"; NULL: the first vector source.
+    /// Forgets the tiles handed in so far: they are prepared for a style.
+    /// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+    pub fn Rmap_set_style_json(map: Rid, json: *const c_char, length: c_int, source: *const c_char) -> c_int;
+    /// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
+    pub fn Rmap_set_tile_zoom_range(map: Rid, min_zoom: c_int, max_zoom: c_int);
+    /// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+    /// Tile, not compressed): decoded and prepared for the style at once.
+    /// The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+    pub fn Rmap_tile_loaded(map: Rid, z: c_int, x: c_int, y: c_int, bytes: *const c_void, length: usize) -> c_int;
+    /// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
+    pub fn Rmap_set_center(map: Rid, latitude: f64, longitude: f64);
+    pub fn Rmap_get_center(map: Rid, latitude: *mut f64, longitude: *mut f64);
+    pub fn Rmap_set_zoom(map: Rid, zoom: f64);
+    pub fn Rmap_get_zoom(map: Rid) -> f64;
+    /// How far the user can zoom out and in (default 2 to 18).
+    pub fn Rmap_set_zoom_range(map: Rid, min_zoom: f64, max_zoom: f64);
+    /// Text shown in the bottom right corner, such as the data's attribution. NULL: none.
+    pub fn Rmap_set_attribution(map: Rid, text: *const c_char);
+    pub fn Rmap_get_stats(map: Rid, stats: *mut RMapStats);
+    /// Called when the user moves or zooms the map.
+    pub fn Rmap_set_camera_changed_callback(map: Rid, callback: RMapCameraCallback, user_data: *mut c_void);
     /// text Initial content, or NULL.
     pub fn Rtext_editor_create(text: *const c_char) -> Rid;
     /// Replaces the whole text. The history of undo is cleared; the changed callback is not called.
@@ -3951,15 +4003,42 @@ extern "C" {
     pub fn Rdraw_circle(painter: *mut RPainter, center_x: f32, center_y: f32, radius: f32, r: f32, g: f32, b: f32, a: f32);
     /// Anti-aliased line with round caps.
     pub fn Rdraw_line(painter: *mut RPainter, x0: f32, y0: f32, x1: f32, y1: f32, thickness: f32, r: f32, g: f32, b: f32, a: f32);
+    /// Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+    /// round where they turn, and ended as @p cap says.
+    ///
+    /// @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+    /// offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+    /// so many lines go in one call, such as the dashes of a dashed line.
+    pub fn Rdraw_polyline(painter: *mut RPainter, xy: *const f32, point_count: c_int, offset_x: f32, offset_y: f32, scale: f32, thickness: f32, cap: RLineCap, r: f32, g: f32, b: f32, a: f32);
     /// Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points.
     pub fn Rdraw_curve(painter: *mut RPainter, x0: f32, y0: f32, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x1: f32, y1: f32, thickness: f32, r: f32, g: f32, b: f32, a: f32);
     pub fn Rdraw_triangle(painter: *mut RPainter, x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, r: f32, g: f32, b: f32, a: f32);
+    /// Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+    ///
+    /// @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+    /// point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+    /// without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+    /// belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+    /// Its outer edges are aliased too; draw an outline over them to smooth them.
+    pub fn Rdraw_triangles(painter: *mut RPainter, xy: *const f32, count: c_int, offset_x: f32, offset_y: f32, scale: f32, r: f32, g: f32, b: f32, a: f32);
     /// Texture stretched to a rectangle and multiplied by a tint color.
     pub fn Rdraw_image(painter: *mut RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, r: f32, g: f32, b: f32, a: f32);
+    /// Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+    /// (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+    /// of a sprite sheet.
+    pub fn Rdraw_image_region(painter: *mut RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, u0: f32, v0: f32, u1: f32, v1: f32, r: f32, g: f32, b: f32, a: f32);
+    /// Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+    /// clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+    /// the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+    /// them smooth.
+    pub fn Rdraw_image_rotated(painter: *mut RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, u0: f32, v0: f32, u1: f32, v1: f32, angle: f32, r: f32, g: f32, b: f32, a: f32);
     /// Draws UTF-8 text; (x, y) is the top-left corner of the first line.
     /// font R_INVALID_ID uses the theme font.
     /// size 0 uses R_METRIC_FONT_SIZE.
     pub fn Rdraw_text(painter: *mut RPainter, font: Rid, size: f32, x: f32, y: f32, text: *const c_char, r: f32, g: f32, b: f32, a: f32);
+    /// Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+    /// top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+    pub fn Rdraw_text_rotated(painter: *mut RPainter, font: Rid, size: f32, x: f32, y: f32, angle: f32, text: *const c_char, r: f32, g: f32, b: f32, a: f32);
     /// Rounded rectangle of glass. It shows what was drawn before it,
     /// frosted and bent along its rim, under a tint: (r, g, b) is the color of
     /// the tint and `a` its strength (0 = clear glass, 1 = opaque color).

@@ -615,8 +615,9 @@ export const RWidgetType = _enum({
 	R_WIDGET_RATING: 560,
 	R_WIDGET_PAGINATION: 561,
 	R_WIDGET_PLOT: 562,
+	R_WIDGET_MAP: 563,
 });
-export const { R_WIDGET_VBOX, R_WIDGET_HBOX, R_WIDGET_GRID, R_WIDGET_UNIFORM_GRID, R_WIDGET_OVERLAY, R_WIDGET_BORDER, R_WIDGET_SIZE_BOX, R_WIDGET_SPACER, R_WIDGET_SCROLL_BOX, R_WIDGET_SPLITTER, R_WIDGET_WRAP_BOX, R_WIDGET_CANVAS, R_WIDGET_SWITCHER, R_WIDGET_TAB_VIEW, R_WIDGET_EXPANDER, R_WIDGET_LABEL, R_WIDGET_BUTTON, R_WIDGET_CHECKBOX, R_WIDGET_SLIDER, R_WIDGET_PROGRESSBAR, R_WIDGET_IMAGE, R_WIDGET_TEXT_INPUT, R_WIDGET_SPIN_BOX, R_WIDGET_COMBO_BOX, R_WIDGET_SEPARATOR, R_WIDGET_LIST_VIEW, R_WIDGET_TREE_VIEW, R_WIDGET_MENU_BAR, R_WIDGET_MENU, R_WIDGET_MENU_ITEM, R_WIDGET_VIEWPORT, R_WIDGET_CUSTOM, R_WIDGET_TEXT_EDITOR, R_WIDGET_HEADER_BAR, R_WIDGET_DOCK_AREA, R_WIDGET_ISLAND, R_WIDGET_FILE_BROWSER, R_WIDGET_BACKGROUND_BLUR, R_WIDGET_COLOR_PICKER, R_WIDGET_TIMELINE, R_WIDGET_NODE_GRAPH, R_WIDGET_TILE_VIEW, R_WIDGET_BLOCK_EDITOR, R_WIDGET_TABLE, R_WIDGET_DATE_PICKER, R_WIDGET_TIME_PICKER, R_WIDGET_TOAST, R_WIDGET_BREADCRUMB, R_WIDGET_RATING, R_WIDGET_PAGINATION, R_WIDGET_PLOT } = RWidgetType;
+export const { R_WIDGET_VBOX, R_WIDGET_HBOX, R_WIDGET_GRID, R_WIDGET_UNIFORM_GRID, R_WIDGET_OVERLAY, R_WIDGET_BORDER, R_WIDGET_SIZE_BOX, R_WIDGET_SPACER, R_WIDGET_SCROLL_BOX, R_WIDGET_SPLITTER, R_WIDGET_WRAP_BOX, R_WIDGET_CANVAS, R_WIDGET_SWITCHER, R_WIDGET_TAB_VIEW, R_WIDGET_EXPANDER, R_WIDGET_LABEL, R_WIDGET_BUTTON, R_WIDGET_CHECKBOX, R_WIDGET_SLIDER, R_WIDGET_PROGRESSBAR, R_WIDGET_IMAGE, R_WIDGET_TEXT_INPUT, R_WIDGET_SPIN_BOX, R_WIDGET_COMBO_BOX, R_WIDGET_SEPARATOR, R_WIDGET_LIST_VIEW, R_WIDGET_TREE_VIEW, R_WIDGET_MENU_BAR, R_WIDGET_MENU, R_WIDGET_MENU_ITEM, R_WIDGET_VIEWPORT, R_WIDGET_CUSTOM, R_WIDGET_TEXT_EDITOR, R_WIDGET_HEADER_BAR, R_WIDGET_DOCK_AREA, R_WIDGET_ISLAND, R_WIDGET_FILE_BROWSER, R_WIDGET_BACKGROUND_BLUR, R_WIDGET_COLOR_PICKER, R_WIDGET_TIMELINE, R_WIDGET_NODE_GRAPH, R_WIDGET_TILE_VIEW, R_WIDGET_BLOCK_EDITOR, R_WIDGET_TABLE, R_WIDGET_DATE_PICKER, R_WIDGET_TIME_PICKER, R_WIDGET_TOAST, R_WIDGET_BREADCRUMB, R_WIDGET_RATING, R_WIDGET_PAGINATION, R_WIDGET_PLOT, R_WIDGET_MAP } = RWidgetType;
 
 export const RHAlign = _enum({
 	R_HALIGN_FILL: 576,
@@ -923,6 +924,13 @@ export const RMotion = _enum({
 	R_MOTION_WOBBLY: 803,
 });
 export const { R_MOTION_SNAPPY, R_MOTION_SMOOTH, R_MOTION_BOUNCY, R_MOTION_WOBBLY } = RMotion;
+
+export const RLineCap = _enum({
+	R_LINE_CAP_ROUND: 1392,
+	R_LINE_CAP_BUTT: 1393,
+	R_LINE_CAP_SQUARE: 1394,
+});
+export const { R_LINE_CAP_ROUND, R_LINE_CAP_BUTT, R_LINE_CAP_SQUARE } = RLineCap;
 
 export const REffect = _enum({
 	R_EFFECT_AURORA: 2880,
@@ -2059,6 +2067,82 @@ export class RTileItem extends RStruct {
 	}
 	set text_color(value) {
 		this.text_color.set(value);
+	}
+}
+
+export class RMapStats extends RStruct {
+	static SIZE = 64;
+
+	constructor(pointer) {
+		super(RMapStats.SIZE, pointer);
+	}
+
+	/** The structure at an address of the library, or null. */
+	static from(pointer) {
+		return pointer ? new RMapStats(pointer) : null;
+	}
+
+	get tiles() {
+		return this._view.getInt32(0, true);
+	}
+	set tiles(value) {
+		this._view.setInt32(0, value, true);
+	}
+
+	get triangles() {
+		return this._view.getInt32(4, true);
+	}
+	set triangles(value) {
+		this._view.setInt32(4, value, true);
+	}
+
+	get segments() {
+		return this._view.getInt32(8, true);
+	}
+	set segments(value) {
+		this._view.setInt32(8, value, true);
+	}
+
+	get draw_ms() {
+		return this._view.getFloat64(16, true);
+	}
+	set draw_ms(value) {
+		this._view.setFloat64(16, value, true);
+	}
+
+	get fill_ms() {
+		return this._view.getFloat64(24, true);
+	}
+	set fill_ms(value) {
+		this._view.setFloat64(24, value, true);
+	}
+
+	get line_ms() {
+		return this._view.getFloat64(32, true);
+	}
+	set line_ms(value) {
+		this._view.setFloat64(32, value, true);
+	}
+
+	get prepared_tiles() {
+		return this._view.getInt32(40, true);
+	}
+	set prepared_tiles(value) {
+		this._view.setInt32(40, value, true);
+	}
+
+	get decode_ms() {
+		return this._view.getFloat64(48, true);
+	}
+	set decode_ms(value) {
+		this._view.setFloat64(48, value, true);
+	}
+
+	get prepare_ms() {
+		return this._view.getFloat64(56, true);
+	}
+	set prepare_ms(value) {
+		this._view.setFloat64(56, value, true);
 	}
 }
 
@@ -3489,6 +3573,19 @@ export const Rplot_set_drag_line_color = _lib.Rplot_set_drag_line_color;
 export const Rplot_set_view_changed_callback = _lib.Rplot_set_view_changed_callback;
 export const Rplot_set_drag_line_callback = _lib.Rplot_set_drag_line_callback;
 export const Rplot_set_series_toggled_callback = _lib.Rplot_set_series_toggled_callback;
+export const Rmap_set_style_json = _lib.Rmap_set_style_json;
+export const Rmap_set_tile_zoom_range = _lib.Rmap_set_tile_zoom_range;
+export const Rmap_tile_loaded = _lib.Rmap_tile_loaded;
+export const Rmap_set_center = _lib.Rmap_set_center;
+export const Rmap_get_center = _lib.Rmap_get_center;
+export const Rmap_set_zoom = _lib.Rmap_set_zoom;
+export const Rmap_get_zoom = _lib.Rmap_get_zoom;
+export const Rmap_set_zoom_range = _lib.Rmap_set_zoom_range;
+export const Rmap_set_attribution = _lib.Rmap_set_attribution;
+export function Rmap_get_stats(map, stats) {
+	return _lib.Rmap_get_stats(map, _p(stats));
+}
+export const Rmap_set_camera_changed_callback = _lib.Rmap_set_camera_changed_callback;
 export const Rtext_editor_create = _lib.Rtext_editor_create;
 export const Rtext_editor_set_text = _lib.Rtext_editor_set_text;
 export const Rtext_editor_get_text = _lib.Rtext_editor_get_text;
@@ -3866,10 +3963,15 @@ export const Rdraw_rect = _lib.Rdraw_rect;
 export const Rdraw_rect_outline = _lib.Rdraw_rect_outline;
 export const Rdraw_circle = _lib.Rdraw_circle;
 export const Rdraw_line = _lib.Rdraw_line;
+export const Rdraw_polyline = _lib.Rdraw_polyline;
 export const Rdraw_curve = _lib.Rdraw_curve;
 export const Rdraw_triangle = _lib.Rdraw_triangle;
+export const Rdraw_triangles = _lib.Rdraw_triangles;
 export const Rdraw_image = _lib.Rdraw_image;
+export const Rdraw_image_region = _lib.Rdraw_image_region;
+export const Rdraw_image_rotated = _lib.Rdraw_image_rotated;
 export const Rdraw_text = _lib.Rdraw_text;
+export const Rdraw_text_rotated = _lib.Rdraw_text_rotated;
 export const Rdraw_glass = _lib.Rdraw_glass;
 export function Rdraw_spring(painter, spring, target, motion) {
 	return _lib.Rdraw_spring(painter, _p(spring), target, motion);

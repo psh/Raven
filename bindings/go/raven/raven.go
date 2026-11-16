@@ -639,6 +639,7 @@ const (
 	R_WIDGET_RATING          RWidgetType = 0x0230
 	R_WIDGET_PAGINATION      RWidgetType = 0x0231
 	R_WIDGET_PLOT            RWidgetType = 0x0232
+	R_WIDGET_MAP             RWidgetType = 0x0233
 )
 
 type RHAlign int32
@@ -1002,6 +1003,16 @@ const (
 	R_MOTION_SMOOTH RMotion = 0x0321
 	R_MOTION_BOUNCY RMotion = 0x0322
 	R_MOTION_WOBBLY RMotion = 0x0323
+)
+
+// RLineCap: How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its
+// thickness past it.
+type RLineCap int32
+
+const (
+	R_LINE_CAP_ROUND  RLineCap = 0x0570
+	R_LINE_CAP_BUTT   RLineCap = 0x0571
+	R_LINE_CAP_SQUARE RLineCap = 0x0572
 )
 
 // REffect: The effects that come with Raven (Reffect_get).
@@ -4207,6 +4218,59 @@ func PlotSetDragLineColor(plot ID, line int, r float32, g float32, b float32, a 
 	C.Rplot_set_drag_line_color(C.Rid(plot), C.int(line), C.float(r), C.float(g), C.float(b), C.float(a))
 }
 
+// MapSetStyleJson: Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated). source The
+// vector source the map draws, by its name in the style's "sources"; NULL: the first vector source. Forgets
+// the tiles handed in so far: they are prepared for a style. Returns R_FALSE (and keeps the style it had) if
+// the JSON can't be read.
+func MapSetStyleJson(map_ ID, json string, length int, source string) int {
+	json_ := C.CString(json)
+	defer C.free(unsafe.Pointer(json_))
+	source_ := C.CString(source)
+	defer C.free(unsafe.Pointer(source_))
+	return int(C.Rmap_set_style_json(C.Rid(map_), json_, C.int(length), source_))
+}
+
+// MapSetTileZoomRange: The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the
+// deepest.
+func MapSetTileZoomRange(map_ ID, min_zoom int, max_zoom int) {
+	C.Rmap_set_tile_zoom_range(C.Rid(map_), C.int(min_zoom), C.int(max_zoom))
+}
+
+// MapSetCenter: Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512
+// units).
+func MapSetCenter(map_ ID, latitude float64, longitude float64) {
+	C.Rmap_set_center(C.Rid(map_), C.double(latitude), C.double(longitude))
+}
+
+func MapGetCenter(map_ ID) (latitude float64, longitude float64) {
+	var latitude_ C.double
+	var longitude_ C.double
+	C.Rmap_get_center(C.Rid(map_), &latitude_, &longitude_)
+	latitude = float64(latitude_)
+	longitude = float64(longitude_)
+	return
+}
+
+func MapSetZoom(map_ ID, zoom float64) {
+	C.Rmap_set_zoom(C.Rid(map_), C.double(zoom))
+}
+
+func MapGetZoom(map_ ID) float64 {
+	return float64(C.Rmap_get_zoom(C.Rid(map_)))
+}
+
+// MapSetZoomRange: How far the user can zoom out and in (default 2 to 18).
+func MapSetZoomRange(map_ ID, min_zoom float64, max_zoom float64) {
+	C.Rmap_set_zoom_range(C.Rid(map_), C.double(min_zoom), C.double(max_zoom))
+}
+
+// MapSetAttribution: Text shown in the bottom right corner, such as the data's attribution. NULL: none.
+func MapSetAttribution(map_ ID, text string) {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	C.Rmap_set_attribution(C.Rid(map_), text_)
+}
+
 // TextEditorCreate: text Initial content, or NULL.
 func TextEditorCreate(text string) ID {
 	text_ := C.CString(text)
@@ -6732,25 +6796,27 @@ func HostInjectClose(window ID) {
 // Rdate_picker_set_changed_callback, Rtime_picker_set_changed_callback, Rtoast_set_action_callback
 // Rbreadcrumb_set_clicked_callback, Rrating_set_changed_callback, Rpagination_set_changed_callback
 // Rplot_set_view_changed_callback, Rplot_set_drag_line_callback, Rplot_set_series_toggled_callback
-// Rtext_editor_set_zoom_callback, Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback
-// Rtext_editor_set_changed_callback, Rdock_area_set_close_callback, Rdock_area_set_changed_callback
-// Risland_set_changed_callback, Rtaskbar_set_jump_list, Rtray_set_icon, Rtray_set_clicked_callback
-// Rcolor_picker_set_changed_callback, Rtimeline_set_time_callback, Rtimeline_set_changed_callback
-// Rtimeline_set_selection_callback, Rtimeline_set_activated_callback, Rtimeline_set_removed_callback
-// Rnode_graph_set_node_user_data, Rnode_graph_get_node_user_data, Rnode_graph_set_connect_callback
-// Rnode_graph_set_linked_callback, Rnode_graph_set_unlinked_callback, Rnode_graph_set_moved_callback
-// Rnode_graph_set_selection_callback, Rnode_graph_set_removed_callback, Rnode_graph_set_activated_callback
-// Rnode_graph_set_context_callback, Rnode_graph_set_canvas_activated_callback
-// Rnode_graph_set_wire_dropped_callback, Rnode_graph_set_pin_clicked_callback
-// Rblock_editor_set_changed_callback, Rblock_editor_set_clicked_callback, Rblock_editor_set_context_callback
-// Rdialog_open, Rdialog_set_dismiss_callback, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save
+// Rmap_tile_loaded, Rmap_get_stats, Rmap_set_camera_changed_callback, Rtext_editor_set_zoom_callback
+// Rlanguage_register, Rlanguage_get, Rtext_editor_set_completion_callback, Rtext_editor_set_changed_callback
+// Rdock_area_set_close_callback, Rdock_area_set_changed_callback, Risland_set_changed_callback
+// Rtaskbar_set_jump_list, Rtray_set_icon, Rtray_set_clicked_callback, Rcolor_picker_set_changed_callback
+// Rtimeline_set_time_callback, Rtimeline_set_changed_callback, Rtimeline_set_selection_callback
+// Rtimeline_set_activated_callback, Rtimeline_set_removed_callback, Rnode_graph_set_node_user_data
+// Rnode_graph_get_node_user_data, Rnode_graph_set_connect_callback, Rnode_graph_set_linked_callback
+// Rnode_graph_set_unlinked_callback, Rnode_graph_set_moved_callback, Rnode_graph_set_selection_callback
+// Rnode_graph_set_removed_callback, Rnode_graph_set_activated_callback, Rnode_graph_set_context_callback
+// Rnode_graph_set_canvas_activated_callback, Rnode_graph_set_wire_dropped_callback
+// Rnode_graph_set_pin_clicked_callback, Rblock_editor_set_changed_callback
+// Rblock_editor_set_clicked_callback, Rblock_editor_set_context_callback, Rdialog_open
+// Rdialog_set_dismiss_callback, Rpopup_open, Rfile_dialog_open, Rfile_dialog_save
 // Rfile_dialog_select_folder, Rfile_read, Rfile_browser_set_filters, Rfile_browser_set_accepted_callback
 // Rfile_browser_set_cancelled_callback, Rfile_browser_set_selection_changed_callback
 // Rnotification_set_fallback, Rnotification_set_clicked_callback, Rviewport_set_draw_callback
 // Rviewport_get_native_handle, Rviewport_set_resize_callback, Rcustom_set_paint_callback
-// Rcustom_set_measure_callback, Rdraw_rect, Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_curve
-// Rdraw_triangle, Rdraw_image, Rdraw_text, Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set
-// Rdraw_push_clip_rect, Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults
-// Rdraw_shader, Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse
+// Rcustom_set_measure_callback, Rdraw_rect, Rdraw_rect_outline, Rdraw_circle, Rdraw_line, Rdraw_polyline
+// Rdraw_curve, Rdraw_triangle, Rdraw_triangles, Rdraw_image, Rdraw_image_region, Rdraw_image_rotated
+// Rdraw_text, Rdraw_text_rotated, Rdraw_glass, Rdraw_spring, Rspring_kick, Rspring_set, Rdraw_push_clip_rect
+// Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults, Rdraw_shader
+// Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse
 // Rxml_get_attribute_info, Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings
 // Rhost_platform_register

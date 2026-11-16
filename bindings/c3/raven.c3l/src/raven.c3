@@ -827,6 +827,8 @@ constset WidgetType : CInt
 	PAGINATION = 0x0231,
 	<* Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom. *>
 	PLOT = 0x0232,
+	<* A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP). *>
+	MAP = 0x0233,
 }
 
 constset HAlign : CInt
@@ -1272,6 +1274,14 @@ constset Motion : CInt
 	WOBBLY = 0x0323,
 }
 
+<* How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it. *>
+constset LineCap : CInt
+{
+	ROUND = 0x0570,
+	BUTT = 0x0571,
+	SQUARE = 0x0572,
+}
+
 <* The effects that come with Raven (Reffect_get). *>
 constset Effect : CInt
 {
@@ -1547,6 +1557,7 @@ alias PlotViewCallback = fn void(Id plot, void* user_data);
 alias PlotDragLineCallback = fn void(Id plot, CInt line, double value, void* user_data);
 <* Called when the user hides or shows a series from the legend. *>
 alias PlotSeriesCallback = fn void(Id plot, CInt series, CInt visible, void* user_data);
+alias MapCameraCallback = fn void(Id map, void* user_data);
 <* Called when the user zoomed (to zoom other editors the same, or to keep it for the next time). *>
 alias TextEditorZoomCallback = fn void(Id editor, float zoom, void* user_data);
 <*
@@ -1950,6 +1961,24 @@ struct TileItem
 	float icon_radius;
 	<* Color of the name; alpha 0 = the theme. *>
 	float[4] text_color;
+}
+
+<* What the last frame drew, and what preparing the tiles cost. *>
+struct MapStats
+{
+	CInt tiles;
+	CInt triangles;
+	CInt segments;
+	<* The map's own drawing calls, in milliseconds: all, the fills, the lines. *>
+	double draw_ms;
+	<* The map's own drawing calls, in milliseconds: all, the fills, the lines. *>
+	double fill_ms;
+	<* The map's own drawing calls, in milliseconds: all, the fills, the lines. *>
+	double line_ms;
+	<* The tiles held, and what decoding and preparing them took in all. *>
+	CInt prepared_tiles;
+	double decode_ms;
+	double prepare_ms;
 }
 
 <*
@@ -4765,6 +4794,46 @@ fn void Plot.set_drag_line_callback(self, PlotDragLineCallback callback, void* u
 
 fn void Plot.set_series_toggled_callback(self, PlotSeriesCallback callback, void* user_data) @inline => c::r_plot_set_series_toggled_callback((c::Rid)self, (c::RPlotSeriesCallback)callback, user_data);
 
+// ---- Map
+
+typedef Map = inline Widget;
+
+<* A new Map (widget_create(WidgetType.MAP)). *>
+fn Map map_create() @inline => (Map)c::r_widget_create(c::R_WIDGET_MAP);
+
+<* Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated). *>
+fn CInt Map.set_style_json(self, ZString json, CInt length, ZString source) @inline => c::r_map_set_style_json((c::Rid)self, (char*)json, length, (char*)source);
+
+<* The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. *>
+fn void Map.set_tile_zoom_range(self, CInt min_zoom, CInt max_zoom) @inline => c::r_map_set_tile_zoom_range((c::Rid)self, min_zoom, max_zoom);
+
+<*
+ Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+ Tile, not compressed): decoded and prepared for the style at once.
+ The bytes are not kept. Returns R_FALSE if the tile can't be decoded.
+*>
+fn CInt Map.tile_loaded(self, CInt z, CInt x, CInt y, void* bytes, usz length) @inline => c::r_map_tile_loaded((c::Rid)self, z, x, y, bytes, length);
+
+<* Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). *>
+fn void Map.set_center(self, double latitude, double longitude) @inline => c::r_map_set_center((c::Rid)self, latitude, longitude);
+
+fn void Map.get_center(self, double* latitude, double* longitude) @inline => c::r_map_get_center((c::Rid)self, latitude, longitude);
+
+fn void Map.set_zoom(self, double zoom) @inline => c::r_map_set_zoom((c::Rid)self, zoom);
+
+fn double Map.get_zoom(self) @inline => c::r_map_get_zoom((c::Rid)self);
+
+<* How far the user can zoom out and in (default 2 to 18). *>
+fn void Map.set_zoom_range(self, double min_zoom, double max_zoom) @inline => c::r_map_set_zoom_range((c::Rid)self, min_zoom, max_zoom);
+
+<* Text shown in the bottom right corner, such as the data's attribution. NULL: none. *>
+fn void Map.set_attribution(self, ZString text) @inline => c::r_map_set_attribution((c::Rid)self, (char*)text);
+
+fn void Map.get_stats(self, MapStats* stats) @inline => c::r_map_get_stats((c::Rid)self, (c::RMapStats*)stats);
+
+<* Called when the user moves or zooms the map. *>
+fn void Map.set_camera_changed_callback(self, MapCameraCallback callback, void* user_data) @inline => c::r_map_set_camera_changed_callback((c::Rid)self, (c::RMapCameraCallback)callback, user_data);
+
 // ---- Window
 
 typedef Window = inline Id;
@@ -5657,16 +5726,46 @@ fn void Painter.circle(&self, float center_x, float center_y, float radius, floa
 <* Anti-aliased line with round caps. *>
 fn void Painter.line(&self, float x0, float y0, float x1, float y1, float thickness, float r, float g, float b, float a) @inline => c::r_draw_line((c::RPainter*)self, x0, y0, x1, y1, thickness, r, g, b, a);
 
+<*
+ Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+ round where they turn, and ended as @p cap says.
+*>
+fn void Painter.polyline(&self, float* xy, CInt point_count, float offset_x, float offset_y, float scale, float thickness, LineCap cap, float r, float g, float b, float a) @inline => c::r_draw_polyline((c::RPainter*)self, xy, point_count, offset_x, offset_y, scale, thickness, (c::RLineCap)cap, r, g, b, a);
+
 <* Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points. *>
 fn void Painter.curve(&self, float x0, float y0, float cx0, float cy0, float cx1, float cy1, float x1, float y1, float thickness, float r, float g, float b, float a) @inline => c::r_draw_curve((c::RPainter*)self, x0, y0, cx0, cy0, cx1, cy1, x1, y1, thickness, r, g, b, a);
 
 fn void Painter.triangle(&self, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b, float a) @inline => c::r_draw_triangle((c::RPainter*)self, x0, y0, x1, y1, x2, y2, r, g, b, a);
 
+<* Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon. *>
+fn void Painter.triangles(&self, float* xy, CInt count, float offset_x, float offset_y, float scale, float r, float g, float b, float a) @inline => c::r_draw_triangles((c::RPainter*)self, xy, count, offset_x, offset_y, scale, r, g, b, a);
+
 <* Texture stretched to a rectangle and multiplied by a tint color. *>
 fn void Painter.image(&self, Id texture, float x, float y, float width, float height, float r, float g, float b, float a) @inline => c::r_draw_image((c::RPainter*)self, (c::Rid)texture, x, y, width, height, r, g, b, a);
 
+<*
+ Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+ (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+ of a sprite sheet.
+*>
+fn void Painter.image_region(&self, Id texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float r, float g, float b, float a) @inline => c::r_draw_image_region((c::RPainter*)self, (c::Rid)texture, x, y, width, height, u0, v0, u1, v1, r, g, b, a);
+
+<*
+ Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+ clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+ the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+ them smooth.
+*>
+fn void Painter.image_rotated(&self, Id texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a) @inline => c::r_draw_image_rotated((c::RPainter*)self, (c::Rid)texture, x, y, width, height, u0, v0, u1, v1, angle, r, g, b, a);
+
 <* Draws UTF-8 text; (x, y) is the top-left corner of the first line. *>
 fn void Painter.text(&self, Id font, float size, float x, float y, ZString text, float r, float g, float b, float a) @inline => c::r_draw_text((c::RPainter*)self, (c::Rid)font, size, x, y, (char*)text, r, g, b, a);
+
+<*
+ Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+ top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+*>
+fn void Painter.text_rotated(&self, Id font, float size, float x, float y, float angle, ZString text, float r, float g, float b, float a) @inline => c::r_draw_text_rotated((c::RPainter*)self, (c::Rid)font, size, x, y, angle, (char*)text, r, g, b, a);
 
 <*
  Rounded rectangle of glass. It shows what was drawn before it,
