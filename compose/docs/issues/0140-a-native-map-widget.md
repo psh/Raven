@@ -161,22 +161,22 @@ Measured 2026-11-15, step 1. Findings:
       expressions, dashes, labels, placement, and the tile store against hand-made tiles.
 - [x] A benchmark that measures both implementations (`tests/map_benchmark.c` and the spike's
       `NativeComparisonBenchmark` and `NativeLabelsBenchmark`), with results filled into the table.
-- [x] Step 4: compose-raven's `VectorMap` over the widget (`compose-raven-map`), and Python showing
+- [x] Step 4: compose-raven's `MapView` over the widget (`compose-raven-map`), and Python showing
       a map (`bindings/python/map_example.py`, tested as `binding_python_map`).
 - [x] A verdict: keep the map in C, keep it in Kotlin, or split it, and which Raven changes to
       propose upstream. See [Verdict](#verdict).
 
 ## Step 4 (2026-11-15)
 
-- **`compose-raven-map`**, an opt-in module: `VectorMap(style, tiles, modifier, state,
+- **`compose-raven-map`**, an opt-in module: `MapView(style, tiles, modifier, state,
   attribution, zoomRange, capacity)` emits `R_WIDGET_MAP`. `MapStyle` carries the style JSON and
   its sprite sheet; `TileSource` is the app's own fetching (`suspend fun tile(z, x, y)`), run on
   `Dispatchers.Default` as the widget asks and cancelled when it no longer needs the tile;
-  `VectorMapState` holds the camera, written by the app and by the user (a new binding event,
-  `MapCameraChanged`, in `compose-raven-ui`), and reads the widget's stats. Named `VectorMap`, not
+  `MapViewState` holds the camera, written by the app and by the user (a new binding event,
+  `MapCameraChanged`, in `compose-raven-ui`), and reads the widget's stats. Named `MapView`, not
   `Map`, so as not to shadow `kotlin.collections.Map`. 5 tests (requests, camera both ways,
   cancellation, failure, leaving the composition), stable over 10 runs.
-- **The spike** draws through `VectorMap` by default, its Ktor source and disk cache feeding it
+- **The spike** draws through `MapView` by default, its Ktor source and disk cache feeding it
   (checked online over Paris and offline over Chicago); `MAPS_KOTLIN=1` keeps the Kotlin drawing as
   the reference. The window places the same labels as the C example.
 - **Python**: `map_example.py` shows Chicago from the spike's files in about 120 lines with no map
@@ -186,7 +186,7 @@ Measured 2026-11-15, step 1. Findings:
 ## Verdict
 
 **Decided 2026-11-15: the map stays in C, as Raven's Map widget.** compose-raven keeps only what is
-Kotlin's to do (the `VectorMap` composable, its state, and fetching tiles), and every other binding
+Kotlin's to do (the `MapView` composable, its state, and fetching tiles), and every other binding
 gets the same map through `Rmap_*`. The reasons are those of the recommendation below: the same
 map as the spike, in every language, and faster wherever the two can differ.
 
