@@ -17,6 +17,10 @@
 
 #include <string.h>
 
+#if defined(__ARM_FEATURE_CRC32)
+#include <arm_acle.h>
+#endif
+
 typedef struct rvn_proto_t {
 	const uint8_t* p;
 	const uint8_t* end;
@@ -308,6 +312,22 @@ static int rvn_gzip_body(const uint8_t* bytes, size_t length, size_t* start, siz
 	return R_TRUE;
 }
 
+#if defined(__ARM_FEATURE_CRC32)
+
+/** CRC-32 (ISO-HDLC, gzip's) with ARMv8's CRC32 instructions, eight bytes at a time. */
+static uint32_t rvn_crc32(const uint8_t* p, size_t length) {
+	uint32_t crc = 0xFFFFFFFFu;
+	for (; length >= 8; p += 8, length -= 8) {
+		uint64_t word;
+		memcpy(&word, p, 8);
+		crc = __crc32d(crc, word);
+	}
+	for (; length; p++, length--) crc = __crc32b(crc, *p);
+	return crc ^ 0xFFFFFFFFu;
+}
+
+#else
+
 /** CRC-32 (ISO-HDLC, gzip's), a byte at a time. */
 static uint32_t rvn_crc32(const uint8_t* p, size_t length) {
 	static const uint32_t table[256] = {
@@ -349,6 +369,8 @@ static uint32_t rvn_crc32(const uint8_t* p, size_t length) {
 	for (i = 0; i < length; i++) crc = (crc >> 8) ^ table[(crc ^ p[i]) & 0xFF];
 	return crc ^ 0xFFFFFFFFu;
 }
+
+#endif
 
 /** Adler-32 (zlib's), taking the modulo every 5552 bytes, the most that can't overflow. */
 static uint32_t rvn_adler32(const uint8_t* p, size_t length) {
