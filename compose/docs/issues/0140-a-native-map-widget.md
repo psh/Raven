@@ -94,13 +94,15 @@ panned a hundredth of a unit.
 |---|---|---|
 | Dense 530 KB tile (14/4203/6089): decode | 12.4 ms | 0.9 ms |
 | Dense tile: style and triangulate, without labels | 37.0 ms | 5.7 ms |
-| Dense tile: style and triangulate, with labels | 57.0 ms | (step 3) |
+| Dense tile: style and triangulate, with labels | 56.3 ms | 9.2 ms |
 | All 61 tiles, without labels: decode, then style and triangulate | 155 + 916 ms | 14 + 138 ms |
 | All 61 tiles prepared together, on worker threads: until all are ready | 340 ms (`Dispatchers.Default`) | 25 ms (8 workers) |
 | 800 × 600 at zoom 14 (4 tiles, 43,903 triangles, 36,140 segments): fills | 0.52 ms | 0.49 ms |
 | Same view: lines | 3.40 ms | 0.74 ms |
 | 1200 × 800 at zoom 14 (12 tiles, 110,212 triangles, 75,614 segments): fills, lines | not run | 1.18, 1.46 ms |
-| Labels a frame, placement reused / placed every frame | | (step 3) |
+| Labels, 800 × 600 at zoom 14: a frame reusing the placement (panning; zooming) | 0.22 ms; 0.22 ms | 0.10 ms; 0.10 ms |
+| Same: a placement (zooming, 84 of 1,480 placed, 36 icons; resting, 92, 47 icons) | 2.52 ms; 2.68 ms | 0.45 ms; 0.95 ms |
+| Same: a frame placing again each time | 2.88 ms | 1.17 ms |
 | Memory held by prepared tiles | not measured (garbage-collected) | 24.1 MB for the 61, about 0.4 MB a tile: about 60 MB at the 160 kept |
 
 Measured 2026-11-15, step 1. Findings:
@@ -115,6 +117,9 @@ Measured 2026-11-15, step 1. Findings:
   0.82 ms; batched, its `LineShapes` builds a string key per tile and layer and re-reads the
   style per tile each frame. The C widget keeps a fixed slot per tile and layer.
 - **Preparing tiles is where the languages differ: 6 to 14 times faster in C.**
+- **Labels place the same in both** (step 3): the same counts of labels and icons placed of the
+  same candidates, in a third to a sixth of the time in C; a frame reusing the placement costs
+  half.
 - **Prepared together, the gap widens to 13 times** (step 2, 2026-11-15): C's 8 workers finish
   6.6 times faster than its summed preparation time, Kotlin's `Dispatchers.Default` about 3 times.
 
@@ -137,6 +142,14 @@ Measured 2026-11-15, step 1. Findings:
   does; listing tiles there cost millions of lookups a frame far out (the spike has the same flaw).
   A tile handed in unasked is kept, and never cancelled. The disk cache stays with the
   application, as the HTTP client does.
+- **Step 3, done (2026-11-15)**: `src/map/labels.c` and `Rmap_set_sprite`: symbols prepared with
+  their tiles on the workers, then placed as the spike places them (points with icons, wrapping,
+  anchors and offsets; glyphs along lines; road shields; one-way arrows; faces from `text-font`;
+  halos; collision; the placement kept through small pans and zooms and placed again 200 ms after
+  the camera rests). `test_map`: 166 checks, the spike's label-text and downloaded-tile checks
+  among them (the latter with `MAPS_DATA`), clean under ThreadSanitizer. One deviation:
+  `text-transform` changes case in ASCII, Latin-1, Latin Extended-A, Greek and Cyrillic only;
+  Raven has no full Unicode case mapping, where Kotlin has.
 
 ## Deliverables
 
