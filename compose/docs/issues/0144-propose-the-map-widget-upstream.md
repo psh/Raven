@@ -10,7 +10,7 @@ so every binding can show a vector map. Second of the two proposals the
 follows it onto `compose-raven`.
 
 **Depends on:** [0141](0141-map-widget-on-windows-and-linux.md) (Windows and Linux),
-[0142](0142-the-map-spikes-kotlin-drawing.md) (the spike's Kotlin drawing settled), and
+[0142](archive/0142-the-map-spikes-kotlin-drawing.md) (the spike's Kotlin drawing settled), and
 [0143](0143-propose-the-drawing-additions-upstream.md) (the drawing calls it draws with, merged).
 
 ## Deliverables
