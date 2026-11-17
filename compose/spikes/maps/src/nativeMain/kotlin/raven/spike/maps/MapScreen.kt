@@ -27,8 +27,11 @@ import raven.compose.ui.unit.dp
 import raven.compose.ui.unit.sp
 import raven.compose.map.TileSource as MapTileSource
 
+/** A style's sprite sheet: its JSON index, and the PNG its icons are in. */
+class Sprite(val json: String, val png: ByteArray)
+
 /** The spike's tile source, as compose-raven-map asks for tiles. */
-private class NativeTiles(private val source: TileSource) : MapTileSource {
+private class Tiles(private val source: TileSource) : MapTileSource {
     override val minZoom: Int get() = source.minZoom
     override val maxZoom: Int get() = source.maxZoom
 
@@ -37,14 +40,14 @@ private class NativeTiles(private val source: TileSource) : MapTileSource {
 }
 
 /**
- * The map drawn by Raven's native Map widget, through compose-raven-map's MapView: the style's
- * [json] and [sprite] handed to it, the tiles fetched from [source] as it asks for them, with what
- * each frame costs over it, as [MapScreen] shows for the Kotlin drawing.
+ * The map drawn by Raven's Map widget, through compose-raven-map's MapView: the style's [json] and
+ * [sprite] handed to it, the tiles fetched from [source] as it asks for them, with what each frame
+ * costs over it.
  */
 @Composable
-fun NativeMapScreen(json: String, source: TileSource, sprite: Sprite?, latitude: Double, longitude: Double, zoom: Double) {
+fun MapScreen(json: String, source: TileSource, sprite: Sprite?, latitude: Double, longitude: Double, zoom: Double) {
     val style = remember(json, sprite) { MapStyle(json, spriteIndex = sprite?.json, spritePng = sprite?.png) }
-    val tiles = remember(source) { NativeTiles(source) }
+    val tiles = remember(source) { Tiles(source) }
     val state = rememberMapViewState(latitude, longitude, zoom)
     Box(Modifier.fillMaxSize()) {
         MapView(
@@ -54,13 +57,13 @@ fun NativeMapScreen(json: String, source: TileSource, sprite: Sprite?, latitude:
             state,
             attribution = "© OpenFreeMap © OpenMapTiles Data from OpenStreetMap",
         )
-        NativeStats(state, source, Modifier.align(Alignment.TopStart).padding(12.dp))
+        Stats(state, source, Modifier.align(Alignment.TopStart).padding(12.dp))
     }
 }
 
-/** What the native map's last frame drew and cost, read twice a second. */
+/** What the map's last frame drew and cost, read twice a second. */
 @Composable
-private fun NativeStats(state: MapViewState, source: TileSource, modifier: Modifier) {
+private fun Stats(state: MapViewState, source: TileSource, modifier: Modifier) {
     val info = LocalWindowInfo.current
     var lines by remember { mutableStateOf(listOf<String>()) }
     LaunchedEffect(Unit) {
@@ -68,7 +71,7 @@ private fun NativeStats(state: MapViewState, source: TileSource, modifier: Modif
             val frame = info.frameStats()
             val s = state.stats()
             lines = if (s == null) emptyList() else listOf(
-                "zoom ${fmt(state.zoom)}, ${s.tiles} tiles (native)",
+                "zoom ${fmt(state.zoom)}, ${s.tiles} tiles",
                 "${s.triangles} triangles, ${s.segments} line segments",
                 "C draw calls: ${fmt(s.drawMs)} ms (labels ${fmt(s.labelsMs)})",
                 "${s.labelsPlaced} labels placed of ${s.labelCandidates}, ${s.icons} icons, in ${fmt(s.placeMs)} ms" + if (s.labelsReused) " (reused)" else "",

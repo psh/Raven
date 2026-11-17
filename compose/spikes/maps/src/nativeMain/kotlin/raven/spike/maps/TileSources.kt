@@ -17,11 +17,19 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import platform.posix.SEEK_END
+import platform.posix.SEEK_SET
 import platform.posix.fclose
 import platform.posix.fopen
+import platform.posix.fread
+import platform.posix.fseek
+import platform.posix.ftell
 import platform.posix.fwrite
 import platform.posix.mkdir
 import platform.posix.rename
+
+/** A tile of the map: its zoom, and its column and row at that zoom. */
+data class TileId(val z: Int, val x: Int, val y: Int)
 
 /** Where tiles come from: their bytes, or null where there is no tile. */
 interface TileSource {
@@ -144,5 +152,21 @@ class DiskCache(private val directory: String) {
             at = path.indexOf('/', at + 1)
         }
         mkdir(path, 0x1EDu)
+    }
+}
+
+/** The bytes of the file at [path], or null if it can't be read. */
+@OptIn(ExperimentalForeignApi::class)
+fun readFile(path: String): ByteArray? {
+    val file = fopen(path, "rb") ?: return null
+    try {
+        fseek(file, 0, SEEK_END)
+        val size = ftell(file).toInt()
+        fseek(file, 0, SEEK_SET)
+        val bytes = ByteArray(size)
+        if (size > 0) bytes.usePinned { fread(it.addressOf(0), 1u, size.convert(), file) }
+        return bytes
+    } finally {
+        fclose(file)
     }
 }
