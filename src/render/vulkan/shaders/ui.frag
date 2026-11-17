@@ -18,6 +18,9 @@ const uint PRIM_BLUR     = 6u;
 const uint PRIM_CURVE    = 7u;
 const uint PRIM_MASK     = 15u;
 const uint FLAG_TEXTURED = 16u;
+const uint FLAG_ALIASED = 64u;
+const uint FLAG_BUTT_START = 64u;
+const uint FLAG_BUTT_END = 128u;
 
 layout(set = 0, binding = 0) uniform sampler2D u_texture;
 /* the frame behind the glass primitives, as captured by the last backdrop command */
@@ -231,6 +234,26 @@ float sd_triangle(vec2 p, vec2 p0, vec2 p1, vec2 p2) {
 	return -sqrt(d.x) * sign(d.y);
 }
 
+/* Whether p is on the inner side of the edge from a to b, the side its triangle is on when
+ * inside > 0. Both triangles that share an edge evaluate it from the same ordered endpoints, so
+ * they get exactly opposite values, and a point on the edge belongs to the one that runs it
+ * one way: as a rasterizer does it, each pixel goes to exactly one of them. */
+bool inside_edge(vec2 p, vec2 a, vec2 b, float inside) {
+	bool flip = b.y < a.y || (b.y == a.y && b.x < a.x);
+	vec2 s = flip ? b : a, t = flip ? a : b;
+	float e = (t.x - s.x) * (p.y - s.y) - (t.y - s.y) * (p.x - s.x);
+	if (flip) e = -e;
+	e *= inside;
+	return e > 0.0 || (e == 0.0 && flip == (inside > 0.0));
+}
+
+/* Whether p is inside the triangle, with no anti-aliasing: the triangles of a mesh cover the
+ * pixels along the edges they share once, with no seam and nothing drawn twice. */
+bool inside_triangle(vec2 p, vec2 p0, vec2 p1, vec2 p2) {
+	float inside = sign((p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x));
+	return inside != 0.0 && inside_edge(p, p0, p1, inside) && inside_edge(p, p1, p2, inside) && inside_edge(p, p2, p0, inside);
+}
+
 void main() {
 	/* the derivatives of the coordinates are taken while the whole quad runs
 	 * (before the discard and the branches): they choose the mip level of the
@@ -262,11 +285,27 @@ void main() {
 		float blur = max(v_border_width, 0.5);
 		coverage = 1.0 - smoothstep(-blur, blur, d);
 	} else if (kind == PRIM_LINE) {
-		float d = sd_segment(p, v_rect.xy, v_rect.zw) - v_radii.x * 0.5;
+		float half_width = v_radii.x * 0.5;
+		float d = sd_segment(p, v_rect.xy, v_rect.zw) - half_width;
+		if ((v_flags & (FLAG_BUTT_START | FLAG_BUTT_END)) != 0u) {
+			/* an end cut square: past it, the distance to the cut, not to the end point */
+			vec2 ba = v_rect.zw - v_rect.xy;
+			float len = max(length(ba), 1e-6);
+			vec2 dir = ba / len;
+			vec2 pa = p - v_rect.xy;
+			float along = dot(pa, dir);
+			float across = abs(dir.x * pa.y - dir.y * pa.x) - half_width;
+			if (along < 0.0 && (v_flags & FLAG_BUTT_START) != 0u) d = max(across, -along);
+			else if (along > len && (v_flags & FLAG_BUTT_END) != 0u) d = max(across, along - len);
+		}
 		coverage = clamp(0.5 - d, 0.0, 1.0);
 	} else if (kind == PRIM_TRIANGLE) {
-		float d = sd_triangle(p, v_rect.xy, v_rect.zw, v_radii.xy);
-		coverage = clamp(0.5 - d, 0.0, 1.0);
+		if ((v_flags & FLAG_ALIASED) != 0u) {
+			coverage = inside_triangle(p, v_rect.xy, v_rect.zw, v_radii.xy) ? 1.0 : 0.0;
+		} else {
+			float d = sd_triangle(p, v_rect.xy, v_rect.zw, v_radii.xy);
+			coverage = clamp(0.5 - d, 0.0, 1.0);
+		}
 	} else if (kind == PRIM_CURVE) {
 		/* a cubic curve, followed as a chain of short segments: the nearest one gives the distance and how far along it is */
 		vec2 a = v_rect.xy, b = v_radii.xy, c = v_radii.zw, e = v_rect.zw;

@@ -65,6 +65,9 @@ extern const rvn_widget_class_t rvn_class_breadcrumb;
 extern const rvn_widget_class_t rvn_class_rating;
 extern const rvn_widget_class_t rvn_class_pagination;
 extern const rvn_widget_class_t rvn_class_plot;
+#ifdef RAVEN_WITH_MAP
+extern const rvn_widget_class_t rvn_class_map;
+#endif
 
 /** Internal class types, outside of the public enum. */
 #define RVN_WIDGET_INTERNAL_COMBO_LIST ((RWidgetType)((int)R_WIDGET_LAST_ + 1))

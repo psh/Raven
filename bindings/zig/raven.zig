@@ -656,6 +656,8 @@ pub const R_WIDGET_RATING: RWidgetType = 0x0230;
 pub const R_WIDGET_PAGINATION: RWidgetType = 0x0231;
 /// Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
 pub const R_WIDGET_PLOT: RWidgetType = 0x0232;
+/// A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP).
+pub const R_WIDGET_MAP: RWidgetType = 0x0233;
 
 pub const RHAlign = c_int;
 pub const R_HALIGN_FILL: RHAlign = 0x0240;
@@ -1005,6 +1007,12 @@ pub const R_MOTION_BOUNCY: RMotion = 0x0322;
 /// Swings several times around the target: things that fly in or get dropped.
 pub const R_MOTION_WOBBLY: RMotion = 0x0323;
 
+/// How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it.
+pub const RLineCap = c_int;
+pub const R_LINE_CAP_ROUND: RLineCap = 0x0570;
+pub const R_LINE_CAP_BUTT: RLineCap = 0x0571;
+pub const R_LINE_CAP_SQUARE: RLineCap = 0x0572;
+
 /// The effects that come with Raven (Reffect_get).
 pub const REffect = c_int;
 /// Soft lights that drift slowly: color, color2; params: speed, scale, intensity, -. Animated.
@@ -1234,6 +1242,11 @@ pub const RPlotViewCallback = ?*const fn (plot: Rid, user_data: ?*anyopaque) cal
 pub const RPlotDragLineCallback = ?*const fn (plot: Rid, line: c_int, value: f64, user_data: ?*anyopaque) callconv(.c) void;
 /// Called when the user hides or shows a series from the legend.
 pub const RPlotSeriesCallback = ?*const fn (plot: Rid, series: c_int, visible: c_int, user_data: ?*anyopaque) callconv(.c) void;
+/// Asks for a tile. Called on the thread of the interface, outside painting.
+pub const RMapTileRequestCallback = ?*const fn (map: Rid, z: c_int, x: c_int, y: c_int, user_data: ?*anyopaque) callconv(.c) void;
+/// Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+pub const RMapTileCancelCallback = ?*const fn (map: Rid, z: c_int, x: c_int, y: c_int, user_data: ?*anyopaque) callconv(.c) void;
+pub const RMapCameraCallback = ?*const fn (map: Rid, user_data: ?*anyopaque) callconv(.c) void;
 /// Called when the user zoomed (to zoom other editors the same, or to keep it for the next time).
 pub const RTextEditorZoomCallback = ?*const fn (editor: Rid, zoom: f32, user_data: ?*anyopaque) callconv(.c) void;
 /// Called each time the editor gathers its proposals, with the
@@ -1593,6 +1606,41 @@ pub const RTileItem = extern struct {
     icon_radius: f32 = 0,
     /// Color of the name; alpha 0 = the theme.
     text_color: [4]f32 = @splat(0),
+};
+
+/// What the last frame drew, and what preparing the tiles cost.
+pub const RMapStats = extern struct {
+    tiles: c_int = 0,
+    triangles: c_int = 0,
+    segments: c_int = 0,
+    /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+    draw_ms: f64 = 0,
+    /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+    fill_ms: f64 = 0,
+    /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+    line_ms: f64 = 0,
+    /// The tiles held, and what decoding and preparing them took in all.
+    prepared_tiles: c_int = 0,
+    decode_ms: f64 = 0,
+    prepare_ms: f64 = 0,
+    /// Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+    pending_tiles: c_int = 0,
+    failed_tiles: c_int = 0,
+    requested_tiles: c_int = 0,
+    /// The memory the prepared tiles hold, in bytes.
+    memory_bytes: usize = 0,
+    /// The labels: placed of the candidates and the icons among them, at the last placement.
+    labels_placed: c_int = 0,
+    /// The labels: placed of the candidates and the icons among them, at the last placement.
+    label_candidates: c_int = 0,
+    /// The labels: placed of the candidates and the icons among them, at the last placement.
+    icons: c_int = 0,
+    /// What the labels cost the last frame, and the last placement, in milliseconds.
+    labels_ms: f64 = 0,
+    /// What the labels cost the last frame, and the last placement, in milliseconds.
+    place_ms: f64 = 0,
+    /// Whether the last frame drew the placement before it, moved, rather than placing again.
+    labels_reused: c_int = 0,
 };
 
 /// What the editor knows of a language. Every field but the name may be NULL.
@@ -3132,6 +3180,47 @@ pub extern fn Rplot_set_drag_line_color(plot: Rid, line: c_int, r: f32, g: f32, 
 pub extern fn Rplot_set_view_changed_callback(plot: Rid, callback: RPlotViewCallback, user_data: ?*anyopaque) void;
 pub extern fn Rplot_set_drag_line_callback(plot: Rid, callback: RPlotDragLineCallback, user_data: ?*anyopaque) void;
 pub extern fn Rplot_set_series_toggled_callback(plot: Rid, callback: RPlotSeriesCallback, user_data: ?*anyopaque) void;
+/// Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+/// source The vector source the map draws, by its name in the style's
+///               "sources"; NULL: the first vector source.
+/// Forgets the tiles handed in so far: they are prepared for a style.
+/// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+pub extern fn Rmap_set_style_json(map: Rid, json: ?[*:0]const u8, length: c_int, source: ?[*:0]const u8) c_int;
+/// Sets the sprite sheet the style's icons come from: its JSON index
+/// (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+/// the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+/// no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+pub extern fn Rmap_set_sprite(map: Rid, index_json: ?[*:0]const u8, index_length: c_int, png: ?*const anyopaque, png_length: usize) c_int;
+/// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
+pub extern fn Rmap_set_tile_zoom_range(map: Rid, min_zoom: c_int, max_zoom: c_int) void;
+/// Where the tiles come from: the zooms the source has (as
+/// Rmap_set_tile_zoom_range), @p request called for each tile the map
+/// needs, once until it is answered, and @p cancel (may be NULL) for a tile
+/// asked for that the view no longer needs. NULL @p request: the map asks
+/// for nothing and draws what it is handed.
+pub extern fn Rmap_set_tile_source(map: Rid, min_zoom: c_int, max_zoom: c_int, request: RMapTileRequestCallback, cancel: RMapTileCancelCallback, user_data: ?*anyopaque) void;
+/// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+/// Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
+/// not. Thread-safe: the bytes are copied, then decoded and prepared on a
+/// worker thread. A tile that can't be decoded counts as failed.
+/// Returns R_FALSE for a tile outside the world.
+pub extern fn Rmap_tile_loaded(map: Rid, z: c_int, x: c_int, y: c_int, bytes: ?*const anyopaque, length: usize) c_int;
+/// Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+pub extern fn Rmap_tile_failed(map: Rid, z: c_int, x: c_int, y: c_int) void;
+/// How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+pub extern fn Rmap_set_tile_capacity(map: Rid, capacity: c_int) void;
+/// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
+pub extern fn Rmap_set_center(map: Rid, latitude: f64, longitude: f64) void;
+pub extern fn Rmap_get_center(map: Rid, latitude: ?*f64, longitude: ?*f64) void;
+pub extern fn Rmap_set_zoom(map: Rid, zoom: f64) void;
+pub extern fn Rmap_get_zoom(map: Rid) f64;
+/// How far the user can zoom out and in (default 2 to 18).
+pub extern fn Rmap_set_zoom_range(map: Rid, min_zoom: f64, max_zoom: f64) void;
+/// Text shown in the bottom right corner, such as the data's attribution. NULL: none.
+pub extern fn Rmap_set_attribution(map: Rid, text: ?[*:0]const u8) void;
+pub extern fn Rmap_get_stats(map: Rid, stats: ?*RMapStats) void;
+/// Called when the user moves or zooms the map.
+pub extern fn Rmap_set_camera_changed_callback(map: Rid, callback: RMapCameraCallback, user_data: ?*anyopaque) void;
 /// text Initial content, or NULL.
 pub extern fn Rtext_editor_create(text: ?[*:0]const u8) Rid;
 /// Replaces the whole text. The history of undo is cleared; the changed callback is not called.
@@ -3924,15 +4013,42 @@ pub extern fn Rdraw_rect_outline(painter: ?*RPainter, x: f32, y: f32, width: f32
 pub extern fn Rdraw_circle(painter: ?*RPainter, center_x: f32, center_y: f32, radius: f32, r: f32, g: f32, b: f32, a: f32) void;
 /// Anti-aliased line with round caps.
 pub extern fn Rdraw_line(painter: ?*RPainter, x0: f32, y0: f32, x1: f32, y1: f32, thickness: f32, r: f32, g: f32, b: f32, a: f32) void;
+/// Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+/// round where they turn, and ended as @p cap says.
+///
+/// @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+/// offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+/// so many lines go in one call, such as the dashes of a dashed line.
+pub extern fn Rdraw_polyline(painter: ?*RPainter, xy: ?[*]const f32, point_count: c_int, offset_x: f32, offset_y: f32, scale: f32, thickness: f32, cap: RLineCap, r: f32, g: f32, b: f32, a: f32) void;
 /// Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points.
 pub extern fn Rdraw_curve(painter: ?*RPainter, x0: f32, y0: f32, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x1: f32, y1: f32, thickness: f32, r: f32, g: f32, b: f32, a: f32) void;
 pub extern fn Rdraw_triangle(painter: ?*RPainter, x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, r: f32, g: f32, b: f32, a: f32) void;
+/// Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+///
+/// @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+/// point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+/// without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+/// belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+/// Its outer edges are aliased too; draw an outline over them to smooth them.
+pub extern fn Rdraw_triangles(painter: ?*RPainter, xy: ?[*]const f32, count: c_int, offset_x: f32, offset_y: f32, scale: f32, r: f32, g: f32, b: f32, a: f32) void;
 /// Texture stretched to a rectangle and multiplied by a tint color.
 pub extern fn Rdraw_image(painter: ?*RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, r: f32, g: f32, b: f32, a: f32) void;
+/// Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+/// (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+/// of a sprite sheet.
+pub extern fn Rdraw_image_region(painter: ?*RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, u0: f32, v0: f32, u1: f32, v1: f32, r: f32, g: f32, b: f32, a: f32) void;
+/// Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+/// clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+/// the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+/// them smooth.
+pub extern fn Rdraw_image_rotated(painter: ?*RPainter, texture: Rid, x: f32, y: f32, width: f32, height: f32, u0: f32, v0: f32, u1: f32, v1: f32, angle: f32, r: f32, g: f32, b: f32, a: f32) void;
 /// Draws UTF-8 text; (x, y) is the top-left corner of the first line.
 /// font R_INVALID_ID uses the theme font.
 /// size 0 uses R_METRIC_FONT_SIZE.
 pub extern fn Rdraw_text(painter: ?*RPainter, font: Rid, size: f32, x: f32, y: f32, text: ?[*:0]const u8, r: f32, g: f32, b: f32, a: f32) void;
+/// Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+/// top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+pub extern fn Rdraw_text_rotated(painter: ?*RPainter, font: Rid, size: f32, x: f32, y: f32, angle: f32, text: ?[*:0]const u8, r: f32, g: f32, b: f32, a: f32) void;
 /// Rounded rectangle of glass. It shows what was drawn before it,
 /// frosted and bent along its rim, under a tint: (r, g, b) is the color of
 /// the tint and `a` its strength (0 = clear glass, 1 = opaque color).

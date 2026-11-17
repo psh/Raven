@@ -54,7 +54,28 @@ static uint8_t* rvn_bitmap_decode(const uint8_t* data, size_t size, int* width, 
 	return pixels;
 }
 
+uint8_t* rvn_inflate(const uint8_t* data, size_t size, int zlib_header, size_t size_hint, size_t* out_size) {
+	int length = 0;
+	char* out;
+	if (!data || size == 0 || size > 0x7FFFFFFFu) return NULL;
+	/* the hint is only the first allocation, grown as needed: a large one is not trusted */
+	if (size_hint == 0 || size_hint > 64u * 1024 * 1024) size_hint = 16384;
+	out = stbi_zlib_decode_malloc_guesssize_headerflag((const char*)data, (int)size, (int)size_hint, &length, zlib_header);
+	if (!out) return NULL;
+	*out_size = (size_t)length;
+	return (uint8_t*)out;
+}
+
 #else /* RAVEN_WITH_STB_IMAGE */
+
+uint8_t* rvn_inflate(const uint8_t* data, size_t size, int zlib_header, size_t size_hint, size_t* out_size) {
+	RVN_UNUSED(data);
+	RVN_UNUSED(size);
+	RVN_UNUSED(zlib_header);
+	RVN_UNUSED(size_hint);
+	RVN_UNUSED(out_size);
+	return NULL;
+}
 
 static uint8_t* rvn_bitmap_decode(const uint8_t* data, size_t size, int* width, int* height) {
 	RVN_UNUSED(data);

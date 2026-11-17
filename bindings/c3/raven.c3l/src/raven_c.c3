@@ -685,6 +685,8 @@ const RWidgetType R_WIDGET_RATING = 0x0230;
 const RWidgetType R_WIDGET_PAGINATION = 0x0231;
 <* Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom. *>
 const RWidgetType R_WIDGET_PLOT = 0x0232;
+<* A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP). *>
+const RWidgetType R_WIDGET_MAP = 0x0233;
 
 alias RHAlign = CInt;
 const RHAlign R_HALIGN_FILL = 0x0240;
@@ -1050,6 +1052,12 @@ const RMotion R_MOTION_BOUNCY = 0x0322;
 <* Swings several times around the target: things that fly in or get dropped. *>
 const RMotion R_MOTION_WOBBLY = 0x0323;
 
+<* How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it. *>
+alias RLineCap = CInt;
+const RLineCap R_LINE_CAP_ROUND = 0x0570;
+const RLineCap R_LINE_CAP_BUTT = 0x0571;
+const RLineCap R_LINE_CAP_SQUARE = 0x0572;
+
 <* The effects that come with Raven (Reffect_get). *>
 alias REffect = CInt;
 <* Soft lights that drift slowly: color, color2; params: speed, scale, intensity, -. Animated. *>
@@ -1312,6 +1320,11 @@ alias RPlotViewCallback = fn void(Rid plot, void* user_data);
 alias RPlotDragLineCallback = fn void(Rid plot, CInt line, double value, void* user_data);
 <* Called when the user hides or shows a series from the legend. *>
 alias RPlotSeriesCallback = fn void(Rid plot, CInt series, CInt visible, void* user_data);
+<* Asks for a tile. Called on the thread of the interface, outside painting. *>
+alias RMapTileRequestCallback = fn void(Rid map, CInt z, CInt x, CInt y, void* user_data);
+<* Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting. *>
+alias RMapTileCancelCallback = fn void(Rid map, CInt z, CInt x, CInt y, void* user_data);
+alias RMapCameraCallback = fn void(Rid map, void* user_data);
 <* Called when the user zoomed (to zoom other editors the same, or to keep it for the next time). *>
 alias RTextEditorZoomCallback = fn void(Rid editor, float zoom, void* user_data);
 <*
@@ -1715,6 +1728,42 @@ struct RTileItem
 	float icon_radius;
 	<* Color of the name; alpha 0 = the theme. *>
 	float[4] text_color;
+}
+
+<* What the last frame drew, and what preparing the tiles cost. *>
+struct RMapStats
+{
+	CInt tiles;
+	CInt triangles;
+	CInt segments;
+	<* The map's own drawing calls, in milliseconds: all, the fills, the lines. *>
+	double draw_ms;
+	<* The map's own drawing calls, in milliseconds: all, the fills, the lines. *>
+	double fill_ms;
+	<* The map's own drawing calls, in milliseconds: all, the fills, the lines. *>
+	double line_ms;
+	<* The tiles held, and what decoding and preparing them took in all. *>
+	CInt prepared_tiles;
+	double decode_ms;
+	double prepare_ms;
+	<* Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far. *>
+	CInt pending_tiles;
+	CInt failed_tiles;
+	CInt requested_tiles;
+	<* The memory the prepared tiles hold, in bytes. *>
+	usz memory_bytes;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt labels_placed;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt label_candidates;
+	<* The labels: placed of the candidates and the icons among them, at the last placement. *>
+	CInt icons;
+	<* What the labels cost the last frame, and the last placement, in milliseconds. *>
+	double labels_ms;
+	<* What the labels cost the last frame, and the last placement, in milliseconds. *>
+	double place_ms;
+	<* Whether the last frame drew the placement before it, moved, rather than placing again. *>
+	CInt labels_reused;
 }
 
 <*
@@ -4085,6 +4134,64 @@ extern fn void r_plot_set_drag_line_callback(Rid plot, RPlotDragLineCallback cal
 
 extern fn void r_plot_set_series_toggled_callback(Rid plot, RPlotSeriesCallback callback, void* user_data) @cname("Rplot_set_series_toggled_callback");
 
+<* Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated). *>
+extern fn CInt r_map_set_style_json(Rid map, char* json, CInt length, char* source) @cname("Rmap_set_style_json");
+
+<*
+ Sets the sprite sheet the style's icons come from: its JSON index
+ (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+ the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+ no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+*>
+extern fn CInt r_map_set_sprite(Rid map, char* index_json, CInt index_length, void* png, usz png_length) @cname("Rmap_set_sprite");
+
+<* The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest. *>
+extern fn void r_map_set_tile_zoom_range(Rid map, CInt min_zoom, CInt max_zoom) @cname("Rmap_set_tile_zoom_range");
+
+<*
+ Where the tiles come from: the zooms the source has (as
+ Rmap_set_tile_zoom_range), @p request called for each tile the map
+ needs, once until it is answered, and @p cancel (may be NULL) for a tile
+ asked for that the view no longer needs. NULL @p request: the map asks
+ for nothing and draws what it is handed.
+*>
+extern fn void r_map_set_tile_source(Rid map, CInt min_zoom, CInt max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, void* user_data) @cname("Rmap_set_tile_source");
+
+<*
+ Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+ Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
+ not. Thread-safe: the bytes are copied, then decoded and prepared on a
+ worker thread. A tile that can't be decoded counts as failed.
+ Returns R_FALSE for a tile outside the world.
+*>
+extern fn CInt r_map_tile_loaded(Rid map, CInt z, CInt x, CInt y, void* bytes, usz length) @cname("Rmap_tile_loaded");
+
+<* Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe. *>
+extern fn void r_map_tile_failed(Rid map, CInt z, CInt x, CInt y) @cname("Rmap_tile_failed");
+
+<* How many prepared tiles the map keeps (default 160): past it, those used least recently go. *>
+extern fn void r_map_set_tile_capacity(Rid map, CInt capacity) @cname("Rmap_set_tile_capacity");
+
+<* Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units). *>
+extern fn void r_map_set_center(Rid map, double latitude, double longitude) @cname("Rmap_set_center");
+
+extern fn void r_map_get_center(Rid map, double* latitude, double* longitude) @cname("Rmap_get_center");
+
+extern fn void r_map_set_zoom(Rid map, double zoom) @cname("Rmap_set_zoom");
+
+extern fn double r_map_get_zoom(Rid map) @cname("Rmap_get_zoom");
+
+<* How far the user can zoom out and in (default 2 to 18). *>
+extern fn void r_map_set_zoom_range(Rid map, double min_zoom, double max_zoom) @cname("Rmap_set_zoom_range");
+
+<* Text shown in the bottom right corner, such as the data's attribution. NULL: none. *>
+extern fn void r_map_set_attribution(Rid map, char* text) @cname("Rmap_set_attribution");
+
+extern fn void r_map_get_stats(Rid map, RMapStats* stats) @cname("Rmap_get_stats");
+
+<* Called when the user moves or zooms the map. *>
+extern fn void r_map_set_camera_changed_callback(Rid map, RMapCameraCallback callback, void* user_data) @cname("Rmap_set_camera_changed_callback");
+
 extern fn Rid r_text_editor_create(char* text) @cname("Rtext_editor_create");
 
 <* Replaces the whole text. The history of undo is cleared; the changed callback is not called. *>
@@ -5336,16 +5443,46 @@ extern fn void r_draw_circle(RPainter* painter, float center_x, float center_y, 
 <* Anti-aliased line with round caps. *>
 extern fn void r_draw_line(RPainter* painter, float x0, float y0, float x1, float y1, float thickness, float r, float g, float b, float a) @cname("Rdraw_line");
 
+<*
+ Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+ round where they turn, and ended as @p cap says.
+*>
+extern fn void r_draw_polyline(RPainter* painter, float* xy, CInt point_count, float offset_x, float offset_y, float scale, float thickness, RLineCap cap, float r, float g, float b, float a) @cname("Rdraw_polyline");
+
 <* Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points. *>
 extern fn void r_draw_curve(RPainter* painter, float x0, float y0, float cx0, float cy0, float cx1, float cy1, float x1, float y1, float thickness, float r, float g, float b, float a) @cname("Rdraw_curve");
 
 extern fn void r_draw_triangle(RPainter* painter, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b, float a) @cname("Rdraw_triangle");
 
+<* Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon. *>
+extern fn void r_draw_triangles(RPainter* painter, float* xy, CInt count, float offset_x, float offset_y, float scale, float r, float g, float b, float a) @cname("Rdraw_triangles");
+
 <* Texture stretched to a rectangle and multiplied by a tint color. *>
 extern fn void r_draw_image(RPainter* painter, Rid texture, float x, float y, float width, float height, float r, float g, float b, float a) @cname("Rdraw_image");
 
+<*
+ Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+ (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+ of a sprite sheet.
+*>
+extern fn void r_draw_image_region(RPainter* painter, Rid texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float r, float g, float b, float a) @cname("Rdraw_image_region");
+
+<*
+ Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+ clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+ the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+ them smooth.
+*>
+extern fn void r_draw_image_rotated(RPainter* painter, Rid texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a) @cname("Rdraw_image_rotated");
+
 <* Draws UTF-8 text; (x, y) is the top-left corner of the first line. *>
 extern fn void r_draw_text(RPainter* painter, Rid font, float size, float x, float y, char* text, float r, float g, float b, float a) @cname("Rdraw_text");
+
+<*
+ Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+ top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+*>
+extern fn void r_draw_text_rotated(RPainter* painter, Rid font, float size, float x, float y, float angle, char* text, float r, float g, float b, float a) @cname("Rdraw_text_rotated");
 
 <*
  Rounded rectangle of glass. It shows what was drawn before it,

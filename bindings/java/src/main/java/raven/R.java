@@ -1011,6 +1011,10 @@ public final class R {
      * Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
      */
     public static final int R_WIDGET_PLOT = 0x0232;
+    /**
+     * A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP).
+     */
+    public static final int R_WIDGET_MAP = 0x0233;
 
     // RHAlign
     public static final int R_HALIGN_FILL = 0x0240;
@@ -1490,6 +1494,11 @@ public final class R {
      * Swings several times around the target: things that fly in or get dropped.
      */
     public static final int R_MOTION_WOBBLY = 0x0323;
+
+    // RLineCap: How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it.
+    public static final int R_LINE_CAP_ROUND = 0x0570;
+    public static final int R_LINE_CAP_BUTT = 0x0571;
+    public static final int R_LINE_CAP_SQUARE = 0x0572;
 
     // REffect: The effects that come with Raven (Reffect_get).
     /**
@@ -2788,6 +2797,142 @@ public final class R {
          */
         public float text_color(int index) { return s.getAtIndex(JAVA_FLOAT, 64 / 4 + java.util.Objects.checkIndex(index, 4)); }
         public RTileItem text_color(int index, float value) { s.setAtIndex(JAVA_FLOAT, 64 / 4 + java.util.Objects.checkIndex(index, 4), value); return this; }
+    }
+
+    /**
+     * What the last frame drew, and what preparing the tiles cost.
+     */
+    public static final class RMapStats {
+        /** The size of the structure in C, in bytes. */
+        public static final long SIZE = 128;
+        private final MemorySegment s;
+        private Arena arena;
+
+        /** A new structure, zeroed (what `RMapStats x = {0};` is in C). */
+        public RMapStats() {
+            arena = Arena.ofAuto();
+            s = arena.allocate(SIZE, 8);
+        }
+
+        /** The structure at an address (given by the library, or a slice of an array). */
+        public RMapStats(MemorySegment address) {
+            s = address.reinterpret(SIZE);
+        }
+
+        private RMapStats(MemorySegment segment, Arena arena) {
+            this.s = segment;
+            this.arena = arena;
+        }
+
+        /** Its memory: what to give where C takes a pointer to it. */
+        public MemorySegment segment() { return s; }
+
+        /** `count` structures side by side, zeroed: an array of C. */
+        public static RMapStats[] array(int count) {
+            Arena a = Arena.ofAuto();
+            MemorySegment all = a.allocate(SIZE * Math.max(count, 1), 8);
+            RMapStats[] items = new RMapStats[count];
+            for (int i = 0; i < count; i++) items[i] = new RMapStats(all.asSlice(SIZE * i, SIZE), a);
+            return items;
+        }
+
+        private Arena arena() {
+            if (arena == null) arena = Arena.ofAuto();
+            return arena;
+        }
+
+        public int tiles() { return s.get(JAVA_INT, 0); }
+        public RMapStats tiles(int value) { s.set(JAVA_INT, 0, value); return this; }
+
+        public int triangles() { return s.get(JAVA_INT, 4); }
+        public RMapStats triangles(int value) { s.set(JAVA_INT, 4, value); return this; }
+
+        public int segments() { return s.get(JAVA_INT, 8); }
+        public RMapStats segments(int value) { s.set(JAVA_INT, 8, value); return this; }
+
+        /**
+         * The map's own drawing calls, in milliseconds: all, the fills, the lines.
+         */
+        public double draw_ms() { return s.get(JAVA_DOUBLE, 16); }
+        public RMapStats draw_ms(double value) { s.set(JAVA_DOUBLE, 16, value); return this; }
+
+        /**
+         * The map's own drawing calls, in milliseconds: all, the fills, the lines.
+         */
+        public double fill_ms() { return s.get(JAVA_DOUBLE, 24); }
+        public RMapStats fill_ms(double value) { s.set(JAVA_DOUBLE, 24, value); return this; }
+
+        /**
+         * The map's own drawing calls, in milliseconds: all, the fills, the lines.
+         */
+        public double line_ms() { return s.get(JAVA_DOUBLE, 32); }
+        public RMapStats line_ms(double value) { s.set(JAVA_DOUBLE, 32, value); return this; }
+
+        /**
+         * The tiles held, and what decoding and preparing them took in all.
+         */
+        public int prepared_tiles() { return s.get(JAVA_INT, 40); }
+        public RMapStats prepared_tiles(int value) { s.set(JAVA_INT, 40, value); return this; }
+
+        public double decode_ms() { return s.get(JAVA_DOUBLE, 48); }
+        public RMapStats decode_ms(double value) { s.set(JAVA_DOUBLE, 48, value); return this; }
+
+        public double prepare_ms() { return s.get(JAVA_DOUBLE, 56); }
+        public RMapStats prepare_ms(double value) { s.set(JAVA_DOUBLE, 56, value); return this; }
+
+        /**
+         * Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+         */
+        public int pending_tiles() { return s.get(JAVA_INT, 64); }
+        public RMapStats pending_tiles(int value) { s.set(JAVA_INT, 64, value); return this; }
+
+        public int failed_tiles() { return s.get(JAVA_INT, 68); }
+        public RMapStats failed_tiles(int value) { s.set(JAVA_INT, 68, value); return this; }
+
+        public int requested_tiles() { return s.get(JAVA_INT, 72); }
+        public RMapStats requested_tiles(int value) { s.set(JAVA_INT, 72, value); return this; }
+
+        /**
+         * The memory the prepared tiles hold, in bytes.
+         */
+        public long memory_bytes() { return s.get(JAVA_LONG, 80); }
+        public RMapStats memory_bytes(long value) { s.set(JAVA_LONG, 80, value); return this; }
+
+        /**
+         * The labels: placed of the candidates and the icons among them, at the last placement.
+         */
+        public int labels_placed() { return s.get(JAVA_INT, 88); }
+        public RMapStats labels_placed(int value) { s.set(JAVA_INT, 88, value); return this; }
+
+        /**
+         * The labels: placed of the candidates and the icons among them, at the last placement.
+         */
+        public int label_candidates() { return s.get(JAVA_INT, 92); }
+        public RMapStats label_candidates(int value) { s.set(JAVA_INT, 92, value); return this; }
+
+        /**
+         * The labels: placed of the candidates and the icons among them, at the last placement.
+         */
+        public int icons() { return s.get(JAVA_INT, 96); }
+        public RMapStats icons(int value) { s.set(JAVA_INT, 96, value); return this; }
+
+        /**
+         * What the labels cost the last frame, and the last placement, in milliseconds.
+         */
+        public double labels_ms() { return s.get(JAVA_DOUBLE, 104); }
+        public RMapStats labels_ms(double value) { s.set(JAVA_DOUBLE, 104, value); return this; }
+
+        /**
+         * What the labels cost the last frame, and the last placement, in milliseconds.
+         */
+        public double place_ms() { return s.get(JAVA_DOUBLE, 112); }
+        public RMapStats place_ms(double value) { s.set(JAVA_DOUBLE, 112, value); return this; }
+
+        /**
+         * Whether the last frame drew the placement before it, moved, rather than placing again.
+         */
+        public int labels_reused() { return s.get(JAVA_INT, 120); }
+        public RMapStats labels_reused(int value) { s.set(JAVA_INT, 120, value); return this; }
     }
 
     /**
@@ -4657,6 +4802,66 @@ public final class R {
 
     private static MemorySegment upcall(RPlotSeriesCallback f) {
         return stub(f, RPlotSeriesCallback.class, "RPlotSeriesCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
+     * Asks for a tile. Called on the thread of the interface, outside painting.
+     */
+    @FunctionalInterface
+    public interface RMapTileRequestCallback {
+        void invoke(int map, int z, int x, int y, MemorySegment user_data);
+    }
+
+    private static void RMapTileRequestCallback$raw(RMapTileRequestCallback f, int map, int z, int x, int y, MemorySegment user_data) {
+        try {
+            f.invoke(map, z, x, y, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RMapTileRequestCallback f) {
+        return stub(f, RMapTileRequestCallback.class, "RMapTileRequestCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
+     * Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+     */
+    @FunctionalInterface
+    public interface RMapTileCancelCallback {
+        void invoke(int map, int z, int x, int y, MemorySegment user_data);
+    }
+
+    private static void RMapTileCancelCallback$raw(RMapTileCancelCallback f, int map, int z, int x, int y, MemorySegment user_data) {
+        try {
+            f.invoke(map, z, x, y, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RMapTileCancelCallback f) {
+        return stub(f, RMapTileCancelCallback.class, "RMapTileCancelCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    @FunctionalInterface
+    public interface RMapCameraCallback {
+        void invoke(int map, MemorySegment user_data);
+    }
+
+    private static void RMapCameraCallback$raw(RMapCameraCallback f, int map, MemorySegment user_data) {
+        try {
+            f.invoke(map, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RMapCameraCallback f) {
+        return stub(f, RMapCameraCallback.class, "RMapCameraCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS));
     }
 
     /**
@@ -15086,6 +15291,264 @@ public final class R {
         Rplot_set_series_toggled_callback(plot, callback, (MemorySegment) null);
     }
 
+    private static MethodHandle Rmap_set_style_json$;
+
+    /**
+     * Sets the style: MapLibre style JSON, &#64;p length bytes (-1: null-terminated).
+     * source The vector source the map draws, by its name in the style's
+     *               "sources"; NULL: the first vector source.
+     * Forgets the tiles handed in so far: they are prepared for a style.
+     * Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+     */
+    public static int Rmap_set_style_json(int map, String json, int length, String source) {
+        MethodHandle $h = Rmap_set_style_json$;
+        if ($h == null) Rmap_set_style_json$ = $h = find("Rmap_set_style_json", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment json$ = json == null ? MemorySegment.NULL : utf8($a, json);
+            MemorySegment source$ = source == null ? MemorySegment.NULL : utf8($a, source);
+            int $r = (int) $h.invokeExact(map, json$, length, source$);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_sprite$;
+
+    /**
+     * Sets the sprite sheet the style's icons come from: its JSON index
+     * (&#64;p index_length bytes, -1: null-terminated) and its PNG image, such as
+     * the style's "sprite" URL with "&#64;2x.json" and "&#64;2x.png". NULL &#64;p index_json:
+     * no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+     */
+    public static int Rmap_set_sprite(int map, String index_json, int index_length, MemorySegment png, long png_length) {
+        MethodHandle $h = Rmap_set_sprite$;
+        if ($h == null) Rmap_set_sprite$ = $h = find("Rmap_set_sprite", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_LONG));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment index_json$ = index_json == null ? MemorySegment.NULL : utf8($a, index_json);
+            int $r = (int) $h.invokeExact(map, index_json$, index_length, (MemorySegment) (png == null ? MemorySegment.NULL : png), png_length);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_tile_zoom_range$;
+
+    /**
+     * The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
+     */
+    public static void Rmap_set_tile_zoom_range(int map, int min_zoom, int max_zoom) {
+        MethodHandle $h = Rmap_set_tile_zoom_range$;
+        if ($h == null) Rmap_set_tile_zoom_range$ = $h = find("Rmap_set_tile_zoom_range", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(map, min_zoom, max_zoom);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_tile_source$;
+
+    /**
+     * Where the tiles come from: the zooms the source has (as
+     * Rmap_set_tile_zoom_range), &#64;p request called for each tile the map
+     * needs, once until it is answered, and &#64;p cancel (may be NULL) for a tile
+     * asked for that the view no longer needs. NULL &#64;p request: the map asks
+     * for nothing and draws what it is handed.
+     */
+    public static void Rmap_set_tile_source(int map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, MemorySegment user_data) {
+        MethodHandle $h = Rmap_set_tile_source$;
+        if ($h == null) Rmap_set_tile_source$ = $h = find("Rmap_set_tile_source", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(map, min_zoom, max_zoom, upcall(request), upcall(cancel), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Where the tiles come from: the zooms the source has (as
+     * Rmap_set_tile_zoom_range), &#64;p request called for each tile the map
+     * needs, once until it is answered, and &#64;p cancel (may be NULL) for a tile
+     * asked for that the view no longer needs. NULL &#64;p request: the map asks
+     * for nothing and draws what it is handed.
+     */
+    public static void Rmap_set_tile_source(int map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel) {
+        Rmap_set_tile_source(map, min_zoom, max_zoom, request, cancel, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rmap_tile_loaded$;
+
+    /**
+     * Hands the map the bytes of tile &#64;p z / &#64;p x / &#64;p y (a Mapbox Vector
+     * Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
+     * not. Thread-safe: the bytes are copied, then decoded and prepared on a
+     * worker thread. A tile that can't be decoded counts as failed.
+     * Returns R_FALSE for a tile outside the world.
+     */
+    public static int Rmap_tile_loaded(int map, int z, int x, int y, MemorySegment bytes, long length) {
+        MethodHandle $h = Rmap_tile_loaded$;
+        if ($h == null) Rmap_tile_loaded$ = $h = find("Rmap_tile_loaded", FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, JAVA_LONG));
+        try {
+            int $r = (int) $h.invokeExact(map, z, x, y, (MemorySegment) (bytes == null ? MemorySegment.NULL : bytes), length);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_tile_failed$;
+
+    /**
+     * Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+     */
+    public static void Rmap_tile_failed(int map, int z, int x, int y) {
+        MethodHandle $h = Rmap_tile_failed$;
+        if ($h == null) Rmap_tile_failed$ = $h = find("Rmap_tile_failed", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(map, z, x, y);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_tile_capacity$;
+
+    /**
+     * How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+     */
+    public static void Rmap_set_tile_capacity(int map, int capacity) {
+        MethodHandle $h = Rmap_set_tile_capacity$;
+        if ($h == null) Rmap_set_tile_capacity$ = $h = find("Rmap_set_tile_capacity", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(map, capacity);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_center$;
+
+    /**
+     * Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
+     */
+    public static void Rmap_set_center(int map, double latitude, double longitude) {
+        MethodHandle $h = Rmap_set_center$;
+        if ($h == null) Rmap_set_center$ = $h = find("Rmap_set_center", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_DOUBLE, JAVA_DOUBLE));
+        try {
+            $h.invokeExact(map, latitude, longitude);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_get_center$;
+
+    public static void Rmap_get_center(int map, double[] latitude, double[] longitude) {
+        MethodHandle $h = Rmap_get_center$;
+        if ($h == null) Rmap_get_center$ = $h = find("Rmap_get_center", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment latitude$ = latitude == null ? MemorySegment.NULL : $a.allocate(JAVA_DOUBLE);
+            MemorySegment longitude$ = longitude == null ? MemorySegment.NULL : $a.allocate(JAVA_DOUBLE);
+            $h.invokeExact(map, latitude$, longitude$);
+            if (latitude != null && latitude.length > 0) latitude[0] = latitude$.get(JAVA_DOUBLE, 0);
+            if (longitude != null && longitude.length > 0) longitude[0] = longitude$.get(JAVA_DOUBLE, 0);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_zoom$;
+
+    public static void Rmap_set_zoom(int map, double zoom) {
+        MethodHandle $h = Rmap_set_zoom$;
+        if ($h == null) Rmap_set_zoom$ = $h = find("Rmap_set_zoom", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_DOUBLE));
+        try {
+            $h.invokeExact(map, zoom);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_get_zoom$;
+
+    public static double Rmap_get_zoom(int map) {
+        MethodHandle $h = Rmap_get_zoom$;
+        if ($h == null) Rmap_get_zoom$ = $h = find("Rmap_get_zoom", FunctionDescriptor.of(JAVA_DOUBLE, JAVA_INT));
+        try {
+            double $r = (double) $h.invokeExact(map);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_zoom_range$;
+
+    /**
+     * How far the user can zoom out and in (default 2 to 18).
+     */
+    public static void Rmap_set_zoom_range(int map, double min_zoom, double max_zoom) {
+        MethodHandle $h = Rmap_set_zoom_range$;
+        if ($h == null) Rmap_set_zoom_range$ = $h = find("Rmap_set_zoom_range", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_DOUBLE, JAVA_DOUBLE));
+        try {
+            $h.invokeExact(map, min_zoom, max_zoom);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_attribution$;
+
+    /**
+     * Text shown in the bottom right corner, such as the data's attribution. NULL: none.
+     */
+    public static void Rmap_set_attribution(int map, String text) {
+        MethodHandle $h = Rmap_set_attribution$;
+        if ($h == null) Rmap_set_attribution$ = $h = find("Rmap_set_attribution", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
+            $h.invokeExact(map, text$);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_get_stats$;
+
+    public static void Rmap_get_stats(int map, RMapStats stats) {
+        MethodHandle $h = Rmap_get_stats$;
+        if ($h == null) Rmap_get_stats$ = $h = find("Rmap_get_stats", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS));
+        try {
+            $h.invokeExact(map, (MemorySegment) (stats == null ? MemorySegment.NULL : stats.segment()));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rmap_set_camera_changed_callback$;
+
+    /**
+     * Called when the user moves or zooms the map.
+     */
+    public static void Rmap_set_camera_changed_callback(int map, RMapCameraCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rmap_set_camera_changed_callback$;
+        if ($h == null) Rmap_set_camera_changed_callback$ = $h = find("Rmap_set_camera_changed_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(map, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Called when the user moves or zooms the map.
+     */
+    public static void Rmap_set_camera_changed_callback(int map, RMapCameraCallback callback) {
+        Rmap_set_camera_changed_callback(map, callback, (MemorySegment) null);
+    }
+
     private static MethodHandle Rtext_editor_create$;
 
     /**
@@ -20872,6 +21335,27 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rdraw_polyline$;
+
+    /**
+     * Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+     * round where they turn, and ended as &#64;p cap says.
+     *
+     * &#64;p xy holds &#64;p point_count points (x, y), each drawn at (offset_x + x * scale,
+     * offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+     * so many lines go in one call, such as the dashes of a dashed line.
+     */
+    public static void Rdraw_polyline(MemorySegment painter, float[] xy, int point_count, float offset_x, float offset_y, float scale, float thickness, int cap, float r, float g, float b, float a) {
+        MethodHandle $h = Rdraw_polyline$;
+        if ($h == null) Rdraw_polyline$ = $h = find("Rdraw_polyline", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment xy$ = xy == null ? MemorySegment.NULL : $a.allocateFrom(JAVA_FLOAT, xy);
+            $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), xy$, point_count, offset_x, offset_y, scale, thickness, cap, r, g, b, a);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rdraw_curve$;
 
     /**
@@ -20899,6 +21383,28 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rdraw_triangles$;
+
+    /**
+     * Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+     *
+     * &#64;p xy holds &#64;p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+     * point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+     * without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+     * belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+     * Its outer edges are aliased too; draw an outline over them to smooth them.
+     */
+    public static void Rdraw_triangles(MemorySegment painter, float[] xy, int count, float offset_x, float offset_y, float scale, float r, float g, float b, float a) {
+        MethodHandle $h = Rdraw_triangles$;
+        if ($h == null) Rdraw_triangles$ = $h = find("Rdraw_triangles", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment xy$ = xy == null ? MemorySegment.NULL : $a.allocateFrom(JAVA_FLOAT, xy);
+            $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), xy$, count, offset_x, offset_y, scale, r, g, b, a);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rdraw_image$;
 
     /**
@@ -20909,6 +21415,41 @@ public final class R {
         if ($h == null) Rdraw_image$ = $h = find("Rdraw_image", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
         try {
             $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), texture, x, y, width, height, r, g, b, a);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rdraw_image_region$;
+
+    /**
+     * Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+     * (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+     * of a sprite sheet.
+     */
+    public static void Rdraw_image_region(MemorySegment painter, int texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float r, float g, float b, float a) {
+        MethodHandle $h = Rdraw_image_region$;
+        if ($h == null) Rdraw_image_region$ = $h = find("Rdraw_image_region", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), texture, x, y, width, height, u0, v0, u1, v1, r, g, b, a);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rdraw_image_rotated$;
+
+    /**
+     * Part of a texture, as Rdraw_image_region draws it, turned by &#64;p angle (radians,
+     * clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+     * the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+     * them smooth.
+     */
+    public static void Rdraw_image_rotated(MemorySegment painter, int texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a) {
+        MethodHandle $h = Rdraw_image_rotated$;
+        if ($h == null) Rdraw_image_rotated$ = $h = find("Rdraw_image_rotated", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), texture, x, y, width, height, u0, v0, u1, v1, angle, r, g, b, a);
         } catch (Throwable $t) {
             throw fail($t);
         }
@@ -20927,6 +21468,23 @@ public final class R {
         try (Arena $a = Arena.ofConfined()) {
             MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
             $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), font, size, x, y, text$, r, g, b, a);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rdraw_text_rotated$;
+
+    /**
+     * Text turned by &#64;p angle (radians, clockwise on screen) about (x, y), its first line's
+     * top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+     */
+    public static void Rdraw_text_rotated(MemorySegment painter, int font, float size, float x, float y, float angle, String text, float r, float g, float b, float a) {
+        MethodHandle $h = Rdraw_text_rotated$;
+        if ($h == null) Rdraw_text_rotated$ = $h = find("Rdraw_text_rotated", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, ADDRESS, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
+            $h.invokeExact((MemorySegment) (painter == null ? MemorySegment.NULL : painter), font, size, x, y, angle, text$, r, g, b, a);
         } catch (Throwable $t) {
             throw fail($t);
         }

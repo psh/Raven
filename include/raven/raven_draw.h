@@ -66,6 +66,24 @@ extern "C" {
 	RAVEN_API void Rdraw_line(RPainter* painter, float x0, float y0, float x1, float y1,
 		float thickness, float r, float g, float b, float a);
 
+	/** How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it. */
+	typedef enum RLineCap {
+		R_LINE_CAP_ROUND = 0x0570,
+		R_LINE_CAP_BUTT,
+		R_LINE_CAP_SQUARE
+	} RLineCap;
+
+	/**
+	 * @brief Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+	 * round where they turn, and ended as @p cap says.
+	 *
+	 * @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+	 * offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+	 * so many lines go in one call, such as the dashes of a dashed line.
+	 */
+	RAVEN_API void Rdraw_polyline(RPainter* painter, const float* xy, int point_count,
+		float offset_x, float offset_y, float scale, float thickness, RLineCap cap, float r, float g, float b, float a);
+
 	/** @brief Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points. */
 	RAVEN_API void Rdraw_curve(RPainter* painter, float x0, float y0, float cx0, float cy0, float cx1, float cy1, float x1, float y1,
 		float thickness, float r, float g, float b, float a);
@@ -73,9 +91,38 @@ extern "C" {
 	RAVEN_API void Rdraw_triangle(RPainter* painter, float x0, float y0, float x1, float y1,
 		float x2, float y2, float r, float g, float b, float a);
 
+	/**
+	 * @brief Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+	 *
+	 * @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+	 * point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+	 * without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+	 * belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+	 * Its outer edges are aliased too; draw an outline over them to smooth them.
+	 */
+	RAVEN_API void Rdraw_triangles(RPainter* painter, const float* xy, int count,
+		float offset_x, float offset_y, float scale, float r, float g, float b, float a);
+
 	/** @brief Texture stretched to a rectangle and multiplied by a tint color. */
 	RAVEN_API void Rdraw_image(RPainter* painter, Rid texture, float x, float y, float width, float height,
 		float r, float g, float b, float a);
+
+	/**
+	 * @brief Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+	 * (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+	 * of a sprite sheet.
+	 */
+	RAVEN_API void Rdraw_image_region(RPainter* painter, Rid texture, float x, float y, float width, float height,
+		float u0, float v0, float u1, float v1, float r, float g, float b, float a);
+
+	/**
+	 * @brief Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+	 * clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+	 * the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+	 * them smooth.
+	 */
+	RAVEN_API void Rdraw_image_rotated(RPainter* painter, Rid texture, float x, float y, float width, float height,
+		float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a);
 
 	/**
 	 * @brief Draws UTF-8 text; (x, y) is the top-left corner of the first line.
@@ -83,6 +130,13 @@ extern "C" {
 	 * @param size 0 uses R_METRIC_FONT_SIZE.
 	 */
 	RAVEN_API void Rdraw_text(RPainter* painter, Rid font, float size, float x, float y,
+		const char* text, float r, float g, float b, float a);
+
+	/**
+	 * @brief Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+	 * top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+	 */
+	RAVEN_API void Rdraw_text_rotated(RPainter* painter, Rid font, float size, float x, float y, float angle,
 		const char* text, float r, float g, float b, float a);
 
 	/**

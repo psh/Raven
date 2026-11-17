@@ -443,6 +443,7 @@ typedef enum RWidgetType {
 	R_WIDGET_RATING = 560,
 	R_WIDGET_PAGINATION = 561,
 	R_WIDGET_PLOT = 562,
+	R_WIDGET_MAP = 563,
 } RWidgetType;
 typedef enum RHAlign {
 	R_HALIGN_FILL = 576,
@@ -680,6 +681,11 @@ typedef enum RMotion {
 	R_MOTION_BOUNCY = 802,
 	R_MOTION_WOBBLY = 803,
 } RMotion;
+typedef enum RLineCap {
+	R_LINE_CAP_ROUND = 1392,
+	R_LINE_CAP_BUTT = 1393,
+	R_LINE_CAP_SQUARE = 1394,
+} RLineCap;
 typedef enum REffect {
 	R_EFFECT_AURORA = 2880,
 	R_EFFECT_SHIMMER = 2881,
@@ -768,6 +774,7 @@ typedef struct RTouchEvent RTouchEvent;
 typedef struct RPenEvent RPenEvent;
 typedef struct RGestureEvent RGestureEvent;
 typedef struct RTileItem RTileItem;
+typedef struct RMapStats RMapStats;
 typedef struct RLanguageDesc RLanguageDesc;
 typedef struct RJumpTask RJumpTask;
 typedef struct RFileFilter RFileFilter;
@@ -826,6 +833,9 @@ typedef void (*RPageChangedCallback)(Rid pagination, int page, void* user_data);
 typedef void (*RPlotViewCallback)(Rid plot, void* user_data);
 typedef void (*RPlotDragLineCallback)(Rid plot, int line, double value, void* user_data);
 typedef void (*RPlotSeriesCallback)(Rid plot, int series, int visible, void* user_data);
+typedef void (*RMapTileRequestCallback)(Rid map, int z, int x, int y, void* user_data);
+typedef void (*RMapTileCancelCallback)(Rid map, int z, int x, int y, void* user_data);
+typedef void (*RMapCameraCallback)(Rid map, void* user_data);
 typedef void (*RTextEditorZoomCallback)(Rid editor, float zoom, void* user_data);
 typedef void (*RCompletionCallback)(Rid editor, const char* prefix, void* user_data);
 typedef void (*RTextEditorChangedCallback)(Rid editor, void* user_data);
@@ -1006,6 +1016,27 @@ struct RTileItem {
 	float tint[4];
 	float icon_radius;
 	float text_color[4];
+};
+struct RMapStats {
+	int tiles;
+	int triangles;
+	int segments;
+	double draw_ms;
+	double fill_ms;
+	double line_ms;
+	int prepared_tiles;
+	double decode_ms;
+	double prepare_ms;
+	int pending_tiles;
+	int failed_tiles;
+	int requested_tiles;
+	size_t memory_bytes;
+	int labels_placed;
+	int label_candidates;
+	int icons;
+	double labels_ms;
+	double place_ms;
+	int labels_reused;
 };
 struct RLanguageDesc {
 	const char* name;
@@ -1738,6 +1769,21 @@ void Rplot_set_drag_line_color(Rid plot, int line, float r, float g, float b, fl
 void Rplot_set_view_changed_callback(Rid plot, RPlotViewCallback callback, void* user_data);
 void Rplot_set_drag_line_callback(Rid plot, RPlotDragLineCallback callback, void* user_data);
 void Rplot_set_series_toggled_callback(Rid plot, RPlotSeriesCallback callback, void* user_data);
+int Rmap_set_style_json(Rid map, const char* json, int length, const char* source);
+int Rmap_set_sprite(Rid map, const char* index_json, int index_length, const void* png, size_t png_length);
+void Rmap_set_tile_zoom_range(Rid map, int min_zoom, int max_zoom);
+void Rmap_set_tile_source(Rid map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, void* user_data);
+int Rmap_tile_loaded(Rid map, int z, int x, int y, const void* bytes, size_t length);
+void Rmap_tile_failed(Rid map, int z, int x, int y);
+void Rmap_set_tile_capacity(Rid map, int capacity);
+void Rmap_set_center(Rid map, double latitude, double longitude);
+void Rmap_get_center(Rid map, double* latitude, double* longitude);
+void Rmap_set_zoom(Rid map, double zoom);
+double Rmap_get_zoom(Rid map);
+void Rmap_set_zoom_range(Rid map, double min_zoom, double max_zoom);
+void Rmap_set_attribution(Rid map, const char* text);
+void Rmap_get_stats(Rid map, RMapStats* stats);
+void Rmap_set_camera_changed_callback(Rid map, RMapCameraCallback callback, void* user_data);
 Rid Rtext_editor_create(const char* text);
 void Rtext_editor_set_text(Rid editor, const char* text);
 const char* Rtext_editor_get_text(Rid editor);
@@ -2097,10 +2143,15 @@ void Rdraw_rect(RPainter* painter, float x, float y, float width, float height, 
 void Rdraw_rect_outline(RPainter* painter, float x, float y, float width, float height, float radius, float thickness, float r, float g, float b, float a);
 void Rdraw_circle(RPainter* painter, float center_x, float center_y, float radius, float r, float g, float b, float a);
 void Rdraw_line(RPainter* painter, float x0, float y0, float x1, float y1, float thickness, float r, float g, float b, float a);
+void Rdraw_polyline(RPainter* painter, const float* xy, int point_count, float offset_x, float offset_y, float scale, float thickness, RLineCap cap, float r, float g, float b, float a);
 void Rdraw_curve(RPainter* painter, float x0, float y0, float cx0, float cy0, float cx1, float cy1, float x1, float y1, float thickness, float r, float g, float b, float a);
 void Rdraw_triangle(RPainter* painter, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b, float a);
+void Rdraw_triangles(RPainter* painter, const float* xy, int count, float offset_x, float offset_y, float scale, float r, float g, float b, float a);
 void Rdraw_image(RPainter* painter, Rid texture, float x, float y, float width, float height, float r, float g, float b, float a);
+void Rdraw_image_region(RPainter* painter, Rid texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float r, float g, float b, float a);
+void Rdraw_image_rotated(RPainter* painter, Rid texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a);
 void Rdraw_text(RPainter* painter, Rid font, float size, float x, float y, const char* text, float r, float g, float b, float a);
+void Rdraw_text_rotated(RPainter* painter, Rid font, float size, float x, float y, float angle, const char* text, float r, float g, float b, float a);
 void Rdraw_glass(RPainter* painter, float x, float y, float width, float height, float radius, float r, float g, float b, float a);
 float Rdraw_spring(RPainter* painter, RSpring* spring, float target, RMotion motion);
 void Rspring_kick(RSpring* spring, float velocity);

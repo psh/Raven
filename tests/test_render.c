@@ -322,6 +322,206 @@ static void test_custom_drawing(void) {
 	Rwindow_destroy(window);
 }
 
+static void paint_line_caps(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	/* 10 thick, from x = 100 to 200: rounded, cut, and cut half the thickness past the end */
+	static const float round[] = { 100, 20, 200, 20 };
+	static const float butt[] = { 100, 60, 200, 60 };
+	static const float square[] = { 100, 100, 200, 100 };
+	/* a cut line that turns: its joint is round, with no notch */
+	static const float turn[] = { 240, 20, 270, 20, 270, 60 };
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	Rdraw_polyline(painter, round, 2, 0, 0, 1, 10, R_LINE_CAP_ROUND, 1, 1, 1, 1);
+	Rdraw_polyline(painter, butt, 2, 0, 0, 1, 10, R_LINE_CAP_BUTT, 1, 1, 1, 1);
+	Rdraw_polyline(painter, square, 2, 0, 0, 1, 10, R_LINE_CAP_SQUARE, 1, 1, 1, 1);
+	Rdraw_polyline(painter, turn, 3, 0, 0, 1, 10, R_LINE_CAP_BUTT, 1, 1, 1, 1);
+}
+
+static void test_line_caps(void) {
+	Rid window = window_from(
+		"<Window Width=\"300\" Height=\"120\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_line_caps, NULL);
+	capture(window);
+	/* along each line: lit */
+	CHECK_PIXEL(150, 20, 255, 255, 255);
+	CHECK_PIXEL(150, 60, 255, 255, 255);
+	CHECK_PIXEL(150, 100, 255, 255, 255);
+	/* 4 past the start: inside the round cap and the square one, outside the cut */
+	CHECK_PIXEL(96, 20, 255, 255, 255);
+	CHECK_PIXEL(96, 60, 0, 0, 0);
+	CHECK_PIXEL(96, 100, 255, 255, 255);
+	/* 4 past the end, likewise */
+	CHECK_PIXEL(203, 20, 255, 255, 255);
+	CHECK_PIXEL(203, 60, 0, 0, 0);
+	CHECK_PIXEL(203, 100, 255, 255, 255);
+	/* a square cap's corner is filled, a round one's isn't */
+	CHECK_PIXEL(95, 95, 255, 255, 255);
+	CHECK_PIXEL(95, 15, 0, 0, 0);
+	/* the turn's outer corner is round (inside the arc), the cut ends are cut */
+	CHECK_PIXEL(273, 18, 255, 255, 255);
+	CHECK_PIXEL(236, 20, 0, 0, 0);
+	CHECK_PIXEL(270, 64, 0, 0, 0);
+	Rwindow_destroy(window);
+}
+
+static Rid g_region_texture;
+
+static void paint_image_region(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	/* the top right quarter, green, stretched over a square; the whole texture beside it */
+	Rdraw_image_region(painter, g_region_texture, 10, 10, 40, 40, 0.5f, 0.0f, 1.0f, 0.5f, 1, 1, 1, 1);
+	Rdraw_image(painter, g_region_texture, 70, 10, 40, 40, 1, 1, 1, 1);
+}
+
+static void test_image_region(void) {
+	/* red, green on the top row; blue, white below */
+	static const unsigned char pixels[] = { 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255 };
+	Rid window = window_from(
+		"<Window Width=\"200\" Height=\"80\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	g_region_texture = Rtexture_create_from_pixels(pixels, 2, 2);
+	Rtexture_set_filter(g_region_texture, R_FILTER_NEAREST);
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_image_region, NULL);
+	capture(window);
+	/* the region: green all over */
+	CHECK_PIXEL(14, 14, 0, 255, 0);
+	CHECK_PIXEL(30, 30, 0, 255, 0);
+	CHECK_PIXEL(46, 46, 0, 255, 0);
+	/* the whole texture: its four colours */
+	CHECK_PIXEL(75, 15, 255, 0, 0);
+	CHECK_PIXEL(105, 15, 0, 255, 0);
+	CHECK_PIXEL(75, 45, 0, 0, 255);
+	CHECK_PIXEL(105, 45, 255, 255, 255);
+	Rwindow_destroy(window);
+	Rtexture_destroy(g_region_texture);
+}
+
+static Rid g_rotated_texture;
+
+static void paint_rotated_image(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	/* 40 x 20 about its centre (100, 50), a quarter turn clockwise: its left half goes up */
+	Rdraw_image_rotated(painter, g_rotated_texture, 80, 40, 40, 20, 0, 0, 1, 1, 1.5707963f, 1, 1, 1, 1);
+}
+
+static void test_image_rotated(void) {
+	/* red on the left, green on the right */
+	static const unsigned char pixels[] = { 255, 0, 0, 255, 0, 255, 0, 255 };
+	Rid window = window_from(
+		"<Window Width=\"200\" Height=\"100\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	g_rotated_texture = Rtexture_create_from_pixels(pixels, 2, 1);
+	Rtexture_set_filter(g_rotated_texture, R_FILTER_NEAREST);
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_rotated_image, NULL);
+	capture(window);
+	/* turned, it is 20 wide and 40 high: red above the centre, green below */
+	CHECK_PIXEL(100, 38, 255, 0, 0);
+	CHECK_PIXEL(100, 62, 0, 255, 0);
+	/* nothing where it was unturned, left and right of the turned strip */
+	CHECK_PIXEL(84, 50, 0, 0, 0);
+	CHECK_PIXEL(116, 50, 0, 0, 0);
+	Rwindow_destroy(window);
+	Rtexture_destroy(g_rotated_texture);
+}
+
+static void paint_rotated_text(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	/* a quarter turn clockwise about its top left corner: it runs down, to the left of x = 150 */
+	Rdraw_text_rotated(painter, R_INVALID_ID, 40, 150, 20, 1.5707963f, "WWWW", 1, 1, 1, 1);
+}
+
+static void test_rotated_text(void) {
+	Rid window = window_from(
+		"<Window Width=\"300\" Height=\"220\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	float text_width, text_height;
+	int lit_inside = 0, lit_outside = 0, px, py;
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_rotated_text, NULL);
+	Rfont_measure_text(Rfont_get_default(), 40, "WWWW", &text_width, &text_height);
+	capture(window);
+	for (py = 0; py < g_height; py++) {
+		for (px = 0; px < g_width; px++) {
+			const uint8_t* p = g_pixels + ((size_t)py * (size_t)g_width + (size_t)px) * 4;
+			float lx = (float)px / g_scale, ly = (float)py / g_scale;
+			/* the strip the turned text covers: its height to the left of x, its width down from y */
+			int inside = lx >= 150 - text_height - 1 && lx < 151 && ly >= 19 && ly < 21 + text_width;
+			if (p[0] > 128) {
+				if (inside) lit_inside++;
+				else lit_outside++;
+			}
+		}
+	}
+	/* four capital letters of 40 units cover several hundred pixels, all in the turned strip, none
+	 * where the text would be unturned (to the right of x = 150) */
+	CHECK(text_width > 100);
+	CHECK(lit_inside > 400);
+	CHECK(lit_outside == 0);
+	Rwindow_destroy(window);
+}
+
+static void paint_meshes(Rid widget, RPainter* painter, float width, float height, void* user_data) {
+	/* a square of two triangles, their shared edge on the diagonal through pixel centres */
+	static const float square[] = { 20, 20, 80, 20, 80, 80, 20, 20, 80, 80, 20, 80 };
+	/* a triangle of the unit square, placed by offset and scale */
+	static const float unit[] = { 0, 0, 1, 0, 0, 1 };
+	float lines[12] = { 160, 30, 220, 30, 0, 0, 160, 70, 220, 70, 0, 0 };
+	(void)widget;
+	(void)width;
+	(void)height;
+	(void)user_data;
+	lines[4] = lines[5] = NAN;
+	lines[10] = lines[11] = NAN;
+	Rdraw_triangles(painter, square, 2, 0, 0, 1, 1, 0, 0, 1);
+	/* the same square, half transparent */
+	Rdraw_triangles(painter, square, 2, 200, 100, 1, 1, 0, 0, 0.5f);
+	Rdraw_triangles(painter, unit, 1, 100, 20, 40, 0, 0, 1, 1);
+	/* two lines in one call, a NaN point between them */
+	Rdraw_polyline(painter, lines, 6, 0, 0, 1, 6, R_LINE_CAP_ROUND, 0, 1, 0, 1);
+	/* the same square one triangle at a time, below, for its seam */
+	Rdraw_triangle(painter, 20, 120, 80, 120, 80, 180, 1, 0, 0, 1);
+	Rdraw_triangle(painter, 20, 120, 80, 180, 20, 180, 1, 0, 0, 1);
+}
+
+static void test_meshes(void) {
+	Rid window = window_from(
+		"<Window Width=\"300\" Height=\"200\" ClearColor=\"#000000\"><Custom Name=\"custom\"/></Window>");
+	const uint8_t* seam;
+	const uint8_t* inside;
+	int i;
+	Rcustom_set_paint_callback(Rwidget_find(window, "custom"), paint_meshes, NULL);
+	capture(window);
+	/* the shared edge is covered: no seam on the diagonal */
+	CHECK_PIXEL(50, 50, 255, 0, 0);
+	CHECK_PIXEL(30, 70, 255, 0, 0);
+	CHECK_PIXEL(70, 30, 255, 0, 0);
+	/* translucent, the diagonal is covered once, as the inside is: drawn neither twice nor not at all */
+	inside = pixel_at(260, 130);
+	CHECK(inside[0] > 100 && inside[0] < 160);
+	for (i = 0; i < 60; i++) {
+		const uint8_t* diagonal = pixel_at(220.0f + (float)i, 120.0f + (float)i);
+		CHECK(abs((int)diagonal[0] - (int)inside[0]) <= 3);
+	}
+	/* drawn one at a time, the two edges' anti-aliasing leaves the diagonal lighter */
+	seam = pixel_at(50, 150);
+	CHECK(seam[0] < 250);
+	/* offset and scale */
+	CHECK_PIXEL(110, 30, 0, 0, 255);
+	CHECK_PIXEL(135, 55, 0, 0, 0);
+	/* both lines, and nothing between the end of one and the start of the next */
+	CHECK_PIXEL(190, 30, 0, 255, 0);
+	CHECK_PIXEL(190, 70, 0, 255, 0);
+	CHECK_PIXEL(190, 50, 0, 0, 0);
+	Rwindow_destroy(window);
+}
+
 static void paint_glass(Rid widget, RPainter* painter, float width, float height, void* user_data) {
 	(void)widget;
 	(void)width;
@@ -1016,6 +1216,11 @@ int main(void) {
 	RUN(test_text);
 	RUN(test_label_foreground);
 	RUN(test_custom_drawing);
+	RUN(test_meshes);
+	RUN(test_rotated_text);
+	RUN(test_image_region);
+	RUN(test_image_rotated);
+	RUN(test_line_caps);
 	RUN(test_glass);
 	RUN(test_windows_look);
 	RUN(test_glass_theme);

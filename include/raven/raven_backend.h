@@ -46,6 +46,16 @@
 #define R_INSTANCE_TEXTURED (1u << 4)
 /** SHADER: the effect is told nothing of the pointer (RShaderLook::pointer = R_FALSE). */
 #define R_INSTANCE_NO_POINTER (1u << 5)
+/** TRIANGLE: filled with no edge anti-aliasing, so the triangles of a mesh cover the pixels along
+ * the edges they share exactly once (Rdraw_triangles). */
+#define R_INSTANCE_ALIASED (1u << 6)
+/** GLYPH: turned about a point: radii[0], [1] = cos, sin of the angle, radii[2], [3] = the point,
+ * in pixels; rect and uv are the glyph unturned (Rdraw_text_rotated, Rdraw_image_rotated). */
+#define R_INSTANCE_ROTATED (1u << 7)
+/** LINE: its start, its end, cut square at the point rather than rounded (Rdraw_polyline's caps).
+ * The same bits as R_INSTANCE_ALIASED and R_INSTANCE_ROTATED, which are a triangle's and a glyph's. */
+#define R_INSTANCE_BUTT_START (1u << 6)
+#define R_INSTANCE_BUTT_END (1u << 7)
 
 /**
  * One primitive. All positions are in framebuffer pixels, origin top-left.
@@ -53,7 +63,8 @@
  *
  *   kind      rect                 uv              radii              border_width
  *   RECT      x0, y0, x1, y1       u0, v0, u1, v1  tl, tr, br, bl     outline width
- *   GLYPH     x0, y0, x1, y1       u0, v0, u1, v1  -                  -
+ *   GLYPH     x0, y0, x1, y1       u0, v0, u1, v1  turned: cos, sin,  -
+ *                                                  about x, y
  *   SHADOW    x0, y0, x1, y1       -               tl, tr, br, bl     blur radius
  *   LINE      ax, ay, bx, by       -               [0] = thickness    -
  *   TRIANGLE  ax, ay, bx, by       -               [0], [1] = cx, cy  -

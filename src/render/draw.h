@@ -220,7 +220,12 @@ void rvn_paint_box4(RPainter* painter, rvn_rect_t rect, const float radii[4], rv
 void rvn_paint_shadow(RPainter* painter, rvn_rect_t rect, float radius, float blur, rvn_color_t color);
 
 void rvn_paint_line(RPainter* painter, float x0, float y0, float x1, float y1, float thickness, rvn_color_t color);
+/* A line with instance flags (R_INSTANCE_BUTT_START, R_INSTANCE_BUTT_END). */
+void rvn_paint_line_flags(RPainter* painter, float x0, float y0, float x1, float y1, float thickness, rvn_color_t color, uint32_t flags);
 void rvn_paint_triangle(RPainter* painter, float x0, float y0, float x1, float y1, float x2, float y2, rvn_color_t color);
+/* A triangle with instance flags (R_INSTANCE_ALIASED). */
+void rvn_paint_triangle_flags(RPainter* painter, float x0, float y0, float x1, float y1, float x2, float y2,
+	rvn_color_t color, uint32_t flags);
 
 /** How a curve is drawn (rvn_paint_curve). Lengths in logical units. */
 typedef struct rvn_curve_t {

@@ -36,6 +36,7 @@ import raven.cinterop.Rcheckbox_set_checked
 import raven.cinterop.Rcolor_picker_get_color
 import raven.cinterop.Rcolor_picker_set_changed_callback
 import raven.cinterop.Rcolor_picker_set_color
+import raven.cinterop.Rmap_set_camera_changed_callback
 import raven.cinterop.R_KEY_UNKNOWN
 import raven.cinterop.R_MOD_ALT
 import raven.cinterop.R_MOD_CTRL
@@ -603,6 +604,16 @@ public val ColorPickerChanged: Event<(Color) -> Unit> = Event(marks = ColorPicke
 
 private val onColorPickerChanged = staticCFunction { _: Rid, r: Float, g: Float, b: Float, a: Float, userData: COpaquePointer? ->
     dispatchEvent(userData, ColorPickerChanged) { it(Color(r, g, b, a)) }
+}
+
+/** A map moved or zoomed by the user (compose-raven-map reads where it now looks). */
+@InternalComposeRavenApi
+public val MapCameraChanged: Event<() -> Unit> = Event { widget, userData ->
+    Rmap_set_camera_changed_callback(widget, onMapCameraChanged, userData)
+}
+
+private val onMapCameraChanged = staticCFunction { _: Rid, userData: COpaquePointer? ->
+    dispatchEvent(userData, MapCameraChanged) { it() }
 }
 
 // The list view's and the tree view's controlled values and event kinds.

@@ -4,36 +4,60 @@ package raven.compose.ui.graphics.drawscope
 
 import cnames.structs.RPainter
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.usePinned
 import raven.cinterop.RShaderLook
+import raven.cinterop.R_FONT_REGULAR
 import raven.cinterop.R_INVALID_ID
+import raven.cinterop.R_LINE_CAP_BUTT
+import raven.cinterop.R_LINE_CAP_ROUND
+import raven.cinterop.R_LINE_CAP_SQUARE
+import raven.cinterop.R_TRUE
 import raven.cinterop.Rdraw_circle
 import raven.cinterop.Rdraw_curve
 import raven.cinterop.Rdraw_glass
 import raven.cinterop.Rdraw_image
+import raven.cinterop.Rdraw_image_region
+import raven.cinterop.Rdraw_image_rotated
 import raven.cinterop.Rdraw_line
+import raven.cinterop.Rdraw_polyline
 import raven.cinterop.Rdraw_pop_clip_rect
 import raven.cinterop.Rdraw_push_clip_rect
 import raven.cinterop.Rdraw_rect
 import raven.cinterop.Rdraw_rect_outline
 import raven.cinterop.Rdraw_shader
 import raven.cinterop.Rdraw_text
+import raven.cinterop.Rdraw_text_rotated
 import raven.cinterop.Rdraw_triangle
+import raven.cinterop.Rdraw_triangles
+import raven.cinterop.Rfont_get_default
+import raven.cinterop.Rfont_is_valid
+import raven.cinterop.Rtheme_get_font
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.geometry.Offset
 import raven.compose.ui.geometry.Size
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.EffectStyle
+import raven.compose.ui.graphics.ImageBitmap
 import raven.compose.ui.graphics.ShaderEffect
+import raven.compose.ui.graphics.StrokeCap
 import raven.compose.ui.graphics.painter.Painter
 import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.text.font.FontFamily
+import raven.compose.ui.text.font.FontStyle
+import raven.compose.ui.text.font.FontWeight
 import raven.compose.ui.text.font.font
+import raven.compose.ui.text.font.ravenStyle
+import raven.compose.ui.text.font.styled
+import raven.compose.ui.unit.IntOffset
+import raven.compose.ui.unit.IntSize
 import raven.compose.ui.unit.TextUnit
 import raven.compose.ui.unit.isSpecified
+import kotlin.math.PI
 
 /** How a shape is drawn: filled, or its outline. */
 public sealed interface DrawStyle
@@ -91,6 +115,31 @@ public class DrawScope internal constructor(
     public fun drawLine(color: Color, start: Offset, end: Offset, strokeWidth: Float = 1f): Unit =
         color.toRaven { r, g, b, a -> Rdraw_line(painter, start.x, start.y, end.x, end.y, strokeWidth, r, g, b, a) }
 
+    /**
+     * Lines through many [points] (x, y pairs) of one [color] and [strokeWidth], in one call, each
+     * point drawn at [offset] + its coordinates times [scale], joined round where they turn and
+     * ended with [cap]. A NaN x ends a line and the next point starts another, so the dashes of a
+     * dashed line go in one call. Raven's (`Rdraw_polyline`).
+     */
+    public fun drawPolyline(
+        color: Color,
+        points: FloatArray,
+        offset: Offset = Offset.Zero,
+        scale: Float = 1f,
+        strokeWidth: Float = 1f,
+        cap: StrokeCap = StrokeCap.Round,
+    ) {
+        if (points.size < 4) return
+        val ravenCap = when (cap) {
+            StrokeCap.Butt -> R_LINE_CAP_BUTT
+            StrokeCap.Round -> R_LINE_CAP_ROUND
+            StrokeCap.Square -> R_LINE_CAP_SQUARE
+        }
+        points.usePinned { pinned ->
+            color.toRaven { r, g, b, a -> Rdraw_polyline(painter, pinned.addressOf(0), points.size / 2, offset.x, offset.y, scale, strokeWidth, ravenCap, r, g, b, a) }
+        }
+    }
+
     /** A cubic Bézier curve from [start] to [end], pulled by [control1] and [control2]. Raven's. */
     public fun drawCubic(color: Color, start: Offset, control1: Offset, control2: Offset, end: Offset, strokeWidth: Float = 1f): Unit =
         color.toRaven { r, g, b, a ->
@@ -102,8 +151,24 @@ public class DrawScope internal constructor(
         color.toRaven { r, g, b, a -> Rdraw_triangle(painter, p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, r, g, b, a) }
 
     /**
+     * Many filled triangles of one [color] in one call, a mesh such as a triangulated polygon:
+     * [vertices] holds six floats a triangle (x0, y0, x1, y1, x2, y2), each point drawn at
+     * [offset] + its coordinates times [scale]. They are filled without anti-aliasing, so
+     * triangles that share an edge show no seam there and cover no pixel twice; the mesh's outer
+     * edges are aliased too, and an outline drawn over them smooths them. Raven's (`Rdraw_triangles`).
+     */
+    public fun drawTriangles(color: Color, vertices: FloatArray, offset: Offset = Offset.Zero, scale: Float = 1f) {
+        if (vertices.size < 6) return
+        vertices.usePinned { pinned ->
+            color.toRaven { r, g, b, a -> Rdraw_triangles(painter, pinned.addressOf(0), vertices.size / 6, offset.x, offset.y, scale, r, g, b, a) }
+        }
+    }
+
+    /**
      * [text] in [color], its first line's top left corner at [topLeft], at [fontSize] (the theme's when
-     * unspecified) in [fontFamily] (the theme's when null).
+     * unspecified) in [fontFamily] (the theme's when null), [fontWeight] and [fontStyle] choosing its
+     * bold or italic face (Raven draws them from the regular one when the family has none), turned by
+     * [rotation] degrees clockwise about [topLeft] (Raven's `Rdraw_text_rotated`).
      */
     public fun drawText(
         text: String,
@@ -111,10 +176,54 @@ public class DrawScope internal constructor(
         color: Color,
         fontSize: TextUnit = TextUnit.Unspecified,
         fontFamily: FontFamily? = null,
+        rotation: Float = 0f,
+        fontWeight: FontWeight? = null,
+        fontStyle: FontStyle? = null,
     ) {
-        val font = fontFamily?.let { host.font(it) } ?: R_INVALID_ID
+        val style = ravenStyle(fontWeight, fontStyle)
+        val font = when {
+            fontFamily != null -> host.font(fontFamily).styled(style)
+            style == R_FONT_REGULAR -> R_INVALID_ID
+            else -> (Rtheme_get_font().takeIf { Rfont_is_valid(it) == R_TRUE } ?: Rfont_get_default()).styled(style)
+        }
         val size = if (fontSize.isSpecified) fontSize.value else 0f
-        color.toRaven { r, g, b, a -> Rdraw_text(painter, font, size, topLeft.x, topLeft.y, text, r, g, b, a) }
+        color.toRaven { r, g, b, a ->
+            if (rotation == 0f) {
+                Rdraw_text(painter, font, size, topLeft.x, topLeft.y, text, r, g, b, a)
+            } else {
+                Rdraw_text_rotated(painter, font, size, topLeft.x, topLeft.y, rotation * (PI.toFloat() / 180f), text, r, g, b, a)
+            }
+        }
+    }
+
+    /**
+     * The part of [image] from [srcOffset], [srcSize] large (in its pixels), stretched over [size]
+     * at [topLeft] and multiplied by [tint], turned by [rotation] degrees clockwise about its centre:
+     * one icon of a sprite sheet. Raven's (`Rdraw_image_region`, `Rdraw_image_rotated`).
+     */
+    public fun drawImage(
+        image: ImageBitmap,
+        srcOffset: IntOffset,
+        srcSize: IntSize,
+        topLeft: Offset,
+        size: Size,
+        tint: Color = Color.White,
+        rotation: Float = 0f,
+    ) {
+        if (image.width <= 0 || image.height <= 0) return
+        val w = image.width.toFloat()
+        val h = image.height.toFloat()
+        val u0 = srcOffset.x / w
+        val v0 = srcOffset.y / h
+        val u1 = (srcOffset.x + srcSize.width) / w
+        val v1 = (srcOffset.y + srcSize.height) / h
+        tint.toRaven { r, g, b, a ->
+            if (rotation == 0f) {
+                Rdraw_image_region(painter, image.texture, topLeft.x, topLeft.y, size.width, size.height, u0, v0, u1, v1, r, g, b, a)
+            } else {
+                Rdraw_image_rotated(painter, image.texture, topLeft.x, topLeft.y, size.width, size.height, u0, v0, u1, v1, rotation * (PI.toFloat() / 180f), r, g, b, a)
+            }
+        }
     }
 
     /**

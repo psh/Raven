@@ -981,6 +981,10 @@ namespace Raven
         /// Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
         /// </summary>
         R_WIDGET_PLOT = 0x0232,
+        /// <summary>
+        /// A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP).
+        /// </summary>
+        R_WIDGET_MAP = 0x0233,
     }
 
     public enum RHAlign : int
@@ -1590,6 +1594,16 @@ namespace Raven
         /// Swings several times around the target: things that fly in or get dropped.
         /// </summary>
         R_MOTION_WOBBLY = 0x0323,
+    }
+
+    /// <summary>
+    /// How a line ends (Rdraw_polyline): rounded, cut square at its end point, or cut square half its thickness past it.
+    /// </summary>
+    public enum RLineCap : int
+    {
+        R_LINE_CAP_ROUND = 0x0570,
+        R_LINE_CAP_BUTT = 0x0571,
+        R_LINE_CAP_SQUARE = 0x0572,
     }
 
     /// <summary>
@@ -2237,6 +2251,69 @@ namespace Raven
     }
 
     /// <summary>
+    /// What the last frame drew, and what preparing the tiles cost.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RMapStats
+    {
+        public int tiles;
+        public int triangles;
+        public int segments;
+        /// <summary>
+        /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+        /// </summary>
+        public double draw_ms;
+        /// <summary>
+        /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+        /// </summary>
+        public double fill_ms;
+        /// <summary>
+        /// The map's own drawing calls, in milliseconds: all, the fills, the lines.
+        /// </summary>
+        public double line_ms;
+        /// <summary>
+        /// The tiles held, and what decoding and preparing them took in all.
+        /// </summary>
+        public int prepared_tiles;
+        public double decode_ms;
+        public double prepare_ms;
+        /// <summary>
+        /// Tiles asked for or handed in and not ready yet; tiles that failed so far; tiles asked for so far.
+        /// </summary>
+        public int pending_tiles;
+        public int failed_tiles;
+        public int requested_tiles;
+        /// <summary>
+        /// The memory the prepared tiles hold, in bytes.
+        /// </summary>
+        public UIntPtr memory_bytes;
+        /// <summary>
+        /// The labels: placed of the candidates and the icons among them, at the last placement.
+        /// </summary>
+        public int labels_placed;
+        /// <summary>
+        /// The labels: placed of the candidates and the icons among them, at the last placement.
+        /// </summary>
+        public int label_candidates;
+        /// <summary>
+        /// The labels: placed of the candidates and the icons among them, at the last placement.
+        /// </summary>
+        public int icons;
+        /// <summary>
+        /// What the labels cost the last frame, and the last placement, in milliseconds.
+        /// </summary>
+        public double labels_ms;
+        /// <summary>
+        /// What the labels cost the last frame, and the last placement, in milliseconds.
+        /// </summary>
+        public double place_ms;
+        /// <summary>
+        /// Whether the last frame drew the placement before it, moved, rather than placing again.
+        /// </summary>
+        public int labels_reused;
+    }
+
+    /// <summary>
     /// What the editor knows of a language. Every field but the name may be NULL.
     /// Lists of words are separated by spaces.
     /// </summary>
@@ -2848,6 +2925,21 @@ namespace Raven
     /// </summary>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void RPlotSeriesCallback(uint plot, int series, int visible, IntPtr user_data);
+
+    /// <summary>
+    /// Asks for a tile. Called on the thread of the interface, outside painting.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RMapTileRequestCallback(uint map, int z, int x, int y, IntPtr user_data);
+
+    /// <summary>
+    /// Says a tile asked for is no longer wanted. Called on the thread of the interface, outside painting.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RMapTileCancelCallback(uint map, int z, int x, int y, IntPtr user_data);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RMapCameraCallback(uint map, IntPtr user_data);
 
     /// <summary>
     /// Called when the user zoomed (to zoom other editors the same, or to keep it for the next time).
@@ -6524,6 +6616,102 @@ namespace Raven
         public static extern void Rplot_set_series_toggled_callback(uint plot, RPlotSeriesCallback callback, IntPtr user_data);
 
         /// <summary>
+        /// Sets the style: MapLibre style JSON, @p length bytes (-1: null-terminated).
+        /// source The vector source the map draws, by its name in the style's
+        ///               "sources"; NULL: the first vector source.
+        /// Forgets the tiles handed in so far: they are prepared for a style.
+        /// Returns R_FALSE (and keeps the style it had) if the JSON can't be read.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rmap_set_style_json(uint map, [MarshalAs(Utf8.Str)] string json, int length, [MarshalAs(Utf8.Str)] string source);
+
+        /// <summary>
+        /// Sets the sprite sheet the style's icons come from: its JSON index
+        /// (@p index_length bytes, -1: null-terminated) and its PNG image, such as
+        /// the style's "sprite" URL with "@2x.json" and "@2x.png". NULL @p index_json:
+        /// no icons. Returns R_FALSE (and keeps the sheet it had) if either can't be read.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rmap_set_sprite(uint map, [MarshalAs(Utf8.Str)] string index_json, int index_length, byte[] png, UIntPtr png_length);
+
+        /// <summary>
+        /// The zooms the source has tiles for (default 0 to 14): deeper zooms are drawn from the deepest.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_tile_zoom_range(uint map, int min_zoom, int max_zoom);
+
+        /// <summary>
+        /// Where the tiles come from: the zooms the source has (as
+        /// Rmap_set_tile_zoom_range), @p request called for each tile the map
+        /// needs, once until it is answered, and @p cancel (may be NULL) for a tile
+        /// asked for that the view no longer needs. NULL @p request: the map asks
+        /// for nothing and draws what it is handed.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_tile_source(uint map, int min_zoom, int max_zoom, RMapTileRequestCallback request, RMapTileCancelCallback cancel, IntPtr user_data);
+
+        /// <summary>
+        /// Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
+        /// Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
+        /// not. Thread-safe: the bytes are copied, then decoded and prepared on a
+        /// worker thread. A tile that can't be decoded counts as failed.
+        /// Returns R_FALSE for a tile outside the world.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rmap_tile_loaded(uint map, int z, int x, int y, byte[] bytes, UIntPtr length);
+
+        /// <summary>
+        /// Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_tile_failed(uint map, int z, int x, int y);
+
+        /// <summary>
+        /// How many prepared tiles the map keeps (default 160): past it, those used least recently go.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_tile_capacity(uint map, int capacity);
+
+        /// <summary>
+        /// Where the map looks: the centre (degrees) and the zoom (fractional; 0 = the world on 512 units).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_center(uint map, double latitude, double longitude);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_get_center(uint map, out double latitude, out double longitude);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_zoom(uint map, double zoom);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern double Rmap_get_zoom(uint map);
+
+        /// <summary>
+        /// How far the user can zoom out and in (default 2 to 18).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_zoom_range(uint map, double min_zoom, double max_zoom);
+
+        /// <summary>
+        /// Text shown in the bottom right corner, such as the data's attribution. NULL: none.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_attribution(uint map, [MarshalAs(Utf8.Str)] string text);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_get_stats(uint map, ref RMapStats stats);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_get_stats(uint map, IntPtr stats);
+
+        /// <summary>
+        /// Called when the user moves or zooms the map.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rmap_set_camera_changed_callback(uint map, RMapCameraCallback callback, IntPtr user_data);
+
+        /// <summary>
         /// text Initial content, or NULL.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
@@ -8582,6 +8770,17 @@ namespace Raven
         public static extern void Rdraw_line(IntPtr painter, float x0, float y0, float x1, float y1, float thickness, float r, float g, float b, float a);
 
         /// <summary>
+        /// Lines through many points, of one color and thickness, in one call: anti-aliased, joined
+        /// round where they turn, and ended as @p cap says.
+        /// 
+        /// @p xy holds @p point_count points (x, y), each drawn at (offset_x + x * scale,
+        /// offset_y + y * scale). A point whose x is NaN ends the line: the next point starts another,
+        /// so many lines go in one call, such as the dashes of a dashed line.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rdraw_polyline(IntPtr painter, float[] xy, int point_count, float offset_x, float offset_y, float scale, float thickness, RLineCap cap, float r, float g, float b, float a);
+
+        /// <summary>
         /// Anti-aliased cubic Bezier curve from (x0, y0) to (x1, y1), pulled by two control points.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
@@ -8591,10 +8790,39 @@ namespace Raven
         public static extern void Rdraw_triangle(IntPtr painter, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b, float a);
 
         /// <summary>
+        /// Many filled triangles of one color, in one call: a mesh, such as a triangulated polygon.
+        /// 
+        /// @p xy holds @p count triangles, six floats each (x0, y0, x1, y1, x2, y2), in any unit: each
+        /// point is drawn at (offset_x + x * scale, offset_y + y * scale). The triangles are filled
+        /// without anti-aliasing, as a rasterizer fills them: a pixel along an edge two triangles share
+        /// belongs to exactly one, so a mesh has no seam, and a translucent one covers no pixel twice.
+        /// Its outer edges are aliased too; draw an outline over them to smooth them.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rdraw_triangles(IntPtr painter, float[] xy, int count, float offset_x, float offset_y, float scale, float r, float g, float b, float a);
+
+        /// <summary>
         /// Texture stretched to a rectangle and multiplied by a tint color.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rdraw_image(IntPtr painter, uint texture, float x, float y, float width, float height, float r, float g, float b, float a);
+
+        /// <summary>
+        /// Part of a texture stretched to a rectangle and multiplied by a tint color: the part from
+        /// (u0, v0) to (u1, v1), in texture coordinates (0 to 1 across the texture), such as one icon
+        /// of a sprite sheet.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rdraw_image_region(IntPtr painter, uint texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float r, float g, float b, float a);
+
+        /// <summary>
+        /// Part of a texture, as Rdraw_image_region draws it, turned by @p angle (radians,
+        /// clockwise on screen) about the rectangle's centre: an icon that follows a road. Its edges are
+        /// the texture's own, with no anti-aliasing of the quad: a texture with a transparent margin keeps
+        /// them smooth.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rdraw_image_rotated(IntPtr painter, uint texture, float x, float y, float width, float height, float u0, float v0, float u1, float v1, float angle, float r, float g, float b, float a);
 
         /// <summary>
         /// Draws UTF-8 text; (x, y) is the top-left corner of the first line.
@@ -8603,6 +8831,13 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rdraw_text(IntPtr painter, uint font, float size, float x, float y, [MarshalAs(Utf8.Str)] string text, float r, float g, float b, float a);
+
+        /// <summary>
+        /// Text turned by @p angle (radians, clockwise on screen) about (x, y), its first line's
+        /// top left corner, as Rdraw_text draws it unturned: lines go down the turned text.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rdraw_text_rotated(IntPtr painter, uint font, float size, float x, float y, float angle, [MarshalAs(Utf8.Str)] string text, float r, float g, float b, float a);
 
         /// <summary>
         /// Rounded rectangle of glass. It shows what was drawn before it,

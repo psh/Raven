@@ -131,6 +131,8 @@ typedef enum RWidgetType{
 	R_WIDGET_PAGINATION,
 	/** Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom. */
 	R_WIDGET_PLOT,
+	/** A vector map: Mapbox Vector Tiles drawn as a MapLibre style says, panned and zoomed (RAVEN_WITH_MAP). */
+	R_WIDGET_MAP,
 
 	R_WIDGET_LAST_
 }RWidgetType;

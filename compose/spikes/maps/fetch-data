@@ -1,0 +1,35 @@
+#!/bin/sh
+# Downloads what the maps spike draws into data/: OpenFreeMap's Liberty style, its sprite sheet, and the vector tiles
+# of central Chicago at zooms 12 to 14 (61 tiles, about 8 MB), within OpenFreeMap's terms for
+# offline use (fewer than 3,000 tiles, one request at a time, its own User-Agent). The data is
+# OpenStreetMap's, through OpenMapTiles and OpenFreeMap, and is shown with their attribution.
+set -e
+cd "$(dirname "$0")"
+agent="compose-raven-maps-spike/0.1"
+mkdir -p data/tiles
+curl -sf -A "$agent" -o data/liberty.json https://tiles.openfreemap.org/styles/liberty
+curl -sf -A "$agent" -o data/planet.json https://tiles.openfreemap.org/planet
+sprite=$(python3 -c "import json; print(json.load(open('data/liberty.json'))['sprite'])")
+curl -sf -A "$agent" -o data/sprite@2x.json "$sprite@2x.json"
+curl -sf -A "$agent" -o data/sprite@2x.png "$sprite@2x.png"
+template=$(python3 -c "import json; print(json.load(open('data/planet.json'))['tiles'][0])")
+python3 - <<'PY' > data/tiles.txt
+import math
+lat, lon = 41.882, -87.630
+def tile(z):
+    n = 2 ** z
+    return int((lon + 180) / 360 * n), int((1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n)
+for z, r in [(12, 1), (13, 2), (14, 3)]:
+    cx, cy = tile(z)
+    low = 0 if z == 12 else 1
+    for x in range(cx - r + low, cx + r + 1):
+        for y in range(cy - r + low, cy + r + 1):
+            print(z, x, y)
+PY
+while read z x y; do
+    file="data/tiles/$z-$x-$y.pbf"
+    [ -s "$file" ] && continue
+    url=$(echo "$template" | sed "s|{z}|$z|; s|{x}|$x|; s|{y}|$y|")
+    curl -sf -A "$agent" -o "$file" "$url"
+done < data/tiles.txt
+echo "$(ls data/tiles | wc -l | tr -d ' ') tiles in $(pwd)/data/tiles"
