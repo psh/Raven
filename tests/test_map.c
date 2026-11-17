@@ -800,6 +800,43 @@ static void test_tile_no_longer_wanted(void) {
 	Rwindow_set_content(g_window, R_INVALID_ID);
 }
 
+static void test_world_repeats_past_the_antimeridian(void) {
+	uint8_t bytes[1024];
+	size_t length = water_tile(bytes, sizeof(bytes));
+	Rid map = source_map(14, 16383, 200);
+	RMapStats stats;
+	double latitude, longitude;
+	/* a few units west of the antimeridian: the world's last column, and its first again east of it */
+	Rmap_get_center(map, &latitude, &longitude);
+	Rmap_set_center(map, latitude, 179.9999);
+	Rdraw_frame();
+	Rdraw_frame();
+	CHECK(g_source.requests == 2);
+	CHECK(was_asked(g_source.requested, g_source.requests, 14, 16383, 200));
+	CHECK(was_asked(g_source.requested, g_source.requests, 14, 0, 200));
+	CHECK(Rmap_tile_loaded(map, 14, 16383, 200, bytes, length));
+	CHECK(Rmap_tile_loaded(map, 14, 0, 200, bytes, length));
+	wait_for_tiles(map);
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.tiles == 2 && stats.triangles == 4);
+	/* dragged east across the line, the centre comes round to the far west, and both still draw */
+	Rwindow_inject_mouse_move(g_window, 300.0f, 200.0f);
+	Rwindow_inject_mouse_button(g_window, R_MOUSE_LEFT, R_TRUE);
+	Rwindow_inject_mouse_move(g_window, 200.0f, 200.0f);
+	Rwindow_inject_mouse_button(g_window, R_MOUSE_LEFT, R_FALSE);
+	Rmap_get_center(map, &latitude, &longitude);
+	CHECK(longitude > -180.0 && longitude < -179.99);
+	Rdraw_frame();
+	Rmap_get_stats(map, &stats);
+	CHECK(stats.tiles == 2 && stats.triangles == 4);
+	CHECK(g_source.requests == 2 && g_source.cancels == 0);
+	/* a centre set past the antimeridian is the same meridian */
+	Rmap_set_center(map, latitude, 190.0);
+	Rmap_get_center(map, &latitude, &longitude);
+	CHECK(fabs(longitude + 170.0) < 1e-9);
+	Rwindow_set_content(g_window, R_INVALID_ID);
+}
+
 static void test_tiles_used_least_recently_go(void) {
 	uint8_t bytes[1024];
 	size_t length = water_tile(bytes, sizeof(bytes));
@@ -1125,6 +1162,7 @@ int main(void) {
 	RUN(test_map_widget);
 	RUN(test_tile_asked_for_once);
 	RUN(test_tile_no_longer_wanted);
+	RUN(test_world_repeats_past_the_antimeridian);
 	RUN(test_tiles_used_least_recently_go);
 	RUN(test_tile_failed_waits);
 	RUN(test_tile_for_an_old_style);

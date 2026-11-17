@@ -9,7 +9,9 @@
  * Where it looks is Web Mercator's unit square (0 to 1 across, from the
  * antimeridian and the north edge) and a fractional zoom: at zoom z the
  * world is 512 * 2^z units across, the tile size MapLibre's styles are
- * written for.
+ * written for. The world repeats east and west: past the antimeridian the
+ * same tiles are drawn again, a world over, and the centre is kept within 0
+ * to 1 across as the map pans.
  *
  * The tile store follows the Kotlin spike's TileStore: each frame asks for
  * the tiles it needs and their ancestors down to the nearest ready one, then
@@ -92,9 +94,11 @@ typedef struct rvn_map_t {
 	RMapStats stats;
 	RMapCameraCallback camera_callback;
 	void* camera_user;
-	/** The tiles of a frame, reused: indices into entries, then the tiles themselves for the labels. */
+	/** The tiles of a frame, reused: indices into entries, the copy of the world each is drawn in, then the tiles themselves for the labels. */
 	uint32_t* drawn;
 	uint32_t drawn_cap;
+	int* drawn_copies;
+	uint32_t drawn_copies_cap;
 	const rvn_map_prepared_t** drawn_tiles;
 	uint32_t drawn_tiles_cap;
 	/** The labels, their icons, and what they were placed for: bumped as tiles land and the style or sprite changes. */
@@ -122,6 +126,21 @@ typedef struct rvn_map_arrival_t {
 
 static double rvn_map_clampd(double value, double low, double high) {
 	return value < low ? low : value > high ? high : value;
+}
+
+/* a / b rounded down, and what is left, from 0 to b - 1, for b above 0: tile columns west of the antimeridian */
+static int rvn_map_floor_div(int a, int b) {
+	int q = a / b;
+	return a % b < 0 ? q - 1 : q;
+}
+
+static int rvn_map_mod(int a, int b) {
+	return a - rvn_map_floor_div(a, b) * b;
+}
+
+/* x across Web Mercator's unit square, brought within 0 to 1: the same meridian, round the world */
+static double rvn_map_wrap(double x) {
+	return x - floor(x);
 }
 
 static double rvn_map_world(const rvn_map_t* map) {
@@ -271,12 +290,17 @@ static int rvn_map_best(rvn_map_t* map, int z, int x, int y) {
 	return -1;
 }
 
-/* Whether a tile is one of the wanted ones (tiles of tile_zoom from x0, y0 to x1, y1) or an ancestor of one. */
+/* Whether a tile is one of the wanted ones (tiles of tile_zoom from x0, y0 to x1, y1, the columns
+   counted round the world: x0 and x1 may be past its edges) or an ancestor of one. */
 static int rvn_map_kept(int z, int x, int y, int tile_zoom, int x0, int y0, int x1, int y1) {
-	int shift;
+	int shift, lo, hi, across;
 	if (z > tile_zoom) return R_FALSE;
 	shift = tile_zoom - z;
-	return x >= (x0 >> shift) && x <= (x1 >> shift) && y >= (y0 >> shift) && y <= (y1 >> shift);
+	if (y < (y0 >> shift) || y > (y1 >> shift)) return R_FALSE;
+	lo = rvn_map_floor_div(x0, 1 << shift);
+	hi = rvn_map_floor_div(x1, 1 << shift);
+	across = 1 << z;
+	return hi - lo + 1 >= across || rvn_map_mod(x - lo, across) <= hi - lo;
 }
 
 /* Cancels the tiles asked for and not answered that the frame no longer wants. */
@@ -397,6 +421,7 @@ static void rvn_map_destroy(rvn_widget_t* widget) {
 	rvn_free(map->entries);
 	rvn_free(map->messages);
 	rvn_free(map->drawn);
+	rvn_free(map->drawn_copies);
 	rvn_free(map->drawn_tiles);
 	rvn_map_labels_free(map->labels);
 	rvn_map_sprite_free(map->sprite);
@@ -506,9 +531,8 @@ static void rvn_map_paint(rvn_widget_t* widget, RPainter* painter) {
 	tx1 = (int)floor(right * n);
 	ty0 = (int)floor(top * n);
 	ty1 = (int)floor(bottom * n);
-	if (tx0 < 0) tx0 = 0;
+	/* columns past the antimeridian are the world's next copy, east or west: they stay */
 	if (ty0 < 0) ty0 = 0;
-	if (tx1 >= n) tx1 = n - 1;
 	if (ty1 >= n) ty1 = n - 1;
 
 	/* a new frame of use: tiles asked for that it no longer wants stop, then each wanted tile, or the
@@ -517,12 +541,15 @@ static void rvn_map_paint(rvn_widget_t* widget, RPainter* painter) {
 	rvn_map_retain(map, tile_zoom, tx0, ty0, tx1, ty1);
 	for (tx = tx0; tx <= tx1; tx++) {
 		for (ty = ty0; ty <= ty1; ty++) {
-			int index = rvn_map_best(map, tile_zoom, tx, ty);
+			int copy = rvn_map_floor_div(tx, n);
+			int index = rvn_map_best(map, tile_zoom, tx - copy * n, ty);
 			uint32_t k;
 			if (index < 0) continue;
-			for (k = 0; k < drawn && map->drawn[k] != (uint32_t)index; k++) {}
+			for (k = 0; k < drawn && (map->drawn[k] != (uint32_t)index || map->drawn_copies[k] != copy); k++) {}
 			if (k < drawn) continue;
 			RVN_ARRAY_RESERVE(map->drawn, map->drawn_cap, drawn + 1);
+			RVN_ARRAY_RESERVE(map->drawn_copies, map->drawn_copies_cap, drawn + 1);
+			map->drawn_copies[drawn] = copy;
 			map->drawn[drawn++] = (uint32_t)index;
 		}
 	}
@@ -551,7 +578,7 @@ static void rvn_map_paint(rvn_widget_t* widget, RPainter* painter) {
 			bucket = &tile->buckets[l];
 			if (!bucket->triangle_count && !bucket->line_point_count) continue;
 			scale = (float)(world / tiles_across);
-			ox = (float)((tile->x / tiles_across - map->center_x) * world + width / 2.0);
+			ox = (float)((tile->x / tiles_across + map->drawn_copies[i] - map->center_x) * world + width / 2.0);
 			oy = (float)((tile->y / tiles_across - map->center_y) * world + height / 2.0);
 			/* tiles carry a buffer past their edges: clipped to the tile, a translucent fill isn't drawn twice there */
 			Rdraw_push_clip_rect(painter, ox, oy, scale, scale);
@@ -602,7 +629,7 @@ static void rvn_map_paint(rvn_widget_t* widget, RPainter* painter) {
 		label_stats.candidates = map->stats.label_candidates;
 		label_stats.icons = map->stats.icons;
 		label_stats.place_ms = map->stats.place_ms;
-		rvn_map_labels_draw(map->labels, painter, style, map->drawn_tiles, drawn, &view, map->label_version, settled, map->sprite, &label_stats);
+		rvn_map_labels_draw(map->labels, painter, style, map->drawn_tiles, map->drawn_copies, drawn, &view, map->label_version, settled, map->sprite, &label_stats);
 		map->stats.labels_placed = label_stats.placed;
 		map->stats.label_candidates = label_stats.candidates;
 		map->stats.icons = label_stats.icons;
@@ -648,7 +675,7 @@ static void rvn_map_camera_changed(rvn_widget_t* widget) {
 
 static void rvn_map_pan_by(rvn_map_t* map, float dx, float dy) {
 	double world = rvn_map_world(map);
-	map->center_x -= dx / world;
+	map->center_x = rvn_map_wrap(map->center_x - dx / world);
 	map->center_y -= dy / world;
 }
 
@@ -661,7 +688,7 @@ static int rvn_map_zoom_at(rvn_map_t* map, double delta, float x, float y) {
 	wx = map->center_x + (x - width / 2.0) / before;
 	wy = map->center_y + (y - height / 2.0) / before;
 	map->zoom = zoom;
-	map->center_x = wx - (x - width / 2.0) / rvn_map_world(map);
+	map->center_x = rvn_map_wrap(wx - (x - width / 2.0) / rvn_map_world(map));
 	map->center_y = wy - (y - height / 2.0) / rvn_map_world(map);
 	return R_TRUE;
 }
@@ -858,7 +885,7 @@ void Rmap_set_center(Rid id, double latitude, double longitude) {
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_MAP);
 	map = (rvn_map_t*)widget;
 	latitude = rvn_map_clampd(latitude, -85.0511287798, 85.0511287798);
-	map->center_x = (longitude + 180.0) / 360.0;
+	map->center_x = rvn_map_wrap((longitude + 180.0) / 360.0);
 	map->center_y = (1.0 - asinh(tan(latitude * pi / 180.0)) / pi) / 2.0;
 	rvn_map_moved(map);
 }

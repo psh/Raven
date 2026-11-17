@@ -358,12 +358,13 @@ typedef struct rvn_map_view_t {
 rvn_map_labels_t* rvn_map_labels_create(void);
 void rvn_map_labels_free(rvn_map_labels_t* labels);
 /**
- * Draws the labels of the tiles, placing them again when the view has moved
+ * Draws the labels of the tiles, each in its copy of the world (`copies`: 0,
+ * or a world east or west past the antimeridian), placing them again when the view has moved
  * too far, the tiles or the sprite changed (`version`), or the camera has
  * `settled` somewhere other than where they were placed.
  */
 void rvn_map_labels_draw(rvn_map_labels_t* labels, RPainter* painter, const rvn_map_style_t* style,
-	const rvn_map_prepared_t* const* tiles, uint32_t tile_count, const rvn_map_view_t* view, int version, int settled,
+	const rvn_map_prepared_t* const* tiles, const int* copies, uint32_t tile_count, const rvn_map_view_t* view, int version, int settled,
 	const rvn_map_sprite_t* sprite, rvn_map_label_stats_t* stats);
 
 /* ---------------------------------------------------------------------------

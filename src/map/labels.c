@@ -767,7 +767,7 @@ static int rvn_label_face(const rvn_map_style_layer_t* layer, double zoom) {
 }
 
 /* Places the labels of the tiles: layer by layer, the style's last first, each only where its boxes overlap none placed before. */
-static void rvn_place_labels(rvn_map_labels_t* labels, const rvn_map_style_t* style, const rvn_map_prepared_t* const* tiles, uint32_t tile_count) {
+static void rvn_place_labels(rvn_map_labels_t* labels, const rvn_map_style_t* style, const rvn_map_prepared_t* const* tiles, const int* copies, uint32_t tile_count) {
 	const rvn_map_view_t* view = labels->view;
 	const double zoom = view->zoom, world = 512.0 * pow(2.0, zoom);
 	uint32_t l, t, i;
@@ -823,7 +823,7 @@ static void rvn_place_labels(rvn_map_labels_t* labels, const rvn_map_style_t* st
 			const rvn_map_symbol_bucket_t* bucket;
 			double n = (double)(1 << tile->z);
 			float scale = (float)(world / n);
-			float ox = (float)((tile->x / n - view->center_x) * world + view->width / 2.0);
+			float ox = (float)((tile->x / n + copies[t] - view->center_x) * world + view->width / 2.0);
 			float oy = (float)((tile->y / n - view->center_y) * world + view->height / 2.0);
 			if (l >= tile->symbol_count) continue;
 			bucket = &tile->symbols[l];
@@ -855,13 +855,15 @@ static void rvn_label_text(RPainter* painter, Rid font, float size, float x, flo
 }
 
 void rvn_map_labels_draw(rvn_map_labels_t* labels, RPainter* painter, const rvn_map_style_t* style,
-	const rvn_map_prepared_t* const* tiles, uint32_t tile_count, const rvn_map_view_t* view, int version, int settled,
+	const rvn_map_prepared_t* const* tiles, const int* copies, uint32_t tile_count, const rvn_map_view_t* view, int version, int settled,
 	const rvn_map_sprite_t* sprite, rvn_map_label_stats_t* stats) {
 	/* four diagonals around a letter, for its halo: as wide as eight directions to the eye, at half the draws */
 	static const float halo[4][2] = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { -1.0f, 1.0f }, { 1.0f, 1.0f } };
 	double start = rvn_clock_seconds(), world = 512.0 * pow(2.0, view->zoom);
 	float scale = labels->placed_once ? (float)pow(2.0, view->zoom - labels->zoom) : 1.0f;
-	float dx = (float)((labels->center_x - view->center_x) * world), dy = (float)((labels->center_y - view->center_y) * world);
+	/* the centre wraps at the antimeridian: the pan is the shorter way round */
+	double pan_x = labels->center_x - view->center_x - floor(labels->center_x - view->center_x + 0.5);
+	float dx = (float)(pan_x * world), dy = (float)((labels->center_y - view->center_y) * world);
 	float cx = view->width / 2.0f, cy = view->height / 2.0f;
 	int moved = labels->zoom != view->zoom || dx != 0.0f || dy != 0.0f;
 	int stale = !labels->placed_once || fabs(view->zoom - labels->zoom) > 0.25 || labels->width != view->width ||
@@ -871,7 +873,7 @@ void rvn_map_labels_draw(rvn_map_labels_t* labels, RPainter* painter, const rvn_
 	labels->view = view;
 	labels->sprite = sprite;
 	if (stale) {
-		rvn_place_labels(labels, style, tiles, tile_count);
+		rvn_place_labels(labels, style, tiles, copies, tile_count);
 		labels->placed_once = R_TRUE;
 		labels->zoom = view->zoom;
 		labels->width = view->width;
