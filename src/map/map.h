@@ -3,10 +3,6 @@
  * The parts of the Map widget (widgets/map.c) that know nothing of widgets:
  * JSON and tile values, Mapbox Vector Tiles, MapLibre's style JSON and its
  * expressions, earcut, and tiles prepared for drawing.
- *
- * Ported from compose-raven's maps spike (compose/spikes/maps), which stays
- * the reference: the same algorithms, so the two can be measured against
- * each other.
  */
 
 #ifndef RVN_MAP_H

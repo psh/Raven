@@ -13,11 +13,11 @@
  * same tiles are drawn again, a world over, and the centre is kept within 0
  * to 1 across as the map pans.
  *
- * The tile store follows the Kotlin spike's TileStore: each frame asks for
- * the tiles it needs and their ancestors down to the nearest ready one, then
- * cancels those asked for that it no longer needs; past the capacity, the
- * tiles used least recently go, except those of the last two frames; a tile
- * that failed is asked for again after a while.
+ * The tile store: each frame asks for the tiles it needs and their ancestors
+ * down to the nearest ready one, then cancels those asked for that it no
+ * longer needs; past the capacity, the tiles used least recently go, except
+ * those of the last two frames; a tile that failed is asked for again after
+ * a while.
  *
  * A tile's bytes go through two tasks: from any thread, Rmap_tile_loaded
  * posts them to the thread of the interface, which starts their preparation

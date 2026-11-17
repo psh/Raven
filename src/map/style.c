@@ -3,8 +3,8 @@
  * MapLibre's style JSON (maplibre.org/maplibre-style-spec), the part fill and
  * line layers need: a layer's source layer, zoom range, filter and paint, and
  * the expressions they are written in. A fill extrusion is drawn as a flat
- * fill, as from straight above. Left out, as in the Kotlin spike: patterns,
- * line-offset, and data-driven paint (a paint value that reads a feature's
+ * fill, as from straight above. Left out: patterns, line-offset, and
+ * data-driven paint (a paint value that reads a feature's
  * properties).
  */
 

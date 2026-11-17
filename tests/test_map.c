@@ -1,8 +1,7 @@
 /**
  * Raven tests - the Map widget: its parts (JSON, tiles, earcut, the style's
- * expressions and colours, dashes and offsets) against the same cases as the
- * Kotlin spike it was ported from (compose/spikes/maps, MapsTest.kt), then
- * the widget itself, headless, on tiles written here by hand.
+ * expressions and colours, dashes and offsets), then the widget itself,
+ * headless, on tiles written here by hand.
  *
  * The parts are internal (src/map/map.h): this test links Raven statically.
  */
@@ -631,7 +630,7 @@ static void test_map_widget(void) {
 	CHECK(Rmap_get_zoom(map) == 14.5);
 	Rdraw_frame();
 	Rmap_get_stats(map, &stats);
-	/* the lake (two triangles) and the road (one segment; as in the spike, fills' outlines aren't counted) */
+	/* the lake (two triangles) and the road (one segment; fills' outlines aren't counted) */
 	CHECK(stats.tiles == 1);
 	CHECK(stats.triangles == 2);
 	CHECK(stats.segments == 1);
@@ -677,7 +676,7 @@ static void test_map_widget(void) {
 }
 
 /* ---------------------------------------------------------------------------
- *  The tile store, as the spike's TileStoreTest has it
+ *  The tile store
  * ------------------------------------------------------------------------- */
 
 #define MAX_ASKED 64

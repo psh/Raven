@@ -1,19 +1,18 @@
 /**
  * Raven - map/labels.c
- * Labels, as MapLibre's symbol layers place them, in part (the Kotlin spike's
- * Labels.kt): the text of text-field, at text-size, in the face text-font
- * names (regular, bold or italic: Raven's default font, with the faces it
- * derives), in text-color with a text-halo-color halo text-halo-width wide,
- * with the icon-image of the style's sprite sheet at icon-size, and kept
- * apart by collision, the layers higher in the style first. At a point, the
- * icon on it and the text wrapped at text-max-width and placed by
- * text-anchor and text-offset; along a line, every symbol-spacing: glyph by
- * glyph, each turned to the line where it stands, reading left to right,
- * and left out where the line bends more than 45 degrees between two
- * glyphs; or upright, an icon with its text (road shields); or, an icon
- * alone, turned to the line where it stands, plus icon-rotate (one-way
- * arrows). Left out: the style's own fonts, letter spacing, halo blur, and
- * fading in and out.
+ * Labels, as MapLibre's symbol layers place them, in part: the text of
+ * text-field, at text-size, in the face text-font names (regular, bold or
+ * italic: Raven's default font, with the faces it derives), in text-color
+ * with a text-halo-color halo text-halo-width wide, with the icon-image of
+ * the style's sprite sheet at icon-size, and kept apart by collision, the
+ * layers higher in the style first. At a point, the icon on it and the text
+ * wrapped at text-max-width and placed by text-anchor and text-offset; along
+ * a line, every symbol-spacing: glyph by glyph, each turned to the line
+ * where it stands, reading left to right, and left out where the line bends
+ * more than 45 degrees between two glyphs; or upright, an icon with its text
+ * (road shields); or, an icon alone, turned to the line where it stands,
+ * plus icon-rotate (one-way arrows). Left out: the style's own fonts, letter
+ * spacing, halo blur, and fading in and out.
  *
  * The placement is kept and moves with the map, as MapLibre's labels do
  * between placements: through a pan of up to a quarter of the view or a

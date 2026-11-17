@@ -1,8 +1,6 @@
 /**
  * Raven - the Map widget's benchmark. Not a test: it prints what preparing
- * tiles and drawing a view cost, measured as the Kotlin maps spike measures
- * them (compose/spikes/maps, MapsBenchmark in MapsTest.kt), so the two can be
- * compared.
+ * tiles and drawing a view cost.
  *
  *   raven_map_benchmark <data>
  *
@@ -149,7 +147,7 @@ int main(int argc, char** argv) {
 		(double)stats.memory_bytes / (1024.0 * 1024.0));
 
 	/* the Loop at zoom 14, drawn again and again, panned a hundredth of a unit each frame: 800 by 600
-	   (the Kotlin spike's test window) and 1200 by 800 */
+	   and 1200 by 800 */
 	world = 512.0 * pow(2.0, 14.0);
 	for (size = 0; size < 2; size++) {
 		const int width = size == 0 ? 800 : 1200, height = size == 0 ? 600 : 800;

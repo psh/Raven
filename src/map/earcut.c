@@ -3,8 +3,8 @@
  * A port of Mapbox's earcut (github.com/mapbox/earcut, ISC licence), the
  * polygon triangulation MapLibre uses: ear clipping on a linked list of the
  * outer ring, with holes bridged into it first, and two fallbacks for rings
- * that intersect themselves. As in the Kotlin spike, the z-order hash that
- * speeds ear tests up on large polygons is left out.
+ * that intersect themselves. The z-order hash that speeds ear tests up on
+ * large polygons is left out.
  */
 
 #include "map.h"
