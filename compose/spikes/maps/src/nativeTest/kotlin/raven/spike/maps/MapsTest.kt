@@ -130,7 +130,27 @@ class MapsTest {
         // 1200 by 800 at zoom 14 on 512-pixel tiles: at most 4 by 3 tiles.
         val tiles = visibleTiles(camera, 1200f, 800f, 14)
         assertTrue(tiles.size in 6..12, "${tiles.size} tiles")
-        assertTrue(tiles.all { it.z == 14 })
+        assertTrue(tiles.all { it.tile.z == 14 && it.copy == 0 })
+    }
+
+    @Test
+    fun theWorldRepeatsPastTheAntimeridian() {
+        // Over the Pacific at zoom 2 (a 2048-pixel world), a 1200-pixel view sees Asia west of
+        // the line and the Americas east of it: the last column of tiles, then the first again.
+        val camera = Camera.at(0.0, 179.0, 2.0)
+        val tiles = visibleTiles(camera, 1200f, 800f, 2)
+        assertTrue(tiles.any { it.tile.x == 3 && it.copy == 0 }, "$tiles")
+        assertTrue(tiles.any { it.tile.x == 0 && it.copy == 1 }, "$tiles")
+        assertTrue(tiles.all { it.tile.x in 0..3 })
+        // Panned east across the line, the centre comes back into the world, at the same meridian.
+        val before = camera.centerX
+        camera.pan(-100f, 0f)
+        assertTrue(camera.centerX in 0.0..<1.0)
+        assertEquals(before + 100 / camera.worldSize - 1, camera.centerX, 1e-12)
+        // A tile drawn from the next copy sits a world further east than the same tile in the first.
+        val (first) = tileOrigin(TileId(2, 0, 1), 0, camera, 1200f, 800f)
+        val (next) = tileOrigin(TileId(2, 0, 1), 1, camera, 1200f, 800f)
+        assertEquals(camera.worldSize.toFloat(), next - first, 1e-3f)
     }
 
     /** Against fetch-data's tiles when they are there: what each style layer gets from the Loop's tile. */

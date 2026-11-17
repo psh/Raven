@@ -34,6 +34,7 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.pow
+import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.time.TimeSource
@@ -258,7 +259,7 @@ class SpriteSheet(val sprite: Sprite, val image: ImageBitmap)
  */
 fun DrawScope.drawLabels(
     style: Style,
-    tiles: List<PreparedTile>,
+    tiles: List<Placed<PreparedTile>>,
     camera: Camera,
     measure: TextMeasure,
     stats: LabelStats,
@@ -270,7 +271,8 @@ fun DrawScope.drawLabels(
     val start = TimeSource.Monotonic.markNow()
     val world = camera.worldSize
     val k = (world / (TILE_SIZE * 2.0.pow(cache.zoom))).toFloat()
-    var dx = ((cache.centerX - camera.centerX) * world).toFloat()
+    // The centre wraps at the antimeridian: the pan is the shorter way round.
+    var dx = ((cache.centerX - camera.centerX).let { it - round(it) } * world).toFloat()
     var dy = ((cache.centerY - camera.centerY) * world).toFloat()
     val moved = cache.zoom != camera.zoom || dx != 0f || dy != 0f
     val stale = cache.zoom.isNaN() || abs(camera.zoom - cache.zoom) > 0.25 || cache.width != size.width || cache.height != size.height ||
@@ -345,9 +347,8 @@ private class Placement(val grid: CollisionGrid, val sprite: Sprite?, val measur
  * Places the labels of [tiles] under [camera]: layer by layer, the style's last first, each label
  * only where its boxes, padded, overlap none placed before it. Returns what to draw.
  */
-private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camera: Camera, measure: TextMeasure, stats: LabelStats, sprite: Sprite?): List<DrawOp> {
+private fun DrawScope.placeLabels(style: Style, tiles: List<Placed<PreparedTile>>, camera: Camera, measure: TextMeasure, stats: LabelStats, sprite: Sprite?): List<DrawOp> {
     val zoom = camera.zoom
-    val world = camera.worldSize
     val placement = Placement(CollisionGrid(), sprite, measure)
     for (layer in style.symbols.asReversed()) {
         if (zoom < layer.minZoom || zoom >= layer.maxZoom) continue
@@ -373,12 +374,9 @@ private fun DrawScope.placeLabels(style: Style, tiles: List<PreparedTile>, camer
             upright = layer.layout("text-rotation-alignment", zoom) == "viewport",
             iconRotate = (layer.layout("icon-rotate", zoom) as? Double ?: 0.0).toFloat(),
         )
-        for (tile in tiles) {
+        for ((tile, copy) in tiles) {
             val bucket = tile.buckets[layer.id] ?: continue
-            val n = (1 shl tile.id.z).toDouble()
-            val scale = (world / n).toFloat()
-            val ox = ((tile.id.x / n - camera.centerX) * world + size.width / 2).toFloat()
-            val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
+            val (ox, oy, scale) = tileOrigin(tile.id, copy, camera, size.width, size.height)
             for (label in bucket.lineLabels) {
                 placement.candidates++
                 val text = label.text

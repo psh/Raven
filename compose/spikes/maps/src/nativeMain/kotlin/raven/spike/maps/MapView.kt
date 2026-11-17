@@ -41,7 +41,8 @@ internal const val TILE_SIZE = 512.0
 
 /**
  * Where the map looks: its centre in Web Mercator's unit square (0 to 1 across, from the
- * antimeridian and the north edge), and the zoom, fractional.
+ * antimeridian and the north edge), and the zoom, fractional. The world repeats east and west, so
+ * the centre's x is kept within 0 to 1 as the map pans past the antimeridian.
  */
 class Camera(centerX: Double, centerY: Double, zoom: Double) {
     var centerX by mutableDoubleStateOf(centerX)
@@ -50,19 +51,25 @@ class Camera(centerX: Double, centerY: Double, zoom: Double) {
 
     val worldSize: Double get() = TILE_SIZE * 2.0.pow(zoom)
 
+    /** Moves the map by ([dx], [dy]) pixels: the point under the pointer follows it. */
+    fun pan(dx: Float, dy: Float) {
+        centerX = wrapX(centerX - dx / worldSize)
+        centerY -= dy / worldSize
+    }
+
     /** Zooms by [delta] keeping the point under ([x], [y]) of a [width] by [height] view where it is. */
     fun zoomAt(delta: Double, x: Float, y: Float, width: Float, height: Float, minZoom: Double, maxZoom: Double) {
         val before = worldSize
         val wx = centerX + (x - width / 2) / before
         val wy = centerY + (y - height / 2) / before
         zoom = (zoom + delta).coerceIn(minZoom, maxZoom)
-        centerX = wx - (x - width / 2) / worldSize
+        centerX = wrapX(wx - (x - width / 2) / worldSize)
         centerY = wy - (y - height / 2) / worldSize
     }
 
     companion object {
         fun at(latitude: Double, longitude: Double, zoom: Double): Camera = Camera(
-            (longitude + 180) / 360,
+            wrapX((longitude + 180) / 360),
             (1 - asinh(tan(latitude * PI / 180)) / PI) / 2,
             zoom,
         )
@@ -79,18 +86,38 @@ class DrawStats {
     var tiles = 0
 }
 
-/** The tiles at the zoom the map draws from that cover a [width] by [height] view of [camera]. */
-fun visibleTiles(camera: Camera, width: Float, height: Float, tileZoom: Int): List<TileId> {
+/** [x] in Web Mercator's unit square, brought within 0 to 1: the same meridian, round the world. */
+internal fun wrapX(x: Double): Double = x - floor(x)
+
+/** [tile], drawn [copy] worlds east of the first (west, when negative): the world repeats past the antimeridian. */
+data class Placed<T>(val tile: T, val copy: Int)
+
+/** Where tile [id] of the world's [copy] begins in a [width] by [height] view of [camera], and how wide it is. */
+internal fun tileOrigin(id: TileId, copy: Int, camera: Camera, width: Float, height: Float): Triple<Float, Float, Float> {
+    val world = camera.worldSize
+    val n = (1 shl id.z).toDouble()
+    return Triple(
+        ((id.x / n + copy - camera.centerX) * world + width / 2).toFloat(),
+        ((id.y / n - camera.centerY) * world + height / 2).toFloat(),
+        (world / n).toFloat(),
+    )
+}
+
+/**
+ * The tiles at the zoom the map draws from that cover a [width] by [height] view of [camera], east
+ * and west past the antimeridian too: there, the same tiles again, in the world's next copy.
+ */
+fun visibleTiles(camera: Camera, width: Float, height: Float, tileZoom: Int): List<Placed<TileId>> {
     val n = 1 shl tileZoom
     val half = camera.worldSize
     val left = camera.centerX - width / 2 / half
     val right = camera.centerX + width / 2 / half
     val top = camera.centerY - height / 2 / half
     val bottom = camera.centerY + height / 2 / half
-    val tiles = ArrayList<TileId>()
+    val tiles = ArrayList<Placed<TileId>>()
     for (x in floor(left * n).toInt()..floor(right * n).toInt()) {
         for (y in floor(top * n).toInt()..floor(bottom * n).toInt()) {
-            if (x in 0 until n && y in 0 until n) tiles += TileId(tileZoom, x, y)
+            if (y in 0 until n) tiles += Placed(TileId(tileZoom, x.mod(n), y), x.floorDiv(n))
         }
     }
     return tiles
@@ -121,27 +148,23 @@ fun DrawScope.drawMap(
     val zoom = camera.zoom
     val tileZoom = floor(zoom).toInt().coerceIn(store.minZoom, store.maxZoom)
     val wanted = visibleTiles(camera, size.width, size.height, tileZoom)
-    val tiles = wanted.mapNotNull { store.bestReady(it) }.distinctBy { it.id }
+    val tiles = wanted.mapNotNull { (id, copy) -> store.bestReady(id)?.let { Placed(it, copy) } }.distinct()
     // Tiles panned or zoomed past stop being fetched.
-    store.retain(wanted)
-    lineShapes.retain(tiles.map { it.id })
+    store.retain(wanted.map { it.tile })
+    lineShapes.retain(tiles.map { it.tile.id })
     var triangles = 0
     var segments = 0
     var fillTime = kotlin.time.Duration.ZERO
     var lineTime = kotlin.time.Duration.ZERO
-    val world = camera.worldSize
     for (layer in style.layers) {
         if (zoom < layer.minZoom || zoom >= layer.maxZoom) continue
         val fill = layer.isFill
         val color = layer.drawColor(zoom) ?: continue
         if (color.alpha <= 0f) continue
         val width = if (fill) 0f else layer.number("line-width", zoom, 1.0).toFloat()
-        for (tile in tiles) {
+        for ((tile, copy) in tiles) {
             val bucket = tile.buckets[layer.id] ?: continue
-            val n = (1 shl tile.id.z).toDouble()
-            val scale = (world / n).toFloat()
-            val ox = ((tile.id.x / n - camera.centerX) * world + size.width / 2).toFloat()
-            val oy = ((tile.id.y / n - camera.centerY) * world + size.height / 2).toFloat()
+            val (ox, oy, scale) = tileOrigin(tile.id, copy, camera, size.width, size.height)
             // Tiles carry a buffer past their edges: clipped to the tile, a translucent fill isn't drawn twice there.
             clipRect(ox, oy, ox + scale, oy + scale) {
                 val part = TimeSource.Monotonic.markNow()
@@ -236,8 +259,7 @@ fun MapScreen(style: Style, store: TileStore, camera: Camera, sprite: Sprite? = 
                 .onPointerEvent(PointerEventType.Release) { dragging = null }
                 .onPointerEvent(PointerEventType.Move) { event ->
                     val from = dragging ?: return@onPointerEvent
-                    camera.centerX -= (event.position.x - from.x) / camera.worldSize
-                    camera.centerY -= (event.position.y - from.y) / camera.worldSize
+                    camera.pan(event.position.x - from.x, event.position.y - from.y)
                     dragging = event.position
                 }
                 .onPointerEvent(PointerEventType.Scroll) { event ->
