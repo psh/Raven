@@ -113,7 +113,8 @@ closes.
 
 Closed on 2026-11-18 with the destination reached: Raven MCP's design is written into
 `compose/docs/mcp.md` and [ADR 0003](../adr/0003-raven-mcp-on-the-kotlin-sdk.md), and every ticket
-is archived. Implementation tickets are charted next. The patches below are the fog that remains:
+is archived. Implementation is charted as tickets 0166 to 0182, starting from
+[The Raven MCP library](0174-the-raven-mcp-library.md). The patches below are the fog that remains:
 each waits for a real need, and they seed a later map when one is charted.
 
 - **Resources and prompts**: MCP resources (an app's state as readable URIs, the widget tree as

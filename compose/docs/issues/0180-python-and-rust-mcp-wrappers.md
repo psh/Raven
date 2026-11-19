@@ -1,0 +1,15 @@
+---
+status: open
+---
+
+# Python and Rust MCP wrappers
+
+`raven_mcp` for Python and `raven::mcp` for Rust. Design: [Python and Rust](../mcp.md#python-and-rust).
+
+**Depends on:** [Shipping Raven MCP](0175-shipping-raven-mcp.md).
+
+## Deliverables
+
+- [ ] Python `raven_mcp` in the optional package: `@mcp.tool` with the schema from type hints and `Annotated`, the return value as the reply, `call: Call` for later replies, `mcp.remove_tool`, `mcp.start(...)`.
+- [ ] Rust `raven::mcp` behind the `mcp` feature: the builder, serde arguments with a `schemars` schema, `ToolHandle` (drop withdraws, `.forget()`), `add_deferred` with a consuming `Call`.
+- [ ] The notepad's `notes.*` tools in both, tested through a client.

@@ -82,9 +82,9 @@ closes.
 
 Closed on 2026-11-18 with the design destination reached: every step the skills ask of the stack has
 a Raven equivalent, written into `compose/docs/agent-skills.md` (and `mcp.md` for Raven MCP), and
-every ticket is archived. Implementation tickets are charted next. **Verifying each skill on a
-sample**, the destination's proof that a skill works, moves into that implementation as its final
-acceptance step, since it can't run until the driver, `raven_preview`, the test harnesses and the
+every ticket is archived. Implementation is charted as tickets 0166 to 0182. **Verifying each skill
+on a sample**, the destination's proof that a skill works, is their last:
+[Verify the skills on Raven's samples](0182-verify-the-skills-on-samples.md), since it can't run until the driver, `raven_preview`, the test harnesses and the
 `raven` skill exist. Skills that go wrong there despite the guidance become issues on
 `mattpocock/skills` with their evidence
 ([Neutral wordings for the skills](archive/0165-neutral-wordings-for-the-skills.md)). The patches
