@@ -25,6 +25,7 @@ include(
     ":compose-raven-map",
     ":compose-raven-navigation3",
     ":compose-raven-test",
+    ":raven-mcp",
     ":samples:animations",
     ":samples:hello",
     ":samples:music",

@@ -1,0 +1,56 @@
+# Raven's C API as Raven MCP sees it. The library defines the Rmcp_* functions itself (Exports.kt),
+# so the header's declarations of them are left out. Linked against the shared libraven by
+# build.gradle.kts, never a static copy.
+headers = raven/raven_core.h raven/raven_mcp.h
+headerFilter = raven/raven_core.h raven/raven_mcp.h
+package = raven.mcp.cinterop
+excludedFunctions = Rmcp_start Rmcp_stop Rmcp_get_url Rmcp_config_from_environment \
+    Rmcp_tool_add Rmcp_tool_remove Rmcp_tool_remove_all Rmcp_expose_actions Rmcp_expose_action \
+    Rmcp_call_reply Rmcp_call_reply_json Rmcp_call_fail Rmcp_call_is_cancelled
+
+---
+#include <time.h>
+#if defined(__APPLE__)
+#include <stdlib.h>
+#else
+extern char* program_invocation_short_name;
+#endif
+
+/* The program's name, for the default server name. */
+static inline const char* rmcp_program_name(void) {
+#if defined(__APPLE__)
+    return getprogname();
+#else
+    return program_invocation_short_name;
+#endif
+}
+
+/* Raven's own clock (rvn_clock_seconds on POSIX): "now - Rget_time()" names a run of Raven. */
+static inline double rmcp_monotonic_seconds(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+}
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <string.h>
+
+/* 1 when nothing listens on 127.0.0.1:port, so Raven MCP can take it. SO_REUSEADDR, as Ktor binds,
+   so connections still in TIME_WAIT don't count; closed straight away, it leaves nothing behind. */
+static inline int rmcp_port_is_free(int port) {
+    struct sockaddr_in address;
+    int fd = socket(AF_INET, SOCK_STREAM, 0), free_ = 0;
+    if (fd < 0) return 0;
+    int reuse = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_port = htons((unsigned short)port);
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    free_ = bind(fd, (struct sockaddr*)&address, sizeof(address)) == 0;
+    close(fd);
+    return free_;
+}
