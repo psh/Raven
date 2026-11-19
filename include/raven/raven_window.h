@@ -330,6 +330,17 @@ extern "C" {
 	RAVEN_API void Rwindow_destroy(Rid window);
 	RAVEN_API int Rwindow_is_valid(Rid window);
 
+	/** @return The number of open windows, hidden ones included. */
+	RAVEN_API int Rwindow_get_count(void);
+
+	/**
+	 * @brief An open window, from 0 to Rwindow_get_count() - 1. The order is the
+	 * order of creation until a window closes; after that, a new window may
+	 * take its place.
+	 * @return R_INVALID_ID for an index out of range.
+	 */
+	RAVEN_API Rid Rwindow_get(int index);
+
 	/**
 	 * @brief Sets the root widget of the window. The window takes ownership of
 	 * the widget; the previous content is deleted.

@@ -153,7 +153,8 @@ RAVEN_API int Rwait_idle(int max_frames);
 - **Input first.** Actions are real input, so a disabled button can't be pressed by a test or an
   agent either. `Raccessible_act` is there for what input can't reach reliably.
 - **Idle and timers.** `Ris_idle` is what `Rwait_events` already works out. Timers count only when
-  asked, because a repeating timer would otherwise keep an app busy for ever. A live tool waits by
+  asked, because a repeating timer would otherwise keep an app busy for ever. For the same reason a
+  continuous window (or a realtime viewport) is idle once its frame is drawn. A live tool waits by
   checking `Ris_idle` after each frame, as compose-raven's `awaitIdle` does.
 - **Fixes that come with it.** List, tree and tab rows carry their own rects (today they carry their
   widget's), there are `Rbutton_get_text` and `Rwidget_get_accessible_description`, and finding

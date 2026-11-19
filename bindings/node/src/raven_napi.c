@@ -50,6 +50,8 @@ static struct {
 	int (*Ris_running)(void);
 	void (*Rpoll_events)(void);
 	void (*Rwait_events)(double);
+	int (*Ris_idle)(int);
+	int (*Rwait_idle)(int);
 	void (*Rset_frame_callback)(RFrameCallback, void*);
 	double (*Rget_delta_time)(void);
 	double (*Rget_time)(void);
@@ -90,6 +92,8 @@ static struct {
 	Rid (*Rwindow_create)(const char*, int, int, Ruint);
 	void (*Rwindow_destroy)(Rid);
 	int (*Rwindow_is_valid)(Rid);
+	int (*Rwindow_get_count)(void);
+	Rid (*Rwindow_get)(int);
 	void (*Rwindow_set_content)(Rid, Rid);
 	Rid (*Rwindow_get_content)(Rid);
 	void (*Rwindow_set_title)(Rid, const char*);
@@ -1209,6 +1213,8 @@ static const struct {
 	{"Ris_running", offsetof(__typeof__(rn), Ris_running)},
 	{"Rpoll_events", offsetof(__typeof__(rn), Rpoll_events)},
 	{"Rwait_events", offsetof(__typeof__(rn), Rwait_events)},
+	{"Ris_idle", offsetof(__typeof__(rn), Ris_idle)},
+	{"Rwait_idle", offsetof(__typeof__(rn), Rwait_idle)},
 	{"Rset_frame_callback", offsetof(__typeof__(rn), Rset_frame_callback)},
 	{"Rget_delta_time", offsetof(__typeof__(rn), Rget_delta_time)},
 	{"Rget_time", offsetof(__typeof__(rn), Rget_time)},
@@ -1249,6 +1255,8 @@ static const struct {
 	{"Rwindow_create", offsetof(__typeof__(rn), Rwindow_create)},
 	{"Rwindow_destroy", offsetof(__typeof__(rn), Rwindow_destroy)},
 	{"Rwindow_is_valid", offsetof(__typeof__(rn), Rwindow_is_valid)},
+	{"Rwindow_get_count", offsetof(__typeof__(rn), Rwindow_get_count)},
+	{"Rwindow_get", offsetof(__typeof__(rn), Rwindow_get)},
 	{"Rwindow_set_content", offsetof(__typeof__(rn), Rwindow_set_content)},
 	{"Rwindow_get_content", offsetof(__typeof__(rn), Rwindow_get_content)},
 	{"Rwindow_set_title", offsetof(__typeof__(rn), Rwindow_set_title)},
@@ -4682,6 +4690,32 @@ static napi_value rn_w_Rwait_events(napi_env env, napi_callback_info info) {
 	return result_;
 }
 
+static napi_value rn_w_Ris_idle(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Ris_idle((int)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwait_idle(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rwait_idle((int)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
 static napi_value rn_w_Rset_frame_callback(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -5311,6 +5345,28 @@ static napi_value rn_w_Rwindow_is_valid(napi_env env, napi_callback_info info) {
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	int value_ = rn.Rwindow_is_valid((Rid)a0);
 	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_count(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rwindow_get_count();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	Rid value_ = rn.Rwindow_get((int)a0);
+	napi_create_uint32(env, value_, &result_);
 	return result_;
 }
 
@@ -23610,6 +23666,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Ris_running", NULL, rn_w_Ris_running, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rpoll_events", NULL, rn_w_Rpoll_events, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwait_events", NULL, rn_w_Rwait_events, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Ris_idle", NULL, rn_w_Ris_idle, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwait_idle", NULL, rn_w_Rwait_idle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rset_frame_callback", NULL, rn_w_Rset_frame_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rget_delta_time", NULL, rn_w_Rget_delta_time, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rget_time", NULL, rn_w_Rget_time, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23650,6 +23708,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_create", NULL, rn_w_Rwindow_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_destroy", NULL, rn_w_Rwindow_destroy, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_is_valid", NULL, rn_w_Rwindow_is_valid, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_count", NULL, rn_w_Rwindow_get_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get", NULL, rn_w_Rwindow_get, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_content", NULL, rn_w_Rwindow_set_content, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_content", NULL, rn_w_Rwindow_get_content, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_title", NULL, rn_w_Rwindow_set_title, NULL, NULL, NULL, napi_enumerable, NULL},

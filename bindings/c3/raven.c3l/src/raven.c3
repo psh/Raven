@@ -1689,7 +1689,11 @@ struct InitDesc
 	CInt disable_vsync;
 	<* R_TRUE enables the backend debug layer (Vulkan validation) when installed. *>
 	CInt enable_validation;
-	<* R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests. *>
+	<*
+	 R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+	 rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+	 screen and can be captured (tests/test_render.c).
+	*>
 	CInt headless;
 	<* Global UI scale multiplier applied on top of the monitor scale. 0 = 1.0. *>
 	float ui_scale;
@@ -4895,6 +4899,17 @@ fn void Window.destroy(self) @inline => c::r_window_destroy((c::Rid)self);
 
 fn bool Window.is_valid(self) @inline => c::r_window_is_valid((c::Rid)self) != 0;
 
+<* Returns The number of open windows, hidden ones included. *>
+alias window_get_count = c::r_window_get_count;
+
+<*
+ An open window, from 0 to Rwindow_get_count() - 1. The order is the
+ order of creation until a window closes; after that, a new window may
+ take its place.
+ Returns R_INVALID_ID for an index out of range.
+*>
+fn Window window_get(CInt index) @inline => (Window)c::r_window_get(index);
+
 <*
  Sets the root widget of the window. The window takes ownership of
  the widget; the previous content is deleted.
@@ -5956,6 +5971,22 @@ alias poll_events = c::r_poll_events;
  redraw, and processes the OS events. Rwait_frame does it already.
 *>
 alias wait_events = c::r_wait_events;
+
+<*
+ Whether the app has nothing pending: no posted task, no window to
+ lay out or paint, nothing animating. What Rwait_frame would wait for.
+ A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+ does work on worker threads until it posts a task.
+*>
+fn bool is_idle(CInt count_timers) @inline => c::r_is_idle(count_timers) != 0;
+
+<*
+ Draws frames until Ris_idle(R_FALSE), for tests, previews and
+ scripts. Never from inside a callback (it is refused and reported): there,
+ check Ris_idle once a frame instead, with Rtask_post.
+ Returns R_FALSE when still busy after max_frames, or when the app quits.
+*>
+fn bool wait_idle(CInt max_frames) @inline => c::r_wait_idle(max_frames) != 0;
 
 fn void set_frame_callback(FrameCallback callback, void* user_data) @inline => c::r_set_frame_callback((c::RFrameCallback)callback, user_data);
 

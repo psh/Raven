@@ -644,6 +644,35 @@ void Rwait_events(double timeout_seconds) {
 	g_rvn.platform->pump(timeout_seconds);
 }
 
+int Ris_idle(int count_timers) {
+	uint32_t i;
+	RVN_API_GUARD(R_TRUE);
+	if (rvn_tasks_pending() || rvn_atomic_load(&g_rvn.redraw_all)) return R_FALSE;
+	if (count_timers && rvn_timers_next_delay() >= 0.0) return R_FALSE;
+	for (i = 0; i < g_rvn.windows.used; i++) {
+		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
+		if (window && rvn_window_busy(window)) return R_FALSE;
+	}
+	return R_TRUE;
+}
+
+int Rwait_idle(int max_frames) {
+	int frame;
+	RVN_API_GUARD(R_FALSE);
+	/* frames drawn from inside a callback would run the app's callbacks inside one of its own */
+	if (g_rvn.in_update || g_rvn.dispatch_depth > 0) {
+		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_ERROR,
+			"Rwait_idle: not from inside a callback (check Ris_idle once a frame instead)");
+		return R_FALSE;
+	}
+	for (frame = 0; frame < max_frames; frame++) {
+		if (Ris_idle(R_FALSE)) return R_TRUE;
+		/* (bounded: a window waiting for the compositor sleeps until it answers) */
+		if (!Rwait_frame(0.1)) break;
+	}
+	return Ris_idle(R_FALSE);
+}
+
 void rvn_update(void) {
 	double now;
 	uint32_t i;

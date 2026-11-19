@@ -1452,7 +1452,11 @@ struct RInitDesc
 	CInt disable_vsync;
 	<* R_TRUE enables the backend debug layer (Vulkan validation) when installed. *>
 	CInt enable_validation;
-	<* R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests. *>
+	<*
+	 R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+	 rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+	 screen and can be captured (tests/test_render.c).
+	*>
 	CInt headless;
 	<* Global UI scale multiplier applied on top of the monitor scale. 0 = 1.0. *>
 	float ui_scale;
@@ -2064,6 +2068,22 @@ extern fn void r_poll_events() @cname("Rpoll_events");
 *>
 extern fn void r_wait_events(double timeout_seconds) @cname("Rwait_events");
 
+<*
+ Whether the app has nothing pending: no posted task, no window to
+ lay out or paint, nothing animating. What Rwait_frame would wait for.
+ A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+ does work on worker threads until it posts a task.
+*>
+extern fn CInt r_is_idle(CInt count_timers) @cname("Ris_idle");
+
+<*
+ Draws frames until Ris_idle(R_FALSE), for tests, previews and
+ scripts. Never from inside a callback (it is refused and reported): there,
+ check Ris_idle once a frame instead, with Rtask_post.
+ Returns R_FALSE when still busy after max_frames, or when the app quits.
+*>
+extern fn CInt r_wait_idle(CInt max_frames) @cname("Rwait_idle");
+
 extern fn void r_set_frame_callback(RFrameCallback callback, void* user_data) @cname("Rset_frame_callback");
 
 <* Returns Seconds between the last two frames. *>
@@ -2229,6 +2249,17 @@ extern fn Rid r_window_create(char* title, CInt width, CInt height, Ruint flags)
 extern fn void r_window_destroy(Rid window) @cname("Rwindow_destroy");
 
 extern fn CInt r_window_is_valid(Rid window) @cname("Rwindow_is_valid");
+
+<* Returns The number of open windows, hidden ones included. *>
+extern fn CInt r_window_get_count() @cname("Rwindow_get_count");
+
+<*
+ An open window, from 0 to Rwindow_get_count() - 1. The order is the
+ order of creation until a window closes; after that, a new window may
+ take its place.
+ Returns R_INVALID_ID for an index out of range.
+*>
+extern fn Rid r_window_get(CInt index) @cname("Rwindow_get");
 
 <*
  Sets the root widget of the window. The window takes ownership of

@@ -1051,6 +1051,15 @@ int rvn_window_wants_frame(rvn_window_t* window) {
 	return rvn_window_frame_in(window) == 0.0;
 }
 
+int rvn_window_busy(rvn_window_t* window) {
+	if (window->dead) return R_FALSE;
+	if (window->needs_layout || window->layout_spring_count > 0) return R_TRUE;
+	/* (a continuous window, or one with a realtime viewport, repaints for ever: that is its mode, not work pending) */
+	if (!rvn_window_can_paint(window) || !window->visible) return R_FALSE;
+	return window->needs_paint || rvn_atomic_load(&window->animating) != 0 || rvn_touch_animating(window) ||
+		rvn_atomic_load(&window->redraw_requested) != 0;
+}
+
 void rvn_widget_animate_layout(rvn_widget_t* widget, RSpring* spring, float target, RMotion motion) {
 	rvn_window_t* window = widget->window;
 	rvn_layout_spring_t* entry = NULL;
@@ -2120,6 +2129,27 @@ void Rwindow_destroy(Rid id) {
 
 int Rwindow_is_valid(Rid window) {
 	return g_rvn.initialized && rvn_window_get(window) != NULL;
+}
+
+int Rwindow_get_count(void) {
+	uint32_t i;
+	int count = 0;
+	RVN_API_GUARD(0);
+	for (i = 0; i < g_rvn.windows.used; i++) {
+		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
+		if (window && !window->dead) count++;
+	}
+	return count;
+}
+
+Rid Rwindow_get(int index) {
+	uint32_t i;
+	RVN_API_GUARD(R_INVALID_ID);
+	for (i = 0; i < g_rvn.windows.used && index >= 0; i++) {
+		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
+		if (window && !window->dead && index-- == 0) return window->id;
+	}
+	return R_INVALID_ID;
 }
 
 void Rwindow_set_content(Rid id, Rid widget_id) {

@@ -174,6 +174,8 @@ const _symbols = {
 	Ris_running: { args: [], returns: "i32" },
 	Rpoll_events: { args: [], returns: "void" },
 	Rwait_events: { args: ["f64"], returns: "void" },
+	Ris_idle: { args: ["i32"], returns: "i32" },
+	Rwait_idle: { args: ["i32"], returns: "i32" },
 	Rset_frame_callback: { args: ["ptr", "ptr"], returns: "void" },
 	Rget_delta_time: { args: [], returns: "f64" },
 	Rget_time: { args: [], returns: "f64" },
@@ -214,6 +216,8 @@ const _symbols = {
 	Rwindow_create: { args: ["ptr", "i32", "i32", "u32"], returns: "u32" },
 	Rwindow_destroy: { args: ["u32"], returns: "void" },
 	Rwindow_is_valid: { args: ["u32"], returns: "i32" },
+	Rwindow_get_count: { args: [], returns: "i32" },
+	Rwindow_get: { args: ["i32"], returns: "u32" },
 	Rwindow_set_content: { args: ["u32", "u32"], returns: "void" },
 	Rwindow_get_content: { args: ["u32"], returns: "u32" },
 	Rwindow_set_title: { args: ["u32", "ptr"], returns: "void" },
@@ -3261,7 +3265,11 @@ export class RInitDesc extends RStruct {
 		this._view.setInt32(28, value, true);
 	}
 
-	/** R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests. */
+	/**
+	 * R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+	 * rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+	 * screen and can be captured (tests/test_render.c).
+	 */
 	get headless(): number {
 		return this._view.getInt32(32, true);
 	}
@@ -6790,6 +6798,28 @@ export function Rwait_events(timeout_seconds: number): void {
 	_lib.Rwait_events(timeout_seconds);
 }
 
+/**
+ * Whether the app has nothing pending: no posted task, no window to
+ * lay out or paint, nothing animating. What Rwait_frame would wait for.
+ * A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+ * does work on worker threads until it posts a task.
+ * count_timers R_TRUE counts timers too: any timer, repeating or not,
+ * keeps the app from being idle.
+ */
+export function Ris_idle(count_timers: number): number {
+	return _lib.Ris_idle(count_timers);
+}
+
+/**
+ * Draws frames until Ris_idle(R_FALSE), for tests, previews and
+ * scripts. Never from inside a callback (it is refused and reported): there,
+ * check Ris_idle once a frame instead, with Rtask_post.
+ * Returns: R_FALSE when still busy after max_frames, or when the app quits.
+ */
+export function Rwait_idle(max_frames: number): number {
+	return _lib.Rwait_idle(max_frames);
+}
+
 export function Rset_frame_callback(callback: RFrameCallback | Pointer | null, user_data: RPointer = null): void {
 	_lib.Rset_frame_callback(_adapt_RFrameCallback(callback), user_data);
 }
@@ -7055,6 +7085,21 @@ export function Rwindow_destroy(window: Rid): void {
 
 export function Rwindow_is_valid(window: Rid): number {
 	return _lib.Rwindow_is_valid(window);
+}
+
+/** Returns: The number of open windows, hidden ones included. */
+export function Rwindow_get_count(): number {
+	return _lib.Rwindow_get_count();
+}
+
+/**
+ * An open window, from 0 to Rwindow_get_count() - 1. The order is the
+ * order of creation until a window closes; after that, a new window may
+ * take its place.
+ * Returns: R_INVALID_ID for an index out of range.
+ */
+export function Rwindow_get(index: number): Rid {
+	return _lib.Rwindow_get(index);
 }
 
 /**

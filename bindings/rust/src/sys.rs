@@ -1333,7 +1333,9 @@ pub struct RInitDesc {
     pub disable_vsync: c_int,
     /// R_TRUE enables the backend debug layer (Vulkan validation) when installed.
     pub enable_validation: c_int,
-    /// R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests.
+    /// R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+    /// rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+    /// screen and can be captured (tests/test_render.c).
     pub headless: c_int,
     /// Global UI scale multiplier applied on top of the monitor scale. 0 = 1.0.
     pub ui_scale: f32,
@@ -1915,6 +1917,18 @@ extern "C" {
     /// redraw, and processes the OS events. Rwait_frame does it already.
     /// timeout_seconds Maximum wait. Negative waits without limit.
     pub fn Rwait_events(timeout_seconds: f64);
+    /// Whether the app has nothing pending: no posted task, no window to
+    /// lay out or paint, nothing animating. What Rwait_frame would wait for.
+    /// A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+    /// does work on worker threads until it posts a task.
+    /// count_timers R_TRUE counts timers too: any timer, repeating or not,
+    /// keeps the app from being idle.
+    pub fn Ris_idle(count_timers: c_int) -> c_int;
+    /// Draws frames until Ris_idle(R_FALSE), for tests, previews and
+    /// scripts. Never from inside a callback (it is refused and reported): there,
+    /// check Ris_idle once a frame instead, with Rtask_post.
+    /// Returns: R_FALSE when still busy after max_frames, or when the app quits.
+    pub fn Rwait_idle(max_frames: c_int) -> c_int;
     pub fn Rset_frame_callback(callback: RFrameCallback, user_data: *mut c_void);
     /// Returns: Seconds between the last two frames.
     pub fn Rget_delta_time() -> f64;
@@ -2027,6 +2041,13 @@ extern "C" {
     /// Closes a window and deletes its content widgets.
     pub fn Rwindow_destroy(window: Rid);
     pub fn Rwindow_is_valid(window: Rid) -> c_int;
+    /// Returns: The number of open windows, hidden ones included.
+    pub fn Rwindow_get_count() -> c_int;
+    /// An open window, from 0 to Rwindow_get_count() - 1. The order is the
+    /// order of creation until a window closes; after that, a new window may
+    /// take its place.
+    /// Returns: R_INVALID_ID for an index out of range.
+    pub fn Rwindow_get(index: c_int) -> Rid;
     /// Sets the root widget of the window. The window takes ownership of
     /// the widget; the previous content is deleted.
     pub fn Rwindow_set_content(window: Rid, widget: Rid);

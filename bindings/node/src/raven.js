@@ -2997,6 +2997,8 @@ export const Rget_exit_code = _lib.Rget_exit_code;
 export const Ris_running = _lib.Ris_running;
 export const Rpoll_events = _lib.Rpoll_events;
 export const Rwait_events = _lib.Rwait_events;
+export const Ris_idle = _lib.Ris_idle;
+export const Rwait_idle = _lib.Rwait_idle;
 export const Rset_frame_callback = _lib.Rset_frame_callback;
 export const Rget_delta_time = _lib.Rget_delta_time;
 export const Rget_time = _lib.Rget_time;
@@ -3039,6 +3041,8 @@ export function Rwindow_get_frame_stats(window, stats) {
 export const Rwindow_create = _lib.Rwindow_create;
 export const Rwindow_destroy = _lib.Rwindow_destroy;
 export const Rwindow_is_valid = _lib.Rwindow_is_valid;
+export const Rwindow_get_count = _lib.Rwindow_get_count;
+export const Rwindow_get = _lib.Rwindow_get;
 export const Rwindow_set_content = _lib.Rwindow_set_content;
 export const Rwindow_get_content = _lib.Rwindow_get_content;
 export const Rwindow_set_title = _lib.Rwindow_set_title;

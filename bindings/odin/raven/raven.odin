@@ -1361,7 +1361,9 @@ RInitDesc :: struct {
 	disable_vsync: i32,
 	// R_TRUE enables the backend debug layer (Vulkan validation) when installed.
 	enable_validation: i32,
-	// R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests.
+	// R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+	// rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+	// screen and can be captured (tests/test_render.c).
 	headless: i32,
 	// Global UI scale multiplier applied on top of the monitor scale. 0 = 1.0.
 	ui_scale: f32,
@@ -1898,6 +1900,18 @@ foreign lib {
 	// redraw, and processes the OS events. Rwait_frame does it already.
 	// timeout_seconds Maximum wait. Negative waits without limit.
 	Rwait_events :: proc(timeout_seconds: f64) ---
+	// Whether the app has nothing pending: no posted task, no window to
+	// lay out or paint, nothing animating. What Rwait_frame would wait for.
+	// A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+	// does work on worker threads until it posts a task.
+	// count_timers R_TRUE counts timers too: any timer, repeating or not,
+	// keeps the app from being idle.
+	Ris_idle :: proc(count_timers: i32) -> i32 ---
+	// Draws frames until Ris_idle(R_FALSE), for tests, previews and
+	// scripts. Never from inside a callback (it is refused and reported): there,
+	// check Ris_idle once a frame instead, with Rtask_post.
+	// Returns: R_FALSE when still busy after max_frames, or when the app quits.
+	Rwait_idle :: proc(max_frames: i32) -> i32 ---
 	Rset_frame_callback :: proc(callback: RFrameCallback, user_data: rawptr) ---
 	// Returns: Seconds between the last two frames.
 	Rget_delta_time :: proc() -> f64 ---
@@ -2010,6 +2024,13 @@ foreign lib {
 	// Closes a window and deletes its content widgets.
 	Rwindow_destroy :: proc(window: Rid) ---
 	Rwindow_is_valid :: proc(window: Rid) -> i32 ---
+	// Returns: The number of open windows, hidden ones included.
+	Rwindow_get_count :: proc() -> i32 ---
+	// An open window, from 0 to Rwindow_get_count() - 1. The order is the
+	// order of creation until a window closes; after that, a new window may
+	// take its place.
+	// Returns: R_INVALID_ID for an index out of range.
+	Rwindow_get :: proc(index: i32) -> Rid ---
 	// Sets the root widget of the window. The window takes ownership of
 	// the widget; the previous content is deleted.
 	Rwindow_set_content :: proc(window: Rid, widget: Rid) ---

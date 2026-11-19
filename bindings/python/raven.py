@@ -2789,6 +2789,32 @@ def Rwait_events(timeout_seconds):
     _lib.Rwait_events(timeout_seconds)
 
 
+_lib.Ris_idle.argtypes = [ctypes.c_int]
+_lib.Ris_idle.restype = ctypes.c_int
+
+
+def Ris_idle(count_timers):
+    """Whether the app has nothing pending: no posted task, no window to
+    lay out or paint, nothing animating. What Rwait_frame would wait for.
+    A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+    does work on worker threads until it posts a task.
+    count_timers R_TRUE counts timers too: any timer, repeating or not,
+    keeps the app from being idle."""
+    return _lib.Ris_idle(count_timers)
+
+
+_lib.Rwait_idle.argtypes = [ctypes.c_int]
+_lib.Rwait_idle.restype = ctypes.c_int
+
+
+def Rwait_idle(max_frames):
+    """Draws frames until Ris_idle(R_FALSE), for tests, previews and
+    scripts. Never from inside a callback (it is refused and reported): there,
+    check Ris_idle once a frame instead, with Rtask_post.
+    Returns: R_FALSE when still busy after max_frames, or when the app quits."""
+    return _lib.Rwait_idle(max_frames)
+
+
 _lib.Rset_frame_callback.argtypes = [RFrameCallback, ctypes.c_void_p]
 _lib.Rset_frame_callback.restype = None
 
@@ -3182,6 +3208,27 @@ _lib.Rwindow_is_valid.restype = ctypes.c_int
 
 def Rwindow_is_valid(window):
     return _lib.Rwindow_is_valid(window)
+
+
+_lib.Rwindow_get_count.argtypes = []
+_lib.Rwindow_get_count.restype = ctypes.c_int
+
+
+def Rwindow_get_count():
+    """Returns: The number of open windows, hidden ones included."""
+    return _lib.Rwindow_get_count()
+
+
+_lib.Rwindow_get.argtypes = [ctypes.c_int]
+_lib.Rwindow_get.restype = ctypes.c_uint32
+
+
+def Rwindow_get(index):
+    """An open window, from 0 to Rwindow_get_count() - 1. The order is the
+    order of creation until a window closes; after that, a new window may
+    take its place.
+    Returns: R_INVALID_ID for an index out of range."""
+    return _lib.Rwindow_get(index)
 
 
 _lib.Rwindow_set_content.argtypes = [ctypes.c_uint32, ctypes.c_uint32]

@@ -1721,7 +1721,9 @@ public final class R {
         public RInitDesc enable_validation(int value) { s.set(JAVA_INT, 28, value); return this; }
 
         /**
-         * R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests.
+         * R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+         * rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+         * screen and can be captured (tests/test_render.c).
          */
         public int headless() { return s.get(JAVA_INT, 32); }
         public RInitDesc headless(int value) { s.set(JAVA_INT, 32, value); return this; }
@@ -5835,6 +5837,46 @@ public final class R {
         }
     }
 
+    private static MethodHandle Ris_idle$;
+
+    /**
+     * Whether the app has nothing pending: no posted task, no window to
+     * lay out or paint, nothing animating. What Rwait_frame would wait for.
+     * A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+     * does work on worker threads until it posts a task.
+     * count_timers R_TRUE counts timers too: any timer, repeating or not,
+     * keeps the app from being idle.
+     */
+    public static int Ris_idle(int count_timers) {
+        MethodHandle $h = Ris_idle$;
+        if ($h == null) Ris_idle$ = $h = find("Ris_idle", FunctionDescriptor.of(JAVA_INT, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(count_timers);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rwait_idle$;
+
+    /**
+     * Draws frames until Ris_idle(R_FALSE), for tests, previews and
+     * scripts. Never from inside a callback (it is refused and reported): there,
+     * check Ris_idle once a frame instead, with Rtask_post.
+     * Returns: R_FALSE when still busy after max_frames, or when the app quits.
+     */
+    public static int Rwait_idle(int max_frames) {
+        MethodHandle $h = Rwait_idle$;
+        if ($h == null) Rwait_idle$ = $h = find("Rwait_idle", FunctionDescriptor.of(JAVA_INT, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(max_frames);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rset_frame_callback$;
 
     public static void Rset_frame_callback(RFrameCallback callback, MemorySegment user_data) {
@@ -6506,6 +6548,41 @@ public final class R {
         if ($h == null) Rwindow_is_valid$ = $h = find("Rwindow_is_valid", FunctionDescriptor.of(JAVA_INT, JAVA_INT));
         try {
             int $r = (int) $h.invokeExact(window);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rwindow_get_count$;
+
+    /**
+     * Returns: The number of open windows, hidden ones included.
+     */
+    public static int Rwindow_get_count() {
+        MethodHandle $h = Rwindow_get_count$;
+        if ($h == null) Rwindow_get_count$ = $h = find("Rwindow_get_count", FunctionDescriptor.of(JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact();
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rwindow_get$;
+
+    /**
+     * An open window, from 0 to Rwindow_get_count() - 1. The order is the
+     * order of creation until a window closes; after that, a new window may
+     * take its place.
+     * Returns: R_INVALID_ID for an index out of range.
+     */
+    public static int Rwindow_get(int index) {
+        MethodHandle $h = Rwindow_get$;
+        if ($h == null) Rwindow_get$ = $h = find("Rwindow_get", FunctionDescriptor.of(JAVA_INT, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(index);
             return $r;
         } catch (Throwable $t) {
             throw fail($t);

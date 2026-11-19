@@ -1797,7 +1797,9 @@ namespace Raven
         /// </summary>
         public int enable_validation;
         /// <summary>
-        /// R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests.
+        /// R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+        /// rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+        /// screen and can be captured (tests/test_render.c).
         /// </summary>
         public int headless;
         /// <summary>
@@ -3350,6 +3352,26 @@ namespace Raven
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rwait_events(double timeout_seconds);
 
+        /// <summary>
+        /// Whether the app has nothing pending: no posted task, no window to
+        /// lay out or paint, nothing animating. What Rwait_frame would wait for.
+        /// A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+        /// does work on worker threads until it posts a task.
+        /// count_timers R_TRUE counts timers too: any timer, repeating or not,
+        /// keeps the app from being idle.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Ris_idle(int count_timers);
+
+        /// <summary>
+        /// Draws frames until Ris_idle(R_FALSE), for tests, previews and
+        /// scripts. Never from inside a callback (it is refused and reported): there,
+        /// check Ris_idle once a frame instead, with Rtask_post.
+        /// Returns: R_FALSE when still busy after max_frames, or when the app quits.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rwait_idle(int max_frames);
+
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rset_frame_callback(RFrameCallback callback, IntPtr user_data);
 
@@ -3591,6 +3613,21 @@ namespace Raven
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Rwindow_is_valid(uint window);
+
+        /// <summary>
+        /// Returns: The number of open windows, hidden ones included.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rwindow_get_count();
+
+        /// <summary>
+        /// An open window, from 0 to Rwindow_get_count() - 1. The order is the
+        /// order of creation until a window closes; after that, a new window may
+        /// take its place.
+        /// Returns: R_INVALID_ID for an index out of range.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint Rwindow_get(int index);
 
         /// <summary>
         /// Sets the root widget of the window. The window takes ownership of

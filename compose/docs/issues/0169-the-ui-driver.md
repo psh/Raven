@@ -8,7 +8,7 @@ status: open
 driven with real input, for tests in every language, `raven_preview` scripts and Raven MCP's UI tools.
 Design: [Driving a UI](../agent-skills.md#driving-a-ui).
 
-**Depends on:** [Idle and the window list in Raven's C](0168-idle-and-the-window-list.md).
+**Depends on:** [Idle and the window list in Raven's C](archive/0168-idle-and-the-window-list.md).
 
 ## Deliverables
 

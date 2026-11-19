@@ -1183,6 +1183,21 @@ func WaitEvents(timeout_seconds float64) {
 	C.Rwait_events(C.double(timeout_seconds))
 }
 
+// IsIdle: Whether the app has nothing pending: no posted task, no window to lay out or paint, nothing
+// animating. What Rwait_frame would wait for. A continuous window (Rwindow_set_continuous_redraw) does not
+// count, nor does work on worker threads until it posts a task. count_timers R_TRUE counts timers too: any
+// timer, repeating or not, keeps the app from being idle.
+func IsIdle(count_timers int) int {
+	return int(C.Ris_idle(C.int(count_timers)))
+}
+
+// WaitIdle: Draws frames until Ris_idle(R_FALSE), for tests, previews and scripts. Never from inside a
+// callback (it is refused and reported): there, check Ris_idle once a frame instead, with Rtask_post.
+// Returns: R_FALSE when still busy after max_frames, or when the app quits.
+func WaitIdle(max_frames int) int {
+	return int(C.Rwait_idle(C.int(max_frames)))
+}
+
 // GetDeltaTime: Returns: Seconds between the last two frames.
 func GetDeltaTime() float64 {
 	return float64(C.Rget_delta_time())
@@ -1353,6 +1368,18 @@ func WindowDestroy(window ID) {
 
 func WindowIsValid(window ID) int {
 	return int(C.Rwindow_is_valid(C.Rid(window)))
+}
+
+// WindowGetCount: Returns: The number of open windows, hidden ones included.
+func WindowGetCount() int {
+	return int(C.Rwindow_get_count())
+}
+
+// WindowGet: An open window, from 0 to Rwindow_get_count() - 1. The order is the order of creation until a
+// window closes; after that, a new window may take its place. Returns: R_INVALID_ID for an index out of
+// range.
+func WindowGet(index int) ID {
+	return ID(C.Rwindow_get(C.int(index)))
 }
 
 // WindowSetContent: Sets the root widget of the window. The window takes ownership of the widget; the

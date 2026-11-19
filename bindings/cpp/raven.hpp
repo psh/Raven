@@ -1693,6 +1693,15 @@ public:
 
 	int is_valid() const { return Rwindow_is_valid(id_); }
 
+	/// Returns: The number of open windows, hidden ones included.
+	static int get_count() { return Rwindow_get_count(); }
+
+	/// An open window, from 0 to Rwindow_get_count() - 1. The order is the
+	/// order of creation until a window closes; after that, a new window may
+	/// take its place.
+	/// Returns: R_INVALID_ID for an index out of range.
+	static Window get(int index) { return Window(Rwindow_get(index)); }
+
 	/// Sets the root widget of the window. The window takes ownership of
 	/// the widget; the previous content is deleted.
 	void set_content(Rid widget) const { Rwindow_set_content(id_, widget); }
@@ -2514,6 +2523,20 @@ inline void poll_events() { Rpoll_events(); }
 /// redraw, and processes the OS events. Rwait_frame does it already.
 /// timeout_seconds Maximum wait. Negative waits without limit.
 inline void wait_events(double timeout_seconds) { Rwait_events(timeout_seconds); }
+
+/// Whether the app has nothing pending: no posted task, no window to
+/// lay out or paint, nothing animating. What Rwait_frame would wait for.
+/// A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+/// does work on worker threads until it posts a task.
+/// count_timers R_TRUE counts timers too: any timer, repeating or not,
+/// keeps the app from being idle.
+inline int is_idle(int count_timers) { return Ris_idle(count_timers); }
+
+/// Draws frames until Ris_idle(R_FALSE), for tests, previews and
+/// scripts. Never from inside a callback (it is refused and reported): there,
+/// check Ris_idle once a frame instead, with Rtask_post.
+/// Returns: R_FALSE when still busy after max_frames, or when the app quits.
+inline int wait_idle(int max_frames) { return Rwait_idle(max_frames); }
 
 inline void set_frame_callback(RFrameCallback callback, void* user_data) { Rset_frame_callback(callback, user_data); }
 inline void set_frame_callback(std::function<void(double)> callback) {

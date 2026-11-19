@@ -1866,7 +1866,11 @@ export class RInitDesc extends RStruct {
 	/** R_TRUE enables the backend debug layer (Vulkan validation) when installed. */
 	get enable_validation(): number;
 	set enable_validation(value: number);
-	/** R_TRUE opens no OS window (null platform). Combine with R_BACKEND_NULL for tests. */
+	/**
+	 * R_TRUE opens no OS window (null platform). With R_BACKEND_NULL nothing is
+	 * rendered, for tests; with R_BACKEND_VULKAN the windows are rendered off
+	 * screen and can be captured (tests/test_render.c).
+	 */
 	get headless(): number;
 	set headless(value: number);
 	/** Global UI scale multiplier applied on top of the monitor scale. 0 = 1.0. */
@@ -3118,6 +3122,24 @@ export function Rpoll_events(): void;
  */
 export function Rwait_events(timeout_seconds: number): void;
 
+/**
+ * Whether the app has nothing pending: no posted task, no window to
+ * lay out or paint, nothing animating. What Rwait_frame would wait for.
+ * A continuous window (Rwindow_set_continuous_redraw) does not count, nor
+ * does work on worker threads until it posts a task.
+ * count_timers R_TRUE counts timers too: any timer, repeating or not,
+ * keeps the app from being idle.
+ */
+export function Ris_idle(count_timers: number): number;
+
+/**
+ * Draws frames until Ris_idle(R_FALSE), for tests, previews and
+ * scripts. Never from inside a callback (it is refused and reported): there,
+ * check Ris_idle once a frame instead, with Rtask_post.
+ * Returns: R_FALSE when still busy after max_frames, or when the app quits.
+ */
+export function Rwait_idle(max_frames: number): number;
+
 export function Rset_frame_callback(callback: RFrameCallback | Pointer | null, user_data?: RPointer): void;
 
 /** Returns: Seconds between the last two frames. */
@@ -3301,6 +3323,17 @@ export function Rwindow_create(title: string | null, width: number, height: numb
 export function Rwindow_destroy(window: Rid): void;
 
 export function Rwindow_is_valid(window: Rid): number;
+
+/** Returns: The number of open windows, hidden ones included. */
+export function Rwindow_get_count(): number;
+
+/**
+ * An open window, from 0 to Rwindow_get_count() - 1. The order is the
+ * order of creation until a window closes; after that, a new window may
+ * take its place.
+ * Returns: R_INVALID_ID for an index out of range.
+ */
+export function Rwindow_get(index: number): Rid;
 
 /**
  * Sets the root widget of the window. The window takes ownership of
