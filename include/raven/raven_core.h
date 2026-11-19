@@ -89,7 +89,9 @@ typedef enum RError{
 	R_ERROR_INVALID_FILE_FORMAT,
 	R_ERROR_FILE_NOT_FOUND,
 	R_ERROR_XML,
-	R_ERROR_WRONG_THREAD
+	R_ERROR_WRONG_THREAD,
+	/** A file could not be written. */
+	R_ERROR_IO
 }RError;
 
 typedef enum RSeverity{

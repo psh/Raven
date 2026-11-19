@@ -78,6 +78,8 @@ export enum RError {
 	R_ERROR_FILE_NOT_FOUND = 0x0079,
 	R_ERROR_XML = 0x007A,
 	R_ERROR_WRONG_THREAD = 0x007B,
+	/** A file could not be written. */
+	R_ERROR_IO = 0x007C,
 }
 export const R_NO_ERROR: RError.R_NO_ERROR;
 export const R_ERROR_INVALID_ID: RError.R_ERROR_INVALID_ID;
@@ -91,6 +93,7 @@ export const R_ERROR_INVALID_FILE_FORMAT: RError.R_ERROR_INVALID_FILE_FORMAT;
 export const R_ERROR_FILE_NOT_FOUND: RError.R_ERROR_FILE_NOT_FOUND;
 export const R_ERROR_XML: RError.R_ERROR_XML;
 export const R_ERROR_WRONG_THREAD: RError.R_ERROR_WRONG_THREAD;
+export const R_ERROR_IO: RError.R_ERROR_IO;
 
 export enum RSeverity {
 	R_SEVERITY_WEAK_WARNING = 0x0080,
@@ -3977,7 +3980,22 @@ export function Rtexture_update(texture: Rid, rgba: RPointer, width: number, hei
  */
 export function Rimage_decode(data: NodeJS.TypedArray | null): [result: Pointer | null, width: number, height: number];
 
-/** Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe. */
+/**
+ * Encodes tightly packed RGBA8 pixels, straight alpha (as
+ * Rimage_decode gives them), as PNG. Thread-safe.
+ * Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+ * failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+ */
+export function Rimage_encode_png(rgba: RPointer, width: number, height: number): [result: Pointer | null, png_size: number];
+
+/**
+ * Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+ * (a UTF-8 path). Thread-safe.
+ * Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+ */
+export function Rimage_save_png(rgba: RPointer, width: number, height: number, path: string | null): number;
+
+/** Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe. */
 export function Rpixels_free(pixels: RPointer): void;
 
 /** Returns: R_TRUE once an asynchronous texture is decoded (or failed). */

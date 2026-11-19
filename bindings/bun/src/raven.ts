@@ -367,6 +367,8 @@ const _symbols = {
 	Rtexture_create_from_pixels: { args: ["ptr", "i32", "i32"], returns: "u32" },
 	Rtexture_update: { args: ["u32", "ptr", "i32", "i32"], returns: "void" },
 	Rimage_decode: { args: ["ptr", "usize", "ptr", "ptr"], returns: "ptr" },
+	Rimage_encode_png: { args: ["ptr", "i32", "i32", "ptr"], returns: "ptr" },
+	Rimage_save_png: { args: ["ptr", "i32", "i32", "ptr"], returns: "i32" },
 	Rpixels_free: { args: ["ptr"], returns: "void" },
 	Rtexture_is_ready: { args: ["u32"], returns: "i32" },
 	Rtexture_wait: { args: ["u32"], returns: "void" },
@@ -1368,6 +1370,8 @@ export enum RError {
 	R_ERROR_FILE_NOT_FOUND = 0x0079,
 	R_ERROR_XML = 0x007A,
 	R_ERROR_WRONG_THREAD = 0x007B,
+	/** A file could not be written. */
+	R_ERROR_IO = 0x007C,
 }
 
 export const R_NO_ERROR = RError.R_NO_ERROR;
@@ -1382,6 +1386,7 @@ export const R_ERROR_INVALID_FILE_FORMAT = RError.R_ERROR_INVALID_FILE_FORMAT;
 export const R_ERROR_FILE_NOT_FOUND = RError.R_ERROR_FILE_NOT_FOUND;
 export const R_ERROR_XML = RError.R_ERROR_XML;
 export const R_ERROR_WRONG_THREAD = RError.R_ERROR_WRONG_THREAD;
+export const R_ERROR_IO = RError.R_ERROR_IO;
 
 export enum RSeverity {
 	R_SEVERITY_WEAK_WARNING = 0x0080,
@@ -8077,7 +8082,28 @@ export function Rimage_decode(data: NodeJS.TypedArray | null): [result: Pointer 
 	return [result_, width_[0]!, height_[0]!];
 }
 
-/** Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe. */
+/**
+ * Encodes tightly packed RGBA8 pixels, straight alpha (as
+ * Rimage_decode gives them), as PNG. Thread-safe.
+ * Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+ * failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+ */
+export function Rimage_encode_png(rgba: RPointer, width: number, height: number): [result: Pointer | null, png_size: number] {
+	const png_size_ = new BigUint64Array(1);
+	const result_ = _lib.Rimage_encode_png(rgba, width, height, png_size_) as Pointer | null;
+	return [result_, Number(png_size_[0]!)];
+}
+
+/**
+ * Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+ * (a UTF-8 path). Thread-safe.
+ * Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+ */
+export function Rimage_save_png(rgba: RPointer, width: number, height: number, path: string | null): number {
+	return _lib.Rimage_save_png(rgba, width, height, _s(path));
+}
+
+/** Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe. */
 export function Rpixels_free(pixels: RPointer): void {
 	_lib.Rpixels_free(pixels);
 }

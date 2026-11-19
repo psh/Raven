@@ -243,6 +243,8 @@ static struct {
 	Rid (*Rtexture_create_from_pixels)(const uint8_t*, int, int);
 	void (*Rtexture_update)(Rid, const uint8_t*, int, int);
 	uint8_t* (*Rimage_decode)(const void*, size_t, int*, int*);
+	uint8_t* (*Rimage_encode_png)(const uint8_t*, int, int, size_t*);
+	int (*Rimage_save_png)(const uint8_t*, int, int, const char*);
 	void (*Rpixels_free)(uint8_t*);
 	int (*Rtexture_is_ready)(Rid);
 	void (*Rtexture_wait)(Rid);
@@ -1406,6 +1408,8 @@ static const struct {
 	{"Rtexture_create_from_pixels", offsetof(__typeof__(rn), Rtexture_create_from_pixels)},
 	{"Rtexture_update", offsetof(__typeof__(rn), Rtexture_update)},
 	{"Rimage_decode", offsetof(__typeof__(rn), Rimage_decode)},
+	{"Rimage_encode_png", offsetof(__typeof__(rn), Rimage_encode_png)},
+	{"Rimage_save_png", offsetof(__typeof__(rn), Rimage_save_png)},
 	{"Rpixels_free", offsetof(__typeof__(rn), Rpixels_free)},
 	{"Rtexture_is_ready", offsetof(__typeof__(rn), Rtexture_is_ready)},
 	{"Rtexture_wait", offsetof(__typeof__(rn), Rtexture_wait)},
@@ -7717,6 +7721,53 @@ static napi_value rn_w_Rimage_decode(napi_env env, napi_callback_info info) {
 			result_ = rn_tuple(env, 3, values_);
 		}
 	}
+	return result_;
+}
+
+static napi_value rn_w_Rimage_encode_png(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	int a2;
+	size_t a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	result_ = rn_make_ptr(env, rn.Rimage_encode_png((const uint8_t*)a0, (int)a1, (int)a2, &a3));
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a3, &o0_);
+		{
+			const napi_value values_[2] = {result_, o0_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rimage_save_png(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	int a2;
+	rn_str a3;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	int value_ = rn.Rimage_save_png((const uint8_t*)a0, (int)a1, (int)a2, a3.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a3.heap);
 	return result_;
 }
 
@@ -23859,6 +23910,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtexture_create_from_pixels", NULL, rn_w_Rtexture_create_from_pixels, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_update", NULL, rn_w_Rtexture_update, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rimage_decode", NULL, rn_w_Rimage_decode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_encode_png", NULL, rn_w_Rimage_encode_png, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_save_png", NULL, rn_w_Rimage_save_png, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rpixels_free", NULL, rn_w_Rpixels_free, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_is_ready", NULL, rn_w_Rtexture_is_ready, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_wait", NULL, rn_w_Rtexture_wait, NULL, NULL, NULL, napi_enumerable, NULL},

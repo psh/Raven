@@ -7,7 +7,7 @@ status: open
 Render UI to PNGs with no window shown: a call any binding can use, and a command-line tool that
 renders XML variants for the `prototype` skill. Design: [Previews](../agent-skills.md#previews).
 
-**Depends on:** [PNG encoding in Raven's C](0166-png-encoding-in-ravens-c.md),
+**Depends on:** [PNG encoding in Raven's C](archive/0166-png-encoding-in-ravens-c.md),
 [The UI driver in Raven's C](0169-the-ui-driver.md).
 
 ## Deliverables

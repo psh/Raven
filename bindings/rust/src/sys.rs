@@ -41,6 +41,8 @@ pub const R_ERROR_INVALID_FILE_FORMAT: RError = 0x0078;
 pub const R_ERROR_FILE_NOT_FOUND: RError = 0x0079;
 pub const R_ERROR_XML: RError = 0x007A;
 pub const R_ERROR_WRONG_THREAD: RError = 0x007B;
+/// A file could not be written.
+pub const R_ERROR_IO: RError = 0x007C;
 
 pub type RSeverity = c_int;
 pub const R_SEVERITY_WEAK_WARNING: RSeverity = 0x0080;
@@ -2453,7 +2455,16 @@ extern "C" {
     /// Returns: The pixels, to release with Rpixels_free; NULL when the data
     /// is not an image Raven can read.
     pub fn Rimage_decode(data: *const c_void, data_size: usize, width: *mut c_int, height: *mut c_int) -> *mut u8;
-    /// Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe.
+    /// Encodes tightly packed RGBA8 pixels, straight alpha (as
+    /// Rimage_decode gives them), as PNG. Thread-safe.
+    /// Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+    /// failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+    pub fn Rimage_encode_png(rgba: *const u8, width: c_int, height: c_int, png_size: *mut usize) -> *mut u8;
+    /// Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+    /// (a UTF-8 path). Thread-safe.
+    /// Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+    pub fn Rimage_save_png(rgba: *const u8, width: c_int, height: c_int, path: *const c_char) -> c_int;
+    /// Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe.
     pub fn Rpixels_free(pixels: *mut u8);
     /// Returns: R_TRUE once an asynchronous texture is decoded (or failed).
     pub fn Rtexture_is_ready(texture: Rid) -> c_int;

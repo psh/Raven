@@ -137,6 +137,7 @@ const (
 	R_ERROR_FILE_NOT_FOUND      RError = 0x0079
 	R_ERROR_XML                 RError = 0x007A
 	R_ERROR_WRONG_THREAD        RError = 0x007B
+	R_ERROR_IO                  RError = 0x007C
 )
 
 type RSeverity int32
@@ -6819,16 +6820,17 @@ func HostInjectClose(window ID) {
 // Rwindow_get_native_handle, Rwindow_capture, Rwindow_inject_drop, Rwindow_set_event_hook
 // Rtouch_get_settings, Rtouch_set_settings, Rtouch_get_default_settings, Rwindow_set_touch_settings
 // Rwindow_get_touch_settings, Rwidget_set_touch_callback, Rwidget_set_pen_callback
-// Rwidget_set_gesture_callback, Rtexture_create_from_pixels, Rtexture_update, Rimage_decode, Rpixels_free
-// Rwidget_set_user_handle, Rwidget_get_user_handle, Rwidget_set_destroy_callback, Rwidget_set_event_callback
-// Rwidget_set_drop_callback, Rtab_view_set_changed_callback, Rtab_view_set_close_callback
-// Rexpander_set_changed_callback, Rlabel_set_link_callback, Rbutton_set_clicked_callback
-// Rcheckbox_set_changed_callback, Rslider_set_changed_callback, Rtext_input_set_changed_callback
-// Rtext_input_set_committed_callback, Rspin_box_set_changed_callback, Rcombo_box_set_changed_callback
-// Rlist_view_set_virtual_items, Rlist_view_set_selection_changed_callback, Rlist_view_set_activated_callback
-// Rtree_item_set_user_handle, Rtree_item_get_user_handle, Rtree_view_set_selection_changed_callback
-// Rtree_view_set_activated_callback, Rtree_view_set_context_callback, Rmenu_item_set_clicked_callback
-// Rtile_view_set_items, Rtile_view_set_drag_data_callback, Rtile_view_set_selection_changed_callback
+// Rwidget_set_gesture_callback, Rtexture_create_from_pixels, Rtexture_update, Rimage_decode
+// Rimage_encode_png, Rimage_save_png, Rpixels_free, Rwidget_set_user_handle, Rwidget_get_user_handle
+// Rwidget_set_destroy_callback, Rwidget_set_event_callback, Rwidget_set_drop_callback
+// Rtab_view_set_changed_callback, Rtab_view_set_close_callback, Rexpander_set_changed_callback
+// Rlabel_set_link_callback, Rbutton_set_clicked_callback, Rcheckbox_set_changed_callback
+// Rslider_set_changed_callback, Rtext_input_set_changed_callback, Rtext_input_set_committed_callback
+// Rspin_box_set_changed_callback, Rcombo_box_set_changed_callback, Rlist_view_set_virtual_items
+// Rlist_view_set_selection_changed_callback, Rlist_view_set_activated_callback, Rtree_item_set_user_handle
+// Rtree_item_get_user_handle, Rtree_view_set_selection_changed_callback, Rtree_view_set_activated_callback
+// Rtree_view_set_context_callback, Rmenu_item_set_clicked_callback, Rtile_view_set_items
+// Rtile_view_set_drag_data_callback, Rtile_view_set_selection_changed_callback
 // Rtile_view_set_activated_callback, Rtile_view_set_context_callback, Rtable_set_virtual_rows
 // Rtable_set_selection_changed_callback, Rtable_set_activated_callback, Rtable_set_sort_callback
 // Rdate_picker_set_changed_callback, Rtime_picker_set_changed_callback, Rtoast_set_action_callback

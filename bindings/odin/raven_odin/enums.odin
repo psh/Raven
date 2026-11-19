@@ -31,6 +31,8 @@ Error :: enum i32 {
 	Error_File_Not_Found = 0x0079,
 	Error_Xml = 0x007A,
 	Error_Wrong_Thread = 0x007B,
+	// A file could not be written.
+	Error_Io = 0x007C,
 }
 
 Severity :: enum i32 {

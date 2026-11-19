@@ -66,6 +66,7 @@ excuse
 	ERROR_FILE_NOT_FOUND,
 	ERROR_XML,
 	ERROR_WRONG_THREAD,
+	ERROR_IO,
 	ERROR_FAILED;
 
 <* The fault of an error; ERROR_FAILED for NO_ERROR. *>
@@ -84,6 +85,7 @@ fn fault Error.to_fault(self)
 		case Error.FILE_NOT_FOUND: return ERROR_FILE_NOT_FOUND;
 		case Error.XML: return ERROR_XML;
 		case Error.WRONG_THREAD: return ERROR_WRONG_THREAD;
+		case Error.IO: return ERROR_IO;
 		default: return ERROR_FAILED;
 	}
 }
@@ -131,6 +133,8 @@ constset Error : CInt
 	FILE_NOT_FOUND = 0x0079,
 	XML = 0x007A,
 	WRONG_THREAD = 0x007B,
+	<* A file could not be written. *>
+	IO = 0x007C,
 }
 
 constset Severity : CInt
@@ -2750,6 +2754,21 @@ fn Image image_create() @inline => (Image)c::r_widget_create(c::R_WIDGET_IMAGE);
  is not an image Raven can read.
 *>
 alias image_decode = c::r_image_decode;
+
+<*
+ Encodes tightly packed RGBA8 pixels, straight alpha (as
+ Rimage_decode gives them), as PNG. Thread-safe.
+ Returns The PNG bytes, to release with Rpixels_free; NULL, reported, on
+ failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+*>
+alias image_encode_png = c::r_image_encode_png;
+
+<*
+ Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+ (a UTF-8 path). Thread-safe.
+ Returns R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+*>
+fn bool image_save_png(char* rgba, CInt width, CInt height, ZString path) @inline => c::r_image_save_png(rgba, width, height, (char*)path) != 0;
 
 fn void Image.set_texture(self, Id texture) @inline => c::r_image_set_texture((c::Rid)self, (c::Rid)texture);
 
@@ -6298,7 +6317,7 @@ fn ZString theme_get_name_at(CInt index) @inline => (ZString)c::r_theme_get_name
 *>
 fn CInt theme_save(ZString path, ZString name) @inline => c::r_theme_save((char*)path, (char*)name);
 
-<* Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe. *>
+<* Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe. *>
 alias pixels_free = c::r_pixels_free;
 
 <* Direction of every window: R_DIRECTION_AUTO (the default), _LTR or _RTL. *>

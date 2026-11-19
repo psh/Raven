@@ -7,6 +7,7 @@ in the repository and compiled into the library.
 |---|---|---|---|
 | stb_truetype 1.26 (Sean Barrett) | `third_party/stb/stb_truetype.h` | public domain or MIT, see `third_party/stb/LICENSE` | glyph outlines and rasterization |
 | stb_image 2.30 (Sean Barrett) | `third_party/stb/stb_image.h` | public domain or MIT, see `third_party/stb/LICENSE` | PNG / JPEG / BMP / TGA decoding; optional (`RAVEN_WITH_STB_IMAGE`) |
+| stb_image_write 1.19 (Sean Barrett) | `third_party/stb/stb_image_write.h` | public domain or MIT, see `third_party/stb/LICENSE` | PNG encoding (`Rimage_encode_png`, `Rimage_save_png`); optional, with stb_image (`RAVEN_WITH_STB_IMAGE`) |
 | nanosvg and nanosvgrast (Mikko Mononen), master of November 2026 | `third_party/nanosvg/nanosvg.h`, `nanosvgrast.h` | zlib, see `third_party/nanosvg/LICENSE.txt` | SVG parsing and rasterization; optional (`RAVEN_WITH_SVG`) |
 | Roboto Regular (Google) | `third_party/roboto/Roboto-Regular-subset.ttf`, embedded as `src/resources/default_font.c` | Apache License 2.0, see `third_party/roboto/LICENSE` | default font |
 | Wayland protocol descriptions (Wayland, wayland-protocols) | `third_party/wayland-protocols/*.xml`, turned into `src/platform/wayland/wayland_protocols.h` by `tools/wayland/gen_wayland.py` | MIT, see `third_party/wayland-protocols/COPYING` | the protocols of the Wayland platform (Linux, BSD) |
@@ -21,9 +22,10 @@ Latin-1 Supplement, Latin Extended-A and a few punctuation marks and
 arrows. Hinting instructions were removed. Under the Apache License and the
 Open Font License these are modified versions of the original fonts.
 
-Both stb files are compiled as `static` functions inside a single source
-file each (`src/render/font_raster.c`, `src/render/image_decode.c`), so they
-cannot clash with another copy of stb in the application.
+The stb files are compiled as `static` functions inside a single source
+file each (`src/render/font_raster.c`; `src/render/image_decode.c` for both
+stb_image and stb_image_write), so they cannot clash with another copy of stb
+in the application.
 
 nanosvg is compiled in a single source file (`src/render/svg_decode.c`)
 whose `#define`s give its public names the prefix `rvn_`, so that it cannot

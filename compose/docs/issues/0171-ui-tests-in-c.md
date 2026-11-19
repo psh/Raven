@@ -8,7 +8,7 @@ A header-only harness for C apps' headless UI tests, and the `notepad.xml` every
 tests. Design: [UI tests in each language](../agent-skills.md#ui-tests-in-each-language).
 
 **Depends on:** [The UI driver in Raven's C](0169-the-ui-driver.md),
-[PNG encoding in Raven's C](0166-png-encoding-in-ravens-c.md).
+[PNG encoding in Raven's C](archive/0166-png-encoding-in-ravens-c.md).
 
 ## Deliverables
 

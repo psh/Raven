@@ -71,6 +71,8 @@ R_ERROR_INVALID_FILE_FORMAT :: 0x0078
 R_ERROR_FILE_NOT_FOUND :: 0x0079
 R_ERROR_XML :: 0x007A
 R_ERROR_WRONG_THREAD :: 0x007B
+// A file could not be written.
+R_ERROR_IO :: 0x007C
 
 RSeverity :: i32
 R_SEVERITY_WEAK_WARNING :: 0x0080
@@ -2436,7 +2438,16 @@ foreign lib {
 	// Returns: The pixels, to release with Rpixels_free; NULL when the data
 	// is not an image Raven can read.
 	Rimage_decode :: proc(data: rawptr, data_size: uint, width: ^i32, height: ^i32) -> [^]u8 ---
-	// Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe.
+	// Encodes tightly packed RGBA8 pixels, straight alpha (as
+	// Rimage_decode gives them), as PNG. Thread-safe.
+	// Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+	// failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+	Rimage_encode_png :: proc(rgba: [^]u8, width: i32, height: i32, png_size: ^uint) -> [^]u8 ---
+	// Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+	// (a UTF-8 path). Thread-safe.
+	// Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+	Rimage_save_png :: proc(rgba: [^]u8, width: i32, height: i32, path: cstring) -> i32 ---
+	// Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe.
 	Rpixels_free :: proc(pixels: [^]u8) ---
 	// Returns: R_TRUE once an asynchronous texture is decoded (or failed).
 	Rtexture_is_ready :: proc(texture: Rid) -> i32 ---

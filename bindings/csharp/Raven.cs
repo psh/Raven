@@ -73,6 +73,10 @@ namespace Raven
         R_ERROR_FILE_NOT_FOUND = 0x0079,
         R_ERROR_XML = 0x007A,
         R_ERROR_WRONG_THREAD = 0x007B,
+        /// <summary>
+        /// A file could not be written.
+        /// </summary>
+        R_ERROR_IO = 0x007C,
     }
 
     public enum RSeverity : int
@@ -4571,7 +4575,24 @@ namespace Raven
         public static extern IntPtr Rimage_decode(byte[] data, UIntPtr data_size, out int width, out int height);
 
         /// <summary>
-        /// Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe.
+        /// Encodes tightly packed RGBA8 pixels, straight alpha (as
+        /// Rimage_decode gives them), as PNG. Thread-safe.
+        /// Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+        /// failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr Rimage_encode_png(byte[] rgba, int width, int height, out UIntPtr png_size);
+
+        /// <summary>
+        /// Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+        /// (a UTF-8 path). Thread-safe.
+        /// Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rimage_save_png(byte[] rgba, int width, int height, [MarshalAs(Utf8.Str)] string path);
+
+        /// <summary>
+        /// Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rpixels_free(IntPtr pixels);

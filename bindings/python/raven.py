@@ -138,6 +138,7 @@ class RError(enum.IntEnum):
     R_ERROR_FILE_NOT_FOUND = 0x0079
     R_ERROR_XML = 0x007A
     R_ERROR_WRONG_THREAD = 0x007B
+    R_ERROR_IO = 0x007C
 
 R_NO_ERROR = RError.R_NO_ERROR
 R_ERROR_INVALID_ID = RError.R_ERROR_INVALID_ID
@@ -151,6 +152,7 @@ R_ERROR_INVALID_FILE_FORMAT = RError.R_ERROR_INVALID_FILE_FORMAT
 R_ERROR_FILE_NOT_FOUND = RError.R_ERROR_FILE_NOT_FOUND
 R_ERROR_XML = RError.R_ERROR_XML
 R_ERROR_WRONG_THREAD = RError.R_ERROR_WRONG_THREAD
+R_ERROR_IO = RError.R_ERROR_IO
 
 class RSeverity(enum.IntEnum):
     R_SEVERITY_WEAK_WARNING = 0x0080
@@ -4717,12 +4719,37 @@ def Rimage_decode(data):
     return (result, width_.value, height_.value)
 
 
+_lib.Rimage_encode_png.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t)]
+_lib.Rimage_encode_png.restype = ctypes.c_void_p
+
+
+def Rimage_encode_png(rgba, width, height):
+    """Encodes tightly packed RGBA8 pixels, straight alpha (as
+    Rimage_decode gives them), as PNG. Thread-safe.
+    Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+    failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE)."""
+    png_size_ = ctypes.c_size_t()
+    result = _lib.Rimage_encode_png(rgba, width, height, ctypes.byref(png_size_))
+    return (result, png_size_.value)
+
+
+_lib.Rimage_save_png.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+_lib.Rimage_save_png.restype = ctypes.c_int
+
+
+def Rimage_save_png(rgba, width, height, path):
+    """Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+    (a UTF-8 path). Thread-safe.
+    Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure."""
+    return _lib.Rimage_save_png(rgba, width, height, _s(path))
+
+
 _lib.Rpixels_free.argtypes = [ctypes.c_void_p]
 _lib.Rpixels_free.restype = None
 
 
 def Rpixels_free(pixels):
-    """Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe."""
+    """Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe."""
     _lib.Rpixels_free(pixels)
 
 

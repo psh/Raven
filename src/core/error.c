@@ -75,6 +75,7 @@ const char* Rerror_to_string(RError error) {
 		case R_ERROR_FILE_NOT_FOUND: return "R_ERROR_FILE_NOT_FOUND";
 		case R_ERROR_XML: return "R_ERROR_XML";
 		case R_ERROR_WRONG_THREAD: return "R_ERROR_WRONG_THREAD";
+		case R_ERROR_IO: return "R_ERROR_IO";
 	}
 	return "RVN_ERROR_UNKNOWN";
 }

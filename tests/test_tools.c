@@ -1126,6 +1126,80 @@ static void test_hooks(void) {
 		CHECK(Rimage_decode(NULL, 0, NULL, NULL) == NULL);
 	}
 
+	/* pixels to PNG and back: in memory, then through a file */
+	{
+		/* 3 x 2, straight alpha, half-transparent and fully transparent pixels among them */
+		static const uint8_t rgba[3 * 2 * 4] = {
+			255, 0, 0, 255,     0, 255, 0, 128,     0, 0, 255, 0,
+			10, 20, 30, 40,     255, 255, 255, 255, 1, 2, 3, 254
+		};
+		static const uint8_t signature[8] = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
+		char path[700], missing[720];
+		const char* temp = getenv("TMPDIR");
+		size_t size = 0, file_size = 0;
+		int width = 0, height = 0;
+		uint8_t* png;
+		const char* detail = NULL;
+#if defined(_WIN32)
+		if (!temp) temp = getenv("TEMP");
+		if (!temp) temp = ".";
+#else
+		if (!temp) temp = "/tmp";
+#endif
+		snprintf(path, sizeof(path), "%s/raven_test_png_%u.png", temp, (unsigned)(Rget_time() * 1e6) + 7u);
+		snprintf(missing, sizeof(missing), "%s/raven_no_such_folder_%u/out.png", temp, (unsigned)(Rget_time() * 1e6) + 11u);
+#if defined(RAVEN_TEST_NO_IMAGE_DECODER)
+		/* without stb, nothing is encoded, and it says why */
+		EXPECT_ERRORS_BEGIN();
+		png = Rimage_encode_png(rgba, 3, 2, &size);
+		CHECK(png == NULL && size == 0);
+		CHECK(!Rimage_save_png(rgba, 3, 2, path));
+		EXPECT_ERRORS_END(2);
+		CHECK(Rerror_get_last(NULL, NULL) == R_ERROR_INVALID_OPERATION);
+		(void)signature;
+		(void)missing;
+		(void)file_size;
+		(void)width;
+		(void)height;
+		(void)detail;
+#else
+		png = Rimage_encode_png(rgba, 3, 2, &size);
+		CHECK(png != NULL && size > sizeof(signature));
+		if (png) {
+			uint8_t* pixels;
+			CHECK(memcmp(png, signature, sizeof(signature)) == 0);
+			pixels = Rimage_decode(png, size, &width, &height);
+			CHECK(pixels != NULL && width == 3 && height == 2);
+			if (pixels) CHECK(memcmp(pixels, rgba, sizeof(rgba)) == 0);
+			Rpixels_free(pixels);
+		}
+		Rpixels_free(png);
+
+		CHECK(Rimage_save_png(rgba, 3, 2, path));
+		{
+			char* data = Rfile_read(path, &file_size);
+			uint8_t* pixels = data ? Rimage_decode(data, file_size, &width, &height) : NULL;
+			CHECK(data != NULL && file_size > sizeof(signature));
+			CHECK(pixels != NULL && width == 3 && height == 2);
+			if (pixels) CHECK(memcmp(pixels, rgba, sizeof(rgba)) == 0);
+			Rpixels_free(pixels);
+			Rmemory_free(data);
+			remove(path);
+		}
+
+		/* what can't be done is reported */
+		EXPECT_ERRORS_BEGIN();
+		CHECK(!Rimage_save_png(rgba, 3, 2, missing));
+		CHECK(Rerror_get_last(&detail, NULL) == R_ERROR_IO);
+		CHECK(detail && strstr(detail, "out.png"));
+		CHECK(Rimage_encode_png(rgba, 0, 2, &size) == NULL && size == 0);
+		CHECK(Rerror_get_last(NULL, NULL) == R_ERROR_INVALID_VALUE);
+		CHECK(Rimage_encode_png(NULL, 3, 2, NULL) == NULL);
+		CHECK(!Rimage_save_png(rgba, 3, 2, NULL));
+		EXPECT_ERRORS_END(4);
+#endif
+	}
+
 	/* a curve drawn by a custom widget */
 	window = Rwindow_create("curve", 200, 100, 0);
 	custom = Rwidget_create(R_WIDGET_CUSTOM);

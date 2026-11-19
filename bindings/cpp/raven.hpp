@@ -635,6 +635,17 @@ public:
 	/// is not an image Raven can read.
 	static uint8_t* decode(const void* data, size_t data_size, int* width, int* height) { return Rimage_decode(data, data_size, width, height); }
 
+	/// Encodes tightly packed RGBA8 pixels, straight alpha (as
+	/// Rimage_decode gives them), as PNG. Thread-safe.
+	/// Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+	/// failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+	static uint8_t* encode_png(const uint8_t* rgba, int width, int height, size_t* png_size) { return Rimage_encode_png(rgba, width, height, png_size); }
+
+	/// Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+	/// (a UTF-8 path). Thread-safe.
+	/// Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+	static int save_png(const uint8_t* rgba, int width, int height, const char* path) { return Rimage_save_png(rgba, width, height, path); }
+
 	void set_texture(Rid texture) const { Rimage_set_texture(id_, texture); }
 
 	void set_tint_color(float r, float g, float b, float a) const { Rimage_set_tint_color(id_, r, g, b, a); }
@@ -2830,7 +2841,7 @@ inline const char* theme_get_name_at(int index) { return Rtheme_get_name_at(inde
 /// name Name given to the theme in the file; NULL keeps the current one.
 inline int theme_save(const char* path, const char* name) { return Rtheme_save(path, name); }
 
-/// Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe.
+/// Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe.
 inline void pixels_free(uint8_t* pixels) { Rpixels_free(pixels); }
 
 /// Creates a panel that shows what is behind it out of focus,

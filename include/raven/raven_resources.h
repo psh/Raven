@@ -152,7 +152,22 @@ extern "C" {
 	 * is not an image Raven can read.
 	 */
 	RAVEN_API uint8_t* Rimage_decode(const void* data, size_t data_size, int* width, int* height);
-	/** @brief Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe. */
+	/**
+	 * @brief Encodes tightly packed RGBA8 pixels, straight alpha (as
+	 * Rimage_decode gives them), as PNG. Thread-safe.
+	 * @return The PNG bytes, to release with Rpixels_free; NULL, reported, on
+	 * failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+	 */
+	RAVEN_API uint8_t* Rimage_encode_png(const uint8_t* rgba, int width, int height, size_t* png_size);
+
+	/**
+	 * @brief Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+	 * (a UTF-8 path). Thread-safe.
+	 * @return R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+	 */
+	RAVEN_API int Rimage_save_png(const uint8_t* rgba, int width, int height, const char* path);
+
+	/** @brief Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe. */
 	RAVEN_API void Rpixels_free(uint8_t* pixels);
 
 	/** @return R_TRUE once an asynchronous texture is decoded (or failed). */

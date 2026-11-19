@@ -169,8 +169,9 @@ export const RError = _enum({
 	R_ERROR_FILE_NOT_FOUND: 121,
 	R_ERROR_XML: 122,
 	R_ERROR_WRONG_THREAD: 123,
+	R_ERROR_IO: 124,
 });
-export const { R_NO_ERROR, R_ERROR_INVALID_ID, R_ERROR_INVALID_ENUM, R_ERROR_INVALID_VALUE, R_ERROR_INVALID_OPERATION, R_ERROR_BACKEND, R_ERROR_PLATFORM, R_ERROR_OUT_OF_MEMORY, R_ERROR_INVALID_FILE_FORMAT, R_ERROR_FILE_NOT_FOUND, R_ERROR_XML, R_ERROR_WRONG_THREAD } = RError;
+export const { R_NO_ERROR, R_ERROR_INVALID_ID, R_ERROR_INVALID_ENUM, R_ERROR_INVALID_VALUE, R_ERROR_INVALID_OPERATION, R_ERROR_BACKEND, R_ERROR_PLATFORM, R_ERROR_OUT_OF_MEMORY, R_ERROR_INVALID_FILE_FORMAT, R_ERROR_FILE_NOT_FOUND, R_ERROR_XML, R_ERROR_WRONG_THREAD, R_ERROR_IO } = RError;
 
 export const RSeverity = _enum({
 	R_SEVERITY_WEAK_WARNING: 128,
@@ -3214,6 +3215,8 @@ export const Rtexture_create_from_file_async = _lib.Rtexture_create_from_file_as
 export const Rtexture_create_from_pixels = _lib.Rtexture_create_from_pixels;
 export const Rtexture_update = _lib.Rtexture_update;
 export const Rimage_decode = _lib.Rimage_decode;
+export const Rimage_encode_png = _lib.Rimage_encode_png;
+export const Rimage_save_png = _lib.Rimage_save_png;
 export const Rpixels_free = _lib.Rpixels_free;
 export const Rtexture_is_ready = _lib.Rtexture_is_ready;
 export const Rtexture_wait = _lib.Rtexture_wait;

@@ -231,6 +231,10 @@ public final class R {
     public static final int R_ERROR_FILE_NOT_FOUND = 0x0079;
     public static final int R_ERROR_XML = 0x007A;
     public static final int R_ERROR_WRONG_THREAD = 0x007B;
+    /**
+     * A file could not be written.
+     */
+    public static final int R_ERROR_IO = 0x007C;
 
     // RSeverity
     public static final int R_SEVERITY_WEAK_WARNING = 0x0080;
@@ -9007,10 +9011,52 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rimage_encode_png$;
+
+    /**
+     * Encodes tightly packed RGBA8 pixels, straight alpha (as
+     * Rimage_decode gives them), as PNG. Thread-safe.
+     * Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
+     * failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE).
+     */
+    public static MemorySegment Rimage_encode_png(byte[] rgba, int width, int height, long[] png_size) {
+        MethodHandle $h = Rimage_encode_png$;
+        if ($h == null) Rimage_encode_png$ = $h = find("Rimage_encode_png", FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment rgba$ = rgba == null ? MemorySegment.NULL : bytes($a, rgba);
+            MemorySegment png_size$ = png_size == null ? MemorySegment.NULL : $a.allocate(JAVA_LONG);
+            MemorySegment $r = (MemorySegment) $h.invokeExact(rgba$, width, height, png_size$);
+            if (png_size != null && png_size.length > 0) png_size[0] = png_size$.get(JAVA_LONG, 0);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rimage_save_png$;
+
+    /**
+     * Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
+     * (a UTF-8 path). Thread-safe.
+     * Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+     */
+    public static int Rimage_save_png(byte[] rgba, int width, int height, String path) {
+        MethodHandle $h = Rimage_save_png$;
+        if ($h == null) Rimage_save_png$ = $h = find("Rimage_save_png", FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment rgba$ = rgba == null ? MemorySegment.NULL : bytes($a, rgba);
+            MemorySegment path$ = path == null ? MemorySegment.NULL : utf8($a, path);
+            int $r = (int) $h.invokeExact(rgba$, width, height, path$);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rpixels_free$;
 
     /**
-     * Releases pixels returned by Raven (Rimage_decode, Rwindow_capture). Thread-safe.
+     * Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe.
      */
     public static void Rpixels_free(MemorySegment pixels) {
         MethodHandle $h = Rpixels_free$;

@@ -51,6 +51,7 @@ typedef enum RError {
 	R_ERROR_FILE_NOT_FOUND = 121,
 	R_ERROR_XML = 122,
 	R_ERROR_WRONG_THREAD = 123,
+	R_ERROR_IO = 124,
 } RError;
 typedef enum RSeverity {
 	R_SEVERITY_WEAK_WARNING = 128,
@@ -1346,6 +1347,8 @@ Rid Rtexture_create_from_file_async(const char* path);
 Rid Rtexture_create_from_pixels(const uint8_t* rgba, int width, int height);
 void Rtexture_update(Rid texture, const uint8_t* rgba, int width, int height);
 uint8_t* Rimage_decode(const void* data, size_t data_size, int* width, int* height);
+uint8_t* Rimage_encode_png(const uint8_t* rgba, int width, int height, size_t* png_size);
+int Rimage_save_png(const uint8_t* rgba, int width, int height, const char* path);
 void Rpixels_free(uint8_t* pixels);
 int Rtexture_is_ready(Rid texture);
 void Rtexture_wait(Rid texture);
