@@ -56,3 +56,39 @@ _Avoid_: assets folder, working directory (the current directory plays no part)
 **Port gap**:
 A part of a C example that its sample port leaves out because the phase it ports in doesn't provide it yet. Every port gap names the later phase that completes it; there is no gap without one.
 _Avoid_: missing feature, TODO (a TODO has no owner; a port gap always has a phase)
+
+**Accessible**:
+One thing a screen reader, a test or an agent sees in a Raven window: the window, a widget that means something (not one that only lays others out), or an item of a widget, such as a list row or a tab. What the user perceives, rather than how the UI is built.
+_Avoid_: node (compose-raven's Compose node, above), element, control
+
+**Selector**:
+A short text that says which accessibles to find, by role, name, text or the widget's XML name (`role=button name="Save"`). Tests, previews' scripts and agents' tools all write the same selectors.
+_Avoid_: locator, query, matcher (compose-raven's `NodeMatcher`, over Compose nodes)
+
+**Idle**:
+When a host has nothing left to do before the screen shows the app's state: no recomposition, snapshot apply or dispatched task pending. Running animations don't count, so an animation never keeps it from being idle. Tests and agents' tools both wait for it before they look at the screen.
+_Avoid_: settled, stable, quiescent
+
+**Preview**:
+A piece of UI rendered to an image file with no window shown, for people and agents to look at: how a design idea, a variant of a screen or a change looks, without running the app.
+_Avoid_: snapshot (Compose's word for its state), screenshot (a capture of the screen, which a preview never touches), mock-up
+
+**Raven MCP**:
+The part of Raven that lets an agent use a running app over the Model Context Protocol: the app publishes tools, and the agent lists and calls them.
+_Avoid_: MCP middleware, MCP bridge, the MCP server (the server is only its listening end)
+
+**Action**:
+Raven's named event: a name a widget fires (`file.save`), answered by the function bound to it or by one of Raven's own. An action is Raven's; it reaches an agent only when it is published as a tool.
+_Avoid_: command, tool
+
+**Tool**:
+Something an app publishes in Raven MCP's list for an agent to call: a name, a description, the arguments it takes, and the app's code that answers it.
+_Avoid_: action (Raven's own word, see above), command, endpoint
+
+**Call**:
+One use of a tool by an agent, with its arguments. Every call gets exactly one reply, even one the agent has cancelled.
+_Avoid_: request, invocation
+
+**Reply**:
+The app's answer to a call: a result the agent reads, or a failure it can react to.
+_Avoid_: response (the protocol's word for its own messages), return value

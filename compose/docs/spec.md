@@ -49,7 +49,8 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
 | `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `compose-raven-native` (`implementation`) |
 | `tools/raven-xml2compose` (phase 4) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
-| `compose-raven-test` | The public test harness, package `raven.compose.ui.test`: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
+| `compose-raven-ui-test` (Raven MCP) | The matchers (public, package `raven.compose.ui.test`), finding nodes and the actions on a host, headless or live (`@InternalComposeRavenApi`), with no `kotlin.test` ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
+| `compose-raven-test` | The public test harness, package `raven.compose.ui.test`: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-ui-test` (`api`), `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
 | `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 4 |
@@ -1218,8 +1219,26 @@ The harness is `compose-raven-test`, package `raven.compose.ui.test` (as Compose
 - **Leak checks**: `checkLeaks = true` by default, and a failure lists the composables whose
   widgets were not released, by name and test tag (`CallbackRegistry.liveTargets`).
 
+**Shared with Raven MCP.** As Compose splits `ui-test` from `ui-test-junit4`, the parts that don't
+belong to a test move to **`compose-raven-ui-test`**: the matchers, finding nodes, the `perform…`
+actions and the `fetch…` reads. They work against any `RavenHost`, headless or live, and don't depend
+on `kotlin.test`. `compose-raven-test` keeps `runRavenTest`, `mainClock`, the leak checks and the
+`assert…` functions on top of it (`api`), and its public API is unchanged.
+
+- The matchers stay public, in the same package. Finding nodes and running actions on a host are
+  `@InternalComposeRavenApi`, for `compose-raven-test` and `compose-raven-mcp`'s UI tools.
+- Lookups and actions throw one `NodeException`, with the messages above (`no node with text
+  "Save"`). The harness reports it as a test failure, and the UI tools as a tool failure
+  (`Rmcp_call_fail`), so tests and agents read the same words.
+- **Idle** (see `GLOSSARY.md`) is `RavenHost.isIdle()` for both. The harness draws frames until it
+  holds. A live app's tool can't draw frames, so it suspends in `RavenHost.awaitIdle(maxFrames)`,
+  which resumes at the end of the first idle frame and gives up after `maxFrames`.
+- In a live window, actions are the same real input: a pointer move, then press and release. So an
+  agent can't press a disabled button, and its clicks move hover and focus as a user's would.
+
 Decided in: [Testing strategy](issues/archive/0012-testing-strategy.md),
-[Public test module for apps](issues/archive/0029-app-testing-module.md).
+[Public test module for apps](issues/archive/0029-app-testing-module.md),
+[Finders and actions shared by tests and UI tools](issues/archive/0150-shared-finders-and-actions.md).
 
 ## 10. Samples
 
