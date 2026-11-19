@@ -220,15 +220,22 @@ extern "C" {
 
 	/**
 	 * @brief Publishes every bound action whose name starts with `prefix` (NULL: all) as a
-	 * tool, kept in step as actions are bound and unbound. Built-in actions are never included,
-	 * and a name that isn't a valid tool name is skipped and logged. No hints are claimed.
+	 * tool, kept in step as actions are bound and unbound: it takes Raction_set_list_callback's
+	 * slot, and a change reaches agents a frame later, so a description set right after
+	 * Raction_bind is the one they see. Built-in actions are never included, and a name that
+	 * isn't a valid tool name is skipped and logged. No hints are claimed. A call fires the
+	 * action from the focused window (else the first open one) and replies "ran <name>" once the
+	 * app is idle, or after 120 frames. A tool of the app's own, of the same name, wins while it
+	 * exists. Rmcp_tool_remove_all forgets every exposed action.
 	 */
 	RAVEN_MCP_API void Rmcp_expose_actions(const char* prefix);
 
 	/**
-	 * @brief Publishes one action, bound or built-in, chosen on purpose.
+	 * @brief Publishes one action, bound or built-in, chosen on purpose. Called while nothing
+	 * handles it (not bound, not a built-in), the tool fails: "nothing handles the action <name>".
 	 * @param description NULL: the action's own (Raction_get_description), or a generic one.
 	 * @param hints RMcpToolHint values, or-ed.
+	 * @return R_FALSE, logged, for a name that isn't a valid tool name.
 	 */
 	RAVEN_MCP_API int Rmcp_expose_action(const char* name, const char* description, unsigned hints);
 
@@ -662,6 +669,11 @@ RAVEN_API void        Raction_set_list_callback(RActionListCallback callback, vo
 - **The reply**: the action fires on the UI thread, Raven MCP waits until the app is idle (the UI
   tools' 120-frame limit), and replies "ran file.save". An action that nothing handles fails the
   call: "nothing handles the action file.save".
+- **What it takes, and what it can't see**: `Rmcp_expose_actions` takes Raven's one
+  `Raction_set_list_callback` slot, so an app that needs the slot too can't use both. "Handled"
+  means bound or built-in. Raven has no way to ask whether a default handler
+  (`Raction_set_default_handler`) would take a name, so an action only a default handler answers
+  fails as unhandled.
 
 Decided in [Exposing Raven's actions](issues/archive/0155-exposing-ravens-actions.md).
 

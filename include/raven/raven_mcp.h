@@ -205,15 +205,22 @@ extern "C" {
 
 	/**
 	 * @brief Publishes every bound action whose name starts with `prefix` (NULL: all) as a
-	 * tool, kept in step as actions are bound and unbound. Built-in actions are never included,
-	 * and a name that isn't a valid tool name is skipped and logged. No hints are claimed.
+	 * tool, kept in step as actions are bound and unbound: it takes Raction_set_list_callback's
+	 * slot, and a change reaches agents a frame later, so a description set right after
+	 * Raction_bind is the one they see. Built-in actions are never included, and a name that
+	 * isn't a valid tool name is skipped and logged. No hints are claimed. A call fires the
+	 * action from the focused window (else the first open one) and replies "ran <name>" once the
+	 * app is idle, or after 120 frames. A tool of the app's own, of the same name, wins while it
+	 * exists. Rmcp_tool_remove_all forgets every exposed action.
 	 */
 	RAVEN_MCP_API void Rmcp_expose_actions(const char* prefix);
 
 	/**
-	 * @brief Publishes one action, bound or built-in, chosen on purpose.
+	 * @brief Publishes one action, bound or built-in, chosen on purpose. Called while nothing
+	 * handles it (not bound, not a built-in), the tool fails: "nothing handles the action <name>".
 	 * @param description NULL: the action's own (Raction_get_description), or a generic one.
 	 * @param hints RMcpToolHint values, or-ed.
+	 * @return R_FALSE, logged, for a name that isn't a valid tool name.
 	 */
 	RAVEN_MCP_API int Rmcp_expose_action(const char* name, const char* description, unsigned hints);
 

@@ -310,6 +310,115 @@ class RavenMcpTest(unittest.TestCase):
         self.assertFalse(r.Rmcp_tool_add(desc, lambda *a: None))
 
 
+NOTEPAD = """
+<Window Title="Notes" Width="320" Height="200">
+    <VBox>
+        <Label Name="status" Text="no notes"/>
+        <Button Text="Add" OnClicked="notes.add"/>
+        <Button Text="Clear" OnClicked="notes.clear"/>
+    </VBox>
+</Window>"""
+
+
+class ExposedActionsTest(unittest.TestCase):
+    """Raven's actions as tools: an XML app's OnClicked actions, called by an agent."""
+
+    def setUp(self):
+        desc = r.RInitDesc()
+        desc.backend = r.R_BACKEND_NULL
+        desc.headless = 1
+        self.assertTrue(r.Rinit_ex(desc))
+        logs.clear()
+        self.window = r.Rwindow_create_from_xml(NOTEPAD)
+        self.status = r.Rwidget_find(self.window, "status")
+        self.senders = []
+
+        def add(sender, action, user):
+            self.senders.append(sender)
+            r.Rlabel_set_text(self.status, "1 note")
+
+        r.Raction_bind("notes.add", add)
+        r.Raction_set_description("notes.add", "Add a note")
+        r.Raction_bind("notes.clear", lambda sender, action, user: r.Rlabel_set_text(self.status, "no notes"))
+        r.Raction_bind("notes.bad name", lambda *a: None)  # not a tool name
+        r.Raction_bind("other.thing", lambda *a: None)     # not under the prefix
+        r.Raction_bind("app.quit", lambda *a: None)        # a built-in, bound: never exposed by prefix
+        r.Rwait_idle(10)
+
+    def tearDown(self):
+        r.Rmcp_stop()
+        r.Rmcp_tool_remove_all()
+        r.Rshutdown()
+
+    def tools(self):
+        listed = on_client(lambda: Client().connect().request("tools/list"))["result"]["tools"]
+        return {tool["name"]: tool for tool in listed}
+
+    def settle(self):
+        """Lets the deferred updates of the list run: they follow binding by a frame."""
+        r.Rwait_idle(10)
+
+    def test_bound_actions_under_a_prefix_are_tools(self):
+        r.Rmcp_expose_actions("notes.")
+        start()
+        tools = self.tools()
+        self.assertEqual(sorted(tools), ["notes.add", "notes.clear"])
+        self.assertEqual(tools["notes.add"]["description"], "Add a note")
+        self.assertEqual(tools["notes.clear"]["description"], "Runs the app's action `notes.clear`")
+        self.assertNotIn("annotations", tools["notes.add"])  # no hints claimed
+        self.assertTrue(any("notes.clear has no description" in m for _, m in logs))
+        self.assertTrue(any('"notes.bad name" isn\'t a valid tool name' in m for _, m in logs))
+
+    def test_a_call_fires_the_action_from_the_focused_window(self):
+        r.Rmcp_expose_actions(None)
+        start()
+        self.assertEqual(text_of(on_client(lambda: Client().connect().call("notes.add"))), "ran notes.add")
+        self.assertEqual(r.Rlabel_get_text(self.status), "1 note")
+        self.assertEqual(self.senders, [self.window])
+        self.assertNotIn("app.quit", self.tools())
+
+    def test_the_tools_follow_binding_and_unbinding(self):
+        r.Rmcp_expose_actions("notes.")
+        start()
+        r.Raction_bind("notes.pin", lambda *a: None)
+        r.Raction_set_description("notes.pin", "Pin a note")   # set after binding, still seen
+        r.Raction_unbind("notes.clear")
+        self.settle()
+        tools = self.tools()
+        self.assertEqual(sorted(tools), ["notes.add", "notes.pin"])
+        self.assertEqual(tools["notes.pin"]["description"], "Pin a note")
+
+    def test_the_apps_own_tool_wins(self):
+        r.Rmcp_expose_actions("notes.")
+        add("notes.add", lambda c, t, a: reply(c, "the app's own"))
+        start()
+        self.assertEqual(text_of(on_client(lambda: Client().connect().call("notes.add"))), "the app's own")
+        r.Rmcp_tool_remove("notes.add")   # the action comes back
+        self.assertEqual(text_of(on_client(lambda: Client().connect().call("notes.add"))), "ran notes.add")
+
+    def test_one_action_on_purpose_built_ins_included(self):
+        self.assertTrue(r.Rmcp_expose_action("theme.dark", "Switch to the dark theme",
+                                             r.R_MCP_HINT_IDEMPOTENT | r.R_MCP_HINT_CLOSED_WORLD))
+        self.assertTrue(r.Rmcp_expose_action("notes.export", None, 0))   # nothing handles it
+        self.assertFalse(r.Rmcp_expose_action("not a name", None, 0))
+        start()
+        tools = self.tools()
+        self.assertEqual(sorted(tools), ["notes.export", "theme.dark"])
+        self.assertEqual(tools["theme.dark"]["annotations"]["idempotentHint"], True)
+        self.assertEqual(text_of(on_client(lambda: Client().connect().call("theme.dark"))), "ran theme.dark")
+        failed = on_client(lambda: Client().connect().call("notes.export"))
+        self.assertTrue(failed["isError"])
+        self.assertEqual(text_of(failed), "nothing handles the action notes.export")
+
+    def test_removing_every_tool_forgets_the_actions(self):
+        r.Rmcp_expose_actions(None)
+        r.Rmcp_tool_remove_all()
+        r.Raction_bind("notes.later", lambda *a: None)
+        self.settle()
+        start()
+        self.assertEqual(self.tools(), {})
+
+
 class AcrossRunsTest(unittest.TestCase):
     def test_tools_left_from_an_earlier_run_are_refused(self):
         desc = r.RInitDesc()

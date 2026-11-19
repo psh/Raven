@@ -11,7 +11,7 @@ The proof the skills map asked for: run every skill in mattpocock-skills' `engin
 [Audit the skills against Raven](archive/0158-audit-the-skills-against-raven.md).
 
 **Depends on:** [The raven agent skill](0181-the-raven-agent-skill.md),
-[Raven's actions as tools](0177-ravens-actions-as-tools.md),
+[Raven's actions as tools](archive/0177-ravens-actions-as-tools.md),
 [Python and Rust MCP wrappers](0180-python-and-rust-mcp-wrappers.md).
 
 ## Deliverables

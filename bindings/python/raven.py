@@ -13713,15 +13713,22 @@ def Rmcp_tool_remove_all():
 
 def Rmcp_expose_actions(prefix):
     """Publishes every bound action whose name starts with `prefix` (NULL: all) as a
-    tool, kept in step as actions are bound and unbound. Built-in actions are never included,
-    and a name that isn't a valid tool name is skipped and logged. No hints are claimed."""
+    tool, kept in step as actions are bound and unbound: it takes Raction_set_list_callback's
+    slot, and a change reaches agents a frame later, so a description set right after
+    Raction_bind is the one they see. Built-in actions are never included, and a name that
+    isn't a valid tool name is skipped and logged. No hints are claimed. A call fires the
+    action from the focused window (else the first open one) and replies "ran <name>" once the
+    app is idle, or after 120 frames. A tool of the app's own, of the same name, wins while it
+    exists. Rmcp_tool_remove_all forgets every exposed action."""
     _mcp().Rmcp_expose_actions(_s(prefix))
 
 
 def Rmcp_expose_action(name, description, hints):
-    """Publishes one action, bound or built-in, chosen on purpose.
+    """Publishes one action, bound or built-in, chosen on purpose. Called while nothing
+    handles it (not bound, not a built-in), the tool fails: "nothing handles the action <name>".
     description NULL: the action's own (Raction_get_description), or a generic one.
-    hints RMcpToolHint values, or-ed."""
+    hints RMcpToolHint values, or-ed.
+    Returns: R_FALSE, logged, for a name that isn't a valid tool name."""
     return _mcp().Rmcp_expose_action(_s(name), _s(description), hints)
 
 

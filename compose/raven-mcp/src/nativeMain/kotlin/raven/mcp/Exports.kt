@@ -111,13 +111,13 @@ public fun rmcpToolRemove(name: CPointer<ByteVar>?) {
 public fun rmcpToolRemoveAll(): Unit = RavenMcp.removeAllTools()
 
 @CName("Rmcp_expose_actions")
-public fun rmcpExposeActions(prefix: CPointer<ByteVar>?) {
-    McpLog.error("Rmcp_expose_actions is not available yet: it arrives with Raven's actions as tools")
-}
+public fun rmcpExposeActions(prefix: CPointer<ByteVar>?): Unit = ExposedActions.exposeAll(prefix?.toKString())
 
 @CName("Rmcp_expose_action")
-public fun rmcpExposeAction(name: CPointer<ByteVar>?, description: CPointer<ByteVar>?, hints: UInt): Int =
-    refused("Rmcp_expose_action is not available yet: it arrives with Raven's actions as tools")
+public fun rmcpExposeAction(name: CPointer<ByteVar>?, description: CPointer<ByteVar>?, hints: UInt): Int {
+    val action = name?.toKString() ?: return refused("Rmcp_expose_action with no name")
+    return if (ExposedActions.exposeOne(action, description?.toKString(), hints.toInt())) R_TRUE else R_FALSE
+}
 
 @CName("Rmcp_call_reply")
 public fun rmcpCallReply(call: CPointer<RMcpCall>?, text: CPointer<ByteVar>?) {

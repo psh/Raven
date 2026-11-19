@@ -106,7 +106,11 @@ public class McpToolSpec(
  * only, as Raven is.
  */
 public object RavenMcp {
-    private class Registration(val spec: McpToolSpec, val tool: Tool, val handler: (McpCall) -> Unit, val run: RavenRun)
+    private class Registration(
+        val spec: McpToolSpec, val tool: Tool, val handler: (McpCall) -> Unit, val run: RavenRun,
+        /** Published by Rmcp_expose_action(s), not the app's own: the app's tools win over it. */
+        val fromAction: Boolean,
+    )
 
     /** When a run of Raven started, on Raven's own clock: between [earliest] and [latest]. */
     private class RavenRun(val earliest: Double, val latest: Double) {
@@ -203,7 +207,22 @@ public object RavenMcp {
     }
 
     /** Publishes [spec], replacing a tool of the same name. False, with the reason logged, when it can't. */
-    public fun addTool(spec: McpToolSpec, handler: (McpCall) -> Unit): Boolean {
+    public fun addTool(spec: McpToolSpec, handler: (McpCall) -> Unit): Boolean = register(spec, handler, fromAction = false)
+
+    /** Publishes an exposed action as a tool, unless one of the app's own tools has its name. */
+    internal fun addActionTool(spec: McpToolSpec, handler: (McpCall) -> Unit): Boolean {
+        if (tools[spec.name]?.fromAction == false) return false
+        return register(spec, handler, fromAction = true)
+    }
+
+    /** Withdraws an exposed action's tool; an app's own tool of that name stays. */
+    internal fun removeActionTool(name: String) {
+        if (tools[name]?.fromAction != true) return
+        tools.remove(name)
+        server?.removeTool(name)
+    }
+
+    private fun register(spec: McpToolSpec, handler: (McpCall) -> Unit, fromAction: Boolean): Boolean {
         if (Ris_initialized() != R_TRUE) return refuse("Rmcp_tool_add before Rinit")
         if (!onUiThread("Rmcp_tool_add")) return false
         if (staleTools()) return refuse("tools are left from an earlier run of Raven: remove them before Rshutdown")
@@ -213,24 +232,27 @@ public object RavenMcp {
             name = spec.name, inputSchema = schema, description = spec.description, title = spec.title,
             annotations = annotationsOf(spec.hints),
         )
-        val registration = Registration(spec, tool, handler, currentRun())
+        val registration = Registration(spec, tool, handler, currentRun(), fromAction)
         server?.let { if (tools.containsKey(spec.name)) it.removeTool(spec.name) }
         tools[spec.name] = registration
         server?.addTool(tool, handlerOf(registration))
         return true
     }
 
-    /** Withdraws a tool. Its calls not yet given to its function fail. */
+    /** Withdraws a tool. Its calls not yet given to its function fail. An action it hid comes back. */
     public fun removeTool(name: String) {
         if (!onUiThread("Rmcp_tool_remove")) return
-        if (tools.remove(name) != null) server?.removeTool(name)
+        val removed = tools.remove(name) ?: return
+        server?.removeTool(name)
+        if (!removed.fromAction) ExposedActions.sync(name)
     }
 
-    /** Withdraws every tool. */
+    /** Withdraws every tool, the exposed actions included, which are forgotten. */
     public fun removeAllTools() {
         if (!onUiThread("Rmcp_tool_remove_all")) return
         server?.removeTools(tools.keys.toList())
         tools.clear()
+        ExposedActions.reset()
     }
 
     private fun handlerOf(registration: Registration): suspend io.modelcontextprotocol.kotlin.sdk.server.ClientConnection.(
