@@ -1129,6 +1129,10 @@ pub const RTimerCallback = ?*const fn (timer: Rid, user_data: ?*anyopaque) callc
 /// name is called. Names are resolved when the event fires, so actions can be
 /// bound before or after the widgets are created.
 pub const RActionCallback = ?*const fn (sender: Rid, action: ?[*:0]const u8, user_data: ?*anyopaque) callconv(.c) void;
+/// Called on the UI thread when a name is bound (bound = R_TRUE) or
+/// unbound (R_FALSE); not when a bound name only gets a new function. The
+/// name lives until the function returns.
+pub const RActionListCallback = ?*const fn (name: ?[*:0]const u8, bound: c_int, user_data: ?*anyopaque) callconv(.c) void;
 /// Registers a function called whenever an error is raised.
 /// The function may be registered before Rinit. It is called on the
 /// thread that raised the error: errors of the renderer (and the messages
@@ -1945,8 +1949,28 @@ pub extern fn Ris_ui_thread() c_int;
 pub extern fn Rtimer_create(interval_seconds: f64, repeat: c_int, callback: RTimerCallback, user_data: ?*anyopaque) Rid;
 pub extern fn Rtimer_destroy(timer: Rid) void;
 pub extern fn Rtimer_is_valid(timer: Rid) c_int;
+/// Binds a function to an action name. Binding a name already bound
+/// replaces its function and keeps its description. A NULL callback unbinds.
 pub extern fn Raction_bind(name: ?[*:0]const u8, callback: RActionCallback, user_data: ?*anyopaque) void;
+/// Unbinds an action, and drops its description.
 pub extern fn Raction_unbind(name: ?[*:0]const u8) void;
+/// Returns: The number of bound actions (Raction_bind). The built-in actions
+/// are not counted: they are not bound, only known.
+pub extern fn Raction_get_count() c_int;
+/// Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+/// the order they were bound; NULL out of range. The text lives until the
+/// action is unbound. For a command palette, a menu built from the actions,
+/// or a script that lists what it can do.
+pub extern fn Raction_get_name(index: c_int) ?[*:0]const u8;
+/// Describes a bound action, for people and tools that list them
+/// ("Saves the document"). NULL or "" removes it. Rebinding the function
+/// keeps it; unbinding drops it. Describing a name that isn't bound is
+/// reported and does nothing.
+pub extern fn Raction_set_description(name: ?[*:0]const u8, description: ?[*:0]const u8) void;
+/// Returns: The description of a bound action, or NULL when it has none or isn't bound.
+pub extern fn Raction_get_description(name: ?[*:0]const u8) ?[*:0]const u8;
+/// Sets the function told about binding and unbinding; one at a time, NULL for none.
+pub extern fn Raction_set_list_callback(callback: RActionListCallback, user_data: ?*anyopaque) void;
 /// Fires an action as a widget would: the function bound to the
 /// name is called, or the default handler. What a tool bar button, a
 /// script or a test uses to do what a menu item does.

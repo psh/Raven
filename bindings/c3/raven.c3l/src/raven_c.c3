@@ -1182,6 +1182,12 @@ alias RTimerCallback = fn void(Rid timer, void* user_data);
 *>
 alias RActionCallback = fn void(Rid sender, char* action, void* user_data);
 <*
+ Called on the UI thread when a name is bound (bound = R_TRUE) or
+ unbound (R_FALSE); not when a bound name only gets a new function. The
+ name lives until the function returns.
+*>
+alias RActionListCallback = fn void(char* name, CInt bound, void* user_data);
+<*
  Registers a function called whenever an error is raised.
  The function may be registered before Rinit. It is called on the
  thread that raised the error: errors of the renderer (and the messages
@@ -2161,9 +2167,42 @@ extern fn void r_timer_destroy(Rid timer) @cname("Rtimer_destroy");
 
 extern fn CInt r_timer_is_valid(Rid timer) @cname("Rtimer_is_valid");
 
+<*
+ Binds a function to an action name. Binding a name already bound
+ replaces its function and keeps its description. A NULL callback unbinds.
+*>
 extern fn void r_action_bind(char* name, RActionCallback callback, void* user_data) @cname("Raction_bind");
 
+<* Unbinds an action, and drops its description. *>
 extern fn void r_action_unbind(char* name) @cname("Raction_unbind");
+
+<*
+ Returns The number of bound actions (Raction_bind). The built-in actions
+ are not counted: they are not bound, only known.
+*>
+extern fn CInt r_action_get_count() @cname("Raction_get_count");
+
+<*
+ Returns The name of a bound action, from 0 to Raction_get_count() - 1, in
+ the order they were bound; NULL out of range. The text lives until the
+ action is unbound. For a command palette, a menu built from the actions,
+ or a script that lists what it can do.
+*>
+extern fn char* r_action_get_name(CInt index) @cname("Raction_get_name");
+
+<*
+ Describes a bound action, for people and tools that list them
+ ("Saves the document"). NULL or "" removes it. Rebinding the function
+ keeps it; unbinding drops it. Describing a name that isn't bound is
+ reported and does nothing.
+*>
+extern fn void r_action_set_description(char* name, char* description) @cname("Raction_set_description");
+
+<* Returns The description of a bound action, or NULL when it has none or isn't bound. *>
+extern fn char* r_action_get_description(char* name) @cname("Raction_get_description");
+
+<* Sets the function told about binding and unbinding; one at a time, NULL for none. *>
+extern fn void r_action_set_list_callback(RActionListCallback callback, void* user_data) @cname("Raction_set_list_callback");
 
 <*
  Fires an action as a widget would: the function bound to the

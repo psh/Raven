@@ -199,6 +199,11 @@ const _symbols = {
 	Rtimer_is_valid: { args: ["u32"], returns: "i32" },
 	Raction_bind: { args: ["ptr", "ptr", "ptr"], returns: "void" },
 	Raction_unbind: { args: ["ptr"], returns: "void" },
+	Raction_get_count: { args: [], returns: "i32" },
+	Raction_get_name: { args: ["i32"], returns: "cstring" },
+	Raction_set_description: { args: ["ptr", "ptr"], returns: "void" },
+	Raction_get_description: { args: ["ptr"], returns: "cstring" },
+	Raction_set_list_callback: { args: ["ptr", "ptr"], returns: "void" },
 	Raction_fire: { args: ["ptr", "u32"], returns: "void" },
 	Raction_set_default_handler: { args: ["ptr", "ptr"], returns: "void" },
 	Raction_set_builtins: { args: ["i32"], returns: "void" },
@@ -5351,6 +5356,26 @@ function _adapt_RActionCallback(function_: RActionCallback | Pointer | null, thr
 }
 
 /**
+ * Called on the UI thread when a name is bound (bound = R_TRUE) or
+ * unbound (R_FALSE); not when a bound name only gets a new function. The
+ * name lives until the function returns.
+ */
+export type RActionListCallback = (name: string | null, bound: number, user_data: Pointer | null) => void;
+
+function _adapt_RActionListCallback(function_: RActionListCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((name: Pointer | null, bound: number, user_data: Pointer | null): void => {
+		try {
+			function_(_text(name), bound, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["ptr", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/**
  * Registers a function called whenever an error is raised.
  * The function may be registered before Rinit. It is called on the
  * thread that raised the error: errors of the renderer (and the messages
@@ -6951,12 +6976,55 @@ export function Rtimer_is_valid(timer: Rid): number {
 	return _lib.Rtimer_is_valid(timer);
 }
 
+/**
+ * Binds a function to an action name. Binding a name already bound
+ * replaces its function and keeps its description. A NULL callback unbinds.
+ */
 export function Raction_bind(name: string | null, callback: RActionCallback | Pointer | null, user_data: RPointer = null): void {
 	_lib.Raction_bind(_s(name), _adapt_RActionCallback(callback), user_data);
 }
 
+/** Unbinds an action, and drops its description. */
 export function Raction_unbind(name: string | null): void {
 	_lib.Raction_unbind(_s(name));
+}
+
+/**
+ * Returns: The number of bound actions (Raction_bind). The built-in actions
+ * are not counted: they are not bound, only known.
+ */
+export function Raction_get_count(): number {
+	return _lib.Raction_get_count();
+}
+
+/**
+ * Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+ * the order they were bound; NULL out of range. The text lives until the
+ * action is unbound. For a command palette, a menu built from the actions,
+ * or a script that lists what it can do.
+ */
+export function Raction_get_name(index: number): string | null {
+	return _lib.Raction_get_name(index);
+}
+
+/**
+ * Describes a bound action, for people and tools that list them
+ * ("Saves the document"). NULL or "" removes it. Rebinding the function
+ * keeps it; unbinding drops it. Describing a name that isn't bound is
+ * reported and does nothing.
+ */
+export function Raction_set_description(name: string | null, description: string | null): void {
+	_lib.Raction_set_description(_s(name), _s(description));
+}
+
+/** Returns: The description of a bound action, or NULL when it has none or isn't bound. */
+export function Raction_get_description(name: string | null): string | null {
+	return _lib.Raction_get_description(_s(name));
+}
+
+/** Sets the function told about binding and unbinding; one at a time, NULL for none. */
+export function Raction_set_list_callback(callback: RActionListCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Raction_set_list_callback(_adapt_RActionListCallback(callback), user_data);
 }
 
 /**

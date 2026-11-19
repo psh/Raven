@@ -2674,6 +2674,14 @@ namespace Raven
     public delegate void RActionCallback(uint sender, IntPtr action, IntPtr user_data);
 
     /// <summary>
+    /// Called on the UI thread when a name is bound (bound = R_TRUE) or
+    /// unbound (R_FALSE); not when a bound name only gets a new function. The
+    /// name lives until the function returns.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RActionListCallback(IntPtr name, int bound, IntPtr user_data);
+
+    /// <summary>
     /// Registers a function called whenever an error is raised.
     /// The function may be registered before Rinit. It is called on the
     /// thread that raised the error: errors of the renderer (and the messages
@@ -3485,11 +3493,57 @@ namespace Raven
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Rtimer_is_valid(uint timer);
 
+        /// <summary>
+        /// Binds a function to an action name. Binding a name already bound
+        /// replaces its function and keeps its description. A NULL callback unbinds.
+        /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Raction_bind([MarshalAs(Utf8.Str)] string name, RActionCallback callback, IntPtr user_data);
 
+        /// <summary>
+        /// Unbinds an action, and drops its description.
+        /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Raction_unbind([MarshalAs(Utf8.Str)] string name);
+
+        /// <summary>
+        /// Returns: The number of bound actions (Raction_bind). The built-in actions
+        /// are not counted: they are not bound, only known.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raction_get_count();
+
+        /// <summary>
+        /// Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+        /// the order they were bound; NULL out of range. The text lives until the
+        /// action is unbound. For a command palette, a menu built from the actions,
+        /// or a script that lists what it can do.
+        /// </summary>
+        [DllImport(Lib, EntryPoint = "Raction_get_name", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr Raction_get_name_(int index);
+        public static string Raction_get_name(int index) { return Text(Raction_get_name_(index)); }
+
+        /// <summary>
+        /// Describes a bound action, for people and tools that list them
+        /// ("Saves the document"). NULL or "" removes it. Rebinding the function
+        /// keeps it; unbinding drops it. Describing a name that isn't bound is
+        /// reported and does nothing.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Raction_set_description([MarshalAs(Utf8.Str)] string name, [MarshalAs(Utf8.Str)] string description);
+
+        /// <summary>
+        /// Returns: The description of a bound action, or NULL when it has none or isn't bound.
+        /// </summary>
+        [DllImport(Lib, EntryPoint = "Raction_get_description", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr Raction_get_description_([MarshalAs(Utf8.Str)] string name);
+        public static string Raction_get_description(string name) { return Text(Raction_get_description_(name)); }
+
+        /// <summary>
+        /// Sets the function told about binding and unbinding; one at a time, NULL for none.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Raction_set_list_callback(RActionListCallback callback, IntPtr user_data);
 
         /// <summary>
         /// Fires an action as a widget would: the function bound to the

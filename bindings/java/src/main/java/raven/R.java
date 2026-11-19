@@ -3899,6 +3899,29 @@ public final class R {
     }
 
     /**
+     * Called on the UI thread when a name is bound (bound = R_TRUE) or
+     * unbound (R_FALSE); not when a bound name only gets a new function. The
+     * name lives until the function returns.
+     */
+    @FunctionalInterface
+    public interface RActionListCallback {
+        void invoke(String name, int bound, MemorySegment user_data);
+    }
+
+    private static void RActionListCallback$raw(RActionListCallback f, MemorySegment name, int bound, MemorySegment user_data) {
+        try {
+            f.invoke(text(name), bound, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RActionListCallback f) {
+        return stub(f, RActionListCallback.class, "RActionListCallback$raw", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, ADDRESS));
+    }
+
+    /**
      * Registers a function called whenever an error is raised.
      * The function may be registered before Rinit. It is called on the
      * thread that raised the error: errors of the renderer (and the messages
@@ -6226,6 +6249,10 @@ public final class R {
 
     private static MethodHandle Raction_bind$;
 
+    /**
+     * Binds a function to an action name. Binding a name already bound
+     * replaces its function and keeps its description. A NULL callback unbinds.
+     */
     public static void Raction_bind(String name, RActionCallback callback, MemorySegment user_data) {
         MethodHandle $h = Raction_bind$;
         if ($h == null) Raction_bind$ = $h = find("Raction_bind", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, ADDRESS));
@@ -6237,12 +6264,19 @@ public final class R {
         }
     }
 
+    /**
+     * Binds a function to an action name. Binding a name already bound
+     * replaces its function and keeps its description. A NULL callback unbinds.
+     */
     public static void Raction_bind(String name, RActionCallback callback) {
         Raction_bind(name, callback, (MemorySegment) null);
     }
 
     private static MethodHandle Raction_unbind$;
 
+    /**
+     * Unbinds an action, and drops its description.
+     */
     public static void Raction_unbind(String name) {
         MethodHandle $h = Raction_unbind$;
         if ($h == null) Raction_unbind$ = $h = find("Raction_unbind", FunctionDescriptor.ofVoid(ADDRESS));
@@ -6252,6 +6286,101 @@ public final class R {
         } catch (Throwable $t) {
             throw fail($t);
         }
+    }
+
+    private static MethodHandle Raction_get_count$;
+
+    /**
+     * Returns: The number of bound actions (Raction_bind). The built-in actions
+     * are not counted: they are not bound, only known.
+     */
+    public static int Raction_get_count() {
+        MethodHandle $h = Raction_get_count$;
+        if ($h == null) Raction_get_count$ = $h = find("Raction_get_count", FunctionDescriptor.of(JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact();
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raction_get_name$;
+
+    /**
+     * Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+     * the order they were bound; NULL out of range. The text lives until the
+     * action is unbound. For a command palette, a menu built from the actions,
+     * or a script that lists what it can do.
+     */
+    public static String Raction_get_name(int index) {
+        MethodHandle $h = Raction_get_name$;
+        if ($h == null) Raction_get_name$ = $h = find("Raction_get_name", FunctionDescriptor.of(ADDRESS, JAVA_INT));
+        try {
+            MemorySegment $r = (MemorySegment) $h.invokeExact(index);
+            return text($r);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raction_set_description$;
+
+    /**
+     * Describes a bound action, for people and tools that list them
+     * ("Saves the document"). NULL or "" removes it. Rebinding the function
+     * keeps it; unbinding drops it. Describing a name that isn't bound is
+     * reported and does nothing.
+     */
+    public static void Raction_set_description(String name, String description) {
+        MethodHandle $h = Raction_set_description$;
+        if ($h == null) Raction_set_description$ = $h = find("Raction_set_description", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment name$ = name == null ? MemorySegment.NULL : utf8($a, name);
+            MemorySegment description$ = description == null ? MemorySegment.NULL : utf8($a, description);
+            $h.invokeExact(name$, description$);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raction_get_description$;
+
+    /**
+     * Returns: The description of a bound action, or NULL when it has none or isn't bound.
+     */
+    public static String Raction_get_description(String name) {
+        MethodHandle $h = Raction_get_description$;
+        if ($h == null) Raction_get_description$ = $h = find("Raction_get_description", FunctionDescriptor.of(ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment name$ = name == null ? MemorySegment.NULL : utf8($a, name);
+            MemorySegment $r = (MemorySegment) $h.invokeExact(name$);
+            return text($r);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raction_set_list_callback$;
+
+    /**
+     * Sets the function told about binding and unbinding; one at a time, NULL for none.
+     */
+    public static void Raction_set_list_callback(RActionListCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Raction_set_list_callback$;
+        if ($h == null) Raction_set_list_callback$ = $h = find("Raction_set_list_callback", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    /**
+     * Sets the function told about binding and unbinding; one at a time, NULL for none.
+     */
+    public static void Raction_set_list_callback(RActionListCallback callback) {
+        Raction_set_list_callback(callback, (MemorySegment) null);
     }
 
     private static MethodHandle Raction_fire$;

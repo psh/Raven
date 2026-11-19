@@ -449,8 +449,45 @@ extern "C" {
 	 */
 	typedef void (*RActionCallback)(Rid sender, const char* action, void* user_data);
 
+	/**
+	 * @brief Binds a function to an action name. Binding a name already bound
+	 * replaces its function and keeps its description. A NULL callback unbinds.
+	 */
 	RAVEN_API void Raction_bind(const char* name, RActionCallback callback, void* user_data);
+	/** @brief Unbinds an action, and drops its description. */
 	RAVEN_API void Raction_unbind(const char* name);
+
+	/**
+	 * @return The number of bound actions (Raction_bind). The built-in actions
+	 * are not counted: they are not bound, only known.
+	 */
+	RAVEN_API int Raction_get_count(void);
+	/**
+	 * @return The name of a bound action, from 0 to Raction_get_count() - 1, in
+	 * the order they were bound; NULL out of range. The text lives until the
+	 * action is unbound. For a command palette, a menu built from the actions,
+	 * or a script that lists what it can do.
+	 */
+	RAVEN_API const char* Raction_get_name(int index);
+
+	/**
+	 * @brief Describes a bound action, for people and tools that list them
+	 * ("Saves the document"). NULL or "" removes it. Rebinding the function
+	 * keeps it; unbinding drops it. Describing a name that isn't bound is
+	 * reported and does nothing.
+	 */
+	RAVEN_API void Raction_set_description(const char* name, const char* description);
+	/** @return The description of a bound action, or NULL when it has none or isn't bound. */
+	RAVEN_API const char* Raction_get_description(const char* name);
+
+	/**
+	 * Called on the UI thread when a name is bound (bound = R_TRUE) or
+	 * unbound (R_FALSE); not when a bound name only gets a new function. The
+	 * name lives until the function returns.
+	 */
+	typedef void (*RActionListCallback)(const char* name, int bound, void* user_data);
+	/** @brief Sets the function told about binding and unbinding; one at a time, NULL for none. */
+	RAVEN_API void Raction_set_list_callback(RActionListCallback callback, void* user_data);
 	/**
 	 * @brief Fires an action as a widget would: the function bound to the
 	 * name is called, or the default handler. What a tool bar button, a

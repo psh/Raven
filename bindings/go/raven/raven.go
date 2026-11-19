@@ -1276,10 +1276,42 @@ func TimerIsValid(timer ID) int {
 	return int(C.Rtimer_is_valid(C.Rid(timer)))
 }
 
+// ActionUnbind: Unbinds an action, and drops its description.
 func ActionUnbind(name string) {
 	name_ := C.CString(name)
 	defer C.free(unsafe.Pointer(name_))
 	C.Raction_unbind(name_)
+}
+
+// ActionGetCount: Returns: The number of bound actions (Raction_bind). The built-in actions are not counted:
+// they are not bound, only known.
+func ActionGetCount() int {
+	return int(C.Raction_get_count())
+}
+
+// ActionGetName: Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in the order they
+// were bound; NULL out of range. The text lives until the action is unbound. For a command palette, a menu
+// built from the actions, or a script that lists what it can do.
+func ActionGetName(index int) string {
+	return C.GoString(C.Raction_get_name(C.int(index)))
+}
+
+// ActionSetDescription: Describes a bound action, for people and tools that list them ("Saves the document").
+// NULL or "" removes it. Rebinding the function keeps it; unbinding drops it. Describing a name that isn't
+// bound is reported and does nothing.
+func ActionSetDescription(name string, description string) {
+	name_ := C.CString(name)
+	defer C.free(unsafe.Pointer(name_))
+	description_ := C.CString(description)
+	defer C.free(unsafe.Pointer(description_))
+	C.Raction_set_description(name_, description_)
+}
+
+// ActionGetDescription: Returns: The description of a bound action, or NULL when it has none or isn't bound.
+func ActionGetDescription(name string) string {
+	name_ := C.CString(name)
+	defer C.free(unsafe.Pointer(name_))
+	return C.GoString(C.Raction_get_description(name_))
 }
 
 // ActionFire: Fires an action as a widget would: the function bound to the name is called, or the default
@@ -6814,7 +6846,7 @@ func HostInjectClose(window ID) {
 // Left to cgo (a pointer to a structure, a void* or a C callback among the parameters):
 // Rinit_ex, Rset_allocator, Rallocator_get_system, Rmemory_alloc, Rmemory_realloc, Rmemory_free
 // Rmemory_get_stats, Rset_frame_callback, Rtask_post, Rtask_run_async, Rparallel_for, Rtimer_create
-// Raction_bind, Raction_set_default_handler, Rerror_get_last, Rerror_set_callback
+// Raction_bind, Raction_set_list_callback, Raction_set_default_handler, Rerror_get_last, Rerror_set_callback
 // Rset_device_reset_callback, Rwindow_get_frame_stats, Rwindow_set_icon, Rwindow_set_close_callback
 // Rwindow_set_resize_callback, Rwindow_set_drop_callback, Rwindow_set_user_handle, Rwindow_get_user_handle
 // Rwindow_get_native_handle, Rwindow_capture, Rwindow_inject_drop, Rwindow_set_event_hook

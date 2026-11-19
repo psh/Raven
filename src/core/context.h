@@ -176,6 +176,8 @@ typedef struct rvn_action_t {
 	char* name;
 	RActionCallback callback;
 	void* user_data;
+	/** Raction_set_description; NULL when none. */
+	char* description;
 } rvn_action_t;
 
 typedef struct rvn_context_t {
@@ -234,6 +236,8 @@ typedef struct rvn_context_t {
 	uint32_t action_cap;
 	RActionCallback default_action;
 	void* default_action_user;
+	RActionListCallback action_list;
+	void* action_list_user;
 	/** R_TRUE: the built-in actions (widget/actions.c) are off. */
 	int builtins_off;
 

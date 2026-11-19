@@ -2687,6 +2687,13 @@ export type RTimerCallback = (timer: Rid, user_data: Pointer | null) => void;
 export type RActionCallback = (sender: Rid, action: string | null, user_data: Pointer | null) => void;
 
 /**
+ * Called on the UI thread when a name is bound (bound = R_TRUE) or
+ * unbound (R_FALSE); not when a bound name only gets a new function. The
+ * name lives until the function returns.
+ */
+export type RActionListCallback = (name: string | null, bound: number, user_data: Pointer | null) => void;
+
+/**
  * Registers a function called whenever an error is raised.
  * The function may be registered before Rinit. It is called on the
  * thread that raised the error: errors of the renderer (and the messages
@@ -3227,9 +3234,42 @@ export function Rtimer_destroy(timer: Rid): void;
 
 export function Rtimer_is_valid(timer: Rid): number;
 
+/**
+ * Binds a function to an action name. Binding a name already bound
+ * replaces its function and keeps its description. A NULL callback unbinds.
+ */
 export function Raction_bind(name: string | null, callback: RActionCallback | Pointer | null, user_data?: RPointer): void;
 
+/** Unbinds an action, and drops its description. */
 export function Raction_unbind(name: string | null): void;
+
+/**
+ * Returns: The number of bound actions (Raction_bind). The built-in actions
+ * are not counted: they are not bound, only known.
+ */
+export function Raction_get_count(): number;
+
+/**
+ * Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+ * the order they were bound; NULL out of range. The text lives until the
+ * action is unbound. For a command palette, a menu built from the actions,
+ * or a script that lists what it can do.
+ */
+export function Raction_get_name(index: number): string | null;
+
+/**
+ * Describes a bound action, for people and tools that list them
+ * ("Saves the document"). NULL or "" removes it. Rebinding the function
+ * keeps it; unbinding drops it. Describing a name that isn't bound is
+ * reported and does nothing.
+ */
+export function Raction_set_description(name: string | null, description: string | null): void;
+
+/** Returns: The description of a bound action, or NULL when it has none or isn't bound. */
+export function Raction_get_description(name: string | null): string | null;
+
+/** Sets the function told about binding and unbinding; one at a time, NULL for none. */
+export function Raction_set_list_callback(callback: RActionListCallback | Pointer | null, user_data?: RPointer): void;
 
 /**
  * Fires an action as a widget would: the function bound to the

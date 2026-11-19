@@ -1985,6 +1985,14 @@ def _adapt_RActionCallback(function):
         function(sender, _r(action), user_data)
     return call
 
+RActionListCallback = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RActionListCallback(function):
+    def call(name, bound, user_data):
+        function(_r(name), bound, user_data)
+    return call
+
 RErrorCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.c_char_p)
 
 
@@ -3012,6 +3020,8 @@ _lib.Raction_bind.restype = None
 
 
 def Raction_bind(name, callback, user_data=None):
+    """Binds a function to an action name. Binding a name already bound
+    replaces its function and keeps its description. A NULL callback unbinds."""
     _lib.Raction_bind(_s(name), _callback(RActionCallback, _adapt_RActionCallback, callback), user_data)
 
 
@@ -3020,7 +3030,60 @@ _lib.Raction_unbind.restype = None
 
 
 def Raction_unbind(name):
+    """Unbinds an action, and drops its description."""
     _lib.Raction_unbind(_s(name))
+
+
+_lib.Raction_get_count.argtypes = []
+_lib.Raction_get_count.restype = ctypes.c_int
+
+
+def Raction_get_count():
+    """Returns: The number of bound actions (Raction_bind). The built-in actions
+    are not counted: they are not bound, only known."""
+    return _lib.Raction_get_count()
+
+
+_lib.Raction_get_name.argtypes = [ctypes.c_int]
+_lib.Raction_get_name.restype = ctypes.c_char_p
+
+
+def Raction_get_name(index):
+    """Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+    the order they were bound; NULL out of range. The text lives until the
+    action is unbound. For a command palette, a menu built from the actions,
+    or a script that lists what it can do."""
+    return _r(_lib.Raction_get_name(index))
+
+
+_lib.Raction_set_description.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+_lib.Raction_set_description.restype = None
+
+
+def Raction_set_description(name, description):
+    """Describes a bound action, for people and tools that list them
+    ("Saves the document"). NULL or "" removes it. Rebinding the function
+    keeps it; unbinding drops it. Describing a name that isn't bound is
+    reported and does nothing."""
+    _lib.Raction_set_description(_s(name), _s(description))
+
+
+_lib.Raction_get_description.argtypes = [ctypes.c_char_p]
+_lib.Raction_get_description.restype = ctypes.c_char_p
+
+
+def Raction_get_description(name):
+    """Returns: The description of a bound action, or NULL when it has none or isn't bound."""
+    return _r(_lib.Raction_get_description(_s(name)))
+
+
+_lib.Raction_set_list_callback.argtypes = [RActionListCallback, ctypes.c_void_p]
+_lib.Raction_set_list_callback.restype = None
+
+
+def Raction_set_list_callback(callback, user_data=None):
+    """Sets the function told about binding and unbinding; one at a time, NULL for none."""
+    _lib.Raction_set_list_callback(_callback(RActionListCallback, _adapt_RActionListCallback, callback), user_data)
 
 
 _lib.Raction_fire.argtypes = [ctypes.c_char_p, ctypes.c_uint32]

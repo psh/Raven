@@ -8,7 +8,7 @@ status: open
 [Raven's actions as tools](../mcp.md#ravens-actions-as-tools).
 
 **Depends on:** [The Raven MCP library](archive/0174-the-raven-mcp-library.md),
-[Listing Raven's actions](0167-listing-ravens-actions.md).
+[Listing Raven's actions](archive/0167-listing-ravens-actions.md).
 
 ## Deliverables
 

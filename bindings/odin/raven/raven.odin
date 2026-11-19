@@ -1139,6 +1139,10 @@ RTimerCallback :: #type proc "c" (timer: Rid, user_data: rawptr)
 // name is called. Names are resolved when the event fires, so actions can be
 // bound before or after the widgets are created.
 RActionCallback :: #type proc "c" (sender: Rid, action: cstring, user_data: rawptr)
+// Called on the UI thread when a name is bound (bound = R_TRUE) or
+// unbound (R_FALSE); not when a bound name only gets a new function. The
+// name lives until the function returns.
+RActionListCallback :: #type proc "c" (name: cstring, bound: i32, user_data: rawptr)
 // Registers a function called whenever an error is raised.
 // The function may be registered before Rinit. It is called on the
 // thread that raised the error: errors of the renderer (and the messages
@@ -1957,8 +1961,28 @@ foreign lib {
 	Rtimer_create :: proc(interval_seconds: f64, repeat: i32, callback: RTimerCallback, user_data: rawptr) -> Rid ---
 	Rtimer_destroy :: proc(timer: Rid) ---
 	Rtimer_is_valid :: proc(timer: Rid) -> i32 ---
+	// Binds a function to an action name. Binding a name already bound
+	// replaces its function and keeps its description. A NULL callback unbinds.
 	Raction_bind :: proc(name: cstring, callback: RActionCallback, user_data: rawptr) ---
+	// Unbinds an action, and drops its description.
 	Raction_unbind :: proc(name: cstring) ---
+	// Returns: The number of bound actions (Raction_bind). The built-in actions
+	// are not counted: they are not bound, only known.
+	Raction_get_count :: proc() -> i32 ---
+	// Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
+	// the order they were bound; NULL out of range. The text lives until the
+	// action is unbound. For a command palette, a menu built from the actions,
+	// or a script that lists what it can do.
+	Raction_get_name :: proc(index: i32) -> cstring ---
+	// Describes a bound action, for people and tools that list them
+	// ("Saves the document"). NULL or "" removes it. Rebinding the function
+	// keeps it; unbinding drops it. Describing a name that isn't bound is
+	// reported and does nothing.
+	Raction_set_description :: proc(name: cstring, description: cstring) ---
+	// Returns: The description of a bound action, or NULL when it has none or isn't bound.
+	Raction_get_description :: proc(name: cstring) -> cstring ---
+	// Sets the function told about binding and unbinding; one at a time, NULL for none.
+	Raction_set_list_callback :: proc(callback: RActionListCallback, user_data: rawptr) ---
 	// Fires an action as a widget would: the function bound to the
 	// name is called, or the default handler. What a tool bar button, a
 	// script or a test uses to do what a menu item does.

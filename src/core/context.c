@@ -278,7 +278,10 @@ void Rshutdown(void) {
 	rvn_renderer_shutdown();
 	g_rvn.platform->shutdown();
 
-	for (i = 0; i < g_rvn.action_count; i++) rvn_free(g_rvn.actions[i].name);
+	for (i = 0; i < g_rvn.action_count; i++) {
+		rvn_free(g_rvn.actions[i].name);
+		rvn_free(g_rvn.actions[i].description);
+	}
 	rvn_free(g_rvn.actions);
 	rvn_free(g_rvn.tasks);
 	rvn_free(g_rvn.dead_widgets);
@@ -475,6 +478,14 @@ static void rvn_timers_run(void) {
  *  Actions
  * ------------------------------------------------------------------------- */
 
+/* Tells the list callback (Raction_set_list_callback) that an action was bound or unbound. */
+static void rvn_action_list_changed(const char* name, int bound) {
+	if (!g_rvn.action_list) return;
+	rvn_dispatch_begin();
+	g_rvn.action_list(name, bound, g_rvn.action_list_user);
+	rvn_dispatch_end();
+}
+
 static rvn_action_t* rvn_action_find(const char* name) {
 	uint32_t i;
 	for (i = 0; i < g_rvn.action_count; i++) {
@@ -495,23 +506,73 @@ void Raction_bind(const char* name, RActionCallback callback, void* user_data) {
 		return;
 	}
 	action = rvn_action_find(name);
-	if (!action) {
-		RVN_ARRAY_RESERVE(g_rvn.actions, g_rvn.action_cap, g_rvn.action_count + 1);
-		action = &g_rvn.actions[g_rvn.action_count++];
-		action->name = rvn_strdup(name);
+	if (action) {
+		/* a new function for a bound action: still bound, and its description stays */
+		action->callback = callback;
+		action->user_data = user_data;
+		return;
 	}
+	RVN_ARRAY_RESERVE(g_rvn.actions, g_rvn.action_cap, g_rvn.action_count + 1);
+	action = &g_rvn.actions[g_rvn.action_count++];
+	action->name = rvn_strdup(name);
 	action->callback = callback;
 	action->user_data = user_data;
+	action->description = NULL;
+	rvn_action_list_changed(action->name, R_TRUE);
 }
 
 void Raction_unbind(const char* name) {
 	rvn_action_t* action;
+	char* removed;
 	RVN_API_GUARD_VOID();
 	if (!name) return;
 	action = rvn_action_find(name);
 	if (!action) return;
-	rvn_free(action->name);
-	*action = g_rvn.actions[--g_rvn.action_count];
+	removed = action->name;
+	rvn_free(action->description);
+	/* the others keep the order they were bound in (Raction_get_name) */
+	memmove(action, action + 1, (size_t)(&g_rvn.actions[g_rvn.action_count] - (action + 1)) * sizeof(*action));
+	g_rvn.action_count--;
+	/* (`name` may be `removed` itself, read with Raction_get_name: it is freed only after the callback) */
+	rvn_action_list_changed(removed, R_FALSE);
+	rvn_free(removed);
+}
+
+int Raction_get_count(void) {
+	RVN_API_GUARD(0);
+	return (int)g_rvn.action_count;
+}
+
+const char* Raction_get_name(int index) {
+	RVN_API_GUARD(NULL);
+	if (index < 0 || (uint32_t)index >= g_rvn.action_count) return NULL;
+	return g_rvn.actions[index].name;
+}
+
+void Raction_set_description(const char* name, const char* description) {
+	rvn_action_t* action;
+	RVN_API_GUARD_VOID();
+	action = name ? rvn_action_find(name) : NULL;
+	if (!action) {
+		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_WARNING,
+			"Raction_set_description: \"%s\" is not bound (describe an action after Raction_bind)", name ? name : "(null)");
+		return;
+	}
+	rvn_free(action->description);
+	action->description = description && description[0] ? rvn_strdup(description) : NULL;
+}
+
+const char* Raction_get_description(const char* name) {
+	rvn_action_t* action;
+	RVN_API_GUARD(NULL);
+	action = name ? rvn_action_find(name) : NULL;
+	return action ? action->description : NULL;
+}
+
+void Raction_set_list_callback(RActionListCallback callback, void* user_data) {
+	RVN_API_GUARD_VOID();
+	g_rvn.action_list = callback;
+	g_rvn.action_list_user = user_data;
 }
 
 void Raction_fire(const char* name, Rid sender) {
