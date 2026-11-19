@@ -240,7 +240,9 @@ class RavenMcpTest(unittest.TestCase):
         start()
         client = on_client(lambda: Client().connect())
         box = {}
-        thread = threading.Thread(target=lambda: box.update(result=client.call("slow")))
+        # A cancelled request gets no result back, so the raw response is kept.
+        thread = threading.Thread(target=lambda: box.update(
+            response=client.request("tools/call", {"name": "slow", "arguments": {}})))
         thread.start()
         for _ in range(200):
             if calls:
@@ -280,13 +282,15 @@ class RavenMcpTest(unittest.TestCase):
         try:
             self.assertTrue(start(token=None))
             path = os.path.join(home, ".raven", "mcp", "raven-mcp-test.json")
-            stored = json.load(open(path))
+            with open(path) as file:
+                stored = json.load(file)
             self.assertEqual(stored["url"], "http://127.0.0.1:%d/mcp" % PORT)
             self.assertEqual(len(stored["token"]), 64)
             self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
             mcp.Rmcp_stop()
             self.assertTrue(start(token=None))
-            self.assertEqual(json.load(open(path))["token"], stored["token"])  # kept across launches
+            with open(path) as file:
+                self.assertEqual(json.load(file)["token"], stored["token"])  # kept across launches
             add("t", lambda c, t, a: reply(c, "ok"))
             self.assertEqual(text_of(on_client(lambda: Client(token=stored["token"]).connect().call("t"))), "ok")
         finally:

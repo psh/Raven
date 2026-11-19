@@ -7,7 +7,7 @@ status: open
 `McpTool`, `application(mcp = …)` and compose-raven's `ui.*` over Compose semantics. Design:
 [compose-raven: McpTool](../mcp.md#compose-raven-mcptool), [The UI tools](../mcp.md#the-ui-tools).
 
-**Depends on:** [The Raven MCP library](0174-the-raven-mcp-library.md),
+**Depends on:** [The Raven MCP library](archive/0174-the-raven-mcp-library.md),
 [compose-raven-ui-test, and idle in a live app](0178-compose-raven-ui-test-and-live-idle.md),
 [PNG encoding in Raven's C](0166-png-encoding-in-ravens-c.md).
 

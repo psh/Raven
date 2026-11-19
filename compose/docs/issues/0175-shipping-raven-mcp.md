@@ -7,7 +7,7 @@ status: open
 Get the Raven MCP library to every kind of app. Design:
 [Building and shipping](../mcp.md#building-and-shipping).
 
-**Depends on:** [The Raven MCP library](0174-the-raven-mcp-library.md).
+**Depends on:** [The Raven MCP library](archive/0174-the-raven-mcp-library.md).
 
 ## Deliverables
 

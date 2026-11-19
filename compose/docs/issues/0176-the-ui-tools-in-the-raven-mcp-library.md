@@ -8,7 +8,7 @@ status: open
 `RMcpConfig.ui_tools`. Design: [The UI tools](../mcp.md#the-ui-tools),
 [A running app](../agent-skills.md#a-running-app).
 
-**Depends on:** [The Raven MCP library](0174-the-raven-mcp-library.md),
+**Depends on:** [The Raven MCP library](archive/0174-the-raven-mcp-library.md),
 [The UI driver in Raven's C](0169-the-ui-driver.md), [PNG encoding in Raven's C](0166-png-encoding-in-ravens-c.md).
 
 ## Deliverables

@@ -44,7 +44,16 @@ and the sections marked *open* wait on that map's tickets.
 
 #define RAVEN_MCP_API_VERSION "0.1"
 
-/* RAVEN_MCP_API: exports from, or imports into, the Raven MCP library (its own DLL on Windows). */
+/** Raven MCP library export / import: its own library (its own DLL on Windows). */
+#if defined(_WIN32)
+	#if defined(RAVEN_MCP_BUILD_DLL)
+		#define RAVEN_MCP_API __declspec(dllexport)
+	#else
+		#define RAVEN_MCP_API __declspec(dllimport)
+	#endif
+#else
+	#define RAVEN_MCP_API
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,8 +64,9 @@ extern "C" {
 	 * ============================================================================ */
 
 	/**
-	 * Receives what Raven MCP and the libraries under it have to say. Nothing
-	 * Raven MCP does is written to stdout.
+	 * Receives what Raven MCP and the libraries under it have to say, from any
+	 * thread. Information arrives as R_SEVERITY_WEAK_WARNING. Nothing Raven MCP
+	 * does is written to stdout.
 	 */
 	typedef void (*RMcpLogCallback)(RSeverity severity, const char* message, void* user_data);
 
@@ -68,7 +78,7 @@ extern "C" {
 	 * default for every field, so new fields can be added without breaking code.
 	 */
 	typedef struct RMcpConfig {
-		/** The app's name, as agents see it. NULL: RInitDesc.app_name, or "raven-app". */
+		/** The app's name, as agents see it, and its token file's. NULL: the program's name. */
 		const char* name;
 		/** The app's version, as agents see it. NULL: "0". */
 		const char* version;
@@ -106,6 +116,18 @@ extern "C" {
 	 * @param config Settings, or NULL for the defaults.
 	 * @return R_FALSE, with the reason logged, when the server already runs, the
 	 * port is taken, or tools are left from an earlier run of Raven.
+	 */
+	/**
+	 * @brief Fills `config` from the environment, for an app that offers Raven MCP to
+	 * developers only: RAVEN_MCP=1 turns it on, RAVEN_MCP_PORT sets the port and
+	 * RAVEN_MCP_UI=1 the UI tools. Other fields are left as they are.
+	 * @return R_TRUE when RAVEN_MCP=1, so the caller starts the server; R_FALSE otherwise.
+	 */
+	RAVEN_MCP_API int Rmcp_config_from_environment(RMcpConfig* config);
+
+	/*
+	 * RAVEN_MCP=0 in the environment makes Rmcp_start refuse, whatever the code asks: a
+	 * kill switch for whoever runs the app.
 	 */
 	RAVEN_MCP_API int Rmcp_start(const RMcpConfig* config);
 

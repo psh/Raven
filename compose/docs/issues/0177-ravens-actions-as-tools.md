@@ -7,7 +7,7 @@ status: open
 `Rmcp_expose_actions` and `Rmcp_expose_action`. Design:
 [Raven's actions as tools](../mcp.md#ravens-actions-as-tools).
 
-**Depends on:** [The Raven MCP library](0174-the-raven-mcp-library.md),
+**Depends on:** [The Raven MCP library](archive/0174-the-raven-mcp-library.md),
 [Listing Raven's actions](0167-listing-ravens-actions.md).
 
 ## Deliverables

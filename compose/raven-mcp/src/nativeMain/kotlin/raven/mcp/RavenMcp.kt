@@ -106,7 +106,12 @@ public class McpToolSpec(
  * only, as Raven is.
  */
 public object RavenMcp {
-    private class Registration(val spec: McpToolSpec, val tool: Tool, val handler: (McpCall) -> Unit, val run: Double)
+    private class Registration(val spec: McpToolSpec, val tool: Tool, val handler: (McpCall) -> Unit, val run: RavenRun)
+
+    /** When a run of Raven started, on Raven's own clock: between [earliest] and [latest]. */
+    private class RavenRun(val earliest: Double, val latest: Double) {
+        fun isSameAs(other: RavenRun): Boolean = earliest <= other.latest && other.earliest <= latest
+    }
 
     private val tools = LinkedHashMap<String, Registration>()
     private var server: Server? = null
@@ -167,7 +172,11 @@ public object RavenMcp {
             }
         }
         val engine = try {
-            embeddedServer(CIO, settings) { connector { host = "127.0.0.1"; this.port = port } }.start(wait = false)
+            embeddedServer(CIO, settings) {
+                connector { host = "127.0.0.1"; this.port = port }
+                // As the probe binds: a port whose old connections are in TIME_WAIT can be served again.
+                reuseAddress = true
+            }.start(wait = false)
         } catch (e: Exception) {
             return refuse("can't serve on port $port: ${e.message}")
         }
@@ -293,13 +302,22 @@ public object RavenMcp {
         )
     }
 
-    /** Which run of Raven this is: when it started, on Raven's own clock. */
-    private fun currentRun(): Double = rmcp_monotonic_seconds() - Rget_time()
+    /**
+     * Which run of Raven this is: when Rinit started it, as "now - Rget_time()". Raven's clock is read
+     * between two of ours, so the start is known to within that gap, and two runs are the same only
+     * when the gaps overlap. A run that follows Rshutdown starts later than that whole gap.
+     */
+    private fun currentRun(): RavenRun {
+        val before = rmcp_monotonic_seconds()
+        val sinceInit = Rget_time()
+        val after = rmcp_monotonic_seconds()
+        return RavenRun(before - sinceInit, after - sinceInit)
+    }
 
     private fun staleTools(): Boolean {
         if (tools.isEmpty()) return false
         val now = currentRun()
-        return tools.values.any { kotlin.math.abs(it.run - now) > 1e-3 }
+        return tools.values.any { !it.run.isSameAs(now) }
     }
 
     @OptIn(ExperimentalForeignApi::class)
