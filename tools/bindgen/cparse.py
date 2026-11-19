@@ -15,6 +15,10 @@ from typing import Any, Tuple
 # backend, and sharing the Vulkan device of Raven.
 SKIPPED_HEADERS = ("raven_vulkan.h", "raven_backend.h", "raven_emscripten.h")
 
+# Raven MCP: its own header and library, not included by Raven.h. Read into
+# Api.mcp, so that a binding offers it only where its generator asks for it.
+MCP_HEADER = "raven_mcp.h"
+
 
 class Param:
     def __init__(self, ctype, name):
@@ -68,7 +72,9 @@ class Struct:
 
 
 class Api:
-    def __init__(self):
+    def __init__(self, base=None):
+        self.base = base        # the Api this one's types may come from (Raven's, for Raven MCP's)
+        self.mcp = None         # Raven MCP's Api, over this one
         self.enums = []
         self.structs = []
         self.opaque = []        # struct names only declared: RPainter
@@ -81,19 +87,22 @@ class Api:
         for e in self.enums:
             if e.name == name:
                 return e
-        return None
+        return self.base.enum(name) if self.base else None
 
     def struct(self, name):
         for s in self.structs:
             if s.name == name:
                 return s
-        return None
+        return self.base.struct(name) if self.base else None
 
     def callback(self, name):
         for c in self.callbacks:
             if c.name == name:
                 return c
-        return None
+        return self.base.callback(name) if self.base else None
+
+    def is_opaque(self, name):
+        return name in self.opaque or (self.base is not None and self.base.is_opaque(name))
 
 
 def clean_doc(comment):
@@ -189,7 +198,7 @@ def parse_header(path, api, known):
     # ---- defines
     for match in re.finditer(r"^[ \t]*#[ \t]*define[ \t]+(R_[A-Z0-9_]+|RAVEN_[A-Z0-9_]+)[ \t]+(.+)$", code, flags=re.M):
         name, value = match.group(1), match.group(2).strip()
-        if name.endswith("_H") or name == "RAVEN_API":
+        if name.endswith("_H") or name in ("RAVEN_API", "RAVEN_MCP_API"):
             continue
         if value.startswith('"'):
             api.defines.append((name, "str", value.strip('"')))
@@ -277,7 +286,7 @@ def parse_header(path, api, known):
         take(match)
 
     # ---- functions
-    for match in re.finditer(r"RAVEN_API\s+([\w\s\*]+?)\b(R\w+)\s*\((.*?)\)\s*;", code, flags=re.S):
+    for match in re.finditer(r"RAVEN(?:_MCP)?_API\s+([\w\s\*]+?)\b(R\w+)\s*\((.*?)\)\s*;", code, flags=re.S):
         take(match)
         api.functions.append(Function(match.group(2), normalize_type(match.group(1)), split_params(match.group(3)),
                                       doc_before(match.start()), header))
@@ -292,7 +301,7 @@ def parse_header(path, api, known):
 
 
 SCALARS = {
-    "int": "int", "float": "float", "double": "double", "char": "char", "size_t": "size_t",
+    "int": "int", "unsigned": "uint32", "float": "float", "double": "double", "char": "char", "size_t": "size_t",
     "uint64_t": "uint64", "uintptr_t": "uintptr", "Ruint": "uint32", "uint32_t": "uint32", "uint8_t": "uint8", "Rid": "id",
 }
 
@@ -355,7 +364,7 @@ def classify(ctype, api) -> Tuple[str, Any]:
             return ("out", ("enum", base))
         if api.struct(base):
             return ("cstruct_ptr" if const else "struct_ptr", base)
-        if base in api.opaque:
+        if api.is_opaque(base):
             return ("opaque_ptr", base)
     raise ValueError("no binding for the C type '%s'" % ctype)
 
@@ -384,6 +393,11 @@ def parse(include_dir):
     for name, kind, value in api.defines:
         if name == "RAVEN_API_VERSION":
             api.version = value
+    api.mcp = Api(base=api)
+    parse_header(os.path.join(include_dir, "raven", MCP_HEADER), api.mcp, known)
+    for name, kind, value in api.mcp.defines:
+        if name == "RAVEN_MCP_API_VERSION":
+            api.mcp.version = value
     return api
 
 

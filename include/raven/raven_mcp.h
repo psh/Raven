@@ -95,14 +95,6 @@ extern "C" {
 	} RMcpConfig;
 
 	/**
-	 * @brief Starts serving the tools at Rmcp_get_url (Streamable HTTP). Call it
-	 * after Rinit. There is one server in a process. Tools may be added before it
-	 * starts or while it runs.
-	 * @param config Settings, or NULL for the defaults.
-	 * @return R_FALSE, with the reason logged, when the server already runs, the
-	 * port is taken, or tools are left from an earlier run of Raven.
-	 */
-	/**
 	 * @brief Fills `config` from the environment, for an app that offers Raven MCP to
 	 * developers only: RAVEN_MCP=1 turns it on, RAVEN_MCP_PORT sets the port and
 	 * RAVEN_MCP_UI=1 the UI tools. Other fields are left as they are.
@@ -110,9 +102,15 @@ extern "C" {
 	 */
 	RAVEN_MCP_API int Rmcp_config_from_environment(RMcpConfig* config);
 
-	/*
-	 * RAVEN_MCP=0 in the environment makes Rmcp_start refuse, whatever the code asks: a
+	/**
+	 * @brief Starts serving the tools at Rmcp_get_url (Streamable HTTP). Call it
+	 * after Rinit. There is one server in a process. Tools may be added before it
+	 * starts or while it runs.
+	 * RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
 	 * kill switch for whoever runs the app.
+	 * @param config Settings, or NULL for the defaults.
+	 * @return R_FALSE, with the reason logged, when the server already runs, the
+	 * port is taken, or tools are left from an earlier run of Raven.
 	 */
 	RAVEN_MCP_API int Rmcp_start(const RMcpConfig* config);
 

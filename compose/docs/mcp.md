@@ -110,14 +110,6 @@ extern "C" {
 	} RMcpConfig;
 
 	/**
-	 * @brief Starts serving the tools at Rmcp_get_url (Streamable HTTP). Call it
-	 * after Rinit. There is one server in a process. Tools may be added before it
-	 * starts or while it runs.
-	 * @param config Settings, or NULL for the defaults.
-	 * @return R_FALSE, with the reason logged, when the server already runs, the
-	 * port is taken, or tools are left from an earlier run of Raven.
-	 */
-	/**
 	 * @brief Fills `config` from the environment, for an app that offers Raven MCP to
 	 * developers only: RAVEN_MCP=1 turns it on, RAVEN_MCP_PORT sets the port and
 	 * RAVEN_MCP_UI=1 the UI tools. Other fields are left as they are.
@@ -125,9 +117,15 @@ extern "C" {
 	 */
 	RAVEN_MCP_API int Rmcp_config_from_environment(RMcpConfig* config);
 
-	/*
-	 * RAVEN_MCP=0 in the environment makes Rmcp_start refuse, whatever the code asks: a
+	/**
+	 * @brief Starts serving the tools at Rmcp_get_url (Streamable HTTP). Call it
+	 * after Rinit. There is one server in a process. Tools may be added before it
+	 * starts or while it runs.
+	 * RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
 	 * kill switch for whoever runs the app.
+	 * @param config Settings, or NULL for the defaults.
+	 * @return R_FALSE, with the reason logged, when the server already runs, the
+	 * port is taken, or tools are left from an earlier run of Raven.
 	 */
 	RAVEN_MCP_API int Rmcp_start(const RMcpConfig* config);
 
@@ -351,10 +349,20 @@ Raven MCP is implemented on the MCP Kotlin SDK
 - **Targets**: `macosArm64` and `linuxX64`. There is no Intel Mac: the MCP Kotlin SDK has no
   `macosX64`, so Raven's universal macOS packages hold an arm64-only Raven MCP library. Windows
   (`mingwX64`) comes with compose-raven's Windows target.
-- **The bindings** get `Rmcp_*` from `tools/bindgen`, like the rest of Raven's API, and load the
-  Raven MCP library on first use: from `RAVEN_MCP_LIBRARY`, or else from beside libraven. Where it
-  is missing, a binding says that Raven MCP isn't available here, and the rest of it works. In the
-  registries, Raven MCP is a separate, optional package beside each binding's
+- **The bindings** get `Rmcp_*` from `tools/bindgen`, like the rest of Raven's API. How they reach
+  the Raven MCP library follows how each binding reaches libraven
+  ([Raven MCP in every binding](issues/archive/0183-raven-mcp-in-every-binding.md)):
+  - A binding that **loads** libraven at run time (Python, LuaJIT, Java, C#, Bun, Node) loads the
+    Raven MCP library on the first `Rmcp_` call: from `RAVEN_MCP_LIBRARY`, or else from beside
+    libraven. Where it is missing, that call says Raven MCP isn't available here, and the rest of
+    the binding works.
+  - A binding that **links** libraven (Rust, Go, Zig, Odin, C3, C++) puts `Rmcp_*` in an opt-in
+    unit that links the Raven MCP library: Rust's cargo feature `mcp` (`RAVEN_MCP_LIB_DIR`), a
+    package or file of its own elsewhere, and `raven_mcp.h` itself for C++. An app that doesn't opt
+    in links none of it.
+
+  The library's install name is `@rpath/libraven_mcp.dylib` (soname `libraven_mcp.so`), so a
+  program that links it finds it by its own rpath. In the registries, Raven MCP is a separate, optional package beside each binding's
   (`pip install raven-gui[mcp]`, for example), so a plain install doesn't grow by its 6 MB.
 - **Nothing runs until it is started.** Loading or linking Raven MCP starts no thread and opens no
   port; `Rmcp_start` does both.

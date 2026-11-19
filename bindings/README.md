@@ -60,6 +60,22 @@ which gives `raven.dll` (and `raven.lib`), `libraven.so` or `libraven.dylib`.
 C++ uses the C headers and links like a C program, with the static or the
 shared library.
 
+## Raven MCP
+
+Raven MCP (`include/raven/raven_mcp.h`, see `compose/docs/mcp.md`) lets an
+agent call an app's own tools over the Model Context Protocol. It is a library
+of its own, `libraven_mcp`, built by compose's Gradle build
+(`./gradlew :raven-mcp:linkRaven_mcpReleaseSharedMacosArm64` in `compose/`),
+and it needs the shared libraven. So far two bindings have its `Rmcp_*`
+functions:
+
+- **Python**: in `raven.py`, loading the library on the first `Rmcp_` call,
+  from `RAVEN_MCP_LIBRARY`, then beside libraven, then beside `raven.py`.
+  Without it, `raven` works and the `Rmcp_` functions raise `OSError`.
+- **Rust**: in `raven::sys` (and at the root of the crate) with the cargo
+  feature `mcp`, which links the library from `RAVEN_MCP_LIB_DIR`;
+  `examples/mcp.rs` publishes a tool. It can't be used with `RAVEN_STATIC`.
+
 ## The simplest way to use Raven from any of them
 
 Describe the interface in XML, name the widgets you need and the actions they

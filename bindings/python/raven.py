@@ -13377,3 +13377,237 @@ _lib.Rhost_inject_close.restype = None
 def Rhost_inject_close(window):
     """The user asked to close the window (its close callback decides)."""
     _lib.Rhost_inject_close(window)
+
+
+# ---- Raven MCP (raven_mcp.h, version 0.1)
+#
+# Raven MCP has its own library (libraven_mcp.dylib, libraven_mcp.so,
+# raven_mcp.dll), loaded by the first call of an Rmcp_ function: from the
+# RAVEN_MCP_LIBRARY environment variable, then beside the Raven library, then
+# beside this file, then where the system looks. Without it, the rest of this
+# module works, and the Rmcp_ functions raise OSError.
+#
+# A callback stored in a structure (RMcpConfig.log, .on_session) is a ctypes
+# object, RMcpLogCallback(function) for example, that the caller keeps alive.
+
+RAVEN_MCP_API_VERSION = "0.1"
+
+
+class RMcpToolHint(enum.IntFlag):
+    """What a tool says about itself, for an agent to weigh before calling it.
+    Each hint makes the tool look safer, so a tool with none is taken to be
+    one that may destroy things and may reach outside the app. Hints are
+    claims, not checks."""
+    R_MCP_HINT_READ_ONLY = 1
+    R_MCP_HINT_NOT_DESTRUCTIVE = 2
+    R_MCP_HINT_IDEMPOTENT = 4
+    R_MCP_HINT_CLOSED_WORLD = 8
+
+R_MCP_HINT_READ_ONLY = RMcpToolHint.R_MCP_HINT_READ_ONLY
+R_MCP_HINT_NOT_DESTRUCTIVE = RMcpToolHint.R_MCP_HINT_NOT_DESTRUCTIVE
+R_MCP_HINT_IDEMPOTENT = RMcpToolHint.R_MCP_HINT_IDEMPOTENT
+R_MCP_HINT_CLOSED_WORLD = RMcpToolHint.R_MCP_HINT_CLOSED_WORLD
+
+
+RMcpLogCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RMcpLogCallback(function):
+    def call(severity, message, user_data):
+        function(_e(RSeverity, severity), _r(message), user_data)
+    return call
+
+RMcpSessionCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RMcpSessionCallback(function):
+    def call(connected, client, user_data):
+        function(connected, _r(client), user_data)
+    return call
+
+RMcpToolCallback = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RMcpToolCallback(function):
+    def call(call, tool, arguments_json, user_data):
+        function(call, _r(tool), _r(arguments_json), user_data)
+    return call
+
+
+class RMcpConfig(ctypes.Structure):
+    """Optional settings for Rmcp_start. A zero-initialized structure selects the
+    default for every field, so new fields can be added without breaking code."""
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("version", ctypes.c_char_p),
+        ("instructions", ctypes.c_char_p),
+        ("port", ctypes.c_int),
+        ("log", RMcpLogCallback),
+        ("log_user_data", ctypes.c_void_p),
+        ("token", ctypes.c_char_p),
+        ("on_session", RMcpSessionCallback),
+        ("session_user_data", ctypes.c_void_p),
+        ("ui_tools", ctypes.c_int),
+    ]
+
+
+class RMcpToolDesc(ctypes.Structure):
+    """A tool, for Rmcp_tool_add. A zero-initialized structure selects the
+    default for every field, so new fields can be added without breaking code."""
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("title", ctypes.c_char_p),
+        ("description", ctypes.c_char_p),
+        ("input_schema_json", ctypes.c_char_p),
+        ("hints", ctypes.c_uint32),
+    ]
+
+
+def _load_mcp():
+    names = {"win32": ["raven_mcp.dll"], "darwin": ["libraven_mcp.dylib"]}.get(sys.platform, ["libraven_mcp.so"])
+    tried = []
+    explicit = os.environ.get("RAVEN_MCP_LIBRARY")
+    candidates = [explicit] if explicit else []
+    for folder in (os.path.dirname(_lib._name or ""), os.path.dirname(os.path.abspath(__file__))):
+        if folder:
+            candidates += [os.path.join(folder, name) for name in names]
+    candidates += names
+    for candidate in candidates:
+        try:
+            return ctypes.CDLL(candidate)
+        except OSError as error:
+            tried.append("%s (%s)" % (candidate, error))
+    raise OSError("Raven MCP isn't available here: its library was not found; set RAVEN_MCP_LIBRARY to its path. "
+                  "Tried:\n  " + "\n  ".join(tried))
+
+
+_mcp_lib = None
+
+
+def _mcp():
+    """The Raven MCP library, loaded on first use."""
+    global _mcp_lib
+    if _mcp_lib is None:
+        lib = _load_mcp()
+        lib.Rmcp_config_from_environment.argtypes = [ctypes.POINTER(RMcpConfig)]
+        lib.Rmcp_config_from_environment.restype = ctypes.c_int
+        lib.Rmcp_start.argtypes = [ctypes.POINTER(RMcpConfig)]
+        lib.Rmcp_start.restype = ctypes.c_int
+        lib.Rmcp_stop.argtypes = []
+        lib.Rmcp_stop.restype = None
+        lib.Rmcp_get_url.argtypes = []
+        lib.Rmcp_get_url.restype = ctypes.c_char_p
+        lib.Rmcp_tool_add.argtypes = [ctypes.POINTER(RMcpToolDesc), RMcpToolCallback, ctypes.c_void_p]
+        lib.Rmcp_tool_add.restype = ctypes.c_int
+        lib.Rmcp_tool_remove.argtypes = [ctypes.c_char_p]
+        lib.Rmcp_tool_remove.restype = None
+        lib.Rmcp_tool_remove_all.argtypes = []
+        lib.Rmcp_tool_remove_all.restype = None
+        lib.Rmcp_expose_actions.argtypes = [ctypes.c_char_p]
+        lib.Rmcp_expose_actions.restype = None
+        lib.Rmcp_expose_action.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint32]
+        lib.Rmcp_expose_action.restype = ctypes.c_int
+        lib.Rmcp_call_reply.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        lib.Rmcp_call_reply.restype = None
+        lib.Rmcp_call_reply_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        lib.Rmcp_call_reply_json.restype = None
+        lib.Rmcp_call_fail.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        lib.Rmcp_call_fail.restype = None
+        lib.Rmcp_call_is_cancelled.argtypes = [ctypes.c_void_p]
+        lib.Rmcp_call_is_cancelled.restype = ctypes.c_int
+        _mcp_lib = lib
+    return _mcp_lib
+
+
+
+def Rmcp_config_from_environment(config):
+    """Fills `config` from the environment, for an app that offers Raven MCP to
+    developers only: RAVEN_MCP=1 turns it on, RAVEN_MCP_PORT sets the port and
+    RAVEN_MCP_UI=1 the UI tools. Other fields are left as they are.
+    Returns: R_TRUE when RAVEN_MCP=1, so the caller starts the server; R_FALSE otherwise."""
+    return _mcp().Rmcp_config_from_environment(_p(config))
+
+
+def Rmcp_start(config):
+    """Starts serving the tools at Rmcp_get_url (Streamable HTTP). Call it
+    after Rinit. There is one server in a process. Tools may be added before it
+    starts or while it runs.
+    RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
+    kill switch for whoever runs the app.
+    config Settings, or NULL for the defaults.
+    Returns: R_FALSE, with the reason logged, when the server already runs, the
+    port is taken, or tools are left from an earlier run of Raven."""
+    return _mcp().Rmcp_start(_p(config))
+
+
+def Rmcp_stop():
+    """Closes the port and every session, and cancels the calls not yet
+    replied to; each still needs its reply. Call it before Rshutdown. The
+    server can start again. A few idle threads may stay in the process."""
+    _mcp().Rmcp_stop()
+
+
+def Rmcp_get_url():
+    """Returns: The address being served ("http://127.0.0.1:8765/mcp"), or NULL when stopped."""
+    return _r(_mcp().Rmcp_get_url())
+
+
+def Rmcp_tool_add(desc, callback, user_data=None):
+    """Publishes a tool, and tells the connected agents their list changed.
+    A tool already published under the name is replaced, as Raction_bind
+    replaces a function: calls that arrive from now on reach the new one.
+    Returns: R_FALSE, with the reason logged, for an invalid name or schema, or
+    when tools are left from an earlier run of Raven."""
+    return _mcp().Rmcp_tool_add(_p(desc), _callback(RMcpToolCallback, _adapt_RMcpToolCallback, callback), user_data)
+
+
+def Rmcp_tool_remove(name):
+    """Withdraws a tool. Its calls not yet given to its function fail
+    ("the tool was removed"), so its user_data may be freed on return. Calls
+    already given to it stay valid until replied to."""
+    _mcp().Rmcp_tool_remove(_s(name))
+
+
+def Rmcp_tool_remove_all():
+    """Withdraws every tool. Call it, after Rmcp_stop, before Rshutdown:
+    tools left from an earlier run of Raven make Rmcp_start and Rmcp_tool_add fail."""
+    _mcp().Rmcp_tool_remove_all()
+
+
+def Rmcp_expose_actions(prefix):
+    """Publishes every bound action whose name starts with `prefix` (NULL: all) as a
+    tool, kept in step as actions are bound and unbound. Built-in actions are never included,
+    and a name that isn't a valid tool name is skipped and logged. No hints are claimed."""
+    _mcp().Rmcp_expose_actions(_s(prefix))
+
+
+def Rmcp_expose_action(name, description, hints):
+    """Publishes one action, bound or built-in, chosen on purpose.
+    description NULL: the action's own (Raction_get_description), or a generic one.
+    hints RMcpToolHint values, or-ed."""
+    return _mcp().Rmcp_expose_action(_s(name), _s(description), hints)
+
+
+def Rmcp_call_reply(call, text):
+    """Replies with a text. Thread-safe."""
+    _mcp().Rmcp_call_reply(call, _s(text))
+
+
+def Rmcp_call_reply_json(call, call_tool_result_json):
+    """Replies with a whole MCP CallToolResult: several items, images,
+    structured content. Thread-safe.
+    call_tool_result_json {"content":[...], "structuredContent":{...}}"""
+    _mcp().Rmcp_call_reply_json(call, _s(call_tool_result_json))
+
+
+def Rmcp_call_fail(call, message):
+    """Replies that the tool failed, with a message the agent reads and can
+    act on (an MCP tool error, isError). Thread-safe."""
+    _mcp().Rmcp_call_fail(call, _s(message))
+
+
+def Rmcp_call_is_cancelled(call):
+    """R_TRUE once the agent cancelled the call or Rmcp_stop ended it. Long
+    work can stop early, but still replies: the library discards that reply.
+    Thread-safe."""
+    return _mcp().Rmcp_call_is_cancelled(call)

@@ -150,17 +150,15 @@ def py_name(name):
     return name + "_" if name in ("from", "class", "def", "global", "in", "is", "lambda", "pass", "type", "id", "filter", "format") else name
 
 
-def generate(api):
-    out = [HEADER % {"version": api.version}]
-
+def emit_defines(out, api):
     for name, kind, value in api.defines:
         if kind == "str":
             out.append('%s = "%s"' % (name, value))
         else:
             out.append("%s = %s" % (name, hex(value) if kind == "id" else value))
-    out.append("")
 
-    # ---- enums
+
+def emit_enums(out, api):
     for e in api.enums:
         out.append("")
         out.append("class %s(enum.Int%s):" % (e.name, "Flag" if e.flags else "Enum"))
@@ -175,7 +173,8 @@ def generate(api):
         for item, value, doc in e.items:
             out.append("%s = %s.%s" % (item, e.name, item))
 
-    # ---- structs
+
+def emit_structs(out, api):
     for s in api.structs:
         out.append("")
         out.append("")
@@ -193,7 +192,8 @@ def generate(api):
             out.append('        ("%s", %s),' % (f.name, t))
         out.append("    ]")
 
-    # ---- callbacks
+
+def emit_callbacks(out, api):
     out.append("")
     for c in api.callbacks:
         ret_kind, ret_detail = classify(c.ret, api)
@@ -229,111 +229,191 @@ def generate(api):
             out.append("        return %s or 0" % call)
         out.append("    return call")
 
-    # ---- functions
+
+def emit_function(out, api, f, lib):
+    """The Python function over the C function f, which it reaches as `lib` (an expression)."""
+    kinds = [classify(p.ctype, api) for p in f.params]
+    ret_kind, ret_detail = classify(f.ret, api)
+
+    signature = []
+    before = []
+    args = []
+    outs = []
+    skip_next_count = False
+    for index, (p, (kind, detail)) in enumerate(zip(f.params, kinds)):
+        n = py_name(p.name)
+        last = index == len(f.params) - 1
+        if skip_next_count:
+            # the number of texts of the list before it
+            skip_next_count = False
+            args.append("len(%s_)" % py_name(f.params[index - 1].name))
+            continue
+        if kind == "out":
+            inner = SCALAR[detail[1]] if detail[0] == "scalar" else "ctypes.c_int"
+            before.append("%s_ = %s()" % (n, inner))
+            args.append("ctypes.byref(%s_)" % n)
+            outs.append("_e(%s, %s_.value)" % (detail[1], n) if detail[0] == "enum" else "%s_.value" % n)
+            continue
+        if kind == "cstr_out":
+            before.append("%s_ = ctypes.c_char_p()" % n)
+            args.append("ctypes.byref(%s_)" % n)
+            outs.append("_r(%s_.value)" % n)
+            continue
+        if kind == "cstr_array":
+            before.append("%s_ = [_s(item_) for item_ in (%s or [])]" % (n, n))
+            before.append("%s_array = (ctypes.c_char_p * len(%s_))(*%s_)" % (n, n, n))
+            args.append("%s_array" % n)
+            signature.append(n)
+            if not last and classify(f.params[index + 1].ctype, api) == ("scalar", "int") and "count" in f.params[index + 1].name:
+                skip_next_count = True
+            continue
+        if kind in ("cstr", "cptr", "cbytes") and not last and f.params[index + 1].ctype == "size_t" \
+                and f.params[index + 1].name in ("size", "data_size"):
+            # the size of a text or of bytes is known: it is not a parameter here
+            before.append("%s = _s(%s)" % (n, n) if kind == "cstr" else "%s = bytes(%s) if %s is not None else None" % (n, n, n))
+            args.append(n)
+            signature.append(n)
+            continue
+        if kind == "scalar" and p.ctype == "size_t" and p.name in ("size", "data_size") and index > 0 \
+                and classify(f.params[index - 1].ctype, api)[0] in ("cstr", "cptr", "cbytes"):
+            previous = py_name(f.params[index - 1].name)
+            args.append("len(%s) if %s is not None else 0" % (previous, previous))
+            continue
+        if kind == "cstr":
+            args.append("_s(%s)" % n)
+        elif kind == "callback":
+            args.append("_callback(%s, _adapt_%s, %s)" % (detail, detail, n))
+        elif kind in ("struct_ptr", "cstruct_ptr"):
+            args.append("_p(%s)" % n)
+        elif kind == "enum":
+            args.append("int(%s)" % n)
+        elif kind == "carray":
+            args.append("_a(%s, %s)" % (SCALAR[detail], n))
+        else:
+            args.append(n)
+        signature.append("%s=None" % n if (kind == "ptr" and p.name == "user_data" and last) else n)
+
+    out.append("def %s(%s):" % (f.name, ", ".join(signature)))
+    lines = doc_lines(f.doc)
+    if lines:
+        out.append('    """%s"""' % "\n    ".join(lines).replace("\\", "\\\\").replace('"""', "'''"))
+    for line in before:
+        out.append("    %s" % line)
+    call = "%s.%s(%s)" % (lib, f.name, ", ".join(args))
+    if ret_kind == "void":
+        out.append("    %s" % call)
+        if len(outs) == 1:
+            out.append("    return %s" % outs[0])
+        elif outs:
+            out.append("    return (%s)" % ", ".join(outs))
+        return
+    if ret_kind == "cstr":
+        result = "_r(%s)" % call
+    elif ret_kind == "enum":
+        result = "_e(%s, %s)" % (ret_detail, call)
+    elif ret_kind == "owned_str":
+        # copied out, then given back to the library
+        size = [o for o in outs if o.endswith("size_.value")]
+        out.append("    address = %s" % call)
+        out.append("    if not address:")
+        out.append("        return None")
+        out.append("    data = ctypes.string_at(address%s)" % (", " + size[0] if size else ""))
+        out.append("    _lib.Rmemory_free(address)")
+        out.append("    return data")
+        return
+    else:
+        result = call
+    if outs:
+        out.append("    result = %s" % result)
+        out.append("    return (result, %s)" % ", ".join(outs))
+    else:
+        out.append("    return %s" % result)
+
+
+
+def generate(api):
+    out = [HEADER % {"version": api.version}]
+    emit_defines(out, api)
+    out.append("")
+    emit_enums(out, api)
+    emit_structs(out, api)
+    emit_callbacks(out, api)
     for f in api.functions:
-        kinds = [classify(p.ctype, api) for p in f.params]
-        ret_kind, ret_detail = classify(f.ret, api)
-        restype = ctype_of(api, f.ret)
         out.append("")
         out.append("")
         out.append("_lib.%s.argtypes = [%s]" % (f.name, ", ".join(ctype_of(api, p.ctype) for p in f.params)))
-        out.append("_lib.%s.restype = %s" % (f.name, restype))
+        out.append("_lib.%s.restype = %s" % (f.name, ctype_of(api, f.ret)))
         out.append("")
         out.append("")
-
-        signature = []
-        before = []
-        args = []
-        outs = []
-        skip_next_count = False
-        for index, (p, (kind, detail)) in enumerate(zip(f.params, kinds)):
-            n = py_name(p.name)
-            last = index == len(f.params) - 1
-            if skip_next_count:
-                # the number of texts of the list before it
-                skip_next_count = False
-                args.append("len(%s_)" % py_name(f.params[index - 1].name))
-                continue
-            if kind == "out":
-                inner = SCALAR[detail[1]] if detail[0] == "scalar" else "ctypes.c_int"
-                before.append("%s_ = %s()" % (n, inner))
-                args.append("ctypes.byref(%s_)" % n)
-                outs.append("_e(%s, %s_.value)" % (detail[1], n) if detail[0] == "enum" else "%s_.value" % n)
-                continue
-            if kind == "cstr_out":
-                before.append("%s_ = ctypes.c_char_p()" % n)
-                args.append("ctypes.byref(%s_)" % n)
-                outs.append("_r(%s_.value)" % n)
-                continue
-            if kind == "cstr_array":
-                before.append("%s_ = [_s(item_) for item_ in (%s or [])]" % (n, n))
-                before.append("%s_array = (ctypes.c_char_p * len(%s_))(*%s_)" % (n, n, n))
-                args.append("%s_array" % n)
-                signature.append(n)
-                if not last and classify(f.params[index + 1].ctype, api) == ("scalar", "int") and "count" in f.params[index + 1].name:
-                    skip_next_count = True
-                continue
-            if kind in ("cstr", "cptr", "cbytes") and not last and f.params[index + 1].ctype == "size_t" \
-                    and f.params[index + 1].name in ("size", "data_size"):
-                # the size of a text or of bytes is known: it is not a parameter here
-                before.append("%s = _s(%s)" % (n, n) if kind == "cstr" else "%s = bytes(%s) if %s is not None else None" % (n, n, n))
-                args.append(n)
-                signature.append(n)
-                continue
-            if kind == "scalar" and p.ctype == "size_t" and p.name in ("size", "data_size") and index > 0 \
-                    and classify(f.params[index - 1].ctype, api)[0] in ("cstr", "cptr", "cbytes"):
-                previous = py_name(f.params[index - 1].name)
-                args.append("len(%s) if %s is not None else 0" % (previous, previous))
-                continue
-            if kind == "cstr":
-                args.append("_s(%s)" % n)
-            elif kind == "callback":
-                args.append("_callback(%s, _adapt_%s, %s)" % (detail, detail, n))
-            elif kind in ("struct_ptr", "cstruct_ptr"):
-                args.append("_p(%s)" % n)
-            elif kind == "enum":
-                args.append("int(%s)" % n)
-            elif kind == "carray":
-                args.append("_a(%s, %s)" % (SCALAR[detail], n))
-            else:
-                args.append(n)
-            signature.append("%s=None" % n if (kind == "ptr" and p.name == "user_data" and last) else n)
-
-        out.append("def %s(%s):" % (f.name, ", ".join(signature)))
-        lines = doc_lines(f.doc)
-        if lines:
-            out.append('    """%s"""' % "\n    ".join(lines).replace("\\", "\\\\").replace('"""', "'''"))
-        for line in before:
-            out.append("    %s" % line)
-        call = "_lib.%s(%s)" % (f.name, ", ".join(args))
-        if ret_kind == "void":
-            out.append("    %s" % call)
-            if len(outs) == 1:
-                out.append("    return %s" % outs[0])
-            elif outs:
-                out.append("    return (%s)" % ", ".join(outs))
-            continue
-        if ret_kind == "cstr":
-            result = "_r(%s)" % call
-        elif ret_kind == "enum":
-            result = "_e(%s, %s)" % (ret_detail, call)
-        elif ret_kind == "owned_str":
-            # copied out, then given back to the library
-            size = [o for o in outs if o.endswith("size_.value")]
-            out.append("    address = %s" % call)
-            out.append("    if not address:")
-            out.append("        return None")
-            out.append("    data = ctypes.string_at(address%s)" % (", " + size[0] if size else ""))
-            out.append("    _lib.Rmemory_free(address)")
-            out.append("    return data")
-            continue
-        else:
-            result = call
-        if outs:
-            out.append("    result = %s" % result)
-            out.append("    return (result, %s)" % ", ".join(outs))
-        else:
-            out.append("    return %s" % result)
-
+        emit_function(out, api, f, "_lib")
+    emit_mcp(out, api.mcp)
     out.append("")
     return {"python/raven.py": "\n".join(out)}
+
+
+MCP_HEADER = '''
+
+# ---- Raven MCP (raven_mcp.h, version %(version)s)
+#
+# Raven MCP has its own library (libraven_mcp.dylib, libraven_mcp.so,
+# raven_mcp.dll), loaded by the first call of an Rmcp_ function: from the
+# RAVEN_MCP_LIBRARY environment variable, then beside the Raven library, then
+# beside this file, then where the system looks. Without it, the rest of this
+# module works, and the Rmcp_ functions raise OSError.
+#
+# A callback stored in a structure (RMcpConfig.log, .on_session) is a ctypes
+# object, RMcpLogCallback(function) for example, that the caller keeps alive.
+'''
+
+MCP_LOADER = '''
+
+def _load_mcp():
+    names = {"win32": ["raven_mcp.dll"], "darwin": ["libraven_mcp.dylib"]}.get(sys.platform, ["libraven_mcp.so"])
+    tried = []
+    explicit = os.environ.get("RAVEN_MCP_LIBRARY")
+    candidates = [explicit] if explicit else []
+    for folder in (os.path.dirname(_lib._name or ""), os.path.dirname(os.path.abspath(__file__))):
+        if folder:
+            candidates += [os.path.join(folder, name) for name in names]
+    candidates += names
+    for candidate in candidates:
+        try:
+            return ctypes.CDLL(candidate)
+        except OSError as error:
+            tried.append("%%s (%%s)" %% (candidate, error))
+    raise OSError("Raven MCP isn't available here: its library was not found; set RAVEN_MCP_LIBRARY to its path. "
+                  "Tried:\\n  " + "\\n  ".join(tried))
+
+
+_mcp_lib = None
+
+
+def _mcp():
+    """The Raven MCP library, loaded on first use."""
+    global _mcp_lib
+    if _mcp_lib is None:
+        lib = _load_mcp()
+%(signatures)s
+        _mcp_lib = lib
+    return _mcp_lib
+'''
+
+
+def emit_mcp(out, api):
+    """Raven MCP: the same shapes as Raven's API, over a library loaded on first use."""
+    out.append(MCP_HEADER % {"version": api.version})
+    emit_defines(out, api)
+    out.append("")
+    emit_enums(out, api)
+    # (callbacks first: RMcpConfig holds two)
+    emit_callbacks(out, api)
+    emit_structs(out, api)
+    signatures = []
+    for f in api.functions:
+        signatures.append("        lib.%s.argtypes = [%s]" % (f.name, ", ".join(ctype_of(api, p.ctype) for p in f.params)))
+        signatures.append("        lib.%s.restype = %s" % (f.name, ctype_of(api, f.ret)))
+    out.append(MCP_LOADER % {"signatures": "\n".join(signatures)})
+    for f in api.functions:
+        out.append("")
+        out.append("")
+        emit_function(out, api, f, "_mcp()")

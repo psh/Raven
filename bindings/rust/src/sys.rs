@@ -4384,3 +4384,9 @@ extern "C" {
     /// The user asked to close the window (its close callback decides).
     pub fn Rhost_inject_close(window: Rid);
 }
+
+// Raven MCP (raven_mcp.h), behind the cargo feature `mcp`: it links the Raven MCP library.
+#[cfg(feature = "mcp")]
+mod mcp;
+#[cfg(feature = "mcp")]
+pub use mcp::*;

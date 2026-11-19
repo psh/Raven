@@ -10,7 +10,7 @@ status: open
 Get the Raven MCP library to every kind of app. Design:
 [Building and shipping](../mcp.md#building-and-shipping).
 
-**Depends on:** [Raven MCP in every binding](0183-raven-mcp-in-every-binding.md), which took the
+**Depends on:** [Raven MCP in every binding](archive/0183-raven-mcp-in-every-binding.md), which took the
 `tools/bindgen` deliverable.
 
 ## Deliverables

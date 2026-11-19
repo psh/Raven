@@ -18,3 +18,11 @@ include = ["src/**/*.rs", "examples/**/*.rs", "build.rs", "Cargo.toml", "README.
 # the crate is published as raven-gui, and used as `raven` (use raven::*;)
 name = "raven"
 path = "src/lib.rs"
+
+[features]
+# Raven MCP (raven_mcp.h): links the Raven MCP library, from RAVEN_MCP_LIB_DIR
+mcp = []
+
+[[example]]
+name = "mcp"
+required-features = ["mcp"]

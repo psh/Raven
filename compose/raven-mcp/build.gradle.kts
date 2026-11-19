@@ -48,6 +48,12 @@ kotlin {
         val shared = ravenSharedDir.get().asFile.absolutePath
         binaries.sharedLib("raven_mcp") {
             linkerOpts("-L$shared", "-lraven", "-Wl,-rpath,$shared")
+            // what a program linking it records: found by its rpath, not at this build's path
+            if (hostTarget == KonanTarget.MACOS_ARM64) {
+                linkerOpts("-Wl,-install_name,@rpath/libraven_mcp.dylib")
+            } else {
+                linkerOpts("-Wl,-soname,libraven_mcp.so")
+            }
             linkTaskProvider.configure { dependsOn(buildRavenShared) }
         }
         binaries.getTest("debug").apply {
@@ -79,3 +85,25 @@ val pythonTest = tasks.register<Exec>("pythonTest") {
     commandLine("python3", "-u", file("src/test/python/test_raven_mcp.py").absolutePath)
 }
 tasks.named("check") { dependsOn(pythonTest) }
+
+// The Rust binding's feature `mcp` (bindings/rust/examples/mcp.rs): links the library and calls a
+// tool over HTTP. Part of `check` only where cargo is installed.
+val cargo = listOf(System.getenv("HOME") + "/.cargo/bin/cargo", "/opt/homebrew/bin/cargo", "/opt/homebrew/opt/rustup/bin/cargo", "/usr/local/bin/cargo", "/usr/bin/cargo")
+    .firstOrNull { File(it).canExecute() }
+val rustTest = tasks.register<Exec>("rustTest") {
+    description = "Runs the Rust binding's Raven MCP example (--test) against the Raven MCP library."
+    val link = tasks.named("linkRaven_mcpReleaseShared${targetName.replaceFirstChar { it.uppercase() }}")
+    dependsOn(link, buildRavenShared)
+    val ravenDir = ravenSharedDir.get().asFile.absolutePath
+    val mcpDir = layout.buildDirectory.dir("bin/$targetName/raven_mcpReleaseShared").get().asFile.absolutePath
+    workingDir(ravenRoot.dir("bindings/rust").asFile)
+    environment("RAVEN_LIB_DIR", ravenDir)
+    environment("RAVEN_MCP_LIB_DIR", mcpDir)
+    // (rustup's cargo runs rustc from its own folder, which may not be on the PATH)
+    if (cargo != null) environment("PATH", File(cargo).parent + File.pathSeparator + System.getenv("PATH"))
+    environment("CARGO_TARGET_DIR", layout.buildDirectory.dir("rust").get().asFile.absolutePath)
+    // both libraries are found by rpath (cargo run replaces DYLD_FALLBACK_LIBRARY_PATH)
+    environment("RUSTFLAGS", "-C link-arg=-Wl,-rpath,$ravenDir -C link-arg=-Wl,-rpath,$mcpDir")
+    commandLine(cargo ?: "cargo", "run", "--offline", "--quiet", "--features", "mcp", "--example", "mcp", "--", "--test")
+}
+if (cargo != null) tasks.named("check") { dependsOn(rustTest) }
