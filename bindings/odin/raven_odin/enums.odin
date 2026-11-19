@@ -1160,3 +1160,37 @@ Accessible_Role :: enum i32 {
 	Scroll_Bar = 0x0782,
 	Pane = 0x0783,
 }
+
+// What an accessible is, now (Raccessible_describe).
+Accessible_State :: enum u32 {
+	Focusable = 0,
+	Focused = 1,
+	Disabled = 2,
+	Checked = 3,
+	Checkable = 4,
+	Expanded = 5,
+	Expandable = 6,
+	Selected = 7,
+	Selectable = 8,
+	Multiline = 9,
+	Readonly = 10,
+	Password = 11,
+	// number, minimum and maximum hold a range (a slider, a spin box).
+	Has_Range = 12,
+	// The value is a text that can be typed.
+	Editable = 13,
+	// It can be pressed.
+	Invokable = 14,
+	// Scrolled out of view, or in a menu that is closed.
+	Offscreen = 15,
+	Modal = 16,
+}
+Accessible_States :: bit_set[Accessible_State; u32]
+
+// What Raccessible_act does, for what input can't reach reliably.
+Accessible_Action :: enum i32 {
+	Expand = 0x07C0,
+	Collapse = 0x07C1,
+	Select = 0x07C2,
+	Focus = 0x07C3,
+}

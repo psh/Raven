@@ -311,6 +311,9 @@ int rvn_api_check(const char* function);
 #define RVN_API_GUARD(result) do { if (!rvn_api_check(__func__)) return result; } while (0)
 #define RVN_API_GUARD_VOID() do { if (!rvn_api_check(__func__)) return; } while (0)
 
+/** Frees what the UI driver kept (core/driver.c). */
+void rvn_driver_shutdown(void);
+
 /** Calls the function bound to an action name (or the default handler). */
 void rvn_fire_action(Rid sender, const char* action);
 

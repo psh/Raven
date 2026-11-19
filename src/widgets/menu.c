@@ -747,6 +747,36 @@ static int rvn_menu_bar_title_at(const rvn_widget_t* widget, float x, float y) {
 	return -1;
 }
 
+int rvn_menu_entry_box(rvn_widget_t* entry, rvn_rect_t* box) {
+	rvn_widget_t* parent = entry->parent;
+	rvn_vec2_t origin;
+	rvn_rect_t rect;
+	int index;
+	if (!parent) return R_FALSE;
+	for (index = 0; index < (int)parent->child_count && parent->children[index] != entry; index++) {}
+	if (parent->cls->type == R_WIDGET_MENU_BAR) {
+		if (!rvn_menu_bar_title_rect(parent, index, &rect) || parent->rect.w <= 0.0f) return R_FALSE;
+	} else if (parent->cls->type == R_WIDGET_MENU) {
+		/* the entries of a menu are drawn by it, only while it is open */
+		if (!parent->window || rvn_window_popup_index(parent->window, parent) < 0) return R_FALSE;
+		if (!rvn_menu_entry_rect(parent, index, &rect)) return R_FALSE;
+	} else {
+		return R_FALSE;
+	}
+	origin = rvn_widget_origin(parent);
+	*box = rvn_rect(origin.x + rect.x, origin.y + rect.y, rect.w, rect.h);
+	return R_TRUE;
+}
+
+const char* rvn_menu_title(const rvn_widget_t* menu) {
+	const char* title = ((const rvn_menu_t*)menu)->title;
+	return title ? title : "";
+}
+
+int rvn_menu_is_open(const rvn_widget_t* menu) {
+	return menu->window && rvn_window_popup_index(menu->window, menu) >= 0;
+}
+
 static void rvn_menu_bar_open(rvn_widget_t* widget, int index) {
 	rvn_menu_bar_t* bar = (rvn_menu_bar_t*)widget;
 	rvn_vec2_t origin = rvn_widget_origin(widget);

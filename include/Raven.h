@@ -59,6 +59,7 @@
 #include "raven/raven_xml.h"
 #include "raven/raven_locale.h"
 #include "raven/raven_accessibility.h"
+#include "raven/raven_driver.h"
 #include "raven/raven_vulkan.h"
 #include "raven/raven_backend.h"
 #include "raven/raven_host.h"

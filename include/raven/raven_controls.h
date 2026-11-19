@@ -216,6 +216,8 @@ extern "C" {
 	 * hold any single child widget (Rwidget_add_child), e.g. an HBox with an icon.
 	 */
 	RAVEN_API void Rbutton_set_text(Rid button, const char* text);
+	/** @return The text the button shows (its first label), or "". */
+	RAVEN_API const char* Rbutton_get_text(Rid button);
 	RAVEN_API void Rbutton_set_style(Rid button, RButtonStyle style);
 	typedef void (*RButtonClickedCallback)(Rid button, void* user_data);
 	RAVEN_API void Rbutton_set_clicked_callback(Rid button, RButtonClickedCallback callback, void* user_data);

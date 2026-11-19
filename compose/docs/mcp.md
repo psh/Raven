@@ -425,7 +425,7 @@ set. Every line reads as a selector.
 
 ```
 - window "Notes"
-  - text-input "New note" [focused]
+  - text-field "New note" [focused]
   - button "Add"
   - list "Notes"
     - list-item "buy milk"

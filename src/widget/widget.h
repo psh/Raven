@@ -1094,6 +1094,19 @@ rvn_widget_t* rvn_menu_find_window_shortcut(rvn_window_t* window, RKey key, uint
 int rvn_parse_shortcut(const char* text, RKey* key, uint32_t* modifiers);
 /** Opens a menu as a popup at a window position. Implemented in widgets/menu.c. */
 void rvn_menu_popup(rvn_widget_t* menu, rvn_window_t* window, float x, float y);
+/** Where a menu's entry (an item, a submenu) or a menu bar's title is in its window; R_FALSE when not shown. */
+int  rvn_menu_entry_box(rvn_widget_t* entry, rvn_rect_t* box);
+int  rvn_menu_is_open(const rvn_widget_t* menu);
+/** The text a menu shows as a title in a menu bar, or as an entry of another menu. */
+const char* rvn_menu_title(const rvn_widget_t* menu);
+
+/* Where the items of the widgets that show them are in their window, for the accessibles (core/accessibility.c).
+   `reveal` scrolls the row into view first. */
+int  rvn_list_view_row_box(rvn_widget_t* widget, int row, int reveal, rvn_rect_t* box);
+int  rvn_tree_view_row_count(rvn_widget_t* widget);
+Rid  rvn_tree_view_row_item(rvn_widget_t* widget, int row);
+int  rvn_tree_view_row_box(rvn_widget_t* widget, int row, int reveal, rvn_rect_t* box);
+int  rvn_tab_view_tab_box(rvn_widget_t* widget, int index, rvn_rect_t* box);
 
 /* ---------------------------------------------------------------------------
  *  Attribute parsing (xml/xml_attributes.c), shared by all set_attribute functions

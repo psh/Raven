@@ -158,6 +158,18 @@ static int rvn_tab_at(const rvn_widget_t* widget, float x, float y, int* on_clos
 	return -1;
 }
 
+int rvn_tab_view_tab_box(rvn_widget_t* widget, int index, rvn_rect_t* box) {
+	float position = rvn_tab_documents(widget) ? 4.0f : 0.0f;
+	rvn_vec2_t origin;
+	uint32_t i;
+	if (index < 0 || (uint32_t)index >= widget->child_count) return R_FALSE;
+	/* (as rvn_tab_at reads the tabs) */
+	for (i = 0; i < (uint32_t)index; i++) position += rvn_tab_width(widget, widget->children[i]);
+	origin = rvn_widget_origin(widget);
+	*box = rvn_rect(origin.x + position, origin.y, rvn_tab_width(widget, widget->children[index]), rvn_tab_bar_height(widget));
+	return R_TRUE;
+}
+
 /* The user closes a tab : the application may keep it (R_FALSE), else the page is deleted. */
 static void rvn_tab_request_close(rvn_widget_t* widget, int index) {
 	rvn_tab_view_t* tabs = (rvn_tab_view_t*)widget;

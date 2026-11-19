@@ -394,6 +394,9 @@ public:
 	/// A longer explanation, read after the name.
 	void set_accessible_description(const char* description) const { Rwidget_set_accessible_description(id_, description); }
 
+	/// Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL.
+	const char* get_accessible_description() const { return Rwidget_get_accessible_description(id_); }
+
 	void set_accessible_role(RAccessibleRole role) const { Rwidget_set_accessible_role(id_, role); }
 
 	/// The role the screen reader sees (given, or the one of the type).
@@ -540,6 +543,9 @@ public:
 	/// Sets the content of the button to a label. A button can instead
 	/// hold any single child widget (Rwidget_add_child), e.g. an HBox with an icon.
 	void set_text(const char* text) const { Rbutton_set_text(id_, text); }
+
+	/// Returns: The text the button shows (its first label), or "".
+	const char* get_text() const { return Rbutton_get_text(id_); }
 
 	void set_style(RButtonStyle style) const { Rbutton_set_style(id_, style); }
 
@@ -4464,6 +4470,53 @@ inline void accessibility_announce(const char* text, int assertive) { Raccessibi
 
 /// R_TRUE when a screen reader is reading the windows of the application.
 inline int accessibility_is_screen_reader_active() { return Raccessibility_is_screen_reader_active(); }
+
+/// How many accessibles match a selector.
+/// window R_INVALID_ID or 0: every open window.
+/// Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+inline int accessible_count(Rid window, const char* selector) { return Raccessible_count(window, selector); }
+
+/// Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why).
+inline RAccessible accessible_find(Rid window, const char* selector) { return Raccessible_find(window, selector); }
+
+/// Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none.
+inline RAccessible accessible_get(Rid window, const char* selector, int index) { return Raccessible_get(window, selector, index); }
+
+/// Returns: The accessible of a window: the top of its tree.
+inline RAccessible accessible_get_root(Rid window) { return Raccessible_get_root(window); }
+
+/// Returns: The accessible that holds this one; 0 for a window.
+inline RAccessible accessible_get_parent(RAccessible accessible) { return Raccessible_get_parent(accessible); }
+
+inline int accessible_get_child_count(RAccessible accessible) { return Raccessible_get_child_count(accessible); }
+
+inline RAccessible accessible_get_child(RAccessible accessible, int index) { return Raccessible_get_child(accessible, index); }
+
+/// Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone.
+inline int accessible_describe(RAccessible accessible, RAccessibleInfo* info) { return Raccessible_describe(accessible, info); }
+
+/// Returns: The role's name in a selector ("list-item"), or "" for one that has none.
+inline const char* accessible_get_role_name(RAccessibleRole role) { return Raccessible_get_role_name(role); }
+
+/// Clicks the middle of an accessible with the mouse: real input, so
+/// a disabled one can't be clicked. A row is scrolled into view first, and a
+/// menu item in a closed menu is reached through its menus, opened the way a
+/// user opens them.
+inline int accessible_click(RAccessible accessible) { return Raccessible_click(accessible); }
+
+/// Gives an accessible the keyboard focus, then types a text into it, as the keyboard would.
+inline int accessible_type(RAccessible accessible, const char* text) { return Raccessible_type(accessible, text); }
+
+/// Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values).
+inline int accessible_press_key(RAccessible accessible, RKey key, Ruint modifiers) { return Raccessible_press_key(accessible, key, modifiers); }
+
+/// Expands, collapses, selects or focuses an accessible directly, without input.
+inline int accessible_act(RAccessible accessible, RAccessibleAction action) { return Raccessible_act(accessible, action); }
+
+/// Returns: Why the last find or action failed, for a test to report and an
+/// agent to read ("no accessible with role=button name=\"Save\"", "2
+/// accessibles with role=list-item, expected one"); "" after one that worked.
+inline const char* accessible_get_last_error() { return Raccessible_get_last_error(); }
 
 /// Makes the next Rinit use the host platform. The structure is copied; NULL restores the default.
 inline void host_platform_register(const RHostPlatformDesc* desc) { Rhost_platform_register(desc); }

@@ -1125,6 +1125,37 @@ R_ROLE_SEPARATOR :: 0x0781
 R_ROLE_SCROLL_BAR :: 0x0782
 R_ROLE_PANE :: 0x0783
 
+// What an accessible is, now (Raccessible_describe).
+RAccessibleState :: i32
+R_ACCESSIBLE_FOCUSABLE :: 1
+R_ACCESSIBLE_FOCUSED :: 2
+R_ACCESSIBLE_DISABLED :: 4
+R_ACCESSIBLE_CHECKED :: 8
+R_ACCESSIBLE_CHECKABLE :: 0x0010
+R_ACCESSIBLE_EXPANDED :: 0x0020
+R_ACCESSIBLE_EXPANDABLE :: 0x0040
+R_ACCESSIBLE_SELECTED :: 0x0080
+R_ACCESSIBLE_SELECTABLE :: 0x0100
+R_ACCESSIBLE_MULTILINE :: 0x0200
+R_ACCESSIBLE_READONLY :: 0x0400
+R_ACCESSIBLE_PASSWORD :: 0x0800
+// number, minimum and maximum hold a range (a slider, a spin box).
+R_ACCESSIBLE_HAS_RANGE :: 0x1000
+// The value is a text that can be typed.
+R_ACCESSIBLE_EDITABLE :: 0x2000
+// It can be pressed.
+R_ACCESSIBLE_INVOKABLE :: 0x4000
+// Scrolled out of view, or in a menu that is closed.
+R_ACCESSIBLE_OFFSCREEN :: 0x8000
+R_ACCESSIBLE_MODAL :: 0x10000
+
+// What Raccessible_act does, for what input can't reach reliably.
+RAccessibleAction :: i32
+R_ACCESSIBLE_EXPAND :: 0x07C0
+R_ACCESSIBLE_COLLAPSE :: 0x07C1
+R_ACCESSIBLE_SELECT :: 0x07C2
+R_ACCESSIBLE_FOCUS :: 0x07C3
+
 // Registers a function called once per frame, before the layout.
 // The body of your loop does the same job; the callback is also called
 // while the OS keeps the thread in a loop of its own (on Windows, while
@@ -1823,6 +1854,33 @@ RAccessibilitySettings :: struct {
 	reduce_motion: i32,
 	// R_TRUE when a screen reader is running.
 	screen_reader: i32,
+}
+
+// An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call.
+RAccessibleInfo :: struct {
+	role: RAccessibleRole,
+	name: cstring,
+	description: cstring,
+	// A text field's text, the selected entry of a list, a slider's number as text; or "".
+	value: cstring,
+	number: f64,
+	minimum: f64,
+	maximum: f64,
+	// RAccessibleState values, or-ed.
+	states: u32,
+	// In its window, logical units.
+	x: f32,
+	// In its window, logical units.
+	y: f32,
+	// In its window, logical units.
+	width: f32,
+	// In its window, logical units.
+	height: f32,
+	window: Rid,
+	// The widget it is, or the one whose item it is; R_INVALID_ID for a window.
+	widget: Rid,
+	// Its index among its widget's items, or -1 when it is not an item.
+	item: i32,
 }
 
 RHostPlatformDesc :: struct {
@@ -2844,6 +2902,8 @@ foreign lib {
 	// Sets the content of the button to a label. A button can instead
 	// hold any single child widget (Rwidget_add_child), e.g. an HBox with an icon.
 	Rbutton_set_text :: proc(button: Rid, text: cstring) ---
+	// Returns: The text the button shows (its first label), or "".
+	Rbutton_get_text :: proc(button: Rid) -> cstring ---
 	Rbutton_set_style :: proc(button: Rid, style: RButtonStyle) ---
 	Rbutton_set_clicked_callback :: proc(button: Rid, callback: RButtonClickedCallback, user_data: rawptr) ---
 	Rcheckbox_create :: proc(text: cstring) -> Rid ---
@@ -4392,6 +4452,8 @@ foreign lib {
 	Rwidget_get_accessible_name :: proc(widget: Rid) -> cstring ---
 	// A longer explanation, read after the name.
 	Rwidget_set_accessible_description :: proc(widget: Rid, description: cstring) ---
+	// Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL.
+	Rwidget_get_accessible_description :: proc(widget: Rid) -> cstring ---
 	Rwidget_set_accessible_role :: proc(widget: Rid, role: RAccessibleRole) ---
 	// The role the screen reader sees (given, or the one of the type).
 	Rwidget_get_accessible_role :: proc(widget: Rid) -> RAccessibleRole ---
@@ -4403,6 +4465,39 @@ foreign lib {
 	Raccessibility_announce :: proc(text: cstring, assertive: i32) ---
 	// R_TRUE when a screen reader is reading the windows of the application.
 	Raccessibility_is_screen_reader_active :: proc() -> i32 ---
+	// How many accessibles match a selector.
+	// window R_INVALID_ID or 0: every open window.
+	// Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+	Raccessible_count :: proc(window: Rid, selector: cstring) -> i32 ---
+	// Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why).
+	Raccessible_find :: proc(window: Rid, selector: cstring) -> u64 ---
+	// Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none.
+	Raccessible_get :: proc(window: Rid, selector: cstring, index: i32) -> u64 ---
+	// Returns: The accessible of a window: the top of its tree.
+	Raccessible_get_root :: proc(window: Rid) -> u64 ---
+	// Returns: The accessible that holds this one; 0 for a window.
+	Raccessible_get_parent :: proc(accessible: u64) -> u64 ---
+	Raccessible_get_child_count :: proc(accessible: u64) -> i32 ---
+	Raccessible_get_child :: proc(accessible: u64, index: i32) -> u64 ---
+	// Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone.
+	Raccessible_describe :: proc(accessible: u64, info: ^RAccessibleInfo) -> i32 ---
+	// Returns: The role's name in a selector ("list-item"), or "" for one that has none.
+	Raccessible_get_role_name :: proc(role: RAccessibleRole) -> cstring ---
+	// Clicks the middle of an accessible with the mouse: real input, so
+	// a disabled one can't be clicked. A row is scrolled into view first, and a
+	// menu item in a closed menu is reached through its menus, opened the way a
+	// user opens them.
+	Raccessible_click :: proc(accessible: u64) -> i32 ---
+	// Gives an accessible the keyboard focus, then types a text into it, as the keyboard would.
+	Raccessible_type :: proc(accessible: u64, text: cstring) -> i32 ---
+	// Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values).
+	Raccessible_press_key :: proc(accessible: u64, key: RKey, modifiers: u32) -> i32 ---
+	// Expands, collapses, selects or focuses an accessible directly, without input.
+	Raccessible_act :: proc(accessible: u64, action: RAccessibleAction) -> i32 ---
+	// Returns: Why the last find or action failed, for a test to report and an
+	// agent to read ("no accessible with role=button name=\"Save\"", "2
+	// accessibles with role=list-item, expected one"); "" after one that worked.
+	Raccessible_get_last_error :: proc() -> cstring ---
 	// Makes the next Rinit use the host platform. The structure is copied; NULL restores the default.
 	Rhost_platform_register :: proc(desc: ^RHostPlatformDesc) ---
 	// Returns: R_TRUE while the running library uses the host platform.

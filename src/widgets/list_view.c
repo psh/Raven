@@ -88,6 +88,22 @@ static int rvn_list_row_at(const rvn_widget_t* widget, float y) {
 	return (row >= 0 && row < rvn_list_count(list)) ? row : -1;
 }
 
+static void rvn_list_reveal(rvn_widget_t* widget, int row);
+
+int rvn_list_view_row_box(rvn_widget_t* widget, int row, int reveal, rvn_rect_t* box) {
+	rvn_list_view_t* list = (rvn_list_view_t*)widget;
+	float height = rvn_list_row_height(widget), bar;
+	rvn_vec2_t origin;
+	if (row < 0 || row >= rvn_list_count(list)) return R_FALSE;
+	if (reveal) rvn_list_reveal(widget, row);
+	origin = rvn_widget_origin(widget);
+	bar = rvn_scrollbar_needed(&list->bar) ? rvn_widget_metric(widget, R_METRIC_SCROLLBAR_SIZE) : 0.0f;
+	/* (as rvn_list_row_at reads the rows: below a border of 1, moved by the scroll offset) */
+	*box = rvn_rect(origin.x + 1.0f, origin.y + 1.0f + height * (float)row - list->bar.offset,
+		rvn_maxf(0.0f, widget->rect.w - 2.0f - bar), height);
+	return R_TRUE;
+}
+
 static void rvn_list_reveal(rvn_widget_t* widget, int row) {
 	rvn_list_view_t* list = (rvn_list_view_t*)widget;
 	float height = rvn_list_row_height(widget), top = height * (float)row;

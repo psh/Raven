@@ -249,6 +249,34 @@ static int rvn_tree_row_at(rvn_widget_t* widget, float y) {
 	return (row >= 0 && row < (int)tree->row_count) ? row : -1;
 }
 
+static void rvn_tree_reveal(rvn_widget_t* widget, int row);
+
+int rvn_tree_view_row_count(rvn_widget_t* widget) {
+	rvn_tree_view_t* tree = (rvn_tree_view_t*)widget;
+	rvn_tree_update_rows(tree);
+	return (int)tree->row_count;
+}
+
+Rid rvn_tree_view_row_item(rvn_widget_t* widget, int row) {
+	rvn_tree_view_t* tree = (rvn_tree_view_t*)widget;
+	rvn_tree_update_rows(tree);
+	return row >= 0 && row < (int)tree->row_count ? tree->rows[row]->id : R_INVALID_ID;
+}
+
+int rvn_tree_view_row_box(rvn_widget_t* widget, int row, int reveal, rvn_rect_t* box) {
+	rvn_tree_view_t* tree = (rvn_tree_view_t*)widget;
+	float height = rvn_tree_row_height(widget), bar;
+	rvn_vec2_t origin;
+	rvn_tree_update_rows(tree);
+	if (row < 0 || row >= (int)tree->row_count) return R_FALSE;
+	if (reveal) rvn_tree_reveal(widget, row);
+	origin = rvn_widget_origin(widget);
+	bar = rvn_scrollbar_needed(&tree->bar) ? rvn_widget_metric(widget, R_METRIC_SCROLLBAR_SIZE) : 0.0f;
+	*box = rvn_rect(origin.x + 1.0f, origin.y + 1.0f + height * (float)row - tree->bar.offset,
+		rvn_maxf(0.0f, widget->rect.w - 2.0f - bar), height);
+	return R_TRUE;
+}
+
 static void rvn_tree_reveal(rvn_widget_t* widget, int row) {
 	rvn_tree_view_t* tree = (rvn_tree_view_t*)widget;
 	float height = rvn_tree_row_height(widget), top = height * (float)row;

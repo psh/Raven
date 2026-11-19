@@ -1770,6 +1770,54 @@ namespace Raven
     }
 
     /// <summary>
+    /// What an accessible is, now (Raccessible_describe).
+    /// </summary>
+    [Flags]
+    public enum RAccessibleState : int
+    {
+        R_ACCESSIBLE_FOCUSABLE = 1,
+        R_ACCESSIBLE_FOCUSED = 2,
+        R_ACCESSIBLE_DISABLED = 4,
+        R_ACCESSIBLE_CHECKED = 8,
+        R_ACCESSIBLE_CHECKABLE = 0x0010,
+        R_ACCESSIBLE_EXPANDED = 0x0020,
+        R_ACCESSIBLE_EXPANDABLE = 0x0040,
+        R_ACCESSIBLE_SELECTED = 0x0080,
+        R_ACCESSIBLE_SELECTABLE = 0x0100,
+        R_ACCESSIBLE_MULTILINE = 0x0200,
+        R_ACCESSIBLE_READONLY = 0x0400,
+        R_ACCESSIBLE_PASSWORD = 0x0800,
+        /// <summary>
+        /// number, minimum and maximum hold a range (a slider, a spin box).
+        /// </summary>
+        R_ACCESSIBLE_HAS_RANGE = 0x1000,
+        /// <summary>
+        /// The value is a text that can be typed.
+        /// </summary>
+        R_ACCESSIBLE_EDITABLE = 0x2000,
+        /// <summary>
+        /// It can be pressed.
+        /// </summary>
+        R_ACCESSIBLE_INVOKABLE = 0x4000,
+        /// <summary>
+        /// Scrolled out of view, or in a menu that is closed.
+        /// </summary>
+        R_ACCESSIBLE_OFFSCREEN = 0x8000,
+        R_ACCESSIBLE_MODAL = 0x10000,
+    }
+
+    /// <summary>
+    /// What Raccessible_act does, for what input can't reach reliably.
+    /// </summary>
+    public enum RAccessibleAction : int
+    {
+        R_ACCESSIBLE_EXPAND = 0x07C0,
+        R_ACCESSIBLE_COLLAPSE = 0x07C1,
+        R_ACCESSIBLE_SELECT = 0x07C2,
+        R_ACCESSIBLE_FOCUS = 0x07C3,
+    }
+
+    /// <summary>
     /// Optional settings for Rinit_ex. A zero-initialized structure selects the
     /// default for every field, so new fields can be added without breaking code.
     /// </summary>
@@ -2621,6 +2669,53 @@ namespace Raven
         /// R_TRUE when a screen reader is running.
         /// </summary>
         public int screen_reader;
+    }
+
+    /// <summary>
+    /// An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RAccessibleInfo
+    {
+        public RAccessibleRole role;
+        public IntPtr name;
+        public IntPtr description;
+        /// <summary>
+        /// A text field's text, the selected entry of a list, a slider's number as text; or "".
+        /// </summary>
+        public IntPtr value;
+        public double number;
+        public double minimum;
+        public double maximum;
+        /// <summary>
+        /// RAccessibleState values, or-ed.
+        /// </summary>
+        public uint states;
+        /// <summary>
+        /// In its window, logical units.
+        /// </summary>
+        public float x;
+        /// <summary>
+        /// In its window, logical units.
+        /// </summary>
+        public float y;
+        /// <summary>
+        /// In its window, logical units.
+        /// </summary>
+        public float width;
+        /// <summary>
+        /// In its window, logical units.
+        /// </summary>
+        public float height;
+        public uint window;
+        /// <summary>
+        /// The widget it is, or the one whose item it is; R_INVALID_ID for a window.
+        /// </summary>
+        public uint widget;
+        /// <summary>
+        /// Its index among its widget's items, or -1 when it is not an item.
+        /// </summary>
+        public int item;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -5554,6 +5649,13 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rbutton_set_text(uint button, [MarshalAs(Utf8.Str)] string text);
+
+        /// <summary>
+        /// Returns: The text the button shows (its first label), or "".
+        /// </summary>
+        [DllImport(Lib, EntryPoint = "Rbutton_get_text", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr Rbutton_get_text_(uint button);
+        public static string Rbutton_get_text(uint button) { return Text(Rbutton_get_text_(button)); }
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rbutton_set_style(uint button, RButtonStyle style);
@@ -9711,6 +9813,13 @@ namespace Raven
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rwidget_set_accessible_description(uint widget, [MarshalAs(Utf8.Str)] string description);
 
+        /// <summary>
+        /// Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL.
+        /// </summary>
+        [DllImport(Lib, EntryPoint = "Rwidget_get_accessible_description", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr Rwidget_get_accessible_description_(uint widget);
+        public static string Rwidget_get_accessible_description(uint widget) { return Text(Rwidget_get_accessible_description_(widget)); }
+
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rwidget_set_accessible_role(uint widget, RAccessibleRole role);
 
@@ -9743,6 +9852,99 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Raccessibility_is_screen_reader_active();
+
+        /// <summary>
+        /// How many accessibles match a selector.
+        /// window R_INVALID_ID or 0: every open window.
+        /// Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_count(uint window, [MarshalAs(Utf8.Str)] string selector);
+
+        /// <summary>
+        /// Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong Raccessible_find(uint window, [MarshalAs(Utf8.Str)] string selector);
+
+        /// <summary>
+        /// Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong Raccessible_get(uint window, [MarshalAs(Utf8.Str)] string selector, int index);
+
+        /// <summary>
+        /// Returns: The accessible of a window: the top of its tree.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong Raccessible_get_root(uint window);
+
+        /// <summary>
+        /// Returns: The accessible that holds this one; 0 for a window.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong Raccessible_get_parent(ulong accessible);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_get_child_count(ulong accessible);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong Raccessible_get_child(ulong accessible, int index);
+
+        /// <summary>
+        /// Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_describe(ulong accessible, ref RAccessibleInfo info);
+
+        /// <summary>
+        /// Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_describe(ulong accessible, IntPtr info);
+
+        /// <summary>
+        /// Returns: The role's name in a selector ("list-item"), or "" for one that has none.
+        /// </summary>
+        [DllImport(Lib, EntryPoint = "Raccessible_get_role_name", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr Raccessible_get_role_name_(RAccessibleRole role);
+        public static string Raccessible_get_role_name(RAccessibleRole role) { return Text(Raccessible_get_role_name_(role)); }
+
+        /// <summary>
+        /// Clicks the middle of an accessible with the mouse: real input, so
+        /// a disabled one can't be clicked. A row is scrolled into view first, and a
+        /// menu item in a closed menu is reached through its menus, opened the way a
+        /// user opens them.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_click(ulong accessible);
+
+        /// <summary>
+        /// Gives an accessible the keyboard focus, then types a text into it, as the keyboard would.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_type(ulong accessible, [MarshalAs(Utf8.Str)] string text);
+
+        /// <summary>
+        /// Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_press_key(ulong accessible, RKey key, uint modifiers);
+
+        /// <summary>
+        /// Expands, collapses, selects or focuses an accessible directly, without input.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Raccessible_act(ulong accessible, RAccessibleAction action);
+
+        /// <summary>
+        /// Returns: Why the last find or action failed, for a test to report and an
+        /// agent to read ("no accessible with role=button name=\"Save\"", "2
+        /// accessibles with role=list-item, expected one"); "" after one that worked.
+        /// </summary>
+        [DllImport(Lib, EntryPoint = "Raccessible_get_last_error", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr Raccessible_get_last_error_();
+        public static string Raccessible_get_last_error() { return Text(Raccessible_get_last_error_()); }
 
         /// <summary>
         /// Makes the next Rinit use the host platform. The structure is copied; NULL restores the default.

@@ -1019,6 +1019,35 @@ export const RAccessibleRole = _enum({
 });
 export const { R_ROLE_AUTO, R_ROLE_NONE, R_ROLE_WINDOW, R_ROLE_GROUP, R_ROLE_TEXT, R_ROLE_HEADING, R_ROLE_LINK, R_ROLE_BUTTON, R_ROLE_TOGGLE_BUTTON, R_ROLE_CHECKBOX, R_ROLE_RADIO_BUTTON, R_ROLE_SLIDER, R_ROLE_PROGRESS_BAR, R_ROLE_SPIN_BUTTON, R_ROLE_TEXT_FIELD, R_ROLE_DOCUMENT, R_ROLE_COMBO_BOX, R_ROLE_LIST, R_ROLE_LIST_ITEM, R_ROLE_TREE, R_ROLE_TREE_ITEM, R_ROLE_TABLE, R_ROLE_MENU_BAR, R_ROLE_MENU, R_ROLE_MENU_ITEM, R_ROLE_TAB_LIST, R_ROLE_TAB, R_ROLE_TAB_PANEL, R_ROLE_TOOLBAR, R_ROLE_STATUS_BAR, R_ROLE_DIALOG, R_ROLE_ALERT, R_ROLE_IMAGE, R_ROLE_CANVAS, R_ROLE_SEPARATOR, R_ROLE_SCROLL_BAR, R_ROLE_PANE } = RAccessibleRole;
 
+export const RAccessibleState = _enum({
+	R_ACCESSIBLE_FOCUSABLE: 1,
+	R_ACCESSIBLE_FOCUSED: 2,
+	R_ACCESSIBLE_DISABLED: 4,
+	R_ACCESSIBLE_CHECKED: 8,
+	R_ACCESSIBLE_CHECKABLE: 16,
+	R_ACCESSIBLE_EXPANDED: 32,
+	R_ACCESSIBLE_EXPANDABLE: 64,
+	R_ACCESSIBLE_SELECTED: 128,
+	R_ACCESSIBLE_SELECTABLE: 256,
+	R_ACCESSIBLE_MULTILINE: 512,
+	R_ACCESSIBLE_READONLY: 1024,
+	R_ACCESSIBLE_PASSWORD: 2048,
+	R_ACCESSIBLE_HAS_RANGE: 4096,
+	R_ACCESSIBLE_EDITABLE: 8192,
+	R_ACCESSIBLE_INVOKABLE: 16384,
+	R_ACCESSIBLE_OFFSCREEN: 32768,
+	R_ACCESSIBLE_MODAL: 65536,
+});
+export const { R_ACCESSIBLE_FOCUSABLE, R_ACCESSIBLE_FOCUSED, R_ACCESSIBLE_DISABLED, R_ACCESSIBLE_CHECKED, R_ACCESSIBLE_CHECKABLE, R_ACCESSIBLE_EXPANDED, R_ACCESSIBLE_EXPANDABLE, R_ACCESSIBLE_SELECTED, R_ACCESSIBLE_SELECTABLE, R_ACCESSIBLE_MULTILINE, R_ACCESSIBLE_READONLY, R_ACCESSIBLE_PASSWORD, R_ACCESSIBLE_HAS_RANGE, R_ACCESSIBLE_EDITABLE, R_ACCESSIBLE_INVOKABLE, R_ACCESSIBLE_OFFSCREEN, R_ACCESSIBLE_MODAL } = RAccessibleState;
+
+export const RAccessibleAction = _enum({
+	R_ACCESSIBLE_EXPAND: 1984,
+	R_ACCESSIBLE_COLLAPSE: 1985,
+	R_ACCESSIBLE_SELECT: 1986,
+	R_ACCESSIBLE_FOCUS: 1987,
+});
+export const { R_ACCESSIBLE_EXPAND, R_ACCESSIBLE_COLLAPSE, R_ACCESSIBLE_SELECT, R_ACCESSIBLE_FOCUS } = RAccessibleAction;
+
 export class RInitDesc extends RStruct {
 	static SIZE = 40;
 
@@ -2828,6 +2857,124 @@ export class RAccessibilitySettings extends RStruct {
 	}
 }
 
+export class RAccessibleInfo extends RStruct {
+	static SIZE = 88;
+
+	constructor(pointer) {
+		super(RAccessibleInfo.SIZE, pointer);
+	}
+
+	/** The structure at an address of the library, or null. */
+	static from(pointer) {
+		return pointer ? new RAccessibleInfo(pointer) : null;
+	}
+
+	get role() {
+		return this._view.getInt32(0, true);
+	}
+	set role(value) {
+		this._view.setInt32(0, value, true);
+	}
+
+	get name() {
+		return _text(_address(this._view.getBigUint64(8, true)));
+	}
+	set name(value) {
+		this._point("name", 8, _s(value));
+	}
+
+	get description() {
+		return _text(_address(this._view.getBigUint64(16, true)));
+	}
+	set description(value) {
+		this._point("description", 16, _s(value));
+	}
+
+	get value() {
+		return _text(_address(this._view.getBigUint64(24, true)));
+	}
+	set value(value) {
+		this._point("value", 24, _s(value));
+	}
+
+	get number() {
+		return this._view.getFloat64(32, true);
+	}
+	set number(value) {
+		this._view.setFloat64(32, value, true);
+	}
+
+	get minimum() {
+		return this._view.getFloat64(40, true);
+	}
+	set minimum(value) {
+		this._view.setFloat64(40, value, true);
+	}
+
+	get maximum() {
+		return this._view.getFloat64(48, true);
+	}
+	set maximum(value) {
+		this._view.setFloat64(48, value, true);
+	}
+
+	get states() {
+		return this._view.getUint32(56, true);
+	}
+	set states(value) {
+		this._view.setUint32(56, value, true);
+	}
+
+	get x() {
+		return this._view.getFloat32(60, true);
+	}
+	set x(value) {
+		this._view.setFloat32(60, value, true);
+	}
+
+	get y() {
+		return this._view.getFloat32(64, true);
+	}
+	set y(value) {
+		this._view.setFloat32(64, value, true);
+	}
+
+	get width() {
+		return this._view.getFloat32(68, true);
+	}
+	set width(value) {
+		this._view.setFloat32(68, value, true);
+	}
+
+	get height() {
+		return this._view.getFloat32(72, true);
+	}
+	set height(value) {
+		this._view.setFloat32(72, value, true);
+	}
+
+	get window() {
+		return this._view.getUint32(76, true);
+	}
+	set window(value) {
+		this._view.setUint32(76, value, true);
+	}
+
+	get widget() {
+		return this._view.getUint32(80, true);
+	}
+	set widget(value) {
+		this._view.setUint32(80, value, true);
+	}
+
+	get item() {
+		return this._view.getInt32(84, true);
+	}
+	set item(value) {
+		this._view.setInt32(84, value, true);
+	}
+}
+
 export class RHostPlatformDesc extends RStruct {
 	static SIZE = 40;
 
@@ -3392,6 +3539,7 @@ export const Rlabel_select_all = _lib.Rlabel_select_all;
 export const Rlabel_clear_selection = _lib.Rlabel_clear_selection;
 export const Rbutton_create = _lib.Rbutton_create;
 export const Rbutton_set_text = _lib.Rbutton_set_text;
+export const Rbutton_get_text = _lib.Rbutton_get_text;
 export const Rbutton_set_style = _lib.Rbutton_set_style;
 export const Rbutton_set_clicked_callback = _lib.Rbutton_set_clicked_callback;
 export const Rcheckbox_create = _lib.Rcheckbox_create;
@@ -4197,12 +4345,29 @@ export const Raccessibility_follow_system = _lib.Raccessibility_follow_system;
 export const Rwidget_set_accessible_name = _lib.Rwidget_set_accessible_name;
 export const Rwidget_get_accessible_name = _lib.Rwidget_get_accessible_name;
 export const Rwidget_set_accessible_description = _lib.Rwidget_set_accessible_description;
+export const Rwidget_get_accessible_description = _lib.Rwidget_get_accessible_description;
 export const Rwidget_set_accessible_role = _lib.Rwidget_set_accessible_role;
 export const Rwidget_get_accessible_role = _lib.Rwidget_get_accessible_role;
 export const Rwidget_set_accessible_hidden = _lib.Rwidget_set_accessible_hidden;
 export const Rwidget_set_accessible_labelled_by = _lib.Rwidget_set_accessible_labelled_by;
 export const Raccessibility_announce = _lib.Raccessibility_announce;
 export const Raccessibility_is_screen_reader_active = _lib.Raccessibility_is_screen_reader_active;
+export const Raccessible_count = _lib.Raccessible_count;
+export const Raccessible_find = _lib.Raccessible_find;
+export const Raccessible_get = _lib.Raccessible_get;
+export const Raccessible_get_root = _lib.Raccessible_get_root;
+export const Raccessible_get_parent = _lib.Raccessible_get_parent;
+export const Raccessible_get_child_count = _lib.Raccessible_get_child_count;
+export const Raccessible_get_child = _lib.Raccessible_get_child;
+export function Raccessible_describe(accessible, info) {
+	return _lib.Raccessible_describe(accessible, _p(info));
+}
+export const Raccessible_get_role_name = _lib.Raccessible_get_role_name;
+export const Raccessible_click = _lib.Raccessible_click;
+export const Raccessible_type = _lib.Raccessible_type;
+export const Raccessible_press_key = _lib.Raccessible_press_key;
+export const Raccessible_act = _lib.Raccessible_act;
+export const Raccessible_get_last_error = _lib.Raccessible_get_last_error;
 export function Rhost_platform_register(desc) {
 	return _lib.Rhost_platform_register(_p(desc));
 }

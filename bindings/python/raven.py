@@ -1574,6 +1574,56 @@ R_ROLE_SEPARATOR = RAccessibleRole.R_ROLE_SEPARATOR
 R_ROLE_SCROLL_BAR = RAccessibleRole.R_ROLE_SCROLL_BAR
 R_ROLE_PANE = RAccessibleRole.R_ROLE_PANE
 
+class RAccessibleState(enum.IntFlag):
+    """What an accessible is, now (Raccessible_describe)."""
+    R_ACCESSIBLE_FOCUSABLE = 1
+    R_ACCESSIBLE_FOCUSED = 2
+    R_ACCESSIBLE_DISABLED = 4
+    R_ACCESSIBLE_CHECKED = 8
+    R_ACCESSIBLE_CHECKABLE = 0x0010
+    R_ACCESSIBLE_EXPANDED = 0x0020
+    R_ACCESSIBLE_EXPANDABLE = 0x0040
+    R_ACCESSIBLE_SELECTED = 0x0080
+    R_ACCESSIBLE_SELECTABLE = 0x0100
+    R_ACCESSIBLE_MULTILINE = 0x0200
+    R_ACCESSIBLE_READONLY = 0x0400
+    R_ACCESSIBLE_PASSWORD = 0x0800
+    R_ACCESSIBLE_HAS_RANGE = 0x1000
+    R_ACCESSIBLE_EDITABLE = 0x2000
+    R_ACCESSIBLE_INVOKABLE = 0x4000
+    R_ACCESSIBLE_OFFSCREEN = 0x8000
+    R_ACCESSIBLE_MODAL = 0x10000
+
+R_ACCESSIBLE_FOCUSABLE = RAccessibleState.R_ACCESSIBLE_FOCUSABLE
+R_ACCESSIBLE_FOCUSED = RAccessibleState.R_ACCESSIBLE_FOCUSED
+R_ACCESSIBLE_DISABLED = RAccessibleState.R_ACCESSIBLE_DISABLED
+R_ACCESSIBLE_CHECKED = RAccessibleState.R_ACCESSIBLE_CHECKED
+R_ACCESSIBLE_CHECKABLE = RAccessibleState.R_ACCESSIBLE_CHECKABLE
+R_ACCESSIBLE_EXPANDED = RAccessibleState.R_ACCESSIBLE_EXPANDED
+R_ACCESSIBLE_EXPANDABLE = RAccessibleState.R_ACCESSIBLE_EXPANDABLE
+R_ACCESSIBLE_SELECTED = RAccessibleState.R_ACCESSIBLE_SELECTED
+R_ACCESSIBLE_SELECTABLE = RAccessibleState.R_ACCESSIBLE_SELECTABLE
+R_ACCESSIBLE_MULTILINE = RAccessibleState.R_ACCESSIBLE_MULTILINE
+R_ACCESSIBLE_READONLY = RAccessibleState.R_ACCESSIBLE_READONLY
+R_ACCESSIBLE_PASSWORD = RAccessibleState.R_ACCESSIBLE_PASSWORD
+R_ACCESSIBLE_HAS_RANGE = RAccessibleState.R_ACCESSIBLE_HAS_RANGE
+R_ACCESSIBLE_EDITABLE = RAccessibleState.R_ACCESSIBLE_EDITABLE
+R_ACCESSIBLE_INVOKABLE = RAccessibleState.R_ACCESSIBLE_INVOKABLE
+R_ACCESSIBLE_OFFSCREEN = RAccessibleState.R_ACCESSIBLE_OFFSCREEN
+R_ACCESSIBLE_MODAL = RAccessibleState.R_ACCESSIBLE_MODAL
+
+class RAccessibleAction(enum.IntEnum):
+    """What Raccessible_act does, for what input can't reach reliably."""
+    R_ACCESSIBLE_EXPAND = 0x07C0
+    R_ACCESSIBLE_COLLAPSE = 0x07C1
+    R_ACCESSIBLE_SELECT = 0x07C2
+    R_ACCESSIBLE_FOCUS = 0x07C3
+
+R_ACCESSIBLE_EXPAND = RAccessibleAction.R_ACCESSIBLE_EXPAND
+R_ACCESSIBLE_COLLAPSE = RAccessibleAction.R_ACCESSIBLE_COLLAPSE
+R_ACCESSIBLE_SELECT = RAccessibleAction.R_ACCESSIBLE_SELECT
+R_ACCESSIBLE_FOCUS = RAccessibleAction.R_ACCESSIBLE_FOCUS
+
 
 class RInitDesc(ctypes.Structure):
     """Optional settings for Rinit_ex. A zero-initialized structure selects the
@@ -1932,6 +1982,27 @@ class RAccessibilitySettings(ctypes.Structure):
         ("high_contrast", ctypes.c_int),
         ("reduce_motion", ctypes.c_int),
         ("screen_reader", ctypes.c_int),
+    ]
+
+
+class RAccessibleInfo(ctypes.Structure):
+    """An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call."""
+    _fields_ = [
+        ("role", ctypes.c_int),
+        ("name", ctypes.c_char_p),
+        ("description", ctypes.c_char_p),
+        ("value", ctypes.c_char_p),
+        ("number", ctypes.c_double),
+        ("minimum", ctypes.c_double),
+        ("maximum", ctypes.c_double),
+        ("states", ctypes.c_uint32),
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("width", ctypes.c_float),
+        ("height", ctypes.c_float),
+        ("window", ctypes.c_uint32),
+        ("widget", ctypes.c_uint32),
+        ("item", ctypes.c_int),
     ]
 
 
@@ -6374,6 +6445,15 @@ def Rbutton_set_text(button, text):
     """Sets the content of the button to a label. A button can instead
     hold any single child widget (Rwidget_add_child), e.g. an HBox with an icon."""
     _lib.Rbutton_set_text(button, _s(text))
+
+
+_lib.Rbutton_get_text.argtypes = [ctypes.c_uint32]
+_lib.Rbutton_get_text.restype = ctypes.c_char_p
+
+
+def Rbutton_get_text(button):
+    """Returns: The text the button shows (its first label), or ""."""
+    return _r(_lib.Rbutton_get_text(button))
 
 
 _lib.Rbutton_set_style.argtypes = [ctypes.c_uint32, ctypes.c_int]
@@ -13367,6 +13447,15 @@ def Rwidget_set_accessible_description(widget, description):
     _lib.Rwidget_set_accessible_description(widget, _s(description))
 
 
+_lib.Rwidget_get_accessible_description.argtypes = [ctypes.c_uint32]
+_lib.Rwidget_get_accessible_description.restype = ctypes.c_char_p
+
+
+def Rwidget_get_accessible_description(widget):
+    """Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL."""
+    return _r(_lib.Rwidget_get_accessible_description(widget))
+
+
 _lib.Rwidget_set_accessible_role.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rwidget_set_accessible_role.restype = None
 
@@ -13418,6 +13507,137 @@ _lib.Raccessibility_is_screen_reader_active.restype = ctypes.c_int
 def Raccessibility_is_screen_reader_active():
     """R_TRUE when a screen reader is reading the windows of the application."""
     return _lib.Raccessibility_is_screen_reader_active()
+
+
+_lib.Raccessible_count.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Raccessible_count.restype = ctypes.c_int
+
+
+def Raccessible_count(window, selector):
+    """How many accessibles match a selector.
+    window R_INVALID_ID or 0: every open window.
+    Returns: The number found, 0 when none (or when the selector does not parse, which is reported)."""
+    return _lib.Raccessible_count(window, _s(selector))
+
+
+_lib.Raccessible_find.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Raccessible_find.restype = ctypes.c_uint64
+
+
+def Raccessible_find(window, selector):
+    """Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why)."""
+    return _lib.Raccessible_find(window, _s(selector))
+
+
+_lib.Raccessible_get.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_int]
+_lib.Raccessible_get.restype = ctypes.c_uint64
+
+
+def Raccessible_get(window, selector, index):
+    """Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none."""
+    return _lib.Raccessible_get(window, _s(selector), index)
+
+
+_lib.Raccessible_get_root.argtypes = [ctypes.c_uint32]
+_lib.Raccessible_get_root.restype = ctypes.c_uint64
+
+
+def Raccessible_get_root(window):
+    """Returns: The accessible of a window: the top of its tree."""
+    return _lib.Raccessible_get_root(window)
+
+
+_lib.Raccessible_get_parent.argtypes = [ctypes.c_uint64]
+_lib.Raccessible_get_parent.restype = ctypes.c_uint64
+
+
+def Raccessible_get_parent(accessible):
+    """Returns: The accessible that holds this one; 0 for a window."""
+    return _lib.Raccessible_get_parent(accessible)
+
+
+_lib.Raccessible_get_child_count.argtypes = [ctypes.c_uint64]
+_lib.Raccessible_get_child_count.restype = ctypes.c_int
+
+
+def Raccessible_get_child_count(accessible):
+    return _lib.Raccessible_get_child_count(accessible)
+
+
+_lib.Raccessible_get_child.argtypes = [ctypes.c_uint64, ctypes.c_int]
+_lib.Raccessible_get_child.restype = ctypes.c_uint64
+
+
+def Raccessible_get_child(accessible, index):
+    return _lib.Raccessible_get_child(accessible, index)
+
+
+_lib.Raccessible_describe.argtypes = [ctypes.c_uint64, ctypes.POINTER(RAccessibleInfo)]
+_lib.Raccessible_describe.restype = ctypes.c_int
+
+
+def Raccessible_describe(accessible, info):
+    """Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone."""
+    return _lib.Raccessible_describe(accessible, _p(info))
+
+
+_lib.Raccessible_get_role_name.argtypes = [ctypes.c_int]
+_lib.Raccessible_get_role_name.restype = ctypes.c_char_p
+
+
+def Raccessible_get_role_name(role):
+    """Returns: The role's name in a selector ("list-item"), or "" for one that has none."""
+    return _r(_lib.Raccessible_get_role_name(int(role)))
+
+
+_lib.Raccessible_click.argtypes = [ctypes.c_uint64]
+_lib.Raccessible_click.restype = ctypes.c_int
+
+
+def Raccessible_click(accessible):
+    """Clicks the middle of an accessible with the mouse: real input, so
+    a disabled one can't be clicked. A row is scrolled into view first, and a
+    menu item in a closed menu is reached through its menus, opened the way a
+    user opens them."""
+    return _lib.Raccessible_click(accessible)
+
+
+_lib.Raccessible_type.argtypes = [ctypes.c_uint64, ctypes.c_char_p]
+_lib.Raccessible_type.restype = ctypes.c_int
+
+
+def Raccessible_type(accessible, text):
+    """Gives an accessible the keyboard focus, then types a text into it, as the keyboard would."""
+    return _lib.Raccessible_type(accessible, _s(text))
+
+
+_lib.Raccessible_press_key.argtypes = [ctypes.c_uint64, ctypes.c_int, ctypes.c_uint32]
+_lib.Raccessible_press_key.restype = ctypes.c_int
+
+
+def Raccessible_press_key(accessible, key, modifiers):
+    """Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values)."""
+    return _lib.Raccessible_press_key(accessible, int(key), modifiers)
+
+
+_lib.Raccessible_act.argtypes = [ctypes.c_uint64, ctypes.c_int]
+_lib.Raccessible_act.restype = ctypes.c_int
+
+
+def Raccessible_act(accessible, action):
+    """Expands, collapses, selects or focuses an accessible directly, without input."""
+    return _lib.Raccessible_act(accessible, int(action))
+
+
+_lib.Raccessible_get_last_error.argtypes = []
+_lib.Raccessible_get_last_error.restype = ctypes.c_char_p
+
+
+def Raccessible_get_last_error():
+    """Returns: Why the last find or action failed, for a test to report and an
+    agent to read ("no accessible with role=button name=\\"Save\\"", "2
+    accessibles with role=list-item, expected one"); "" after one that worked."""
+    return _r(_lib.Raccessible_get_last_error())
 
 
 _lib.Rhost_platform_register.argtypes = [ctypes.POINTER(RHostPlatformDesc)]

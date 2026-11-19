@@ -1160,6 +1160,37 @@ const RAccessibleRole R_ROLE_SEPARATOR = 0x0781;
 const RAccessibleRole R_ROLE_SCROLL_BAR = 0x0782;
 const RAccessibleRole R_ROLE_PANE = 0x0783;
 
+<* What an accessible is, now (Raccessible_describe). *>
+alias RAccessibleState = CInt;
+const RAccessibleState R_ACCESSIBLE_FOCUSABLE = 1;
+const RAccessibleState R_ACCESSIBLE_FOCUSED = 2;
+const RAccessibleState R_ACCESSIBLE_DISABLED = 4;
+const RAccessibleState R_ACCESSIBLE_CHECKED = 8;
+const RAccessibleState R_ACCESSIBLE_CHECKABLE = 0x0010;
+const RAccessibleState R_ACCESSIBLE_EXPANDED = 0x0020;
+const RAccessibleState R_ACCESSIBLE_EXPANDABLE = 0x0040;
+const RAccessibleState R_ACCESSIBLE_SELECTED = 0x0080;
+const RAccessibleState R_ACCESSIBLE_SELECTABLE = 0x0100;
+const RAccessibleState R_ACCESSIBLE_MULTILINE = 0x0200;
+const RAccessibleState R_ACCESSIBLE_READONLY = 0x0400;
+const RAccessibleState R_ACCESSIBLE_PASSWORD = 0x0800;
+<* number, minimum and maximum hold a range (a slider, a spin box). *>
+const RAccessibleState R_ACCESSIBLE_HAS_RANGE = 0x1000;
+<* The value is a text that can be typed. *>
+const RAccessibleState R_ACCESSIBLE_EDITABLE = 0x2000;
+<* It can be pressed. *>
+const RAccessibleState R_ACCESSIBLE_INVOKABLE = 0x4000;
+<* Scrolled out of view, or in a menu that is closed. *>
+const RAccessibleState R_ACCESSIBLE_OFFSCREEN = 0x8000;
+const RAccessibleState R_ACCESSIBLE_MODAL = 0x10000;
+
+<* What Raccessible_act does, for what input can't reach reliably. *>
+alias RAccessibleAction = CInt;
+const RAccessibleAction R_ACCESSIBLE_EXPAND = 0x07C0;
+const RAccessibleAction R_ACCESSIBLE_COLLAPSE = 0x07C1;
+const RAccessibleAction R_ACCESSIBLE_SELECT = 0x07C2;
+const RAccessibleAction R_ACCESSIBLE_FOCUS = 0x07C3;
+
 <* Only seen through a pointer. *>
 alias RPainter = void;
 
@@ -1958,6 +1989,34 @@ struct RAccessibilitySettings
 	CInt reduce_motion;
 	<* R_TRUE when a screen reader is running. *>
 	CInt screen_reader;
+}
+
+<* An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call. *>
+struct RAccessibleInfo
+{
+	RAccessibleRole role;
+	char* name;
+	char* description;
+	<* A text field's text, the selected entry of a list, a slider's number as text; or "". *>
+	char* value;
+	double number;
+	double minimum;
+	double maximum;
+	<* RAccessibleState values, or-ed. *>
+	Ruint states;
+	<* In its window, logical units. *>
+	float x;
+	<* In its window, logical units. *>
+	float y;
+	<* In its window, logical units. *>
+	float width;
+	<* In its window, logical units. *>
+	float height;
+	Rid window;
+	<* The widget it is, or the one whose item it is; R_INVALID_ID for a window. *>
+	Rid widget;
+	<* Its index among its widget's items, or -1 when it is not an item. *>
+	CInt item;
 }
 
 struct RHostPlatformDesc
@@ -3543,6 +3602,9 @@ extern fn Rid r_button_create(char* text) @cname("Rbutton_create");
  hold any single child widget (Rwidget_add_child), e.g. an HBox with an icon.
 *>
 extern fn void r_button_set_text(Rid button, char* text) @cname("Rbutton_set_text");
+
+<* Returns The text the button shows (its first label), or "". *>
+extern fn char* r_button_get_text(Rid button) @cname("Rbutton_get_text");
 
 extern fn void r_button_set_style(Rid button, RButtonStyle style) @cname("Rbutton_set_style");
 
@@ -6019,6 +6081,9 @@ extern fn char* r_widget_get_accessible_name(Rid widget) @cname("Rwidget_get_acc
 <* A longer explanation, read after the name. *>
 extern fn void r_widget_set_accessible_description(Rid widget, char* description) @cname("Rwidget_set_accessible_description");
 
+<* Returns The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL. *>
+extern fn char* r_widget_get_accessible_description(Rid widget) @cname("Rwidget_get_accessible_description");
+
 extern fn void r_widget_set_accessible_role(Rid widget, RAccessibleRole role) @cname("Rwidget_set_accessible_role");
 
 <* The role the screen reader sees (given, or the one of the type). *>
@@ -6035,6 +6100,58 @@ extern fn void r_accessibility_announce(char* text, CInt assertive) @cname("Racc
 
 <* R_TRUE when a screen reader is reading the windows of the application. *>
 extern fn CInt r_accessibility_is_screen_reader_active() @cname("Raccessibility_is_screen_reader_active");
+
+<*
+ How many accessibles match a selector.
+ Returns The number found, 0 when none (or when the selector does not parse, which is reported).
+*>
+extern fn CInt r_accessible_count(Rid window, char* selector) @cname("Raccessible_count");
+
+<* Returns The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why). *>
+extern fn ulong r_accessible_find(Rid window, char* selector) @cname("Raccessible_find");
+
+<* Returns The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none. *>
+extern fn ulong r_accessible_get(Rid window, char* selector, CInt index) @cname("Raccessible_get");
+
+<* Returns The accessible of a window: the top of its tree. *>
+extern fn ulong r_accessible_get_root(Rid window) @cname("Raccessible_get_root");
+
+<* Returns The accessible that holds this one; 0 for a window. *>
+extern fn ulong r_accessible_get_parent(ulong accessible) @cname("Raccessible_get_parent");
+
+extern fn CInt r_accessible_get_child_count(ulong accessible) @cname("Raccessible_get_child_count");
+
+extern fn ulong r_accessible_get_child(ulong accessible, CInt index) @cname("Raccessible_get_child");
+
+<* Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone. *>
+extern fn CInt r_accessible_describe(ulong accessible, RAccessibleInfo* info) @cname("Raccessible_describe");
+
+<* Returns The role's name in a selector ("list-item"), or "" for one that has none. *>
+extern fn char* r_accessible_get_role_name(RAccessibleRole role) @cname("Raccessible_get_role_name");
+
+<*
+ Clicks the middle of an accessible with the mouse: real input, so
+ a disabled one can't be clicked. A row is scrolled into view first, and a
+ menu item in a closed menu is reached through its menus, opened the way a
+ user opens them.
+*>
+extern fn CInt r_accessible_click(ulong accessible) @cname("Raccessible_click");
+
+<* Gives an accessible the keyboard focus, then types a text into it, as the keyboard would. *>
+extern fn CInt r_accessible_type(ulong accessible, char* text) @cname("Raccessible_type");
+
+<* Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values). *>
+extern fn CInt r_accessible_press_key(ulong accessible, RKey key, Ruint modifiers) @cname("Raccessible_press_key");
+
+<* Expands, collapses, selects or focuses an accessible directly, without input. *>
+extern fn CInt r_accessible_act(ulong accessible, RAccessibleAction action) @cname("Raccessible_act");
+
+<*
+ Returns Why the last find or action failed, for a test to report and an
+ agent to read ("no accessible with role=button name=\"Save\"", "2
+ accessibles with role=list-item, expected one"); "" after one that worked.
+*>
+extern fn char* r_accessible_get_last_error() @cname("Raccessible_get_last_error");
 
 <* Makes the next Rinit use the host platform. The structure is copied; NULL restores the default. *>
 extern fn void r_host_platform_register(RHostPlatformDesc* desc) @cname("Rhost_platform_register");

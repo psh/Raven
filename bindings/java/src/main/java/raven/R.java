@@ -1643,6 +1643,43 @@ public final class R {
     public static final int R_ROLE_SCROLL_BAR = 0x0782;
     public static final int R_ROLE_PANE = 0x0783;
 
+    // RAccessibleState: What an accessible is, now (Raccessible_describe).
+    public static final int R_ACCESSIBLE_FOCUSABLE = 1;
+    public static final int R_ACCESSIBLE_FOCUSED = 2;
+    public static final int R_ACCESSIBLE_DISABLED = 4;
+    public static final int R_ACCESSIBLE_CHECKED = 8;
+    public static final int R_ACCESSIBLE_CHECKABLE = 0x0010;
+    public static final int R_ACCESSIBLE_EXPANDED = 0x0020;
+    public static final int R_ACCESSIBLE_EXPANDABLE = 0x0040;
+    public static final int R_ACCESSIBLE_SELECTED = 0x0080;
+    public static final int R_ACCESSIBLE_SELECTABLE = 0x0100;
+    public static final int R_ACCESSIBLE_MULTILINE = 0x0200;
+    public static final int R_ACCESSIBLE_READONLY = 0x0400;
+    public static final int R_ACCESSIBLE_PASSWORD = 0x0800;
+    /**
+     * number, minimum and maximum hold a range (a slider, a spin box).
+     */
+    public static final int R_ACCESSIBLE_HAS_RANGE = 0x1000;
+    /**
+     * The value is a text that can be typed.
+     */
+    public static final int R_ACCESSIBLE_EDITABLE = 0x2000;
+    /**
+     * It can be pressed.
+     */
+    public static final int R_ACCESSIBLE_INVOKABLE = 0x4000;
+    /**
+     * Scrolled out of view, or in a menu that is closed.
+     */
+    public static final int R_ACCESSIBLE_OFFSCREEN = 0x8000;
+    public static final int R_ACCESSIBLE_MODAL = 0x10000;
+
+    // RAccessibleAction: What Raccessible_act does, for what input can't reach reliably.
+    public static final int R_ACCESSIBLE_EXPAND = 0x07C0;
+    public static final int R_ACCESSIBLE_COLLAPSE = 0x07C1;
+    public static final int R_ACCESSIBLE_SELECT = 0x07C2;
+    public static final int R_ACCESSIBLE_FOCUS = 0x07C3;
+
     // ---- structures
 
     /**
@@ -3724,6 +3761,118 @@ public final class R {
          */
         public int screen_reader() { return s.get(JAVA_INT, 12); }
         public RAccessibilitySettings screen_reader(int value) { s.set(JAVA_INT, 12, value); return this; }
+    }
+
+    /**
+     * An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call.
+     */
+    public static final class RAccessibleInfo {
+        /** The size of the structure in C, in bytes. */
+        public static final long SIZE = 88;
+        private final MemorySegment s;
+        private Arena arena;
+
+        /** A new structure, zeroed (what `RAccessibleInfo x = {0};` is in C). */
+        public RAccessibleInfo() {
+            arena = Arena.ofAuto();
+            s = arena.allocate(SIZE, 8);
+        }
+
+        /** The structure at an address (given by the library, or a slice of an array). */
+        public RAccessibleInfo(MemorySegment address) {
+            s = address.reinterpret(SIZE);
+        }
+
+        private RAccessibleInfo(MemorySegment segment, Arena arena) {
+            this.s = segment;
+            this.arena = arena;
+        }
+
+        /** Its memory: what to give where C takes a pointer to it. */
+        public MemorySegment segment() { return s; }
+
+        /** `count` structures side by side, zeroed: an array of C. */
+        public static RAccessibleInfo[] array(int count) {
+            Arena a = Arena.ofAuto();
+            MemorySegment all = a.allocate(SIZE * Math.max(count, 1), 8);
+            RAccessibleInfo[] items = new RAccessibleInfo[count];
+            for (int i = 0; i < count; i++) items[i] = new RAccessibleInfo(all.asSlice(SIZE * i, SIZE), a);
+            return items;
+        }
+
+        private Arena arena() {
+            if (arena == null) arena = Arena.ofAuto();
+            return arena;
+        }
+
+        public int role() { return s.get(JAVA_INT, 0); }
+        public RAccessibleInfo role(int value) { s.set(JAVA_INT, 0, value); return this; }
+
+        public String name() { return R.text(s.get(ADDRESS, 8)); }
+        public RAccessibleInfo name(String value) { s.set(ADDRESS, 8, value == null ? MemorySegment.NULL : R.utf8(arena(), value)); return this; }
+
+        public String description() { return R.text(s.get(ADDRESS, 16)); }
+        public RAccessibleInfo description(String value) { s.set(ADDRESS, 16, value == null ? MemorySegment.NULL : R.utf8(arena(), value)); return this; }
+
+        /**
+         * A text field's text, the selected entry of a list, a slider's number as text; or "".
+         */
+        public String value() { return R.text(s.get(ADDRESS, 24)); }
+        public RAccessibleInfo value(String value) { s.set(ADDRESS, 24, value == null ? MemorySegment.NULL : R.utf8(arena(), value)); return this; }
+
+        public double number() { return s.get(JAVA_DOUBLE, 32); }
+        public RAccessibleInfo number(double value) { s.set(JAVA_DOUBLE, 32, value); return this; }
+
+        public double minimum() { return s.get(JAVA_DOUBLE, 40); }
+        public RAccessibleInfo minimum(double value) { s.set(JAVA_DOUBLE, 40, value); return this; }
+
+        public double maximum() { return s.get(JAVA_DOUBLE, 48); }
+        public RAccessibleInfo maximum(double value) { s.set(JAVA_DOUBLE, 48, value); return this; }
+
+        /**
+         * RAccessibleState values, or-ed.
+         */
+        public int states() { return s.get(JAVA_INT, 56); }
+        public RAccessibleInfo states(int value) { s.set(JAVA_INT, 56, value); return this; }
+
+        /**
+         * In its window, logical units.
+         */
+        public float x() { return s.get(JAVA_FLOAT, 60); }
+        public RAccessibleInfo x(float value) { s.set(JAVA_FLOAT, 60, value); return this; }
+
+        /**
+         * In its window, logical units.
+         */
+        public float y() { return s.get(JAVA_FLOAT, 64); }
+        public RAccessibleInfo y(float value) { s.set(JAVA_FLOAT, 64, value); return this; }
+
+        /**
+         * In its window, logical units.
+         */
+        public float width() { return s.get(JAVA_FLOAT, 68); }
+        public RAccessibleInfo width(float value) { s.set(JAVA_FLOAT, 68, value); return this; }
+
+        /**
+         * In its window, logical units.
+         */
+        public float height() { return s.get(JAVA_FLOAT, 72); }
+        public RAccessibleInfo height(float value) { s.set(JAVA_FLOAT, 72, value); return this; }
+
+        public int window() { return s.get(JAVA_INT, 76); }
+        public RAccessibleInfo window(int value) { s.set(JAVA_INT, 76, value); return this; }
+
+        /**
+         * The widget it is, or the one whose item it is; R_INVALID_ID for a window.
+         */
+        public int widget() { return s.get(JAVA_INT, 80); }
+        public RAccessibleInfo widget(int value) { s.set(JAVA_INT, 80, value); return this; }
+
+        /**
+         * Its index among its widget's items, or -1 when it is not an item.
+         */
+        public int item() { return s.get(JAVA_INT, 84); }
+        public RAccessibleInfo item(int value) { s.set(JAVA_INT, 84, value); return this; }
     }
 
     public static final class RHostPlatformDesc {
@@ -11724,6 +11873,22 @@ public final class R {
         try (Arena $a = Arena.ofConfined()) {
             MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
             $h.invokeExact(button, text$);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rbutton_get_text$;
+
+    /**
+     * Returns: The text the button shows (its first label), or "".
+     */
+    public static String Rbutton_get_text(int button) {
+        MethodHandle $h = Rbutton_get_text$;
+        if ($h == null) Rbutton_get_text$ = $h = find("Rbutton_get_text", FunctionDescriptor.of(ADDRESS, JAVA_INT));
+        try {
+            MemorySegment $r = (MemorySegment) $h.invokeExact(button);
+            return text($r);
         } catch (Throwable $t) {
             throw fail($t);
         }
@@ -23604,6 +23769,22 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rwidget_get_accessible_description$;
+
+    /**
+     * Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL.
+     */
+    public static String Rwidget_get_accessible_description(int widget) {
+        MethodHandle $h = Rwidget_get_accessible_description$;
+        if ($h == null) Rwidget_get_accessible_description$ = $h = find("Rwidget_get_accessible_description", FunctionDescriptor.of(ADDRESS, JAVA_INT));
+        try {
+            MemorySegment $r = (MemorySegment) $h.invokeExact(widget);
+            return text($r);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rwidget_set_accessible_role$;
 
     public static void Rwidget_set_accessible_role(int widget, int role) {
@@ -23689,6 +23870,235 @@ public final class R {
         try {
             int $r = (int) $h.invokeExact();
             return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_count$;
+
+    /**
+     * How many accessibles match a selector.
+     * window R_INVALID_ID or 0: every open window.
+     * Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+     */
+    public static int Raccessible_count(int window, String selector) {
+        MethodHandle $h = Raccessible_count$;
+        if ($h == null) Raccessible_count$ = $h = find("Raccessible_count", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment selector$ = selector == null ? MemorySegment.NULL : utf8($a, selector);
+            int $r = (int) $h.invokeExact(window, selector$);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_find$;
+
+    /**
+     * Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why).
+     */
+    public static long Raccessible_find(int window, String selector) {
+        MethodHandle $h = Raccessible_find$;
+        if ($h == null) Raccessible_find$ = $h = find("Raccessible_find", FunctionDescriptor.of(JAVA_LONG, JAVA_INT, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment selector$ = selector == null ? MemorySegment.NULL : utf8($a, selector);
+            long $r = (long) $h.invokeExact(window, selector$);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get$;
+
+    /**
+     * Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none.
+     */
+    public static long Raccessible_get(int window, String selector, int index) {
+        MethodHandle $h = Raccessible_get$;
+        if ($h == null) Raccessible_get$ = $h = find("Raccessible_get", FunctionDescriptor.of(JAVA_LONG, JAVA_INT, ADDRESS, JAVA_INT));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment selector$ = selector == null ? MemorySegment.NULL : utf8($a, selector);
+            long $r = (long) $h.invokeExact(window, selector$, index);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get_root$;
+
+    /**
+     * Returns: The accessible of a window: the top of its tree.
+     */
+    public static long Raccessible_get_root(int window) {
+        MethodHandle $h = Raccessible_get_root$;
+        if ($h == null) Raccessible_get_root$ = $h = find("Raccessible_get_root", FunctionDescriptor.of(JAVA_LONG, JAVA_INT));
+        try {
+            long $r = (long) $h.invokeExact(window);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get_parent$;
+
+    /**
+     * Returns: The accessible that holds this one; 0 for a window.
+     */
+    public static long Raccessible_get_parent(long accessible) {
+        MethodHandle $h = Raccessible_get_parent$;
+        if ($h == null) Raccessible_get_parent$ = $h = find("Raccessible_get_parent", FunctionDescriptor.of(JAVA_LONG, JAVA_LONG));
+        try {
+            long $r = (long) $h.invokeExact(accessible);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get_child_count$;
+
+    public static int Raccessible_get_child_count(long accessible) {
+        MethodHandle $h = Raccessible_get_child_count$;
+        if ($h == null) Raccessible_get_child_count$ = $h = find("Raccessible_get_child_count", FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
+        try {
+            int $r = (int) $h.invokeExact(accessible);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get_child$;
+
+    public static long Raccessible_get_child(long accessible, int index) {
+        MethodHandle $h = Raccessible_get_child$;
+        if ($h == null) Raccessible_get_child$ = $h = find("Raccessible_get_child", FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
+        try {
+            long $r = (long) $h.invokeExact(accessible, index);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_describe$;
+
+    /**
+     * Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone.
+     */
+    public static int Raccessible_describe(long accessible, RAccessibleInfo info) {
+        MethodHandle $h = Raccessible_describe$;
+        if ($h == null) Raccessible_describe$ = $h = find("Raccessible_describe", FunctionDescriptor.of(JAVA_INT, JAVA_LONG, ADDRESS));
+        try {
+            int $r = (int) $h.invokeExact(accessible, (MemorySegment) (info == null ? MemorySegment.NULL : info.segment()));
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get_role_name$;
+
+    /**
+     * Returns: The role's name in a selector ("list-item"), or "" for one that has none.
+     */
+    public static String Raccessible_get_role_name(int role) {
+        MethodHandle $h = Raccessible_get_role_name$;
+        if ($h == null) Raccessible_get_role_name$ = $h = find("Raccessible_get_role_name", FunctionDescriptor.of(ADDRESS, JAVA_INT));
+        try {
+            MemorySegment $r = (MemorySegment) $h.invokeExact(role);
+            return text($r);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_click$;
+
+    /**
+     * Clicks the middle of an accessible with the mouse: real input, so
+     * a disabled one can't be clicked. A row is scrolled into view first, and a
+     * menu item in a closed menu is reached through its menus, opened the way a
+     * user opens them.
+     */
+    public static int Raccessible_click(long accessible) {
+        MethodHandle $h = Raccessible_click$;
+        if ($h == null) Raccessible_click$ = $h = find("Raccessible_click", FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
+        try {
+            int $r = (int) $h.invokeExact(accessible);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_type$;
+
+    /**
+     * Gives an accessible the keyboard focus, then types a text into it, as the keyboard would.
+     */
+    public static int Raccessible_type(long accessible, String text) {
+        MethodHandle $h = Raccessible_type$;
+        if ($h == null) Raccessible_type$ = $h = find("Raccessible_type", FunctionDescriptor.of(JAVA_INT, JAVA_LONG, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
+            int $r = (int) $h.invokeExact(accessible, text$);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_press_key$;
+
+    /**
+     * Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values).
+     */
+    public static int Raccessible_press_key(long accessible, int key, int modifiers) {
+        MethodHandle $h = Raccessible_press_key$;
+        if ($h == null) Raccessible_press_key$ = $h = find("Raccessible_press_key", FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(accessible, key, modifiers);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_act$;
+
+    /**
+     * Expands, collapses, selects or focuses an accessible directly, without input.
+     */
+    public static int Raccessible_act(long accessible, int action) {
+        MethodHandle $h = Raccessible_act$;
+        if ($h == null) Raccessible_act$ = $h = find("Raccessible_act", FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(accessible, action);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Raccessible_get_last_error$;
+
+    /**
+     * Returns: Why the last find or action failed, for a test to report and an
+     * agent to read ("no accessible with role=button name=\"Save\"", "2
+     * accessibles with role=list-item, expected one"); "" after one that worked.
+     */
+    public static String Raccessible_get_last_error() {
+        MethodHandle $h = Raccessible_get_last_error$;
+        if ($h == null) Raccessible_get_last_error$ = $h = find("Raccessible_get_last_error", FunctionDescriptor.of(ADDRESS));
+        try {
+            MemorySegment $r = (MemorySegment) $h.invokeExact();
+            return text($r);
         } catch (Throwable $t) {
             throw fail($t);
         }

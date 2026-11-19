@@ -153,6 +153,8 @@ extern "C" {
 	RAVEN_API const char* Rwidget_get_accessible_name(Rid widget);
 	/** @brief A longer explanation, read after the name. */
 	RAVEN_API void Rwidget_set_accessible_description(Rid widget, const char* description);
+	/** @return The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL. */
+	RAVEN_API const char* Rwidget_get_accessible_description(Rid widget);
 	RAVEN_API void Rwidget_set_accessible_role(Rid widget, RAccessibleRole role);
 	/** @brief The role the screen reader sees (given, or the one of the type). */
 	RAVEN_API RAccessibleRole Rwidget_get_accessible_role(Rid widget);

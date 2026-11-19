@@ -281,8 +281,8 @@ def parse_header(path, api, known):
         take(match)
         api.callbacks.append(Callback(match.group(2), normalize_type(match.group(1)), split_params(match.group(3)), doc_before(match.start())))
 
-    # ---- plain typedefs (Rid, Ruint): known to the generators by name
-    for match in re.finditer(r"typedef\s+(uint32_t)\s+(\w+)\s*;", code):
+    # ---- plain typedefs (Rid, Ruint, RAccessible): known to the generators by name
+    for match in re.finditer(r"typedef\s+(uint32_t|uint64_t)\s+(\w+)\s*;", code):
         take(match)
 
     # ---- functions
@@ -303,6 +303,8 @@ def parse_header(path, api, known):
 SCALARS = {
     "int": "int", "unsigned": "uint32", "float": "float", "double": "double", "char": "char", "size_t": "size_t",
     "uint64_t": "uint64", "uintptr_t": "uintptr", "Ruint": "uint32", "uint32_t": "uint32", "uint8_t": "uint8", "Rid": "id",
+    # (an accessible of raven_driver.h: a number to every language)
+    "RAccessible": "uint64",
 }
 
 

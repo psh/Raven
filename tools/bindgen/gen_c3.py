@@ -218,7 +218,7 @@ def doc_block(doc, indent=""):
 
 # the C types as they are, for raven::c
 C_BASE = {"int": "CInt", "float": "float", "double": "double", "char": "char", "size_t": "usz", "uint64_t": "ulong",
-          "uintptr_t": "uptr", "uint32_t": "uint", "uint8_t": "char", "void": "void"}
+          "uintptr_t": "uptr", "uint32_t": "uint", "uint8_t": "char", "void": "void", "RAccessible": "ulong"}
 
 
 # ---------------------------------------------------------------------------

@@ -416,6 +416,7 @@ static struct {
 	void (*Rlabel_clear_selection)(Rid);
 	Rid (*Rbutton_create)(const char*);
 	void (*Rbutton_set_text)(Rid, const char*);
+	const char* (*Rbutton_get_text)(Rid);
 	void (*Rbutton_set_style)(Rid, RButtonStyle);
 	void (*Rbutton_set_clicked_callback)(Rid, RButtonClickedCallback, void*);
 	Rid (*Rcheckbox_create)(const char*);
@@ -1177,12 +1178,27 @@ static struct {
 	void (*Rwidget_set_accessible_name)(Rid, const char*);
 	const char* (*Rwidget_get_accessible_name)(Rid);
 	void (*Rwidget_set_accessible_description)(Rid, const char*);
+	const char* (*Rwidget_get_accessible_description)(Rid);
 	void (*Rwidget_set_accessible_role)(Rid, RAccessibleRole);
 	RAccessibleRole (*Rwidget_get_accessible_role)(Rid);
 	void (*Rwidget_set_accessible_hidden)(Rid, int);
 	void (*Rwidget_set_accessible_labelled_by)(Rid, Rid);
 	void (*Raccessibility_announce)(const char*, int);
 	int (*Raccessibility_is_screen_reader_active)(void);
+	int (*Raccessible_count)(Rid, const char*);
+	RAccessible (*Raccessible_find)(Rid, const char*);
+	RAccessible (*Raccessible_get)(Rid, const char*, int);
+	RAccessible (*Raccessible_get_root)(Rid);
+	RAccessible (*Raccessible_get_parent)(RAccessible);
+	int (*Raccessible_get_child_count)(RAccessible);
+	RAccessible (*Raccessible_get_child)(RAccessible, int);
+	int (*Raccessible_describe)(RAccessible, RAccessibleInfo*);
+	const char* (*Raccessible_get_role_name)(RAccessibleRole);
+	int (*Raccessible_click)(RAccessible);
+	int (*Raccessible_type)(RAccessible, const char*);
+	int (*Raccessible_press_key)(RAccessible, RKey, Ruint);
+	int (*Raccessible_act)(RAccessible, RAccessibleAction);
+	const char* (*Raccessible_get_last_error)(void);
 	void (*Rhost_platform_register)(const RHostPlatformDesc*);
 	int (*Rhost_platform_is_active)(void);
 	void (*Rhost_window_set_size)(Rid, int, int, float);
@@ -1586,6 +1602,7 @@ static const struct {
 	{"Rlabel_clear_selection", offsetof(__typeof__(rn), Rlabel_clear_selection)},
 	{"Rbutton_create", offsetof(__typeof__(rn), Rbutton_create)},
 	{"Rbutton_set_text", offsetof(__typeof__(rn), Rbutton_set_text)},
+	{"Rbutton_get_text", offsetof(__typeof__(rn), Rbutton_get_text)},
 	{"Rbutton_set_style", offsetof(__typeof__(rn), Rbutton_set_style)},
 	{"Rbutton_set_clicked_callback", offsetof(__typeof__(rn), Rbutton_set_clicked_callback)},
 	{"Rcheckbox_create", offsetof(__typeof__(rn), Rcheckbox_create)},
@@ -2347,12 +2364,27 @@ static const struct {
 	{"Rwidget_set_accessible_name", offsetof(__typeof__(rn), Rwidget_set_accessible_name)},
 	{"Rwidget_get_accessible_name", offsetof(__typeof__(rn), Rwidget_get_accessible_name)},
 	{"Rwidget_set_accessible_description", offsetof(__typeof__(rn), Rwidget_set_accessible_description)},
+	{"Rwidget_get_accessible_description", offsetof(__typeof__(rn), Rwidget_get_accessible_description)},
 	{"Rwidget_set_accessible_role", offsetof(__typeof__(rn), Rwidget_set_accessible_role)},
 	{"Rwidget_get_accessible_role", offsetof(__typeof__(rn), Rwidget_get_accessible_role)},
 	{"Rwidget_set_accessible_hidden", offsetof(__typeof__(rn), Rwidget_set_accessible_hidden)},
 	{"Rwidget_set_accessible_labelled_by", offsetof(__typeof__(rn), Rwidget_set_accessible_labelled_by)},
 	{"Raccessibility_announce", offsetof(__typeof__(rn), Raccessibility_announce)},
 	{"Raccessibility_is_screen_reader_active", offsetof(__typeof__(rn), Raccessibility_is_screen_reader_active)},
+	{"Raccessible_count", offsetof(__typeof__(rn), Raccessible_count)},
+	{"Raccessible_find", offsetof(__typeof__(rn), Raccessible_find)},
+	{"Raccessible_get", offsetof(__typeof__(rn), Raccessible_get)},
+	{"Raccessible_get_root", offsetof(__typeof__(rn), Raccessible_get_root)},
+	{"Raccessible_get_parent", offsetof(__typeof__(rn), Raccessible_get_parent)},
+	{"Raccessible_get_child_count", offsetof(__typeof__(rn), Raccessible_get_child_count)},
+	{"Raccessible_get_child", offsetof(__typeof__(rn), Raccessible_get_child)},
+	{"Raccessible_describe", offsetof(__typeof__(rn), Raccessible_describe)},
+	{"Raccessible_get_role_name", offsetof(__typeof__(rn), Raccessible_get_role_name)},
+	{"Raccessible_click", offsetof(__typeof__(rn), Raccessible_click)},
+	{"Raccessible_type", offsetof(__typeof__(rn), Raccessible_type)},
+	{"Raccessible_press_key", offsetof(__typeof__(rn), Raccessible_press_key)},
+	{"Raccessible_act", offsetof(__typeof__(rn), Raccessible_act)},
+	{"Raccessible_get_last_error", offsetof(__typeof__(rn), Raccessible_get_last_error)},
 	{"Rhost_platform_register", offsetof(__typeof__(rn), Rhost_platform_register)},
 	{"Rhost_platform_is_active", offsetof(__typeof__(rn), Rhost_platform_is_active)},
 	{"Rhost_window_set_size", offsetof(__typeof__(rn), Rhost_window_set_size)},
@@ -10527,6 +10559,18 @@ static napi_value rn_w_Rbutton_set_text(napi_env env, napi_callback_info info) {
 	rn.Rbutton_set_text((Rid)a0, a1.p);
 done:
 	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rbutton_get_text(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rbutton_get_text((Rid)a0));
 	return result_;
 }
 
@@ -23423,6 +23467,18 @@ done:
 	return result_;
 }
 
+static napi_value rn_w_Rwidget_get_accessible_description(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rwidget_get_accessible_description((Rid)a0));
+	return result_;
+}
+
 static napi_value rn_w_Rwidget_set_accessible_role(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -23503,6 +23559,214 @@ static napi_value rn_w_Raccessibility_is_screen_reader_active(napi_env env, napi
 	(void)info;
 	int value_ = rn.Raccessibility_is_screen_reader_active();
 	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_count(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Raccessible_count((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_find(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	RAccessible value_ = rn.Raccessible_find((Rid)a0, a1.p);
+	napi_create_bigint_uint64(env, value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	int a2;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	RAccessible value_ = rn.Raccessible_get((Rid)a0, a1.p, (int)a2);
+	napi_create_bigint_uint64(env, value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get_root(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	RAccessible value_ = rn.Raccessible_get_root((Rid)a0);
+	napi_create_bigint_uint64(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get_parent(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	RAccessible value_ = rn.Raccessible_get_parent((RAccessible)a0);
+	napi_create_bigint_uint64(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get_child_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Raccessible_get_child_count((RAccessible)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get_child(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	RAccessible value_ = rn.Raccessible_get_child((RAccessible)a0, (int)a1);
+	napi_create_bigint_uint64(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_describe(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	void* a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Raccessible_describe((RAccessible)a0, (RAccessibleInfo*)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get_role_name(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Raccessible_get_role_name((RAccessibleRole)a0));
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_click(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Raccessible_click((RAccessible)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_type(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Raccessible_type((RAccessible)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_press_key(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	int a1;
+	uint32_t a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_uint32(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Raccessible_press_key((RAccessible)a0, (RKey)a1, (Ruint)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_act(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint64_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint64(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Raccessible_act((RAccessible)a0, (RAccessibleAction)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raccessible_get_last_error(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	result_ = rn_make_text(env, rn.Raccessible_get_last_error());
 	return result_;
 }
 
@@ -24187,6 +24451,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rlabel_clear_selection", NULL, rn_w_Rlabel_clear_selection, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rbutton_create", NULL, rn_w_Rbutton_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rbutton_set_text", NULL, rn_w_Rbutton_set_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rbutton_get_text", NULL, rn_w_Rbutton_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rbutton_set_style", NULL, rn_w_Rbutton_set_style, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rbutton_set_clicked_callback", NULL, rn_w_Rbutton_set_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcheckbox_create", NULL, rn_w_Rcheckbox_create, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -24948,12 +25213,27 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwidget_set_accessible_name", NULL, rn_w_Rwidget_set_accessible_name, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_get_accessible_name", NULL, rn_w_Rwidget_get_accessible_name, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_accessible_description", NULL, rn_w_Rwidget_set_accessible_description, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwidget_get_accessible_description", NULL, rn_w_Rwidget_get_accessible_description, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_accessible_role", NULL, rn_w_Rwidget_set_accessible_role, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_get_accessible_role", NULL, rn_w_Rwidget_get_accessible_role, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_accessible_hidden", NULL, rn_w_Rwidget_set_accessible_hidden, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_accessible_labelled_by", NULL, rn_w_Rwidget_set_accessible_labelled_by, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_announce", NULL, rn_w_Raccessibility_announce, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_is_screen_reader_active", NULL, rn_w_Raccessibility_is_screen_reader_active, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_count", NULL, rn_w_Raccessible_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_find", NULL, rn_w_Raccessible_find, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get", NULL, rn_w_Raccessible_get, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get_root", NULL, rn_w_Raccessible_get_root, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get_parent", NULL, rn_w_Raccessible_get_parent, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get_child_count", NULL, rn_w_Raccessible_get_child_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get_child", NULL, rn_w_Raccessible_get_child, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_describe", NULL, rn_w_Raccessible_describe, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get_role_name", NULL, rn_w_Raccessible_get_role_name, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_click", NULL, rn_w_Raccessible_click, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_type", NULL, rn_w_Raccessible_type, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_press_key", NULL, rn_w_Raccessible_press_key, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_act", NULL, rn_w_Raccessible_act, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raccessible_get_last_error", NULL, rn_w_Raccessible_get_last_error, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_platform_register", NULL, rn_w_Rhost_platform_register, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_platform_is_active", NULL, rn_w_Rhost_platform_is_active, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_window_set_size", NULL, rn_w_Rhost_window_set_size, NULL, NULL, NULL, napi_enumerable, NULL},

@@ -265,6 +265,7 @@ void Rshutdown(void) {
 	rvn_tray_shutdown();
 	rvn_locale_shutdown();
 	rvn_a11y_shutdown();
+	rvn_driver_shutdown();
 	rvn_themes_shutdown();
 	rvn_look_shutdown();
 	rvn_dialogs_shutdown();

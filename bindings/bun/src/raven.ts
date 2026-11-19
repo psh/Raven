@@ -540,6 +540,7 @@ const _symbols = {
 	Rlabel_clear_selection: { args: ["u32"], returns: "void" },
 	Rbutton_create: { args: ["ptr"], returns: "u32" },
 	Rbutton_set_text: { args: ["u32", "ptr"], returns: "void" },
+	Rbutton_get_text: { args: ["u32"], returns: "cstring" },
 	Rbutton_set_style: { args: ["u32", "i32"], returns: "void" },
 	Rbutton_set_clicked_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rcheckbox_create: { args: ["ptr"], returns: "u32" },
@@ -1301,12 +1302,27 @@ const _symbols = {
 	Rwidget_set_accessible_name: { args: ["u32", "ptr"], returns: "void" },
 	Rwidget_get_accessible_name: { args: ["u32"], returns: "cstring" },
 	Rwidget_set_accessible_description: { args: ["u32", "ptr"], returns: "void" },
+	Rwidget_get_accessible_description: { args: ["u32"], returns: "cstring" },
 	Rwidget_set_accessible_role: { args: ["u32", "i32"], returns: "void" },
 	Rwidget_get_accessible_role: { args: ["u32"], returns: "i32" },
 	Rwidget_set_accessible_hidden: { args: ["u32", "i32"], returns: "void" },
 	Rwidget_set_accessible_labelled_by: { args: ["u32", "u32"], returns: "void" },
 	Raccessibility_announce: { args: ["ptr", "i32"], returns: "void" },
 	Raccessibility_is_screen_reader_active: { args: [], returns: "i32" },
+	Raccessible_count: { args: ["u32", "ptr"], returns: "i32" },
+	Raccessible_find: { args: ["u32", "ptr"], returns: "u64" },
+	Raccessible_get: { args: ["u32", "ptr", "i32"], returns: "u64" },
+	Raccessible_get_root: { args: ["u32"], returns: "u64" },
+	Raccessible_get_parent: { args: ["u64"], returns: "u64" },
+	Raccessible_get_child_count: { args: ["u64"], returns: "i32" },
+	Raccessible_get_child: { args: ["u64", "i32"], returns: "u64" },
+	Raccessible_describe: { args: ["u64", "ptr"], returns: "i32" },
+	Raccessible_get_role_name: { args: ["i32"], returns: "cstring" },
+	Raccessible_click: { args: ["u64"], returns: "i32" },
+	Raccessible_type: { args: ["u64", "ptr"], returns: "i32" },
+	Raccessible_press_key: { args: ["u64", "i32", "u32"], returns: "i32" },
+	Raccessible_act: { args: ["u64", "i32"], returns: "i32" },
+	Raccessible_get_last_error: { args: [], returns: "cstring" },
 	Rhost_platform_register: { args: ["ptr"], returns: "void" },
 	Rhost_platform_is_active: { args: [], returns: "i32" },
 	Rhost_window_set_size: { args: ["u32", "i32", "i32", "f32"], returns: "void" },
@@ -3207,6 +3223,62 @@ export const R_ROLE_CANVAS = RAccessibleRole.R_ROLE_CANVAS;
 export const R_ROLE_SEPARATOR = RAccessibleRole.R_ROLE_SEPARATOR;
 export const R_ROLE_SCROLL_BAR = RAccessibleRole.R_ROLE_SCROLL_BAR;
 export const R_ROLE_PANE = RAccessibleRole.R_ROLE_PANE;
+
+/** What an accessible is, now (Raccessible_describe). */
+export enum RAccessibleState {
+	R_ACCESSIBLE_FOCUSABLE = 1,
+	R_ACCESSIBLE_FOCUSED = 2,
+	R_ACCESSIBLE_DISABLED = 4,
+	R_ACCESSIBLE_CHECKED = 8,
+	R_ACCESSIBLE_CHECKABLE = 0x0010,
+	R_ACCESSIBLE_EXPANDED = 0x0020,
+	R_ACCESSIBLE_EXPANDABLE = 0x0040,
+	R_ACCESSIBLE_SELECTED = 0x0080,
+	R_ACCESSIBLE_SELECTABLE = 0x0100,
+	R_ACCESSIBLE_MULTILINE = 0x0200,
+	R_ACCESSIBLE_READONLY = 0x0400,
+	R_ACCESSIBLE_PASSWORD = 0x0800,
+	/** number, minimum and maximum hold a range (a slider, a spin box). */
+	R_ACCESSIBLE_HAS_RANGE = 0x1000,
+	/** The value is a text that can be typed. */
+	R_ACCESSIBLE_EDITABLE = 0x2000,
+	/** It can be pressed. */
+	R_ACCESSIBLE_INVOKABLE = 0x4000,
+	/** Scrolled out of view, or in a menu that is closed. */
+	R_ACCESSIBLE_OFFSCREEN = 0x8000,
+	R_ACCESSIBLE_MODAL = 0x10000,
+}
+
+export const R_ACCESSIBLE_FOCUSABLE = RAccessibleState.R_ACCESSIBLE_FOCUSABLE;
+export const R_ACCESSIBLE_FOCUSED = RAccessibleState.R_ACCESSIBLE_FOCUSED;
+export const R_ACCESSIBLE_DISABLED = RAccessibleState.R_ACCESSIBLE_DISABLED;
+export const R_ACCESSIBLE_CHECKED = RAccessibleState.R_ACCESSIBLE_CHECKED;
+export const R_ACCESSIBLE_CHECKABLE = RAccessibleState.R_ACCESSIBLE_CHECKABLE;
+export const R_ACCESSIBLE_EXPANDED = RAccessibleState.R_ACCESSIBLE_EXPANDED;
+export const R_ACCESSIBLE_EXPANDABLE = RAccessibleState.R_ACCESSIBLE_EXPANDABLE;
+export const R_ACCESSIBLE_SELECTED = RAccessibleState.R_ACCESSIBLE_SELECTED;
+export const R_ACCESSIBLE_SELECTABLE = RAccessibleState.R_ACCESSIBLE_SELECTABLE;
+export const R_ACCESSIBLE_MULTILINE = RAccessibleState.R_ACCESSIBLE_MULTILINE;
+export const R_ACCESSIBLE_READONLY = RAccessibleState.R_ACCESSIBLE_READONLY;
+export const R_ACCESSIBLE_PASSWORD = RAccessibleState.R_ACCESSIBLE_PASSWORD;
+export const R_ACCESSIBLE_HAS_RANGE = RAccessibleState.R_ACCESSIBLE_HAS_RANGE;
+export const R_ACCESSIBLE_EDITABLE = RAccessibleState.R_ACCESSIBLE_EDITABLE;
+export const R_ACCESSIBLE_INVOKABLE = RAccessibleState.R_ACCESSIBLE_INVOKABLE;
+export const R_ACCESSIBLE_OFFSCREEN = RAccessibleState.R_ACCESSIBLE_OFFSCREEN;
+export const R_ACCESSIBLE_MODAL = RAccessibleState.R_ACCESSIBLE_MODAL;
+
+/** What Raccessible_act does, for what input can't reach reliably. */
+export enum RAccessibleAction {
+	R_ACCESSIBLE_EXPAND = 0x07C0,
+	R_ACCESSIBLE_COLLAPSE = 0x07C1,
+	R_ACCESSIBLE_SELECT = 0x07C2,
+	R_ACCESSIBLE_FOCUS = 0x07C3,
+}
+
+export const R_ACCESSIBLE_EXPAND = RAccessibleAction.R_ACCESSIBLE_EXPAND;
+export const R_ACCESSIBLE_COLLAPSE = RAccessibleAction.R_ACCESSIBLE_COLLAPSE;
+export const R_ACCESSIBLE_SELECT = RAccessibleAction.R_ACCESSIBLE_SELECT;
+export const R_ACCESSIBLE_FOCUS = RAccessibleAction.R_ACCESSIBLE_FOCUS;
 
 /**
  * Optional settings for Rinit_ex. A zero-initialized structure selects the
@@ -5225,6 +5297,133 @@ export class RAccessibilitySettings extends RStruct {
 	}
 	set screen_reader(value: number) {
 		this._view.setInt32(12, value, true);
+	}
+}
+
+/** An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call. */
+export class RAccessibleInfo extends RStruct {
+	static readonly SIZE = 88;
+
+	constructor(pointer?: Pointer) {
+		super(RAccessibleInfo.SIZE, pointer);
+	}
+
+	/** The structure at an address of the library, or null. */
+	static from(pointer: Pointer | null): RAccessibleInfo | null {
+		return pointer ? new RAccessibleInfo(pointer) : null;
+	}
+
+	get role(): RAccessibleRole {
+		return this._view.getInt32(0, true) as RAccessibleRole;
+	}
+	set role(value: RAccessibleRole) {
+		this._view.setInt32(0, value, true);
+	}
+
+	get name(): string | null {
+		return _text(_address(this._view.getBigUint64(8, true)));
+	}
+	set name(value: string | null) {
+		this._point("name", 8, _s(value));
+	}
+
+	get description(): string | null {
+		return _text(_address(this._view.getBigUint64(16, true)));
+	}
+	set description(value: string | null) {
+		this._point("description", 16, _s(value));
+	}
+
+	/** A text field's text, the selected entry of a list, a slider's number as text; or "". */
+	get value(): string | null {
+		return _text(_address(this._view.getBigUint64(24, true)));
+	}
+	set value(value: string | null) {
+		this._point("value", 24, _s(value));
+	}
+
+	get number(): number {
+		return this._view.getFloat64(32, true);
+	}
+	set number(value: number) {
+		this._view.setFloat64(32, value, true);
+	}
+
+	get minimum(): number {
+		return this._view.getFloat64(40, true);
+	}
+	set minimum(value: number) {
+		this._view.setFloat64(40, value, true);
+	}
+
+	get maximum(): number {
+		return this._view.getFloat64(48, true);
+	}
+	set maximum(value: number) {
+		this._view.setFloat64(48, value, true);
+	}
+
+	/** RAccessibleState values, or-ed. */
+	get states(): number {
+		return this._view.getUint32(56, true);
+	}
+	set states(value: number) {
+		this._view.setUint32(56, value, true);
+	}
+
+	/** In its window, logical units. */
+	get x(): number {
+		return this._view.getFloat32(60, true);
+	}
+	set x(value: number) {
+		this._view.setFloat32(60, value, true);
+	}
+
+	/** In its window, logical units. */
+	get y(): number {
+		return this._view.getFloat32(64, true);
+	}
+	set y(value: number) {
+		this._view.setFloat32(64, value, true);
+	}
+
+	/** In its window, logical units. */
+	get width(): number {
+		return this._view.getFloat32(68, true);
+	}
+	set width(value: number) {
+		this._view.setFloat32(68, value, true);
+	}
+
+	/** In its window, logical units. */
+	get height(): number {
+		return this._view.getFloat32(72, true);
+	}
+	set height(value: number) {
+		this._view.setFloat32(72, value, true);
+	}
+
+	get window(): Rid {
+		return this._view.getUint32(76, true);
+	}
+	set window(value: Rid) {
+		this._view.setUint32(76, value, true);
+	}
+
+	/** The widget it is, or the one whose item it is; R_INVALID_ID for a window. */
+	get widget(): Rid {
+		return this._view.getUint32(80, true);
+	}
+	set widget(value: Rid) {
+		this._view.setUint32(80, value, true);
+	}
+
+	/** Its index among its widget's items, or -1 when it is not an item. */
+	get item(): number {
+		return this._view.getInt32(84, true);
+	}
+	set item(value: number) {
+		this._view.setInt32(84, value, true);
 	}
 }
 
@@ -9140,6 +9339,11 @@ export function Rbutton_create(text: string | null): Rid {
  */
 export function Rbutton_set_text(button: Rid, text: string | null): void {
 	_lib.Rbutton_set_text(button, _s(text));
+}
+
+/** Returns: The text the button shows (its first label), or "". */
+export function Rbutton_get_text(button: Rid): string | null {
+	return _lib.Rbutton_get_text(button);
 }
 
 export function Rbutton_set_style(button: Rid, style: RButtonStyle): void {
@@ -13335,6 +13539,11 @@ export function Rwidget_set_accessible_description(widget: Rid, description: str
 	_lib.Rwidget_set_accessible_description(widget, _s(description));
 }
 
+/** Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL. */
+export function Rwidget_get_accessible_description(widget: Rid): string | null {
+	return _lib.Rwidget_get_accessible_description(widget);
+}
+
 export function Rwidget_set_accessible_role(widget: Rid, role: RAccessibleRole): void {
 	_lib.Rwidget_set_accessible_role(widget, role);
 }
@@ -13362,6 +13571,87 @@ export function Raccessibility_announce(text: string | null, assertive: number):
 /** R_TRUE when a screen reader is reading the windows of the application. */
 export function Raccessibility_is_screen_reader_active(): number {
 	return _lib.Raccessibility_is_screen_reader_active();
+}
+
+/**
+ * How many accessibles match a selector.
+ * window R_INVALID_ID or 0: every open window.
+ * Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+ */
+export function Raccessible_count(window: Rid, selector: string | null): number {
+	return _lib.Raccessible_count(window, _s(selector));
+}
+
+/** Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why). */
+export function Raccessible_find(window: Rid, selector: string | null): bigint {
+	return _lib.Raccessible_find(window, _s(selector));
+}
+
+/** Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none. */
+export function Raccessible_get(window: Rid, selector: string | null, index: number): bigint {
+	return _lib.Raccessible_get(window, _s(selector), index);
+}
+
+/** Returns: The accessible of a window: the top of its tree. */
+export function Raccessible_get_root(window: Rid): bigint {
+	return _lib.Raccessible_get_root(window);
+}
+
+/** Returns: The accessible that holds this one; 0 for a window. */
+export function Raccessible_get_parent(accessible: bigint): bigint {
+	return _lib.Raccessible_get_parent(accessible);
+}
+
+export function Raccessible_get_child_count(accessible: bigint): number {
+	return _lib.Raccessible_get_child_count(accessible);
+}
+
+export function Raccessible_get_child(accessible: bigint, index: number): bigint {
+	return _lib.Raccessible_get_child(accessible, index);
+}
+
+/** Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone. */
+export function Raccessible_describe(accessible: bigint, info: RAccessibleInfo | null): number {
+	return _lib.Raccessible_describe(accessible, _p(info));
+}
+
+/** Returns: The role's name in a selector ("list-item"), or "" for one that has none. */
+export function Raccessible_get_role_name(role: RAccessibleRole): string | null {
+	return _lib.Raccessible_get_role_name(role);
+}
+
+/**
+ * Clicks the middle of an accessible with the mouse: real input, so
+ * a disabled one can't be clicked. A row is scrolled into view first, and a
+ * menu item in a closed menu is reached through its menus, opened the way a
+ * user opens them.
+ */
+export function Raccessible_click(accessible: bigint): number {
+	return _lib.Raccessible_click(accessible);
+}
+
+/** Gives an accessible the keyboard focus, then types a text into it, as the keyboard would. */
+export function Raccessible_type(accessible: bigint, text: string | null): number {
+	return _lib.Raccessible_type(accessible, _s(text));
+}
+
+/** Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values). */
+export function Raccessible_press_key(accessible: bigint, key: RKey, modifiers: number): number {
+	return _lib.Raccessible_press_key(accessible, key, modifiers);
+}
+
+/** Expands, collapses, selects or focuses an accessible directly, without input. */
+export function Raccessible_act(accessible: bigint, action: RAccessibleAction): number {
+	return _lib.Raccessible_act(accessible, action);
+}
+
+/**
+ * Returns: Why the last find or action failed, for a test to report and an
+ * agent to read ("no accessible with role=button name=\"Save\"", "2
+ * accessibles with role=list-item, expected one"); "" after one that worked.
+ */
+export function Raccessible_get_last_error(): string | null {
+	return _lib.Raccessible_get_last_error();
 }
 
 /** Makes the next Rinit use the host platform. The structure is copied; NULL restores the default. */

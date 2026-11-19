@@ -1110,6 +1110,39 @@ const (
 	R_ROLE_PANE          RAccessibleRole = 0x0783
 )
 
+// RAccessibleState: What an accessible is, now (Raccessible_describe).
+type RAccessibleState int32
+
+const (
+	R_ACCESSIBLE_FOCUSABLE  RAccessibleState = 1
+	R_ACCESSIBLE_FOCUSED    RAccessibleState = 2
+	R_ACCESSIBLE_DISABLED   RAccessibleState = 4
+	R_ACCESSIBLE_CHECKED    RAccessibleState = 8
+	R_ACCESSIBLE_CHECKABLE  RAccessibleState = 0x0010
+	R_ACCESSIBLE_EXPANDED   RAccessibleState = 0x0020
+	R_ACCESSIBLE_EXPANDABLE RAccessibleState = 0x0040
+	R_ACCESSIBLE_SELECTED   RAccessibleState = 0x0080
+	R_ACCESSIBLE_SELECTABLE RAccessibleState = 0x0100
+	R_ACCESSIBLE_MULTILINE  RAccessibleState = 0x0200
+	R_ACCESSIBLE_READONLY   RAccessibleState = 0x0400
+	R_ACCESSIBLE_PASSWORD   RAccessibleState = 0x0800
+	R_ACCESSIBLE_HAS_RANGE  RAccessibleState = 0x1000
+	R_ACCESSIBLE_EDITABLE   RAccessibleState = 0x2000
+	R_ACCESSIBLE_INVOKABLE  RAccessibleState = 0x4000
+	R_ACCESSIBLE_OFFSCREEN  RAccessibleState = 0x8000
+	R_ACCESSIBLE_MODAL      RAccessibleState = 0x10000
+)
+
+// RAccessibleAction: What Raccessible_act does, for what input can't reach reliably.
+type RAccessibleAction int32
+
+const (
+	R_ACCESSIBLE_EXPAND   RAccessibleAction = 0x07C0
+	R_ACCESSIBLE_COLLAPSE RAccessibleAction = 0x07C1
+	R_ACCESSIBLE_SELECT   RAccessibleAction = 0x07C2
+	R_ACCESSIBLE_FOCUS    RAccessibleAction = 0x07C3
+)
+
 // Init: Starts the library with default settings on the given backend. The calling thread becomes the UI
 // thread. Returns: R_TRUE on success. On failure, see Rerror_get_last.
 func Init(backend RBackend) int {
@@ -3092,6 +3125,11 @@ func ButtonSetText(button ID, text string) {
 	text_ := C.CString(text)
 	defer C.free(unsafe.Pointer(text_))
 	C.Rbutton_set_text(C.Rid(button), text_)
+}
+
+// ButtonGetText: Returns: The text the button shows (its first label), or "".
+func ButtonGetText(button ID) string {
+	return C.GoString(C.Rbutton_get_text(C.Rid(button)))
 }
 
 func ButtonSetStyle(button ID, style RButtonStyle) {
@@ -6764,6 +6802,12 @@ func WidgetSetAccessibleDescription(widget ID, description string) {
 	C.Rwidget_set_accessible_description(C.Rid(widget), description_)
 }
 
+// WidgetGetAccessibleDescription: Returns: The description given (Rwidget_set_accessible_description,
+// AccessibleDescription), or NULL.
+func WidgetGetAccessibleDescription(widget ID) string {
+	return C.GoString(C.Rwidget_get_accessible_description(C.Rid(widget)))
+}
+
 func WidgetSetAccessibleRole(widget ID, role RAccessibleRole) {
 	C.Rwidget_set_accessible_role(C.Rid(widget), C.RAccessibleRole(role))
 }
@@ -6794,6 +6838,85 @@ func AccessibilityAnnounce(text string, assertive int) {
 // AccessibilityIsScreenReaderActive: R_TRUE when a screen reader is reading the windows of the application.
 func AccessibilityIsScreenReaderActive() int {
 	return int(C.Raccessibility_is_screen_reader_active())
+}
+
+// AccessibleCount: How many accessibles match a selector. window R_INVALID_ID or 0: every open window.
+// Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+func AccessibleCount(window ID, selector string) int {
+	selector_ := C.CString(selector)
+	defer C.free(unsafe.Pointer(selector_))
+	return int(C.Raccessible_count(C.Rid(window), selector_))
+}
+
+// AccessibleFind: Returns: The accessible a selector names, when exactly one matches; else 0
+// (Raccessible_get_last_error says why).
+func AccessibleFind(window ID, selector string) uint64 {
+	selector_ := C.CString(selector)
+	defer C.free(unsafe.Pointer(selector_))
+	return uint64(C.Raccessible_find(C.Rid(window), selector_))
+}
+
+// AccessibleGet: Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when
+// there is none.
+func AccessibleGet(window ID, selector string, index int) uint64 {
+	selector_ := C.CString(selector)
+	defer C.free(unsafe.Pointer(selector_))
+	return uint64(C.Raccessible_get(C.Rid(window), selector_, C.int(index)))
+}
+
+// AccessibleGetRoot: Returns: The accessible of a window: the top of its tree.
+func AccessibleGetRoot(window ID) uint64 {
+	return uint64(C.Raccessible_get_root(C.Rid(window)))
+}
+
+// AccessibleGetParent: Returns: The accessible that holds this one; 0 for a window.
+func AccessibleGetParent(accessible uint64) uint64 {
+	return uint64(C.Raccessible_get_parent(C.uint64_t(accessible)))
+}
+
+func AccessibleGetChildCount(accessible uint64) int {
+	return int(C.Raccessible_get_child_count(C.uint64_t(accessible)))
+}
+
+func AccessibleGetChild(accessible uint64, index int) uint64 {
+	return uint64(C.Raccessible_get_child(C.uint64_t(accessible), C.int(index)))
+}
+
+// AccessibleGetRoleName: Returns: The role's name in a selector ("list-item"), or "" for one that has none.
+func AccessibleGetRoleName(role RAccessibleRole) string {
+	return C.GoString(C.Raccessible_get_role_name(C.RAccessibleRole(role)))
+}
+
+// AccessibleClick: Clicks the middle of an accessible with the mouse: real input, so a disabled one can't be
+// clicked. A row is scrolled into view first, and a menu item in a closed menu is reached through its menus,
+// opened the way a user opens them.
+func AccessibleClick(accessible uint64) int {
+	return int(C.Raccessible_click(C.uint64_t(accessible)))
+}
+
+// AccessibleType: Gives an accessible the keyboard focus, then types a text into it, as the keyboard would.
+func AccessibleType(accessible uint64, text string) int {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	return int(C.Raccessible_type(C.uint64_t(accessible), text_))
+}
+
+// AccessiblePressKey: Gives an accessible the keyboard focus, then presses and releases a key (with RModifier
+// values).
+func AccessiblePressKey(accessible uint64, key RKey, modifiers uint32) int {
+	return int(C.Raccessible_press_key(C.uint64_t(accessible), C.RKey(key), C.Ruint(modifiers)))
+}
+
+// AccessibleAct: Expands, collapses, selects or focuses an accessible directly, without input.
+func AccessibleAct(accessible uint64, action RAccessibleAction) int {
+	return int(C.Raccessible_act(C.uint64_t(accessible), C.RAccessibleAction(action)))
+}
+
+// AccessibleGetLastError: Returns: Why the last find or action failed, for a test to report and an agent to
+// read ("no accessible with role=button name=\"Save\"", "2 accessibles with role=list-item, expected one");
+// "" after one that worked.
+func AccessibleGetLastError() string {
+	return C.GoString(C.Raccessible_get_last_error())
 }
 
 // HostPlatformIsActive: Returns: R_TRUE while the running library uses the host platform.
@@ -6891,4 +7014,4 @@ func HostInjectClose(window ID) {
 // Rdraw_pop_clip_rect, Reffect_get_defaults, Rshader_look_init, Rshader_look_defaults, Rdraw_shader
 // Rborder_set_effect, Rxml_set_reload_callback, Rxml_register_tag, Rxml_document_parse
 // Rxml_get_attribute_info, Rlocale_set_changed_callback, Rtr_format, Raccessibility_get_system_settings
-// Rhost_platform_register
+// Raccessible_describe, Rhost_platform_register

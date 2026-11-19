@@ -763,6 +763,31 @@ typedef enum RAccessibleRole {
 	R_ROLE_SCROLL_BAR = 1922,
 	R_ROLE_PANE = 1923,
 } RAccessibleRole;
+typedef enum RAccessibleState {
+	R_ACCESSIBLE_FOCUSABLE = 1,
+	R_ACCESSIBLE_FOCUSED = 2,
+	R_ACCESSIBLE_DISABLED = 4,
+	R_ACCESSIBLE_CHECKED = 8,
+	R_ACCESSIBLE_CHECKABLE = 16,
+	R_ACCESSIBLE_EXPANDED = 32,
+	R_ACCESSIBLE_EXPANDABLE = 64,
+	R_ACCESSIBLE_SELECTED = 128,
+	R_ACCESSIBLE_SELECTABLE = 256,
+	R_ACCESSIBLE_MULTILINE = 512,
+	R_ACCESSIBLE_READONLY = 1024,
+	R_ACCESSIBLE_PASSWORD = 2048,
+	R_ACCESSIBLE_HAS_RANGE = 4096,
+	R_ACCESSIBLE_EDITABLE = 8192,
+	R_ACCESSIBLE_INVOKABLE = 16384,
+	R_ACCESSIBLE_OFFSCREEN = 32768,
+	R_ACCESSIBLE_MODAL = 65536,
+} RAccessibleState;
+typedef enum RAccessibleAction {
+	R_ACCESSIBLE_EXPAND = 1984,
+	R_ACCESSIBLE_COLLAPSE = 1985,
+	R_ACCESSIBLE_SELECT = 1986,
+	R_ACCESSIBLE_FOCUS = 1987,
+} RAccessibleAction;
 typedef struct RInitDesc RInitDesc;
 typedef struct RAllocator RAllocator;
 typedef struct RMemoryStats RMemoryStats;
@@ -786,6 +811,7 @@ typedef struct RShaderLook RShaderLook;
 typedef struct RXmlError RXmlError;
 typedef struct RXmlAttributeInfo RXmlAttributeInfo;
 typedef struct RAccessibilitySettings RAccessibilitySettings;
+typedef struct RAccessibleInfo RAccessibleInfo;
 typedef struct RHostPlatformDesc RHostPlatformDesc;
 typedef void (*RFrameCallback)(double delta_seconds, void* user_data);
 typedef void (*RTaskCallback)(void* user_data);
@@ -1127,6 +1153,23 @@ struct RAccessibilitySettings {
 	int high_contrast;
 	int reduce_motion;
 	int screen_reader;
+};
+struct RAccessibleInfo {
+	RAccessibleRole role;
+	const char* name;
+	const char* description;
+	const char* value;
+	double number;
+	double minimum;
+	double maximum;
+	Ruint states;
+	float x;
+	float y;
+	float width;
+	float height;
+	Rid window;
+	Rid widget;
+	int item;
 };
 struct RHostPlatformDesc {
 	void* set_cursor;
@@ -1521,6 +1564,7 @@ void Rlabel_select_all(Rid label);
 void Rlabel_clear_selection(Rid label);
 Rid Rbutton_create(const char* text);
 void Rbutton_set_text(Rid button, const char* text);
+const char* Rbutton_get_text(Rid button);
 void Rbutton_set_style(Rid button, RButtonStyle style);
 void Rbutton_set_clicked_callback(Rid button, RButtonClickedCallback callback, void* user_data);
 Rid Rcheckbox_create(const char* text);
@@ -2282,12 +2326,27 @@ void Raccessibility_follow_system(void);
 void Rwidget_set_accessible_name(Rid widget, const char* name);
 const char* Rwidget_get_accessible_name(Rid widget);
 void Rwidget_set_accessible_description(Rid widget, const char* description);
+const char* Rwidget_get_accessible_description(Rid widget);
 void Rwidget_set_accessible_role(Rid widget, RAccessibleRole role);
 RAccessibleRole Rwidget_get_accessible_role(Rid widget);
 void Rwidget_set_accessible_hidden(Rid widget, int hidden);
 void Rwidget_set_accessible_labelled_by(Rid widget, Rid label);
 void Raccessibility_announce(const char* text, int assertive);
 int Raccessibility_is_screen_reader_active(void);
+int Raccessible_count(Rid window, const char* selector);
+RAccessible Raccessible_find(Rid window, const char* selector);
+RAccessible Raccessible_get(Rid window, const char* selector, int index);
+RAccessible Raccessible_get_root(Rid window);
+RAccessible Raccessible_get_parent(RAccessible accessible);
+int Raccessible_get_child_count(RAccessible accessible);
+RAccessible Raccessible_get_child(RAccessible accessible, int index);
+int Raccessible_describe(RAccessible accessible, RAccessibleInfo* info);
+const char* Raccessible_get_role_name(RAccessibleRole role);
+int Raccessible_click(RAccessible accessible);
+int Raccessible_type(RAccessible accessible, const char* text);
+int Raccessible_press_key(RAccessible accessible, RKey key, Ruint modifiers);
+int Raccessible_act(RAccessible accessible, RAccessibleAction action);
+const char* Raccessible_get_last_error(void);
 void Rhost_platform_register(const RHostPlatformDesc* desc);
 int Rhost_platform_is_active(void);
 void Rhost_window_set_size(Rid window, int width, int height, float scale);

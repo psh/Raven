@@ -263,6 +263,24 @@ void Rbutton_set_text(Rid id, const char* text) {
 	rvn_button_set_text(widget, text);
 }
 
+/* The first label inside a button, depth first: the text it shows. */
+static const rvn_widget_t* rvn_button_label(const rvn_widget_t* widget) {
+	uint32_t i;
+	for (i = 0; i < widget->child_count; i++) {
+		const rvn_widget_t* child = widget->children[i];
+		const rvn_widget_t* found = child->cls->type == R_WIDGET_LABEL ? child : rvn_button_label(child);
+		if (found) return found;
+	}
+	return NULL;
+}
+
+const char* Rbutton_get_text(Rid id) {
+	const rvn_widget_t* label;
+	RVN_WIDGET(widget, id, R_WIDGET_BUTTON, "");
+	label = rvn_button_label(widget);
+	return label ? Rlabel_get_text(label->id) : "";
+}
+
 void Rbutton_set_style(Rid id, RButtonStyle style) {
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_BUTTON);
 	if (style < R_BUTTON_DEFAULT || style > R_BUTTON_FLAT) {

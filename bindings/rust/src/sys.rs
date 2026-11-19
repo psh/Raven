@@ -1095,6 +1095,37 @@ pub const R_ROLE_SEPARATOR: RAccessibleRole = 0x0781;
 pub const R_ROLE_SCROLL_BAR: RAccessibleRole = 0x0782;
 pub const R_ROLE_PANE: RAccessibleRole = 0x0783;
 
+/// What an accessible is, now (Raccessible_describe).
+pub type RAccessibleState = c_int;
+pub const R_ACCESSIBLE_FOCUSABLE: RAccessibleState = 1;
+pub const R_ACCESSIBLE_FOCUSED: RAccessibleState = 2;
+pub const R_ACCESSIBLE_DISABLED: RAccessibleState = 4;
+pub const R_ACCESSIBLE_CHECKED: RAccessibleState = 8;
+pub const R_ACCESSIBLE_CHECKABLE: RAccessibleState = 0x0010;
+pub const R_ACCESSIBLE_EXPANDED: RAccessibleState = 0x0020;
+pub const R_ACCESSIBLE_EXPANDABLE: RAccessibleState = 0x0040;
+pub const R_ACCESSIBLE_SELECTED: RAccessibleState = 0x0080;
+pub const R_ACCESSIBLE_SELECTABLE: RAccessibleState = 0x0100;
+pub const R_ACCESSIBLE_MULTILINE: RAccessibleState = 0x0200;
+pub const R_ACCESSIBLE_READONLY: RAccessibleState = 0x0400;
+pub const R_ACCESSIBLE_PASSWORD: RAccessibleState = 0x0800;
+/// number, minimum and maximum hold a range (a slider, a spin box).
+pub const R_ACCESSIBLE_HAS_RANGE: RAccessibleState = 0x1000;
+/// The value is a text that can be typed.
+pub const R_ACCESSIBLE_EDITABLE: RAccessibleState = 0x2000;
+/// It can be pressed.
+pub const R_ACCESSIBLE_INVOKABLE: RAccessibleState = 0x4000;
+/// Scrolled out of view, or in a menu that is closed.
+pub const R_ACCESSIBLE_OFFSCREEN: RAccessibleState = 0x8000;
+pub const R_ACCESSIBLE_MODAL: RAccessibleState = 0x10000;
+
+/// What Raccessible_act does, for what input can't reach reliably.
+pub type RAccessibleAction = c_int;
+pub const R_ACCESSIBLE_EXPAND: RAccessibleAction = 0x07C0;
+pub const R_ACCESSIBLE_COLLAPSE: RAccessibleAction = 0x07C1;
+pub const R_ACCESSIBLE_SELECT: RAccessibleAction = 0x07C2;
+pub const R_ACCESSIBLE_FOCUS: RAccessibleAction = 0x07C3;
+
 /// Registers a function called once per frame, before the layout.
 /// The body of your loop does the same job; the callback is also called
 /// while the OS keeps the thread in a loop of its own (on Windows, while
@@ -1839,6 +1870,35 @@ pub struct RAccessibilitySettings {
     pub reduce_motion: c_int,
     /// R_TRUE when a screen reader is running.
     pub screen_reader: c_int,
+}
+
+/// An accessible, read (Raccessible_describe). The texts live until the next Raccessible_ call.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct RAccessibleInfo {
+    pub role: RAccessibleRole,
+    pub name: *const c_char,
+    pub description: *const c_char,
+    /// A text field's text, the selected entry of a list, a slider's number as text; or "".
+    pub value: *const c_char,
+    pub number: f64,
+    pub minimum: f64,
+    pub maximum: f64,
+    /// RAccessibleState values, or-ed.
+    pub states: u32,
+    /// In its window, logical units.
+    pub x: f32,
+    /// In its window, logical units.
+    pub y: f32,
+    /// In its window, logical units.
+    pub width: f32,
+    /// In its window, logical units.
+    pub height: f32,
+    pub window: Rid,
+    /// The widget it is, or the one whose item it is; R_INVALID_ID for a window.
+    pub widget: Rid,
+    /// Its index among its widget's items, or -1 when it is not an item.
+    pub item: c_int,
 }
 
 #[repr(C)]
@@ -2861,6 +2921,8 @@ extern "C" {
     /// Sets the content of the button to a label. A button can instead
     /// hold any single child widget (Rwidget_add_child), e.g. an HBox with an icon.
     pub fn Rbutton_set_text(button: Rid, text: *const c_char);
+    /// Returns: The text the button shows (its first label), or "".
+    pub fn Rbutton_get_text(button: Rid) -> *const c_char;
     pub fn Rbutton_set_style(button: Rid, style: RButtonStyle);
     pub fn Rbutton_set_clicked_callback(button: Rid, callback: RButtonClickedCallback, user_data: *mut c_void);
     pub fn Rcheckbox_create(text: *const c_char) -> Rid;
@@ -4409,6 +4471,8 @@ extern "C" {
     pub fn Rwidget_get_accessible_name(widget: Rid) -> *const c_char;
     /// A longer explanation, read after the name.
     pub fn Rwidget_set_accessible_description(widget: Rid, description: *const c_char);
+    /// Returns: The description given (Rwidget_set_accessible_description, AccessibleDescription), or NULL.
+    pub fn Rwidget_get_accessible_description(widget: Rid) -> *const c_char;
     pub fn Rwidget_set_accessible_role(widget: Rid, role: RAccessibleRole);
     /// The role the screen reader sees (given, or the one of the type).
     pub fn Rwidget_get_accessible_role(widget: Rid) -> RAccessibleRole;
@@ -4420,6 +4484,39 @@ extern "C" {
     pub fn Raccessibility_announce(text: *const c_char, assertive: c_int);
     /// R_TRUE when a screen reader is reading the windows of the application.
     pub fn Raccessibility_is_screen_reader_active() -> c_int;
+    /// How many accessibles match a selector.
+    /// window R_INVALID_ID or 0: every open window.
+    /// Returns: The number found, 0 when none (or when the selector does not parse, which is reported).
+    pub fn Raccessible_count(window: Rid, selector: *const c_char) -> c_int;
+    /// Returns: The accessible a selector names, when exactly one matches; else 0 (Raccessible_get_last_error says why).
+    pub fn Raccessible_find(window: Rid, selector: *const c_char) -> u64;
+    /// Returns: The index-th accessible that matches (from 0), in the order they are shown; 0 when there is none.
+    pub fn Raccessible_get(window: Rid, selector: *const c_char, index: c_int) -> u64;
+    /// Returns: The accessible of a window: the top of its tree.
+    pub fn Raccessible_get_root(window: Rid) -> u64;
+    /// Returns: The accessible that holds this one; 0 for a window.
+    pub fn Raccessible_get_parent(accessible: u64) -> u64;
+    pub fn Raccessible_get_child_count(accessible: u64) -> c_int;
+    pub fn Raccessible_get_child(accessible: u64, index: c_int) -> u64;
+    /// Reads an accessible: role, name, description, value, number and range, states, rect. R_FALSE when it is gone.
+    pub fn Raccessible_describe(accessible: u64, info: *mut RAccessibleInfo) -> c_int;
+    /// Returns: The role's name in a selector ("list-item"), or "" for one that has none.
+    pub fn Raccessible_get_role_name(role: RAccessibleRole) -> *const c_char;
+    /// Clicks the middle of an accessible with the mouse: real input, so
+    /// a disabled one can't be clicked. A row is scrolled into view first, and a
+    /// menu item in a closed menu is reached through its menus, opened the way a
+    /// user opens them.
+    pub fn Raccessible_click(accessible: u64) -> c_int;
+    /// Gives an accessible the keyboard focus, then types a text into it, as the keyboard would.
+    pub fn Raccessible_type(accessible: u64, text: *const c_char) -> c_int;
+    /// Gives an accessible the keyboard focus, then presses and releases a key (with RModifier values).
+    pub fn Raccessible_press_key(accessible: u64, key: RKey, modifiers: u32) -> c_int;
+    /// Expands, collapses, selects or focuses an accessible directly, without input.
+    pub fn Raccessible_act(accessible: u64, action: RAccessibleAction) -> c_int;
+    /// Returns: Why the last find or action failed, for a test to report and an
+    /// agent to read ("no accessible with role=button name=\"Save\"", "2
+    /// accessibles with role=list-item, expected one"); "" after one that worked.
+    pub fn Raccessible_get_last_error() -> *const c_char;
     /// Makes the next Rinit use the host platform. The structure is copied; NULL restores the default.
     pub fn Rhost_platform_register(desc: *const RHostPlatformDesc);
     /// Returns: R_TRUE while the running library uses the host platform.

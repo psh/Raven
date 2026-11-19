@@ -319,7 +319,8 @@ static int rvn_a11y_collect(const rvn_widget_t* widget, rvn_widget_t** out, int 
 static int rvn_a11y_item_count(const rvn_widget_t* widget) {
 	switch ((int)widget->cls->type) {
 		case R_WIDGET_LIST_VIEW: return Rlist_view_get_item_count(widget->id);
-		case R_WIDGET_TREE_VIEW: return Rtree_view_get_item_count(widget->id);
+		/* every row shown, nested ones included */
+		case R_WIDGET_TREE_VIEW: return rvn_tree_view_row_count((rvn_widget_t*)widget);
 		case R_WIDGET_TAB_VIEW: return (int)widget->child_count;
 		default: return 0;
 	}
@@ -572,6 +573,7 @@ static void rvn_a11y_name_of(const rvn_widget_t* widget, RAccessibleRole role, r
 	switch ((int)widget->cls->type) {
 		case R_WIDGET_CHECKBOX: rvn_text_add(out, Rcheckbox_get_text(widget->id)); break;
 		case R_WIDGET_MENU_ITEM: rvn_text_add(out, Rmenu_item_get_text(widget->id)); break;
+		case R_WIDGET_MENU: rvn_text_add(out, rvn_menu_title(widget)); break;
 		case R_WIDGET_EXPANDER: rvn_text_add(out, Rexpander_get_title(widget->id)); break;
 		default: break;
 	}
@@ -603,6 +605,45 @@ static void rvn_a11y_reset(rvn_text_t* text) {
 
 static const char* rvn_a11y_str(rvn_text_t* text) {
 	return text->data ? text->data : "";
+}
+
+/* A row or a tab: its own rect, not its widget's; off screen when scrolled out of the widget. */
+static void rvn_a11y_item_rect(rvn_widget_t* widget, int item, rvn_a11y_node_t* node) {
+	rvn_rect_t box;
+	int found;
+	switch ((int)widget->cls->type) {
+		case R_WIDGET_LIST_VIEW: found = rvn_list_view_row_box(widget, item, R_FALSE, &box); break;
+		case R_WIDGET_TREE_VIEW: found = rvn_tree_view_row_box(widget, item, R_FALSE, &box); break;
+		case R_WIDGET_TAB_VIEW: found = rvn_tab_view_tab_box(widget, item, &box); break;
+		default: found = R_FALSE; break;
+	}
+	if (!found) return;
+	if (box.y + box.h <= node->y || box.y >= node->y + node->height) node->states |= RVN_A11Y_OFFSCREEN;
+	node->x = box.x;
+	node->y = box.y;
+	node->width = box.w;
+	node->height = box.h;
+}
+
+/* A menu's entries are drawn by the menu: where it shows them while open, else nowhere. */
+static void rvn_a11y_menu_rect(rvn_widget_t* widget, rvn_a11y_node_t* node) {
+	rvn_rect_t box;
+	int type = (int)widget->cls->type;
+	if (type != R_WIDGET_MENU_ITEM && type != R_WIDGET_MENU) return;
+	if (!widget->parent || (widget->parent->cls->type != R_WIDGET_MENU && widget->parent->cls->type != R_WIDGET_MENU_BAR)) return;
+	if (rvn_menu_entry_box(widget, &box)) {
+		node->x = box.x;
+		node->y = box.y;
+		node->width = box.w;
+		node->height = box.h;
+	} else {
+		node->x = node->y = node->width = node->height = 0.0f;
+		node->states |= RVN_A11Y_OFFSCREEN;
+	}
+	if (type == R_WIDGET_MENU) {
+		node->states |= RVN_A11Y_EXPANDABLE;
+		if (rvn_menu_is_open(widget)) node->states |= RVN_A11Y_EXPANDED;
+	}
 }
 
 int rvn_a11y_describe(rvn_a11y_id_t id, rvn_a11y_node_t* node) {
@@ -654,11 +695,12 @@ int rvn_a11y_describe(rvn_a11y_id_t id, rvn_a11y_node_t* node) {
 				break;
 			}
 			case R_WIDGET_TREE_VIEW: {
-				Rid tree_item = Rtree_view_get_item(widget->id, item);
+				Rid tree_item = rvn_tree_view_row_item(widget, item);
 				const char* text = tree_item != R_INVALID_ID ? Rtree_item_get_text(tree_item) : NULL;
 				node->role = R_ROLE_TREE_ITEM;
 				if (text) rvn_text_add(&g_a11y.name, text);
-				node->states |= RVN_A11Y_SELECTABLE | RVN_A11Y_INVOKABLE | RVN_A11Y_EXPANDABLE;
+				node->states |= RVN_A11Y_SELECTABLE | RVN_A11Y_INVOKABLE;
+				if (tree_item != R_INVALID_ID && Rtree_item_get_child_count(tree_item) > 0) node->states |= RVN_A11Y_EXPANDABLE;
 				if (tree_item != R_INVALID_ID && Rtree_item_is_expanded(tree_item)) node->states |= RVN_A11Y_EXPANDED;
 				if (tree_item != R_INVALID_ID && Rtree_view_get_selected_item(widget->id) == tree_item) node->states |= RVN_A11Y_SELECTED;
 				break;
@@ -675,11 +717,13 @@ int rvn_a11y_describe(rvn_a11y_id_t id, rvn_a11y_node_t* node) {
 			default:
 				return R_FALSE;
 		}
+		rvn_a11y_item_rect(widget, item, node);
 		node->name = rvn_a11y_str(&g_a11y.name);
 		node->value = "";
 		node->description = "";
 		return R_TRUE;
 	}
+	rvn_a11y_menu_rect(widget, node);
 
 	node->role = rvn_a11y_role_of(widget);
 	rvn_a11y_name_of(widget, node->role, &g_a11y.name);
@@ -870,7 +914,7 @@ int rvn_a11y_act(rvn_a11y_id_t id, rvn_a11y_action_t action) {
 			case R_WIDGET_LIST_VIEW: Rlist_view_set_selected(widget->id, item); return R_TRUE;
 			case R_WIDGET_TAB_VIEW: Rtab_view_set_active(widget->id, item); return R_TRUE;
 			case R_WIDGET_TREE_VIEW: {
-				Rid tree_item = Rtree_view_get_item(widget->id, item);
+				Rid tree_item = rvn_tree_view_row_item(widget, item);
 				if (tree_item == R_INVALID_ID) return R_FALSE;
 				if (action == RVN_A11Y_EXPAND || action == RVN_A11Y_COLLAPSE) Rtree_item_set_expanded(tree_item, action == RVN_A11Y_EXPAND);
 				else Rtree_view_set_selected_item(widget->id, tree_item);
@@ -1175,6 +1219,13 @@ void Rwidget_set_accessible_description(Rid id, const char* description) {
 	widget = rvn_widget_check(id, 0, __func__);
 	if (!widget) return;
 	rvn_str_set(&rvn_a11y_of(widget)->description, description && description[0] ? description : NULL);
+}
+
+const char* Rwidget_get_accessible_description(Rid id) {
+	rvn_widget_t* widget;
+	RVN_API_GUARD(NULL);
+	widget = rvn_widget_check(id, 0, __func__);
+	return widget && widget->a11y ? widget->a11y->description : NULL;
 }
 
 void Rwidget_set_accessible_role(Rid id, RAccessibleRole role) {
