@@ -13,39 +13,20 @@ import kotlinx.cinterop.toKString
 import raven.cinterop.RError
 import raven.cinterop.RMemoryStats
 import raven.cinterop.RSeverity
-import raven.cinterop.R_FALSE
-import raven.cinterop.R_MOD_ALT
-import raven.cinterop.R_MOD_CTRL
-import raven.cinterop.R_MOD_SHIFT
-import raven.cinterop.R_MOD_SUPER
-import raven.cinterop.R_MOUSE_LEFT
 import raven.cinterop.R_SEVERITY_ERROR
 import raven.cinterop.R_SEVERITY_FATAL
 import raven.cinterop.R_TRUE
-import raven.cinterop.R_WIDGET_MENU
 import raven.cinterop.Rerror_set_callback
 import raven.cinterop.Rid
 import raven.cinterop.Rmemory_get_stats
-import raven.cinterop.Rmenu_item_get_text
-import raven.cinterop.Rwidget_get_child
-import raven.cinterop.Rwidget_get_child_count
-import raven.cinterop.Rwidget_get_type
-import raven.cinterop.Rwidget_get_window
-import raven.cinterop.Rwindow_get_popup
-import raven.cinterop.Rwindow_get_popup_count
 import raven.cinterop.Rwindow_inject_drop
-import raven.cinterop.Rwindow_inject_key
-import raven.cinterop.Rwindow_inject_mouse_button
-import raven.cinterop.Rwindow_inject_mouse_move
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.RavenNode
 import raven.compose.ui.Window
 import raven.compose.ui.input.key.Key
 import raven.compose.ui.input.key.KeyShortcut
-import raven.compose.ui.input.key.ravenKey
 import raven.native.CallbackRegistry
-import raven.native.toRavenString
 import kotlin.math.ceil
 import kotlin.test.assertEquals
 import kotlin.test.fail
@@ -149,11 +130,11 @@ public class RavenTestScope internal constructor(
      */
     public fun performExternalDrop(paths: List<String> = emptyList(), text: String? = null): Boolean {
         waitForIdle()
-        val root = host.windowRoots.singleOrNull() ?: fail("${host.windowRoots.size} windows, expected one")
-        val rect = widgetRect(root.widget)
+        val window = reported { host.singleWindow() }
+        val rect = widgetRect(host.windowRoots.single().widget)
         return memScoped {
             val cPaths = paths.map { it.cstr.ptr }.toCValues()
-            Rwindow_inject_drop(Rwidget_get_window(root.widget), rect.x + rect.width / 2, rect.y + rect.height / 2, cPaths, paths.size, text)
+            Rwindow_inject_drop(window, rect.x + rect.width / 2, rect.y + rect.height / 2, cPaths, paths.size, text)
         } == R_TRUE
     }
 
@@ -189,7 +170,7 @@ public class RavenTestScope internal constructor(
      */
     public fun pressKey(key: Key, ctrl: Boolean = false, shift: Boolean = false, alt: Boolean = false, meta: Boolean = false) {
         waitForIdle()
-        injectKey(singleWindow(), KeyShortcut(key, ctrl, shift, alt, meta))
+        reported { injectKey(host.singleWindow(), KeyShortcut(key, ctrl, shift, alt, meta)) }
     }
 
     /** Presses and releases [shortcut] in the window, as [pressKey] does. */
@@ -202,15 +183,7 @@ public class RavenTestScope internal constructor(
      */
     public fun clickOpenMenuItem(text: String) {
         waitForIdle()
-        val window = singleWindow()
-        val menu = openMenus(window).lastOrNull() ?: fail("no menu is open")
-        val entries = List(Rwidget_get_child_count(menu)) { Rwidget_get_child(menu, it) }
-        val index = entries.indexOfFirst { !isMenuSeparator(it) && Rmenu_item_get_text(it).toRavenString() == text }
-        if (index < 0) fail("the open menu has no entry \"$text\"")
-        val (x, y) = menuEntryCentre(menu, index)
-        Rwindow_inject_mouse_move(window, x, y)
-        Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_TRUE)
-        Rwindow_inject_mouse_button(window, R_MOUSE_LEFT, R_FALSE)
+        reported { clickOpenMenuItem(host.singleWindow(), text) }
     }
 
     /** How many menus are open on top of the window now. */
@@ -221,32 +194,11 @@ public class RavenTestScope internal constructor(
 
     /** The menus open in [window] now, bottom to top. */
     @InternalComposeRavenApi
-    public fun openMenus(window: Rid = singleWindow()): List<Rid> =
-        List(Rwindow_get_popup_count(window)) { Rwindow_get_popup(window, it) }.filter { Rwidget_get_type(it) == R_WIDGET_MENU }
-
-    private fun singleWindow(): Rid {
-        val root = host.windowRoots.singleOrNull() ?: fail("${host.windowRoots.size} windows, expected one")
-        return Rwidget_get_window(root.widget)
-    }
+    public fun openMenus(window: Rid = reported { host.singleWindow() }): List<Rid> = raven.compose.ui.test.openMenus(window)
 
     /** The nodes of every open window, its island and its dialogs that [matches] accepts, content nodes left out. */
     @InternalComposeRavenApi
-    public fun findNodes(matches: (RavenNode) -> Boolean): List<RavenNode> {
-        val found = mutableListOf<RavenNode>()
-        fun visit(node: RavenNode) {
-            if (!node.isContentNode && matches(node)) found += node
-            node.children.forEach(::visit)
-        }
-        (host.windowRoots + host.islandRoots + host.dialogRoots).forEach(::visit)
-        return found
-    }
-
-    /** The nodes from a window's root down to [node], both included. */
-    internal fun pathTo(node: RavenNode): List<RavenNode> {
-        fun search(from: RavenNode): List<RavenNode>? =
-            if (from === node) listOf(from) else from.children.firstNotNullOfOrNull { search(it) }?.let { listOf(from) + it }
-        return (host.windowRoots + host.islandRoots + host.dialogRoots).firstNotNullOfOrNull { search(it) } ?: fail("the node is in no window")
-    }
+    public fun findNodes(matches: (RavenNode) -> Boolean): List<RavenNode> = host.findNodes(matches)
 }
 
 /** The clock of a [RavenTestScope], which advances as it draws frames. */
@@ -270,17 +222,6 @@ public class MainTestClock internal constructor(private val scope: RavenTestScop
         val frames = ceil(milliseconds / (ANIMATION_TIME_STEP * 1000) - 1e-9).toInt()
         repeat(frames) { scope.frame(advance = true) }
     }
-}
-
-/** Presses and releases [shortcut]'s key in [window], its modifier keys held. */
-internal fun injectKey(window: Rid, shortcut: KeyShortcut) {
-    var modifiers = 0u
-    if (shortcut.ctrl) modifiers = modifiers or R_MOD_CTRL
-    if (shortcut.shift) modifiers = modifiers or R_MOD_SHIFT
-    if (shortcut.alt) modifiers = modifiers or R_MOD_ALT
-    if (shortcut.meta) modifiers = modifiers or R_MOD_SUPER
-    Rwindow_inject_key(window, shortcut.key.ravenKey, R_TRUE, modifiers)
-    Rwindow_inject_key(window, shortcut.key.ravenKey, R_FALSE, modifiers)
 }
 
 /** One frame at 60 Hz. */

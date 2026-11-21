@@ -4,10 +4,12 @@ plugins {
 }
 
 // The test harness for apps and for compose-raven's own tests: runRavenTest, the finders, actions
-// and assertions, the test clock and the leak checks. Apps add it as a test dependency.
+// and assertions, the test clock and the leak checks. Apps add it as a test dependency. The
+// matchers, finding and the actions are compose-raven-ui-test's, shared with Raven MCP's UI tools.
 
 kotlin {
     sourceSets.nativeMain.dependencies {
+        api(project(":compose-raven-ui-test"))
         api(project(":compose-raven-foundation"))
         // Its failures are kotlin.test's, and its tests are written with it.
         api(kotlin("test"))

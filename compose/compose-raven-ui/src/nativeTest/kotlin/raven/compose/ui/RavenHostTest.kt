@@ -8,9 +8,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.cinterop.CFunction
+import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.StableRef
+import kotlinx.cinterop.asStableRef
+import kotlinx.cinterop.staticCFunction
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
 import raven.cinterop.Rid
+import raven.cinterop.Rtask_post
 import raven.cinterop.Rwidget_get_parent
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwidget_is_valid
@@ -157,6 +164,81 @@ class RavenHostTest {
     }
 
     @Test
+    fun awaitIdleResumesOnceAFrameEndsIdle() {
+        var name by mutableStateOf("a")
+        var idle: Boolean? = null
+        var appliedWhenResumed = false
+        withHost({
+            val host = LocalRavenHost.current
+            Window(onCloseRequest = {}) {
+                Label(name)
+                LaunchedEffect(Unit) {
+                    val before = host.applyGeneration
+                    name = "b"
+                    idle = host.awaitIdle()
+                    appliedWhenResumed = host.applyGeneration > before
+                }
+            }
+        }) {
+            repeat(10) { if (idle == null) drawFrame() }
+            assertEquals(true, idle)
+            assertTrue(appliedWhenResumed)
+        }
+    }
+
+    @Test
+    fun awaitIdleGivesUpAfterMaxFrames() {
+        // A Raven task posting itself again changes what is composed between every two frames,
+        // so no frame ends idle.
+        val ticker = Ticker()
+        val tickerRef = StableRef.create(ticker)
+        var waiting by mutableStateOf(false)
+        var idle: Boolean? = null
+        var frames = 0
+        var startedAt = -1
+        withHost({
+            val host = LocalRavenHost.current
+            Window(onCloseRequest = {}) {
+                Label("count ${ticker.count.intValue}")
+                LaunchedEffect(waiting) {
+                    if (!waiting) return@LaunchedEffect
+                    startedAt = frames
+                    idle = host.awaitIdle(maxFrames = 5)
+                }
+            }
+        }) {
+            Rtask_post(tick, tickerRef.asCPointer())
+            waiting = true
+            while (idle == null && frames < 20) {
+                drawFrame()
+                frames++
+            }
+            ticker.running = false
+            drawFrame()
+        }
+        tickerRef.dispose()
+        assertEquals(false, idle)
+        // (the frame it started in, five that end busy, then the next frame's tasks resume it)
+        assertTrue(frames - startedAt in 6..7, "gave up after ${frames - startedAt} frames")
+    }
+
+    @Test
+    fun awaitIdleKeepsALiveLoopDrawing() {
+        var idle: Boolean? = null
+        withHost({
+            val host = LocalRavenHost.current
+            Window(onCloseRequest = {}) {
+                Label("label")
+                LaunchedEffect(Unit) { idle = host.awaitIdle() }
+            }
+        }) {
+            // waitFrame sleeps until something wakes Raven: awaitIdle does, while it waits.
+            repeat(5) { if (idle == null) check(waitFrame()) }
+            assertEquals(true, idle)
+        }
+    }
+
+    @Test
     fun closingClearsTheCachesAndEndsTheEpoch() = withRavenChecks {
         val host = RavenHost(headless = true)
         host.start {}
@@ -167,5 +249,18 @@ class RavenHostTest {
 
         assertEquals("third", host.caches.getOrPut("key") { "third" })
         assertFailsWith<IllegalStateException> { HostEpoch.checkCurrent(host.epoch) }
+    }
+}
+
+private class Ticker {
+    val count = mutableIntStateOf(0)
+    var running = true
+}
+
+private val tick: CPointer<CFunction<(COpaquePointer?) -> Unit>> = staticCFunction { userData: COpaquePointer? ->
+    val ticker = userData!!.asStableRef<Ticker>().get()
+    if (ticker.running) {
+        ticker.count.intValue += 1
+        Rtask_post(tick, userData)
     }
 }

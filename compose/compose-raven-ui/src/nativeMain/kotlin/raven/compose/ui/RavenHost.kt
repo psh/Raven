@@ -22,12 +22,14 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.value
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.posix.getenv
 import raven.cinterop.RInitDesc
 import raven.cinterop.R_BACKEND_NULL
@@ -58,6 +60,7 @@ import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.coroutines.resume
 
 /**
  * One run of Raven with Compose on top: [start] initialises Raven and composes the application,
@@ -193,6 +196,49 @@ public class RavenHost(
      */
     public fun isIdle(): Boolean = markedInputs.isEmpty() && !hasPendingRecomposition()
 
+    /**
+     * Suspends until a frame ends with the host [idle][isIdle] and returns true, or returns false
+     * once [maxFrames] frames have ended without. For a live app's tools, which can't draw frames
+     * the way the test harness does: frames are drawn by the app's loop, woken while anything
+     * waits. Each frame is judged as the next one starts, once it has been laid out and painted and
+     * what arrived since (input, posted tasks, timers) is pending, and only frames that started
+     * after the call count. UI thread only.
+     */
+    public suspend fun awaitIdle(maxFrames: Int = 120): Boolean {
+        require(maxFrames > 0) { "awaitIdle waits for at least one frame, not $maxFrames" }
+        return suspendCancellableCoroutine { continuation ->
+            // Called inside a frame callback, the next frame's start ends this one; else the frame
+            // to come has to end first.
+            idleWaiters += IdleWaiter(continuation, maxFrames, firstCheck = framesStarted + if (inFrame) 1 else 2)
+            dispatcher.wakeUp()
+        }
+    }
+
+    private class IdleWaiter(val continuation: CancellableContinuation<Boolean>, var framesLeft: Int, val firstCheck: Long)
+
+    // Those suspended in awaitIdle, in the order they started waiting.
+    private val idleWaiters = ArrayList<IdleWaiter>()
+    private var framesStarted = 0L
+    private var inFrame = false
+
+    /** As a frame starts: resumes those waiting for idle, and wakes the loop for the rest. */
+    private fun resumeIdleWaiters() {
+        if (idleWaiters.isEmpty()) return
+        val idle = isIdle()
+        val iterator = idleWaiters.iterator()
+        while (iterator.hasNext()) {
+            val waiter = iterator.next()
+            // (a cancelled waiter is only dropped, here, so cancelling from any thread is safe)
+            if (!waiter.continuation.isActive) {
+                iterator.remove()
+            } else if (framesStarted >= waiter.firstCheck && (idle || --waiter.framesLeft <= 0)) {
+                iterator.remove()
+                waiter.continuation.resume(idle)
+            }
+        }
+        if (idleWaiters.isNotEmpty()) dispatcher.wakeUp()
+    }
+
     private fun hasPendingRecomposition(): Boolean {
         if (dispatcher.hasQueuedTasks || applyPending.load() != 0) return true
         // Paused, the frame clock hides its awaiters from hasPendingWork.
@@ -250,6 +296,8 @@ public class RavenHost(
             return
         }
         state = State.Closed
+        // (their coroutines can't resume once the dispatcher closes)
+        idleWaiters.clear()
         try {
             composition?.dispose()
         } catch (t: Throwable) {
@@ -302,7 +350,11 @@ public class RavenHost(
     }
 
     internal fun sendFrame() {
+        framesStarted++
+        inFrame = true
         try {
+            // Before anything is drained: what arrived since the last frame still counts as pending.
+            resumeIdleWaiters()
             // Raven reports no moves and no changes of placement: each window reads them here.
             windows.forEach { it.followRaven() }
             // Nor a change of its animation settings, which follow the system's reduced motion.
@@ -319,6 +371,8 @@ public class RavenHost(
             checkMarkedInputs()
         } catch (t: Throwable) {
             reportError(t)
+        } finally {
+            inFrame = false
         }
     }
 

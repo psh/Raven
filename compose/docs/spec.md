@@ -1226,13 +1226,25 @@ on `kotlin.test`. `compose-raven-test` keeps `runRavenTest`, `mainClock`, the le
 `assert…` functions on top of it (`api`), and its public API is unchanged.
 
 - The matchers stay public, in the same package. Finding nodes and running actions on a host are
-  `@InternalComposeRavenApi`, for `compose-raven-test` and `compose-raven-mcp`'s UI tools.
+  `@InternalComposeRavenApi`, for `compose-raven-test` and `compose-raven-mcp`'s UI tools:
+  `RavenHost.findNodes` and `RavenHost.findNode(matcher, index)`, which gives a `FoundNode` with the
+  `fetch…` reads and `perform…` actions, plus `singleWindow`, `openMenus`, `clickOpenMenuItem`,
+  `injectKey` and `widgetRect`. `nodeMatcher(description, matches)` makes a matcher of the UI tools'
+  own. Nothing there waits or draws a frame: the harness waits for idle before each use and draws
+  the frame a scroll needs.
 - Lookups and actions throw one `NodeException`, with the messages above (`no node with text
   "Save"`). The harness reports it as a test failure, and the UI tools as a tool failure
   (`Rmcp_call_fail`), so tests and agents read the same words.
 - **Idle** (see `GLOSSARY.md`) is `RavenHost.isIdle()` for both. The harness draws frames until it
   holds. A live app's tool can't draw frames, so it suspends in `RavenHost.awaitIdle(maxFrames)`,
-  which resumes at the end of the first idle frame and gives up after `maxFrames`.
+  which returns true at the end of the first idle frame and false after `maxFrames` busy ones.
+  While anything waits, it wakes the app's loop, so frames keep coming.
+  - A frame is judged as the next frame callback starts, before the host drains anything. By then
+    the frame has been laid out and painted, and what arrived since (input, posted tasks, timers)
+    is still pending. At the end of a frame callback the host is nearly always idle, because
+    whatever the frame itself changed has already been composed within it.
+  - Only frames that start after the call count, so a tool that acts and then waits always sees
+    at least one whole frame.
 - In a live window, actions are the same real input: a pointer move, then press and release. So an
   agent can't press a disabled button, and its clicks move hover and focus as a user's would.
 

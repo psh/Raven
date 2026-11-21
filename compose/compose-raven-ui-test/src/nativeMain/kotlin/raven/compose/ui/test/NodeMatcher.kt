@@ -10,6 +10,7 @@ import raven.cinterop.Rwidget_get_accessible_name
 import raven.cinterop.Rwidget_get_type
 import raven.cinterop.Rwidget_is_enabled
 import raven.cinterop.Rwidget_is_focused
+import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenNode
 import raven.native.toRavenString
 
@@ -19,7 +20,8 @@ import raven.native.toRavenString
  */
 public class NodeMatcher internal constructor(
     public val description: String,
-    internal val matches: (RavenNode) -> Boolean,
+    /** Whether it accepts a node: for compose-raven-test and the UI tools. */
+    @property:InternalComposeRavenApi public val matches: (RavenNode) -> Boolean,
 ) {
     /** Both this and [other]. */
     public infix fun and(other: NodeMatcher): NodeMatcher =
@@ -31,6 +33,10 @@ public class NodeMatcher internal constructor(
 
     override fun toString(): String = description
 }
+
+/** A matcher of the UI tools' own, as [description] names it in failures: `role=button`, say. */
+@InternalComposeRavenApi
+public fun nodeMatcher(description: String, matches: (RavenNode) -> Boolean): NodeMatcher = NodeMatcher(description, matches)
 
 /** A Text or a menu item showing [text], or a part of it with [substring]. */
 public fun hasText(text: String, substring: Boolean = false): NodeMatcher =
@@ -67,10 +73,14 @@ public fun isToggleable(): NodeMatcher = NodeMatcher("toggleable") { node ->
     Rwidget_get_type(node.widget) == R_WIDGET_CHECKBOX || node.name == "CheckboxItem"
 }
 
-internal fun labelText(node: RavenNode): String? =
+/** What a Text shows, or null for another node. */
+@InternalComposeRavenApi
+public fun labelText(node: RavenNode): String? =
     if (Rwidget_get_type(node.widget) == R_WIDGET_LABEL) Rlabel_get_text(node.widget).toRavenString() else null
 
-internal fun menuItemText(node: RavenNode): String? =
+/** What a menu item shows, or null for another node or a separator. */
+@InternalComposeRavenApi
+public fun menuItemText(node: RavenNode): String? =
     if (Rwidget_get_type(node.widget) == R_WIDGET_MENU_ITEM && !isMenuSeparator(node.widget)) {
         Rmenu_item_get_text(node.widget).toRavenString()
     } else {

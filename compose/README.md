@@ -63,6 +63,10 @@ and fails if Raven reports an error or a widget outlives the test. The finders, 
 assertions are listed in [the spec](docs/spec.md#public-test-module-phase-4); each sample's tests
 show them in use.
 
+The matchers, the finding and the actions live underneath, in `compose-raven-ui-test`, which
+`compose-raven-test` brings with it. They have no `kotlin.test` in them, so Raven MCP's UI tools can
+use them in a running app too. Apps don't need to depend on that module themselves.
+
 ## Running the samples
 
 Each sample folder has a launch script that builds the sample for this machine and runs it, from

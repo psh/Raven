@@ -24,6 +24,7 @@ include(
     ":compose-raven-opengl",
     ":compose-raven-map",
     ":compose-raven-navigation3",
+    ":compose-raven-ui-test",
     ":compose-raven-test",
     ":raven-mcp",
     ":samples:animations",
