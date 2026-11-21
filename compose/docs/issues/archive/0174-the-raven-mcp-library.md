@@ -46,5 +46,5 @@ with an MCP client over HTTP on another thread. Five runs in a row pass, and std
     connections were in TIME_WAIT. It now sets `reuseAddress`, as the port check does.
   - `Rmcp_stop` waits until the port is free.
 - **Not here**: `ui_tools`, `Rmcp_expose_actions` and `Rmcp_expose_action` log "not available yet"
-  until [The UI tools in the Raven MCP library](../0176-the-ui-tools-in-the-raven-mcp-library.md)
+  until [The UI tools in the Raven MCP library](0176-the-ui-tools-in-the-raven-mcp-library.md)
   and [Raven's actions as tools](0177-ravens-actions-as-tools.md). Not tried on Linux.

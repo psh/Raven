@@ -8,7 +8,6 @@ import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
-import raven.mcp.cinterop.R_FALSE
 import raven.mcp.cinterop.R_INVALID_ID
 import raven.mcp.cinterop.R_TRUE
 import raven.mcp.cinterop.Raction_fire
@@ -17,7 +16,6 @@ import raven.mcp.cinterop.Raction_get_description
 import raven.mcp.cinterop.Raction_get_name
 import raven.mcp.cinterop.Raction_is_builtin
 import raven.mcp.cinterop.Raction_set_list_callback
-import raven.mcp.cinterop.Ris_idle
 import raven.mcp.cinterop.Ris_initialized
 import raven.mcp.cinterop.Ris_ui_thread
 import raven.mcp.cinterop.Rwindow_get
@@ -38,9 +36,6 @@ internal object ExposedActions {
     private val chosen = LinkedHashMap<String, Chosen>()
     private val nudged = HashSet<String>()
     private val skipped = HashSet<String>()
-
-    /** The frames an action's reply waits for the app to be idle, as the UI tools do. */
-    private const val IDLE_FRAMES = 120
 
     fun exposeAll(prefix: String?) {
         if (!onUiThread("Rmcp_expose_actions")) return
@@ -76,13 +71,13 @@ internal object ExposedActions {
         // (built-ins carry arguments in their names, or end the app: only ever exposed on purpose)
         val wanted = pick != null ||
             (prefixes.any { name.startsWith(it) } && isBound(name) && Raction_is_builtin(name) != R_TRUE)
-        if (!wanted) return RavenMcp.removeActionTool(name)
+        if (!wanted) return RavenMcp.removeOwnTool(name, RavenMcp.Origin.Action)
         if (!TOOL_NAME.matches(name)) {
             if (skipped.add(name)) McpLog.warn("the action \"$name\" isn't a valid tool name, so it isn't exposed")
             return
         }
         val description = pick?.description ?: Raction_get_description(name)?.toKString() ?: generic(name)
-        RavenMcp.addActionTool(McpToolSpec(name, description, hints = pick?.hints ?: 0)) { call -> run(call) }
+        RavenMcp.addOwnTool(McpToolSpec(name, description, hints = pick?.hints ?: 0), RavenMcp.Origin.Action) { call -> run(call) }
     }
 
     /** On the UI thread: fires the action as a widget would, and replies once the app is idle. */
@@ -90,21 +85,7 @@ internal object ExposedActions {
         val name = call.tool
         if (!isBound(name) && Raction_is_builtin(name) != R_TRUE) return call.fail("nothing handles the action $name")
         Raction_fire(name, sender())
-        replyWhenIdle(call, "ran $name", IDLE_FRAMES)
-    }
-
-    /** Checks Ris_idle once a frame, through Rtask_post, and replies when idle or out of frames. */
-    private fun replyWhenIdle(call: McpCall, reply: String, framesLeft: Int) {
-        postToUiThread {
-            when {
-                Ris_idle(R_FALSE) == R_TRUE -> call.reply(reply)
-                framesLeft <= 1 -> {
-                    McpLog.warn("${call.tool}: the app was still busy after $IDLE_FRAMES frames; replied anyway")
-                    call.reply(reply)
-                }
-                else -> replyWhenIdle(call, reply, framesLeft - 1)
-            }
-        }
+        whenIdle(name) { call.reply("ran $name") }
     }
 
     /** The focused window, else the first open one: what Raven's built-ins and window handlers act on. */

@@ -59,7 +59,6 @@ public fun rmcpStart(config: CPointer<RMcpConfig>?): Int {
             }
         },
     )
-    if (settings.uiTools) McpLog.warn("ui_tools is not available yet: it arrives with the UI tools in the Raven MCP library")
     return if (RavenMcp.start(settings)) R_TRUE else R_FALSE
 }
 

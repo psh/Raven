@@ -204,7 +204,8 @@ contract is the same for every Raven app.
   semantics. If a `ui.*` name is already taken when `Rmcp_start` would add the library's, the library
   leaves it and logs it.
 - **Waiting inside a live app**: an action acts through the driver, then holds its reply and checks
-  `Ris_idle(R_FALSE)` once a frame, reposting itself with `Rtask_post`, until idle or 120 frames.
+  `Ris_idle(R_FALSE)` once a frame, reposting itself with `Rtask_post`, until idle or 2 s have
+  passed on Raven's clock.
   `Rwait_idle` is never called inside the app's loop.
 
 Decided in [Driving a running app in any language](issues/archive/0164-driving-a-running-app-in-any-language.md).

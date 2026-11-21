@@ -106,10 +106,17 @@ public class McpToolSpec(
  * only, as Raven is.
  */
 public object RavenMcp {
+    /** Who published a tool. The app's own tools win over the other two. */
+    internal enum class Origin {
+        App,
+        /** Rmcp_expose_action(s). */
+        Action,
+        /** The UI tools, while a server started with uiTools runs. */
+        Ui,
+    }
+
     private class Registration(
-        val spec: McpToolSpec, val tool: Tool, val handler: (McpCall) -> Unit, val run: RavenRun,
-        /** Published by Rmcp_expose_action(s), not the app's own: the app's tools win over it. */
-        val fromAction: Boolean,
+        val spec: McpToolSpec, val tool: Tool, val handler: (McpCall) -> Unit, val run: RavenRun, val origin: Origin,
     )
 
     /** When a run of Raven started, on Raven's own clock: between [earliest] and [latest]. */
@@ -158,8 +165,9 @@ public object RavenMcp {
         onSession = config.onSession
         sessionsSeen.clear()
         mcp.onConnect { watchNewSessions(mcp) }
-        for (registration in tools.values) mcp.addTool(registration.tool, handlerOf(registration))
         if (rmcp_port_is_free(port) != 1) return refuse("port $port is taken: set another in the config")
+        if (config.uiTools) UiTools.addAll()
+        for (registration in tools.values) mcp.addTool(registration.tool, handlerOf(registration))
         val settings = serverConfig(applicationEnvironment { log = McpLog.ktor }) {
             // A failure in Ktor's coroutines is logged; uncaught, it would end the app.
             parentCoroutineContext = CoroutineExceptionHandler { _, e -> McpLog.error("the server failed: $e") }
@@ -182,6 +190,7 @@ public object RavenMcp {
                 reuseAddress = true
             }.start(wait = false)
         } catch (e: Exception) {
+            removeUiTools()
             return refuse("can't serve on port $port: ${e.message}")
         }
         server = mcp
@@ -192,11 +201,12 @@ public object RavenMcp {
         return true
     }
 
-    /** Closes the port and every session, and cancels the calls not yet replied to. */
+    /** Closes the port and every session, cancels the calls not yet replied to, and withdraws the UI tools. */
     public fun stop() {
         if (!onUiThread("Rmcp_stop")) return
         val engine = http ?: return
         McpCalls.cancelAll("the server stopped")
+        removeUiTools()
         engine.stop(gracePeriodMillis = 100, timeoutMillis = 1000)
         // The port is free when Rmcp_stop returns, so the server can start again straight away.
         repeat(100) { if (rmcp_port_is_free(port) == 1) return@repeat; platform.posix.usleep(10_000u) }
@@ -207,22 +217,31 @@ public object RavenMcp {
     }
 
     /** Publishes [spec], replacing a tool of the same name. False, with the reason logged, when it can't. */
-    public fun addTool(spec: McpToolSpec, handler: (McpCall) -> Unit): Boolean = register(spec, handler, fromAction = false)
+    public fun addTool(spec: McpToolSpec, handler: (McpCall) -> Unit): Boolean = register(spec, handler, Origin.App)
 
-    /** Publishes an exposed action as a tool, unless one of the app's own tools has its name. */
-    internal fun addActionTool(spec: McpToolSpec, handler: (McpCall) -> Unit): Boolean {
-        if (tools[spec.name]?.fromAction == false) return false
-        return register(spec, handler, fromAction = true)
+    /**
+     * Publishes an exposed action's tool or a UI tool, unless another kind of tool has its name:
+     * the app's own tools win, and an action named ui.* never replaces a UI tool.
+     */
+    internal fun addOwnTool(spec: McpToolSpec, origin: Origin, handler: (McpCall) -> Unit): Boolean {
+        val taken = tools[spec.name]?.origin
+        if (taken != null && taken != origin) return false
+        return register(spec, handler, origin)
     }
 
-    /** Withdraws an exposed action's tool; an app's own tool of that name stays. */
-    internal fun removeActionTool(name: String) {
-        if (tools[name]?.fromAction != true) return
+    /** Withdraws a tool [origin] published; another kind of tool of that name stays. */
+    internal fun removeOwnTool(name: String, origin: Origin) {
+        if (tools[name]?.origin != origin) return
         tools.remove(name)
         server?.removeTool(name)
     }
 
-    private fun register(spec: McpToolSpec, handler: (McpCall) -> Unit, fromAction: Boolean): Boolean {
+    private fun removeUiTools() {
+        UiTools.on = false
+        for (name in tools.filterValues { it.origin == Origin.Ui }.keys.toList()) removeOwnTool(name, Origin.Ui)
+    }
+
+    private fun register(spec: McpToolSpec, handler: (McpCall) -> Unit, origin: Origin): Boolean {
         if (Ris_initialized() != R_TRUE) return refuse("Rmcp_tool_add before Rinit")
         if (!onUiThread("Rmcp_tool_add")) return false
         if (staleTools()) return refuse("tools are left from an earlier run of Raven: remove them before Rshutdown")
@@ -232,26 +251,29 @@ public object RavenMcp {
             name = spec.name, inputSchema = schema, description = spec.description, title = spec.title,
             annotations = annotationsOf(spec.hints),
         )
-        val registration = Registration(spec, tool, handler, currentRun(), fromAction)
+        val registration = Registration(spec, tool, handler, currentRun(), origin)
         server?.let { if (tools.containsKey(spec.name)) it.removeTool(spec.name) }
         tools[spec.name] = registration
         server?.addTool(tool, handlerOf(registration))
         return true
     }
 
-    /** Withdraws a tool. Its calls not yet given to its function fail. An action it hid comes back. */
+    /** Withdraws a tool. Its calls not yet given to its function fail. A UI tool or an action it hid comes back. */
     public fun removeTool(name: String) {
         if (!onUiThread("Rmcp_tool_remove")) return
         val removed = tools.remove(name) ?: return
         server?.removeTool(name)
-        if (!removed.fromAction) ExposedActions.sync(name)
+        if (removed.origin != Origin.App) return
+        if (UiTools.on) UiTools.add(name)
+        ExposedActions.sync(name)
     }
 
-    /** Withdraws every tool, the exposed actions included, which are forgotten. */
+    /** Withdraws every tool, the UI tools and the exposed actions included, which are forgotten. */
     public fun removeAllTools() {
         if (!onUiThread("Rmcp_tool_remove_all")) return
         server?.removeTools(tools.keys.toList())
         tools.clear()
+        UiTools.on = false
         ExposedActions.reset()
     }
 

@@ -86,6 +86,39 @@ val pythonTest = tasks.register<Exec>("pythonTest") {
 }
 tasks.named("check") { dependsOn(pythonTest) }
 
+// The UI tools from C: the notepad (src/test/c/notes.c) as a C app in its own process, driven by an
+// MCP client (src/test/python/test_ui_tools_c.py).
+val notesApp = layout.buildDirectory.file("c/notes")
+val buildNotesApp = tasks.register<Exec>("buildNotesApp") {
+    description = "Builds src/test/c/notes.c against the shared libraven and the Raven MCP library."
+    val link = tasks.named("linkRaven_mcpReleaseShared${targetName.replaceFirstChar { it.uppercase() }}")
+    dependsOn(link, buildRavenShared)
+    val source = file("src/test/c/notes.c")
+    inputs.file(source)
+    outputs.file(notesApp)
+    val ravenDir = ravenSharedDir.get().asFile.absolutePath
+    val mcpDir = layout.buildDirectory.dir("bin/$targetName/raven_mcpReleaseShared").get().asFile.absolutePath
+    doFirst { notesApp.get().asFile.parentFile.mkdirs() }
+    commandLine(
+        "cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I", ravenRoot.dir("include").asFile.absolutePath,
+        source.absolutePath, "-o", notesApp.get().asFile.absolutePath,
+        "-L$ravenDir", "-lraven", "-L$mcpDir", "-lraven_mcp", "-Wl,-rpath,$ravenDir", "-Wl,-rpath,$mcpDir",
+    )
+}
+val cTest = tasks.register<Exec>("cTest") {
+    description = "Runs src/test/python/test_ui_tools_c.py against the C notepad."
+    dependsOn(buildNotesApp)
+    val library = if (hostTarget == KonanTarget.MACOS_ARM64) "libraven.dylib" else "libraven.so"
+    val mcpLibrary = if (hostTarget == KonanTarget.MACOS_ARM64) "libraven_mcp.dylib" else "libraven_mcp.so"
+    environment("NOTES_APP", notesApp.get().asFile.absolutePath)
+    environment("RAVEN_LIBRARY", ravenSharedDir.get().file(library).asFile.absolutePath)
+    environment("RAVEN_MCP_LIBRARY", layout.buildDirectory.file("bin/$targetName/raven_mcpReleaseShared/$mcpLibrary").get().asFile.absolutePath)
+    environment("RAVEN_PYTHON", ravenRoot.dir("bindings/python").asFile.absolutePath)
+    workingDir(file("src/test/python"))
+    commandLine("python3", "-u", file("src/test/python/test_ui_tools_c.py").absolutePath)
+}
+tasks.named("check") { dependsOn(cTest) }
+
 // The Rust binding's feature `mcp` (bindings/rust/examples/mcp.rs): links the library and calls a
 // tool over HTTP. Part of `check` only where cargo is installed.
 val cargo = listOf(System.getenv("HOME") + "/.cargo/bin/cargo", "/opt/homebrew/bin/cargo", "/opt/homebrew/opt/rustup/bin/cargo", "/usr/local/bin/cargo", "/usr/bin/cargo")

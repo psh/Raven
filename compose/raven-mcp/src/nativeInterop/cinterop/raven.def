@@ -1,8 +1,8 @@
 # Raven's C API as Raven MCP sees it. The library defines the Rmcp_* functions itself (Exports.kt),
 # so the header's declarations of them are left out. Linked against the shared libraven by
 # build.gradle.kts, never a static copy.
-headers = raven/raven_core.h raven/raven_window.h raven/raven_mcp.h
-headerFilter = raven/raven_core.h raven/raven_window.h raven/raven_mcp.h
+headers = raven/raven_core.h raven/raven_window.h raven/raven_accessibility.h raven/raven_driver.h raven/raven_resources.h raven/raven_mcp.h
+headerFilter = raven/raven_core.h raven/raven_window.h raven/raven_accessibility.h raven/raven_driver.h raven/raven_resources.h raven/raven_mcp.h
 package = raven.mcp.cinterop
 excludedFunctions = Rmcp_start Rmcp_stop Rmcp_get_url Rmcp_config_from_environment \
     Rmcp_tool_add Rmcp_tool_remove Rmcp_tool_remove_all Rmcp_expose_actions Rmcp_expose_action \

@@ -168,7 +168,7 @@ extern "C" {
 	typedef struct RMcpToolDesc {
 		/**
 		 * Required: 1 to 128 characters of A-Z, a-z, 0-9, '_', '.' and '-'.
-		 * Dotted by area ("notes.add"). Names starting with "ui." are compose-raven's.
+		 * Dotted by area ("notes.add"). Names starting with "ui." are the UI tools'.
 		 */
 		const char* name;
 		/** A name for people. May be NULL. */
@@ -225,7 +225,7 @@ extern "C" {
 	 * Raction_bind is the one they see. Built-in actions are never included, and a name that
 	 * isn't a valid tool name is skipped and logged. No hints are claimed. A call fires the
 	 * action from the focused window (else the first open one) and replies "ran <name>" once the
-	 * app is idle, or after 120 frames. A tool of the app's own, of the same name, wins while it
+	 * app is idle, or after 2 s. A tool of the app's own, of the same name, wins while it
 	 * exists. Rmcp_tool_remove_all forgets every exposed action.
 	 */
 	RAVEN_MCP_API void Rmcp_expose_actions(const char* prefix);
@@ -407,12 +407,15 @@ would point at.
 - **Actions are real input**: a pointer move, press and release at the target's centre, typing after
   focusing it, a key on the target or the focused accessible. A disabled button can't be pressed by
   an agent either. An agent's clicks move hover and focus as a user's would.
-- **Actions wait until the app is idle**, up to 120 frames (about 2 s), then reply with the window's
-  outline, so the agent sees the result without another call. `snapshot: false` skips the outline.
-  If the app is still busy at the limit, the reply still succeeds and says so.
+- **Actions wait until the app is idle**, checked once a frame for up to 2 s on Raven's clock (about
+  120 frames at 60 Hz), then reply with the window's outline, so the agent sees the result without
+  another call. `snapshot: false` skips the outline. If the app is still busy at the limit, the reply
+  still succeeds and says so. The limit is timed, not counted: headless frames take no time, so an
+  animation that settles in a dozen frames on a display takes hundreds there.
 - **Failures** reply through `Rmcp_call_fail` with the finder's own message, the words tests read
   too: `no node with text "Save"`, `2 nodes with role=button, expected one`, a disabled target.
 - **Keys** use Raven's key names, with `ctrl`, `shift`, `alt` and `meta` (or `cmd`) as modifiers.
+  Without a `selector`, the key goes to what has the focus in the focused window, else to the window.
 - **Screenshots** capture the window's last frame as rendered, in device pixels, encoded with
   `Rimage_encode_png` and returned through `Rmcp_call_reply_json`. They never touch anything outside
   the app's window. Without `window`, the focused window is captured.
@@ -435,6 +438,13 @@ set. Every line reads as a selector.
 
 It stops at 500 lines and says how many accessibles it left out, so the agent narrows it with
 `under` and `depth`. Bounds come only from `ui.find`.
+
+- **What a field shows** follows its name as `text="…"`, as the driver's `text=` reads it:
+  `- text-field "New note" text="buy milk" [focused]`. Texts past 80 characters or a line are cut.
+- **The states** are the ones a selector names: `focused`, `checked`, `selected`, `expanded`,
+  `disabled`.
+- **A closed menu**, or anything expandable and not expanded, is shown without what it holds: its
+  items are there to be found and clicked, not to be read every time.
 
 Decided in [The UI tools](issues/archive/0151-the-ui-tools.md).
 

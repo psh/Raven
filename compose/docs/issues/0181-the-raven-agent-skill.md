@@ -11,7 +11,7 @@ test a UI. Design: [Guidance for agents](../agent-skills.md#guidance-for-agents)
 **Depends on:** [Previews: Rwindow_save_preview and raven_preview](0170-previews.md),
 [UI tests in Python: raven_testing](0172-ui-tests-in-python.md),
 [UI tests in Rust: raven::testing](0173-ui-tests-in-rust.md),
-[The UI tools in the Raven MCP library](0176-the-ui-tools-in-the-raven-mcp-library.md).
+[The UI tools in the Raven MCP library](archive/0176-the-ui-tools-in-the-raven-mcp-library.md).
 
 ## Deliverables
 

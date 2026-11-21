@@ -8,9 +8,11 @@ Run by `./gradlew :raven-mcp:pythonTest` (part of `check`), which builds the sha
 library and sets RAVEN_LIBRARY, RAVEN_MCP_LIBRARY and RAVEN_PYTHON.
 """
 
+import base64
 import json
 import os
 import socket
+import struct
 import sys
 import tempfile
 import threading
@@ -58,8 +60,8 @@ def reply(call, text):
 class Client:
     """A Streamable HTTP MCP client, run on its own thread while the UI thread draws frames."""
 
-    def __init__(self, token=TOKEN, origin=None):
-        self.url = r.Rmcp_get_url()
+    def __init__(self, token=TOKEN, origin=None, url=None):
+        self.url = url or r.Rmcp_get_url()
         self.token, self.origin, self.session, self.next_id = token, origin, None, 1
 
     def post(self, message):
@@ -90,7 +92,7 @@ class Client:
         return self.request("tools/call", {"name": tool, "arguments": arguments or {}})["result"]
 
 
-def on_client(work, frames=600):
+def on_client(work, seconds=10):
     """Runs work(client) on another thread while the UI thread draws frames; returns its result."""
     box = {}
 
@@ -102,9 +104,9 @@ def on_client(work, frames=600):
 
     thread = threading.Thread(target=run)
     thread.start()
-    for _ in range(frames):
-        if not thread.is_alive():
-            break
+    # (timed, not counted: a headless frame takes no time, so the UI's animations take hundreds of them)
+    deadline = time.monotonic() + seconds
+    while thread.is_alive() and time.monotonic() < deadline:
         r.Rwait_frame(0.01)
     thread.join(5)
     if "error" in box:
@@ -415,6 +417,187 @@ class ExposedActionsTest(unittest.TestCase):
         r.Rmcp_tool_remove_all()
         r.Raction_bind("notes.later", lambda *a: None)
         self.settle()
+        start()
+        self.assertEqual(self.tools(), {})
+
+
+NOTES_UI = """
+<Window Title="Notes" Width="320" Height="240">
+    <VBox>
+        <TextInput Name="note" AccessibleName="New note" OnCommitted="notes.add"/>
+        <Button Text="Add" OnClicked="notes.add"/>
+        <ListView Name="notes" AccessibleName="Notes"/>
+        <Button Name="delete" Text="Delete" Enabled="false" OnClicked="notes.delete"/>
+    </VBox>
+</Window>"""
+
+
+def notes_app():
+    """The notepad every language's tests drive: add a note, select it, delete it."""
+    window = r.Rwindow_create_from_xml(NOTES_UI)
+    note, notes, delete = (r.Rwidget_find(window, name) for name in ("note", "notes", "delete"))
+
+    def add(*_):
+        text = r.Rtext_input_get_text(note)
+        if text:
+            r.Rlist_view_add_item(notes, text)
+            r.Rtext_input_set_text(note, "")
+
+    def select(*_):
+        r.Rwidget_set_enabled(delete, r.Rlist_view_get_selected(notes) >= 0)
+
+    def remove(*_):
+        r.Rlist_view_remove_item(notes, r.Rlist_view_get_selected(notes))
+        r.Rlist_view_set_selected(notes, -1)
+        r.Rwidget_set_enabled(delete, False)
+
+    r.Raction_bind("notes.add", add)
+    r.Raction_bind("notes.delete", remove)
+    # (a ListView's action is fired on activation only, so the selection is heard here)
+    r.Rlist_view_set_selection_changed_callback(notes, select)
+    r.Rwait_idle(20)
+    return window, notes
+
+
+class UiToolsTest(unittest.TestCase):
+    """ui.*, on Raven's UI driver: an agent sees and drives the notepad as a user would."""
+
+    def setUp(self):
+        desc = r.RInitDesc()
+        desc.backend = r.R_BACKEND_NULL
+        desc.headless = 1
+        self.assertTrue(r.Rinit_ex(desc))
+        logs.clear()
+        self.window, self.notes = notes_app()
+
+    def tearDown(self):
+        r.Rmcp_stop()
+        r.Rmcp_tool_remove_all()
+        r.Rshutdown()
+
+    def call(self, tool, arguments=None):
+        return on_client(lambda: Client().connect().call(tool, arguments))
+
+    def text(self, tool, arguments=None):
+        result = self.call(tool, arguments)
+        self.assertFalse(result.get("isError"), result)
+        return text_of(result)
+
+    def failure(self, tool, arguments=None):
+        result = self.call(tool, arguments)
+        self.assertTrue(result.get("isError"), result)
+        return text_of(result)
+
+    def tools(self):
+        listed = on_client(lambda: Client().connect().request("tools/list"))["result"]["tools"]
+        return {tool["name"]: tool for tool in listed}
+
+    def test_off_unless_asked_for(self):
+        start()
+        self.assertEqual(self.tools(), {})
+        r.Rmcp_stop()
+        start(ui_tools=1)
+        tools = self.tools()
+        self.assertEqual(sorted(tools), ["ui.click", "ui.find", "ui.key", "ui.screenshot", "ui.tree", "ui.type"])
+        for name in ("ui.tree", "ui.find", "ui.screenshot"):
+            self.assertEqual(tools[name]["annotations"], {"readOnlyHint": True, "openWorldHint": False})
+        for name in ("ui.click", "ui.type", "ui.key"):
+            self.assertNotIn("annotations", tools[name])   # a click may destroy
+        self.assertEqual(tools["ui.type"]["inputSchema"]["required"], ["selector", "text"])
+        self.assertIn("role=button", tools["ui.click"]["description"])
+
+    def test_the_outline(self):
+        r.Rlist_view_add_item(self.notes, "buy milk")
+        r.Rlist_view_add_item(self.notes, "call Oscar")
+        r.Rwait_idle(20)
+        start(ui_tools=1)
+        self.assertEqual(self.text("ui.tree"), "\n".join([
+            '- window "Notes"',
+            '  - text-field "New note"',
+            '  - button "Add"',
+            '  - list "Notes"',
+            '    - list-item "buy milk"',
+            '    - list-item "call Oscar"',
+            '  - button "Delete" [disabled]',
+        ]))
+        self.assertEqual(self.text("ui.tree", {"window": "Notes", "under": "role=list", "depth": 0}), '- list "Notes"')
+        self.assertIn('no window titled "Elsewhere"; the open ones: "Notes"', self.failure("ui.tree", {"window": "Elsewhere"}))
+
+    def test_typing_then_enter_adds_a_note(self):
+        start(ui_tools=1)
+        typed = self.text("ui.type", {"selector": 'role=text-field name="New note"', "text": "buy milk"})
+        self.assertIn('  - text-field "New note" text="buy milk" [focused]', typed.split("\n"))
+        added = self.text("ui.key", {"key": "Enter"})   # to what has the focus
+        self.assertIn('    - list-item "buy milk"', added.split("\n"))
+        self.assertIn('  - text-field "New note" [focused]', added.split("\n"))
+        self.assertEqual(r.Rlist_view_get_item_count(self.notes), 1)
+        self.assertFalse(any("still busy" in m for _, m in logs))
+
+    def test_click_select_and_delete(self):
+        r.Rlist_view_add_item(self.notes, "buy milk")
+        r.Rwait_idle(20)
+        start(ui_tools=1)
+        self.assertEqual(self.failure("ui.click", {"selector": "role=button name=Delete"}),
+                         'role=button name="Delete" is disabled')
+        selected = self.text("ui.click", {"selector": 'role=list-item text="buy milk"'})
+        self.assertIn('    - list-item "buy milk" [focused selected]', selected.split("\n"))
+        self.assertIn('  - button "Delete"', selected.split("\n"))
+        self.assertEqual(self.text("ui.click", {"selector": "role=button name=Delete", "snapshot": False}),
+                         'clicked role=button name="Delete"')
+        self.assertEqual(r.Rlist_view_get_item_count(self.notes), 0)
+
+    def test_find(self):
+        start(ui_tools=1)
+        self.text("ui.type", {"selector": "role=text-field", "text": "eggs", "snapshot": False})
+        found = self.text("ui.find", {"selector": "role=text-field"}).split("\n")
+        self.assertEqual(found[:3], ['role=text-field name="New note"', 'text: "eggs"', "states: focused"])
+        self.assertRegex(found[3], r'^bounds: x=0 y=0 width=320 height=\d+, logical units in the window "Notes"$')
+
+    def test_failures_are_the_drivers_words(self):
+        start(ui_tools=1)
+        self.assertEqual(self.failure("ui.click", {"selector": "role=button"}), "2 accessibles with role=button, expected one")
+        self.assertEqual(self.failure("ui.find", {"selector": 'text="Save"'}), 'no accessible with text="Save"')
+        self.assertEqual(self.failure("ui.find"), "selector is required")
+        self.assertEqual(self.failure("ui.tree", {"depth": "two"}), "depth must be a whole number")
+        self.assertIn('"ctrl+banana" is not a key', self.failure("ui.key", {"key": "ctrl+banana"}))
+
+    def test_keys_and_modifiers(self):
+        start(ui_tools=1)
+        self.text("ui.type", {"selector": "role=text-field", "text": "milk", "snapshot": False})
+        self.text("ui.key", {"key": "ctrl+a", "selector": "role=text-field", "snapshot": False})
+        self.text("ui.key", {"key": "Backspace"})
+        self.assertEqual(r.Rtext_input_get_text(r.Rwidget_find(self.window, "note")), "")
+
+    def test_a_long_outline_is_cut(self):
+        for i in range(600):
+            r.Rlist_view_add_item(self.notes, "note %d" % i)
+        r.Rwait_idle(20)
+        start(ui_tools=1)
+        lines = self.text("ui.tree").split("\n")
+        self.assertEqual(len(lines), 501)
+        self.assertEqual(lines[-1], "- … 105 more accessibles left out: narrow it with under (a selector) or depth")
+
+    def test_a_screenshot(self):
+        start(ui_tools=1)
+        result = self.call("ui.screenshot", {"window": "Notes"})
+        self.assertFalse(result.get("isError"), result)
+        image = result["content"][0]
+        self.assertEqual((image["type"], image["mimeType"]), ("image", "image/png"))
+        png = base64.b64decode(image["data"])
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        width, height = struct.unpack(">II", png[16:24])
+        scale = r.Rwindow_get_scale(self.window)
+        self.assertEqual((width, height), (round(320 * scale), round(240 * scale)))
+
+    def test_the_apps_own_tool_wins_and_stop_withdraws(self):
+        add("ui.click", lambda c, t, a: reply(c, "the app's own"))
+        start(ui_tools=1)
+        self.assertTrue(any("ui.click is the app's own tool" in m for _, m in logs))
+        self.assertEqual(self.text("ui.click", {"selector": "role=button name=Add"}), "the app's own")
+        r.Rmcp_tool_remove("ui.click")   # the UI tool comes back
+        self.assertEqual(self.text("ui.click", {"selector": "role=button name=Add", "snapshot": False}),
+                         'clicked role=button name="Add"')
+        r.Rmcp_stop()
         start()
         self.assertEqual(self.tools(), {})
 
