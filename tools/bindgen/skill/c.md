@@ -40,3 +40,7 @@ int mcp = Rmcp_config_from_environment(&config) && Rmcp_start(&config);   /* RAV
 /* ... the app's loop ... */
 if (mcp) { Rmcp_stop(); Rmcp_tool_remove_all(); }        /* before Rshutdown */
 ```
+
+Raven's own examples do it in CMake: `-DRAVEN_BUILD_SHARED=ON -DRAVEN_MCP_LIB_DIR=<folder of
+libraven_mcp>` builds `raven_notes_mcp`, the notes example with the code above. For an app of your
+own, link `libraven_mcp` beside the shared `raven::raven`, with that folder in the rpath.

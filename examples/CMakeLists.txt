@@ -4,7 +4,8 @@
 #   editor           a window described in XML, software-rendered viewport,
 #                    custom widget, virtual list
 #   glass            the glass themes: translucent, refracting controls and panels
-#   notes            a list of notes, and its headless UI test (raven/raven_test.h)
+#   notes            a list of notes, and its headless UI test (raven/raven_test.h);
+#                    raven_notes_mcp serves Raven MCP, with RAVEN_MCP_LIB_DIR (below)
 #   notepad          a text editor: custom header bar, languages, file dialogs,
 #                    files dropped from the system
 #   animations       transitions, springs in a custom widget, an island
@@ -76,6 +77,32 @@ if(RAVEN_BUILD_TESTS AND NOT EMSCRIPTEN)
 	endif()
 	add_test(NAME example_notes COMMAND raven_test_notes)
 	set_tests_properties(example_notes PROPERTIES SKIP_RETURN_CODE 77)
+endif()
+# raven_notes_mcp: the notes example serving Raven MCP (NOTES_WITH_MCP), for an agent to drive it
+# (RAVEN_MCP=1, RAVEN_MCP_UI=1 for the ui.* tools). libraven_mcp is built by compose's Gradle build
+# and needs the shared libraven: configure with -DRAVEN_BUILD_SHARED=ON and RAVEN_MCP_LIB_DIR, the
+# folder that holds it, as for Rust's cargo feature mcp (the environment's, unless given to cmake):
+#   cmake -B build -DRAVEN_BUILD_SHARED=ON -DRAVEN_MCP_LIB_DIR=compose/raven-mcp/build/bin/macosArm64/raven_mcpReleaseShared
+set(RAVEN_MCP_LIB_DIR "$ENV{RAVEN_MCP_LIB_DIR}" CACHE PATH "The folder of libraven_mcp, for raven_notes_mcp")
+if(RAVEN_MCP_LIB_DIR AND NOT EMSCRIPTEN)
+	if(NOT RAVEN_BUILD_SHARED)
+		message(WARNING "raven_notes_mcp is not built: libraven_mcp needs the shared libraven (RAVEN_BUILD_SHARED=ON)")
+	else()
+		find_library(RAVEN_MCP_LIBRARY raven_mcp PATHS "${RAVEN_MCP_LIB_DIR}" NO_DEFAULT_PATH)
+		if(NOT RAVEN_MCP_LIBRARY)
+			message(WARNING "raven_notes_mcp is not built: no libraven_mcp in ${RAVEN_MCP_LIB_DIR}")
+		else()
+			raven_add_example(notes_mcp notes/main.c notes/notes_app.c notes/notes_app.h notes/notes.xml)
+			# (notes' folder, not notes_mcp's)
+			get_target_property(_defines raven_notes_mcp COMPILE_DEFINITIONS)
+			list(FILTER _defines EXCLUDE REGEX "^RAVEN_EXAMPLE_DIR=")
+			set_target_properties(raven_notes_mcp PROPERTIES COMPILE_DEFINITIONS "${_defines}")
+			target_compile_definitions(raven_notes_mcp PRIVATE NOTES_WITH_MCP RAVEN_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/notes")
+			target_link_libraries(raven_notes_mcp PRIVATE "${RAVEN_MCP_LIBRARY}")
+			# found when started from anywhere: libraven_mcp asks for @rpath/libraven_mcp.dylib (libraven_mcp.so)
+			set_target_properties(raven_notes_mcp PROPERTIES BUILD_RPATH "${RAVEN_MCP_LIB_DIR};$<TARGET_FILE_DIR:raven>")
+		endif()
+	endif()
 endif()
 raven_add_example(animations animations/main.c animations/animations.xml)
 raven_add_example(workspace workspace/main.c workspace/workspace.xml)

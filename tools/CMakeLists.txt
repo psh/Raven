@@ -102,6 +102,11 @@ if(RAVEN_BUILD_TESTS)
 			"-DARGS=${_pe}/notes-A.xml|-o|${_pv}/never.png|--script|click \"Nope\"" -DEXPECTED=1
 			"-DOUTPUT=the script stopped at step 1, click \"Nope\"" -P "${_expect}")
 		set_tests_properties(preview_script_stops PROPERTIES SKIP_REGULAR_EXPRESSION "raven_preview SKIPPED")
+		# an XML warning (an unknown attribute) fails, as it fails a UI test, though the PNG is written
+		add_test(NAME preview_xml_warning COMMAND "${CMAKE_COMMAND}" "-DPROGRAM=$<TARGET_FILE:raven_preview>"
+			"-DARGS=${_pe}/warning.xml|-o|${_pv}/warning.png" -DEXPECTED=1
+			"-DOUTPUT=warning.png  [0-9]+x[0-9]+.*written, but Raven reported 1 problem" -P "${_expect}")
+		set_tests_properties(preview_xml_warning PROPERTIES SKIP_REGULAR_EXPRESSION "raven_preview SKIPPED")
 	endif()
 endif()
 

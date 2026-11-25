@@ -15,7 +15,7 @@
 #endif
 
 #ifdef NOTES_WITH_MCP
-/* Built against the shared libraven and libraven_mcp: RAVEN_MCP=1 (RAVEN_MCP_UI=1 for ui.*) lets an agent drive it. */
+/* Built against the shared libraven and libraven_mcp (the CMake target raven_notes_mcp): RAVEN_MCP=1 (RAVEN_MCP_UI=1 for ui.*) lets an agent drive it. */
 #include <raven/raven_mcp.h>
 static int g_mcp;
 static void mcp_stop(void) {

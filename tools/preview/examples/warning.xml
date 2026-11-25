@@ -1,0 +1,6 @@
+<!-- for the test preview_xml_warning: Spacng is no attribute, so Raven warns and raven_preview exits 1 -->
+<Window Title="Notes" Width="420" Height="260">
+    <VBox Spacng="8" Slot.Padding="16">
+        <Label Text="Notes"/>
+    </VBox>
+</Window>

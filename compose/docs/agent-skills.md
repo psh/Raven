@@ -490,7 +490,9 @@ raven_preview notes.xml -o after-add.png --script 'type role=text-field "buy mil
     selector types where the focus is, and `key` without one goes to the window. A placeholder is
     not a name, so a text field is found by `role=text-field`.
   - `-o` makes the folders it needs. Exit codes: 0 when every file was written, 1 when one failed
-    (a script step that fails says which and why), 2 for the options, 77 without Vulkan.
+    (a script step that fails says which and why) or Raven warned about its XML (an unknown
+    attribute, as a UI test fails on it; the PNG is written all the same), 2 for the options, 77
+    without Vulkan.
 
 ### `Rwindow_save_preview`
 

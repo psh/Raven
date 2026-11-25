@@ -10,7 +10,7 @@
 #   binding_python_ui_pytest   the same test under pytest, with the raven_ui fixture: needs pytest
 #   binding_rust          needs cargo and the shared library; not on Windows
 #   binding_rust_ui       the same needs: examples/notes through raven::testing (tests/notes.rs), and
-#                         raven::testing's own tests (tests/testing.rs), as cargo tests
+#                         raven::testing's own tests (tests/testing.rs, testing_location.rs), as cargo tests
 #   binding_go            needs go, a C compiler for cgo, and the shared library; not on Windows
 #   binding_java          needs a JDK 22 or later and the shared library; not on Windows
 #   binding_odin          needs odin and the shared library; not on Windows
@@ -90,7 +90,7 @@ if(RAVEN_BUILD_SHARED AND NOT WIN32)
 		# headless UI tests in Rust (raven::testing): the notes example, as examples/notes/test_notes.c in C
 		add_test(NAME binding_rust_ui
 			COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust"
-				${RAVEN_CARGO} test --offline --quiet --test notes --test testing
+				${RAVEN_CARGO} test --offline --quiet --test notes --test testing --test testing_location
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rust)
 	endif()
 

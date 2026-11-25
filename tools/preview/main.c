@@ -49,14 +49,18 @@ static const char g_usage[] =
 	"  -h, --help       this\n"
 	"\n"
 	"Animations are off, so what a script does shows at once. Exits with 0 when every\n"
-	"file was written, 1 when one failed, 2 for a mistake in the options, and 77 when\n"
-	"there is no usable Vulkan driver.\n";
+	"file was written, 1 when one failed or Raven warned about one (an unknown\n"
+	"attribute: its PNG is written all the same, and a UI test would fail on it), 2 for\n"
+	"a mistake in the options, and 77 when there is no usable Vulkan driver.\n";
 
-/* Raven's errors are printed, except while finding out whether Vulkan works. */
+/* Raven's errors are printed, except while finding out whether Vulkan works, and counted:
+ * a file Raven warned about fails, as it would fail a UI test (raven_test.h). */
 static int g_quiet;
+static int g_problems;
 
 static void print_error(RError code, RSeverity severity, const char* detail) {
 	if (g_quiet || severity == R_SEVERITY_WEAK_WARNING) return;
+	g_problems++;
 	fprintf(stderr, "raven_preview: %s: %s\n", Rerror_to_string(code), detail);
 }
 
@@ -182,8 +186,10 @@ static int start(int null_backend, float scale) {
 }
 
 static int render(const char* input, const char* png, int width, int height, const char* script, float scale) {
-	Rid window = Rwindow_create_from_xml_file(input);
+	Rid window;
 	int px_width = 0, px_height = 0, ok;
+	g_problems = 0;
+	window = Rwindow_create_from_xml_file(input);
 	if (window == R_INVALID_ID) {
 		fprintf(stderr, "raven_preview: %s: no window was built from it\n", input);
 		return R_FALSE;
@@ -204,6 +210,11 @@ static int render(const char* input, const char* png, int width, int height, con
 		printf("%s  %dx%d\n", png, px_width, px_height);
 	}
 	Rwindow_destroy(window);
+	if (ok && g_problems) {
+		fprintf(stderr, "raven_preview: %s: written, but Raven reported %d problem%s with it (above)\n",
+			input, g_problems, g_problems == 1 ? "" : "s");
+		return R_FALSE;
+	}
 	return ok;
 }
 

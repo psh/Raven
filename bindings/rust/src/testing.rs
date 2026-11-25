@@ -29,7 +29,7 @@
 //! - with capture, a failure saves a PNG of each window into the folder
 //!   `RAVEN_TEST_CAPTURES` names.
 //!
-//! A failure panics with the driver's message, as `cargo test` reports it.
+//! A failure panics with the driver's message, as `cargo test` reports it, at the test's own line.
 //! Raven runs once per process and cargo runs tests on several threads:
 //! [`run`] takes them one at a time, and shuts Raven down even when a test panics.
 
@@ -199,6 +199,7 @@ pub struct Ui {
 
 impl Ui {
     /// Fails the test: the windows are captured (with capture), then it panics with the message.
+    #[track_caller]
     pub fn fail(&mut self, message: &str) -> ! {
         self.failures += 1;
         let mut message = message.to_string();
@@ -218,6 +219,7 @@ impl Ui {
         panic!("{}", message);
     }
 
+    #[track_caller]
     fn check_errors(&mut self) {
         let pending = std::mem::take(&mut errors().pending);
         if !pending.is_empty() {
@@ -226,10 +228,12 @@ impl Ui {
     }
 
     /// Draws frames until the app has nothing pending; fails when it stays busy.
+    #[track_caller]
     pub fn wait_idle(&mut self) {
         self.idle("wait_idle");
     }
 
+    #[track_caller]
     fn idle(&mut self, step: &str) {
         let busy = unsafe { Rwait_idle(self.options.idle_frames) } == 0;
         self.check_errors();
@@ -255,6 +259,7 @@ impl Ui {
     }
 
     /// Builds a window from XML text; returns it (also as `ui.window`).
+    #[track_caller]
     pub fn load_xml(&mut self, xml: &str) -> Rid {
         let window = window_from_xml(xml);
         self.check_errors();
@@ -266,6 +271,7 @@ impl Ui {
     }
 
     /// Builds a window from an XML file; returns it (also as `ui.window`).
+    #[track_caller]
     pub fn load_xml_file(&mut self, path: &str) -> Rid {
         let c_path = cstr(path);
         let window = unsafe { Rwindow_create_from_xml_file(c_path.as_ptr()) };
@@ -281,6 +287,7 @@ impl Ui {
         unsafe { text(Raccessible_get_last_error()) }
     }
 
+    #[track_caller]
     fn find_one(&mut self, step: &str, selector: &str) -> u64 {
         self.idle(step);
         let c_selector = cstr(selector);
@@ -292,6 +299,7 @@ impl Ui {
         found
     }
 
+    #[track_caller]
     fn describe(&mut self, step: &str, selector: &str) -> Accessible {
         let found = self.find_one(step, selector);
         let mut info: RAccessibleInfo = unsafe { std::mem::zeroed() };
@@ -318,11 +326,13 @@ impl Ui {
     }
 
     /// The one accessible a selector names, described; fails unless exactly one matches.
+    #[track_caller]
     pub fn find(&mut self, selector: &str) -> Accessible {
         self.describe("find", selector)
     }
 
     /// How many accessibles match.
+    #[track_caller]
     pub fn count(&mut self, selector: &str) -> i32 {
         self.idle("count");
         let c_selector = cstr(selector);
@@ -331,6 +341,7 @@ impl Ui {
         found as i32
     }
 
+    #[track_caller]
     fn acted(&mut self, step: &str, selector: &str, done: c_int) {
         if done == 0 {
             self.fail(&format!("{}({}): {}", step, selector, Self::last_error()));
@@ -339,6 +350,7 @@ impl Ui {
     }
 
     /// Clicks it with the mouse, as a user would.
+    #[track_caller]
     pub fn click(&mut self, selector: &str) {
         let found = self.find_one("click", selector);
         let done = unsafe { Raccessible_click(found) };
@@ -346,6 +358,7 @@ impl Ui {
     }
 
     /// Focuses it, then types the text as the keyboard would.
+    #[track_caller]
     pub fn type_text(&mut self, selector: &str, typed: &str) {
         let found = self.find_one("type_text", selector);
         let c_text = cstr(typed);
@@ -354,6 +367,7 @@ impl Ui {
     }
 
     /// Focuses it, then presses a key: "Enter", "Ctrl+S", "Shift+Tab", "a".
+    #[track_caller]
     pub fn key(&mut self, selector: &str, key: &str) {
         let (code, modifiers) = match parse_key(key) {
             Some(parsed) => parsed,
@@ -365,6 +379,7 @@ impl Ui {
     }
 
     /// Expands, collapses, selects or focuses it, without input.
+    #[track_caller]
     pub fn act(&mut self, selector: &str, action: Action) {
         let value = match action {
             Action::Expand => R_ACCESSIBLE_EXPAND,
@@ -377,6 +392,7 @@ impl Ui {
         self.acted("act", selector, done);
     }
 
+    #[track_caller]
     fn expect_matches(&mut self, step: &str, selector: &str, expected: i32, exactly: &str) {
         let found = self.count(selector);
         if found != expected {
@@ -385,20 +401,24 @@ impl Ui {
     }
 
     /// Exactly one accessible matches.
+    #[track_caller]
     pub fn expect_exists(&mut self, selector: &str) {
         self.expect_matches("expect_exists", selector, 1, "exactly ");
     }
 
     /// None matches.
+    #[track_caller]
     pub fn expect_absent(&mut self, selector: &str) {
         self.expect_matches("expect_absent", selector, 0, "");
     }
 
+    #[track_caller]
     pub fn expect_count(&mut self, selector: &str, count: i32) {
         self.expect_matches("expect_count", selector, count, "");
     }
 
     /// The text it shows: a text field's value, else its name (the driver's `text=`).
+    #[track_caller]
     pub fn expect_text(&mut self, selector: &str, expected: &str) {
         let found = self.describe("expect_text", selector);
         if found.text() != expected {
@@ -407,6 +427,7 @@ impl Ui {
     }
 
     /// The number of a slider, a spin box, a progress bar.
+    #[track_caller]
     pub fn expect_value(&mut self, selector: &str, expected: f64) {
         let found = self.describe("expect_value", selector);
         if !found.has(R_ACCESSIBLE_HAS_RANGE) {
@@ -417,6 +438,7 @@ impl Ui {
         }
     }
 
+    #[track_caller]
     fn expect_state(&mut self, step: &str, selector: &str, state: RAccessibleState, inverted: bool, yes: &str, no: &str, expected: bool) {
         let found = self.describe(step, selector);
         let actual = found.has(state) != inverted;
@@ -425,14 +447,17 @@ impl Ui {
         }
     }
 
+    #[track_caller]
     pub fn expect_checked(&mut self, selector: &str, checked: bool) {
         self.expect_state("expect_checked", selector, R_ACCESSIBLE_CHECKED, false, "checked", "not checked", checked);
     }
 
+    #[track_caller]
     pub fn expect_enabled(&mut self, selector: &str, enabled: bool) {
         self.expect_state("expect_enabled", selector, R_ACCESSIBLE_DISABLED, true, "enabled", "disabled", enabled);
     }
 
+    #[track_caller]
     pub fn expect_focused(&mut self, selector: &str, focused: bool) {
         self.expect_state("expect_focused", selector, R_ACCESSIBLE_FOCUSED, false, "focused", "not focused", focused);
     }
