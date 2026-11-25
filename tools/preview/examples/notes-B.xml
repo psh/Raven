@@ -1,0 +1,8 @@
+<Window Title="Notes" Width="420" Height="260">
+    <HBox Spacing="12" Slot.Padding="16">
+        <VBox Spacing="6"><Button Text="All"/><Button Text="Today"/><Button Text="Done"/></VBox>
+        <VBox Spacing="8"><Label Text="buy milk"/><Label Text="call Oscar"/>
+            <HBox Spacing="6"><TextInput Placeholder="New note"/><Button Text="+" Style="Primary"/></HBox>
+        </VBox>
+    </HBox>
+</Window>

@@ -2251,6 +2251,19 @@ foreign lib {
 	// alpha, as the window system receives them.
 	// Returns: NULL when the backend cannot capture.
 	Rwindow_capture :: proc(window: Rid, width: ^i32, height: ^i32) -> [^]u8 ---
+	// Saves a preview of a window: draws frames until nothing is
+	// pending (Rwait_idle), captures it and writes a PNG. The size is the
+	// window's, and the theme Raven's (Rtheme_apply before building the
+	// window). A window that is seen through keeps its alpha, made straight.
+	// Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+	// Never from inside a callback (it is refused and reported).
+	// png_path The file to write, a UTF-8 path.
+	// scale Device pixels per UI pixel; 0 = 1. The window is laid out
+	// and drawn at it (Rset_ui_scale, restored afterwards, which closes its
+	// popups), so text stays crisp: not resampled.
+	// Returns: R_FALSE, reported, when the backend can't capture (the null
+	// backend) or the file can't be written (R_ERROR_IO).
+	Rwindow_save_preview :: proc(window: Rid, png_path: cstring, scale: f32) -> i32 ---
 	// Widget that has the keyboard focus in the window, or R_INVALID_ID.
 	Rwindow_get_focused_widget :: proc(window: Rid) -> Rid ---
 	// Leaves the window with no focused widget, as a click on an empty

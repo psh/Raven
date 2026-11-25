@@ -274,6 +274,7 @@ const _symbols = {
 	Rwindow_get_user_handle: { args: ["u32"], returns: "ptr" },
 	Rwindow_get_native_handle: { args: ["u32", "ptr"], returns: "i32" },
 	Rwindow_capture: { args: ["u32", "ptr", "ptr"], returns: "ptr" },
+	Rwindow_save_preview: { args: ["u32", "ptr", "f32"], returns: "i32" },
 	Rwindow_get_focused_widget: { args: ["u32"], returns: "u32" },
 	Rwindow_clear_focus: { args: ["u32"], returns: "void" },
 	Rwindow_get_hovered_widget: { args: ["u32"], returns: "u32" },
@@ -7703,6 +7704,24 @@ export function Rwindow_capture(window: Rid): [result: Pointer | null, width: nu
 	const height_ = new Int32Array(1);
 	const result_ = _lib.Rwindow_capture(window, width_, height_) as Pointer | null;
 	return [result_, width_[0]!, height_[0]!];
+}
+
+/**
+ * Saves a preview of a window: draws frames until nothing is
+ * pending (Rwait_idle), captures it and writes a PNG. The size is the
+ * window's, and the theme Raven's (Rtheme_apply before building the
+ * window). A window that is seen through keeps its alpha, made straight.
+ * Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+ * Never from inside a callback (it is refused and reported).
+ * png_path The file to write, a UTF-8 path.
+ * scale Device pixels per UI pixel; 0 = 1. The window is laid out
+ * and drawn at it (Rset_ui_scale, restored afterwards, which closes its
+ * popups), so text stays crisp: not resampled.
+ * Returns: R_FALSE, reported, when the backend can't capture (the null
+ * backend) or the file can't be written (R_ERROR_IO).
+ */
+export function Rwindow_save_preview(window: Rid, png_path: string | null, scale: number): number {
+	return _lib.Rwindow_save_preview(window, _s(png_path), scale);
 }
 
 /** Widget that has the keyboard focus in the window, or R_INVALID_ID. */

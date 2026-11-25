@@ -1696,6 +1696,20 @@ func WindowSetContinuousRedraw(window ID, enabled int) {
 	C.Rwindow_set_continuous_redraw(C.Rid(window), C.int(enabled))
 }
 
+// WindowSavePreview: Saves a preview of a window: draws frames until nothing is pending (Rwait_idle),
+// captures it and writes a PNG. The size is the window's, and the theme Raven's (Rtheme_apply before building
+// the window). A window that is seen through keeps its alpha, made straight. Headless Vulkan
+// (RInitDesc.headless) renders it with nothing on screen. Never from inside a callback (it is refused and
+// reported). png_path The file to write, a UTF-8 path. scale Device pixels per UI pixel; 0 = 1. The window is
+// laid out and drawn at it (Rset_ui_scale, restored afterwards, which closes its popups), so text stays
+// crisp: not resampled. Returns: R_FALSE, reported, when the backend can't capture (the null backend) or the
+// file can't be written (R_ERROR_IO).
+func WindowSavePreview(window ID, png_path string, scale float32) int {
+	png_path_ := C.CString(png_path)
+	defer C.free(unsafe.Pointer(png_path_))
+	return int(C.Rwindow_save_preview(C.Rid(window), png_path_, C.float(scale)))
+}
+
 // WindowGetFocusedWidget: Widget that has the keyboard focus in the window, or R_INVALID_ID.
 func WindowGetFocusedWidget(window ID) ID {
 	return ID(C.Rwindow_get_focused_widget(C.Rid(window)))

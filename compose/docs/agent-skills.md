@@ -363,7 +363,7 @@ A command-line tool in Raven's `tools/`, built by CMake with the other tools and
 ```sh
 raven_preview variant-A.xml -o variant-A.png [--scale 2] [--theme dark] [--size 420x260]
 raven_preview variants/*.xml -o previews/            # one PNG per file
-raven_preview notes.xml -o after-add.png --script 'type "New note" "buy milk"; click "Add"'
+raven_preview notes.xml -o after-add.png --script 'type role=text-field "buy milk"; click "Add"'
 ```
 
 - It renders on headless Vulkan (`RInitDesc.headless` with `R_BACKEND_VULKAN`), with no window
@@ -374,6 +374,18 @@ raven_preview notes.xml -o after-add.png --script 'type "New note" "buy milk"; c
 - `--script` runs actions before the capture, so a preview can show a state ("after adding a
   note"). It is the driver's calls written down, with the same selectors (see
   [Driving a UI](#driving-a-ui)).
+- Built in [Previews](issues/archive/0170-previews.md):
+  - `--null` takes the null backend and exits with 77, for tests of that path. The null backend's
+    capture is the clear color, a picture of nothing, so the tool and `Rwindow_save_preview`
+    refuse it rather than write a blank PNG.
+  - The tool starts Raven at the scale (`RInitDesc.ui_scale`), so `Rwindow_save_preview` has nothing
+    to change and a popup a script opened is still open in the capture.
+  - Animations are off, so what a script does shows at once.
+  - In a script, a bare quoted word is short for `name="..."` (`click "Add"`). `type` without a
+    selector types where the focus is, and `key` without one goes to the window. A placeholder is
+    not a name, so a text field is found by `role=text-field`.
+  - `-o` makes the folders it needs. Exit codes: 0 when every file was written, 1 when one failed
+    (a script step that fails says which and why), 2 for the options, 77 without Vulkan.
 
 ### `Rwindow_save_preview`
 
@@ -396,6 +408,8 @@ joins three parts: waiting until nothing is pending (`Rwait_idle`, see
   (`Rset_ui_scale` around the capture, restored afterwards), so text and edges are crisp at 2x.
 - **Alpha**: a transparent window's capture is premultiplied. It is turned into straight alpha
   before encoding, as PNG stores it.
+- **Not from a callback**, like `Rwait_idle`: it draws frames. Changing the scale closes the
+  window's popups, so a program that wants a popup in a 2x preview starts Raven at that scale.
 
 ### compose-raven
 

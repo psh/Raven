@@ -4,6 +4,8 @@
 #                        edited visually, its translations, its themes in the preview
 #   raven_theme_editor   makes theme files (tools/theme_editor): every color, size
 #                        and style of a theme, edited over a live preview
+#   raven_preview        renders XML to PNG files with no window shown (tools/preview):
+#                        headless Vulkan, a scale, a theme, a script of the driver's calls
 #
 # embed.py, subset_font.py and designer/embed_splash.py are the scripts that
 # produce the embedded files (src/embedded, designer/splash_xml.c and
@@ -58,8 +60,50 @@ else()
 	target_link_libraries(raven_theme_editor PRIVATE m)
 endif()
 
+# Raven XML to PNG files on headless Vulkan, with no window shown (tools/preview): previews of
+# variants for the prototype skill, and of a state reached through a script of the driver's calls.
+add_executable(raven_preview preview/main.c preview/script.c preview/script.h)
+target_link_libraries(raven_preview PRIVATE raven::raven)
+set_target_properties(raven_preview PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON FOLDER "tools")
+if(MSVC)
+	target_compile_definitions(raven_preview PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(NOT WIN32)
+	target_link_libraries(raven_preview PRIVATE m)
+endif()
+
 include(GNUInstallDirs)
-install(TARGETS raven_designer raven_theme_editor RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS raven_designer raven_theme_editor raven_preview RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(RAVEN_BUILD_TESTS)
+	# raven_preview: the spike's notes variants at 1x, at 2x, at another size, after a script; its
+	# failures as exit codes (1 for a script that stops, 2 for the options, 77 without Vulkan).
+	set(_pv "${CMAKE_CURRENT_BINARY_DIR}/preview_test")
+	set(_pe "${CMAKE_CURRENT_SOURCE_DIR}/preview/examples")
+	set(_expect "${CMAKE_CURRENT_SOURCE_DIR}/preview/expect_exit.cmake")
+	add_test(NAME preview_help COMMAND raven_preview --help)
+	set_tests_properties(preview_help PROPERTIES PASS_REGULAR_EXPRESSION "usage: raven_preview FILE.xml")
+	add_test(NAME preview_bad_option COMMAND "${CMAKE_COMMAND}" "-DPROGRAM=$<TARGET_FILE:raven_preview>"
+		"-DARGS=${_pe}/notes-A.xml|--size|wide" -DEXPECTED=2 -P "${_expect}")
+	add_test(NAME preview_null COMMAND "${CMAKE_COMMAND}" "-DPROGRAM=$<TARGET_FILE:raven_preview>"
+		"-DARGS=${_pe}/notes-A.xml|-o|${_pv}/null.png|--null" -DEXPECTED=77 -P "${_expect}")
+	if(RAVEN_BACKEND_VULKAN)
+		add_test(NAME preview_variants COMMAND raven_preview ${_pe}/notes-A.xml ${_pe}/notes-B.xml ${_pe}/notes-C.xml -o ${_pv}/1x/)
+		set_tests_properties(preview_variants PROPERTIES SKIP_RETURN_CODE 77
+			PASS_REGULAR_EXPRESSION "notes-A.png  420x260\n.*notes-B.png  420x260\n.*notes-C.png  420x260\n")
+		add_test(NAME preview_variants_2x COMMAND raven_preview ${_pe}/notes-A.xml ${_pe}/notes-B.xml ${_pe}/notes-C.xml -o ${_pv}/2x --scale 2 --theme light)
+		set_tests_properties(preview_variants_2x PROPERTIES SKIP_RETURN_CODE 77
+			PASS_REGULAR_EXPRESSION "notes-A.png  840x520\n.*notes-B.png  840x520\n.*notes-C.png  840x520\n")
+		add_test(NAME preview_size COMMAND raven_preview ${_pe}/notes-C.xml -o ${_pv}/small.png --size 300x180 --theme glass-dark)
+		set_tests_properties(preview_size PROPERTIES SKIP_RETURN_CODE 77 PASS_REGULAR_EXPRESSION "small.png  300x180\n")
+		add_test(NAME preview_script COMMAND raven_preview ${_pe}/notes-A.xml -o ${_pv}/after-add.png
+			--script "type role=text-field \"buy bread\"; click \"Add\"; key Enter; wait-idle")
+		set_tests_properties(preview_script PROPERTIES SKIP_RETURN_CODE 77 PASS_REGULAR_EXPRESSION "after-add.png  420x260\n")
+		add_test(NAME preview_script_stops COMMAND "${CMAKE_COMMAND}" "-DPROGRAM=$<TARGET_FILE:raven_preview>"
+			"-DARGS=${_pe}/notes-A.xml|-o|${_pv}/never.png|--script|click \"Nope\"" -DEXPECTED=1
+			"-DOUTPUT=the script stopped at step 1, click \"Nope\"" -P "${_expect}")
+		set_tests_properties(preview_script_stops PROPERTIES SKIP_REGULAR_EXPRESSION "raven_preview SKIPPED")
+	endif()
+endif()
 
 if(RAVEN_BUILD_TESTS)
 	set(_ds "${CMAKE_CURRENT_BINARY_DIR}/designer_test")

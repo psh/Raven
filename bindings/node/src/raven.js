@@ -3251,6 +3251,7 @@ export function Rwindow_get_native_handle(window, native) {
 	return _lib.Rwindow_get_native_handle(window, _p(native));
 }
 export const Rwindow_capture = _lib.Rwindow_capture;
+export const Rwindow_save_preview = _lib.Rwindow_save_preview;
 export const Rwindow_get_focused_widget = _lib.Rwindow_get_focused_widget;
 export const Rwindow_clear_focus = _lib.Rwindow_clear_focus;
 export const Rwindow_get_hovered_widget = _lib.Rwindow_get_hovered_widget;

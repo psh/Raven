@@ -1298,6 +1298,7 @@ void Rwindow_set_user_handle(Rid window, void* handle);
 void* Rwindow_get_user_handle(Rid window);
 int Rwindow_get_native_handle(Rid window, RNativeWindow* native);
 uint8_t* Rwindow_capture(Rid window, int* width, int* height);
+int Rwindow_save_preview(Rid window, const char* png_path, float scale);
 Rid Rwindow_get_focused_widget(Rid window);
 void Rwindow_clear_focus(Rid window);
 Rid Rwindow_get_hovered_widget(Rid window);

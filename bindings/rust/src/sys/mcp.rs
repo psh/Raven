@@ -78,7 +78,7 @@ pub struct RMcpConfig {
 #[derive(Copy, Clone)]
 pub struct RMcpToolDesc {
     /// Required: 1 to 128 characters of A-Z, a-z, 0-9, '_', '.' and '-'.
-    /// Dotted by area ("notes.add"). Names starting with "ui." are compose-raven's.
+    /// Dotted by area ("notes.add"). Names starting with "ui." are the UI tools'.
     pub name: *const c_char,
     /// A name for people. May be NULL.
     pub title: *const c_char,
@@ -103,7 +103,8 @@ extern "C" {
     /// after Rinit. There is one server in a process. Tools may be added before it
     /// starts or while it runs.
     /// RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
-    /// kill switch for whoever runs the app.
+    /// kill switch for whoever runs the app. The app's SIGINT and SIGTERM handlers
+    /// are left as they were.
     /// config Settings, or NULL for the defaults.
     /// Returns: R_FALSE, with the reason logged, when the server already runs, the
     /// port is taken, or tools are left from an earlier run of Raven.
@@ -133,7 +134,7 @@ extern "C" {
     /// Raction_bind is the one they see. Built-in actions are never included, and a name that
     /// isn't a valid tool name is skipped and logged. No hints are claimed. A call fires the
     /// action from the focused window (else the first open one) and replies "ran <name>" once the
-    /// app is idle, or after 120 frames. A tool of the app's own, of the same name, wins while it
+    /// app is idle, or after 2 s. A tool of the app's own, of the same name, wins while it
     /// exists. Rmcp_tool_remove_all forgets every exposed action.
     pub fn Rmcp_expose_actions(prefix: *const c_char);
     /// Publishes one action, bound or built-in, chosen on purpose. Called while nothing

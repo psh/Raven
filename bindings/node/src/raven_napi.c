@@ -150,6 +150,7 @@ static struct {
 	void* (*Rwindow_get_user_handle)(Rid);
 	int (*Rwindow_get_native_handle)(Rid, RNativeWindow*);
 	uint8_t* (*Rwindow_capture)(Rid, int*, int*);
+	int (*Rwindow_save_preview)(Rid, const char*, float);
 	Rid (*Rwindow_get_focused_widget)(Rid);
 	void (*Rwindow_clear_focus)(Rid);
 	Rid (*Rwindow_get_hovered_widget)(Rid);
@@ -1336,6 +1337,7 @@ static const struct {
 	{"Rwindow_get_user_handle", offsetof(__typeof__(rn), Rwindow_get_user_handle)},
 	{"Rwindow_get_native_handle", offsetof(__typeof__(rn), Rwindow_get_native_handle)},
 	{"Rwindow_capture", offsetof(__typeof__(rn), Rwindow_capture)},
+	{"Rwindow_save_preview", offsetof(__typeof__(rn), Rwindow_save_preview)},
 	{"Rwindow_get_focused_widget", offsetof(__typeof__(rn), Rwindow_get_focused_widget)},
 	{"Rwindow_clear_focus", offsetof(__typeof__(rn), Rwindow_clear_focus)},
 	{"Rwindow_get_hovered_widget", offsetof(__typeof__(rn), Rwindow_get_hovered_widget)},
@@ -6293,6 +6295,26 @@ static napi_value rn_w_Rwindow_capture(napi_env env, napi_callback_info info) {
 			result_ = rn_tuple(env, 3, values_);
 		}
 	}
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_save_preview(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	float a2;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_float(env, argv[2], &a2)) goto done;
+	int value_ = rn.Rwindow_save_preview((Rid)a0, a1.p, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
 	return result_;
 }
 
@@ -24185,6 +24207,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_get_user_handle", NULL, rn_w_Rwindow_get_user_handle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_native_handle", NULL, rn_w_Rwindow_get_native_handle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_capture", NULL, rn_w_Rwindow_capture, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_save_preview", NULL, rn_w_Rwindow_save_preview, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_focused_widget", NULL, rn_w_Rwindow_get_focused_widget, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_clear_focus", NULL, rn_w_Rwindow_clear_focus, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_hovered_widget", NULL, rn_w_Rwindow_get_hovered_widget, NULL, NULL, NULL, napi_enumerable, NULL},

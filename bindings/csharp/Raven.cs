@@ -4081,6 +4081,23 @@ namespace Raven
         public static extern IntPtr Rwindow_capture(uint window, out int width, out int height);
 
         /// <summary>
+        /// Saves a preview of a window: draws frames until nothing is
+        /// pending (Rwait_idle), captures it and writes a PNG. The size is the
+        /// window's, and the theme Raven's (Rtheme_apply before building the
+        /// window). A window that is seen through keeps its alpha, made straight.
+        /// Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+        /// Never from inside a callback (it is refused and reported).
+        /// png_path The file to write, a UTF-8 path.
+        /// scale Device pixels per UI pixel; 0 = 1. The window is laid out
+        /// and drawn at it (Rset_ui_scale, restored afterwards, which closes its
+        /// popups), so text stays crisp: not resampled.
+        /// Returns: R_FALSE, reported, when the backend can't capture (the null
+        /// backend) or the file can't be written (R_ERROR_IO).
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rwindow_save_preview(uint window, [MarshalAs(Utf8.Str)] string png_path, float scale);
+
+        /// <summary>
         /// Widget that has the keyboard focus in the window, or R_INVALID_ID.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]

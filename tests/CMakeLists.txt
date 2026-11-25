@@ -92,6 +92,11 @@ endif()
 if(RAVEN_BACKEND_VULKAN)
 	raven_add_test(test_render)
 	set_tests_properties(test_render PROPERTIES SKIP_RETURN_CODE 77)
+	# Rwindow_save_preview, and raven_preview's scripts (built in from tools/preview)
+	raven_add_test(test_preview)
+	target_sources(test_preview PRIVATE ${PROJECT_SOURCE_DIR}/tools/preview/script.c)
+	target_compile_definitions(test_preview PRIVATE "RAVEN_PREVIEW_EXAMPLES=\"${PROJECT_SOURCE_DIR}/tools/preview/examples\"")
+	set_tests_properties(test_preview PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 
 # Not a test: prints timings for a large widget tree (see the top of benchmark.c).

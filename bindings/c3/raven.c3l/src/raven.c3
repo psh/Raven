@@ -5226,6 +5226,18 @@ fn CInt Window.get_native_handle(self, NativeWindow* native) @inline => c::r_win
 *>
 fn char* Window.capture(self, CInt* width, CInt* height) @inline => c::r_window_capture((c::Rid)self, width, height);
 
+<*
+ Saves a preview of a window: draws frames until nothing is
+ pending (Rwait_idle), captures it and writes a PNG. The size is the
+ window's, and the theme Raven's (Rtheme_apply before building the
+ window). A window that is seen through keeps its alpha, made straight.
+ Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+ Never from inside a callback (it is refused and reported).
+ Returns R_FALSE, reported, when the backend can't capture (the null
+ backend) or the file can't be written (R_ERROR_IO).
+*>
+fn bool Window.save_preview(self, ZString png_path, float scale) @inline => c::r_window_save_preview((c::Rid)self, (char*)png_path, scale) != 0;
+
 <* Widget that has the keyboard focus in the window, or R_INVALID_ID. *>
 fn Widget Window.get_focused_widget(self) @inline => (Widget)c::r_window_get_focused_widget((c::Rid)self);
 

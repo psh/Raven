@@ -3872,6 +3872,26 @@ def Rwindow_capture(window):
     return (result, width_.value, height_.value)
 
 
+_lib.Rwindow_save_preview.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_float]
+_lib.Rwindow_save_preview.restype = ctypes.c_int
+
+
+def Rwindow_save_preview(window, png_path, scale):
+    """Saves a preview of a window: draws frames until nothing is
+    pending (Rwait_idle), captures it and writes a PNG. The size is the
+    window's, and the theme Raven's (Rtheme_apply before building the
+    window). A window that is seen through keeps its alpha, made straight.
+    Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+    Never from inside a callback (it is refused and reported).
+    png_path The file to write, a UTF-8 path.
+    scale Device pixels per UI pixel; 0 = 1. The window is laid out
+    and drawn at it (Rset_ui_scale, restored afterwards, which closes its
+    popups), so text stays crisp: not resampled.
+    Returns: R_FALSE, reported, when the backend can't capture (the null
+    backend) or the file can't be written (R_ERROR_IO)."""
+    return _lib.Rwindow_save_preview(window, _s(png_path), scale)
+
+
 _lib.Rwindow_get_focused_widget.argtypes = [ctypes.c_uint32]
 _lib.Rwindow_get_focused_widget.restype = ctypes.c_uint32
 
@@ -13890,7 +13910,8 @@ def Rmcp_start(config):
     after Rinit. There is one server in a process. Tools may be added before it
     starts or while it runs.
     RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
-    kill switch for whoever runs the app.
+    kill switch for whoever runs the app. The app's SIGINT and SIGTERM handlers
+    are left as they were.
     config Settings, or NULL for the defaults.
     Returns: R_FALSE, with the reason logged, when the server already runs, the
     port is taken, or tools are left from an earlier run of Raven."""
@@ -13938,7 +13959,7 @@ def Rmcp_expose_actions(prefix):
     Raction_bind is the one they see. Built-in actions are never included, and a name that
     isn't a valid tool name is skipped and logged. No hints are claimed. A call fires the
     action from the focused window (else the first open one) and replies "ran <name>" once the
-    app is idle, or after 120 frames. A tool of the app's own, of the same name, wins while it
+    app is idle, or after 2 s. A tool of the app's own, of the same name, wins while it
     exists. Rmcp_tool_remove_all forgets every exposed action."""
     _mcp().Rmcp_expose_actions(_s(prefix))
 

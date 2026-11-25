@@ -173,6 +173,9 @@ the [releases](https://github.com/oscar-soirey/Raven/releases).
   syntax color and style rule of a theme, edited over a live preview of real
   widgets, a palette worked out from one accent, contrast checked. See
   [The theme editor](#the-theme-editor).
+- **Previews** (`raven_preview`): XML rendered to PNG files with no window
+  shown, at any scale and in any theme, after a script of clicks and typing if
+  asked. See [Previews](#previews).
 - **C11, no dependency.** Raven opens its own native windows (Win32, X11 and Wayland, Cocoa on macOS), loads
   Vulkan at run time and has its own memory allocator. A stripped shared
   library is about 1.3 MB, two fonts included.
@@ -410,6 +413,27 @@ Undo and redo follow the tab in front; a folder or an interface dropped on
 the window opens. The visual editor uses the public API only. The files are in
 `tools/designer/` (`designer.h` says what each one does).
 
+## Previews
+
+`raven_preview` renders XML to PNG files on Vulkan without a window system:
+nothing opens on screen, so it runs in scripts, in tests and for agents
+comparing variants of a screen.
+
+```sh
+raven_preview variant-A.xml -o variant-A.png --scale 2 --theme light
+raven_preview variants/*.xml -o previews/                 # one PNG per file
+raven_preview notes.xml -o after.png --script 'type role=text-field "buy milk"; click "Add"'
+```
+
+`--scale` draws at that many device pixels per UI pixel (crisp, not
+stretched), `--theme` takes a look, a theme name or a theme file, `--size WxH`
+replaces the window's size, and `--script` runs the UI driver's calls
+(`click`, `type`, `key`, `act`, `wait-idle`, with
+[raven_driver.h](include/raven/raven_driver.h)'s selectors) before the capture.
+Without a usable Vulkan driver it exits with 77. A program does the same for a
+window it built with `Rwindow_save_preview(window, "out.png", scale)`.
+The files are in `tools/preview/`.
+
 ## The theme editor
 
 `raven_theme_editor [theme.xml]` makes theme files ([docs/THEMES.md](docs/THEMES.md))
@@ -543,7 +567,7 @@ options go after `--`: `generate-cmake.bat -- -DRAVEN_WARNINGS_AS_ERRORS=ON`.
 | `RAVEN_BUILD_SHARED` | `OFF` | shared library instead of static |
 | `RAVEN_BUILD_EXAMPLES` | `ON` when top level | |
 | `RAVEN_BUILD_TESTS` | `ON` when top level | tests, tests of the bindings, `raven_benchmark` |
-| `RAVEN_BUILD_TOOLS` | `ON` when top level | `raven_designer`, `raven_theme_editor` |
+| `RAVEN_BUILD_TOOLS` | `ON` when top level | `raven_designer`, `raven_theme_editor`, `raven_preview` |
 | `RAVEN_BUILD_WEB` | `ON` | web pages (`raven_web.h`, [docs/WEB.md](docs/WEB.md)), compiled into the Raven library itself; it needs nothing more to build |
 | `RAVEN_BACKEND_VULKAN` | `ON` | `OFF` builds without any GPU code (custom backend or headless) |
 | `RAVEN_PLATFORM` | `auto` | `win32`, `x11`, `cocoa` (macOS) or `null` |
@@ -1401,6 +1425,7 @@ web/                 web pages (raven_web.h), compiled into the Raven library
 examples/            sixteen programs (bevy_editor: a scene editor in Rust; languages: one program in eight languages)
 tools/designer/      raven_designer (main.c: the visual editor; files, island, strings, welcome, os)
 tools/theme_editor/  raven_theme_editor
+tools/preview/       raven_preview (XML to PNG, headless; script.c: the --script steps)
 tools/bindgen/       writes bindings/ from the headers
 bindings/            C++, Python, Rust, Go, C#, Zig, LuaJIT, Java, Odin
 tests/  docs/  cmake/  third_party/

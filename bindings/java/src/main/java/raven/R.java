@@ -7677,6 +7677,34 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rwindow_save_preview$;
+
+    /**
+     * Saves a preview of a window: draws frames until nothing is
+     * pending (Rwait_idle), captures it and writes a PNG. The size is the
+     * window's, and the theme Raven's (Rtheme_apply before building the
+     * window). A window that is seen through keeps its alpha, made straight.
+     * Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+     * Never from inside a callback (it is refused and reported).
+     * png_path The file to write, a UTF-8 path.
+     * scale Device pixels per UI pixel; 0 = 1. The window is laid out
+     * and drawn at it (Rset_ui_scale, restored afterwards, which closes its
+     * popups), so text stays crisp: not resampled.
+     * Returns: R_FALSE, reported, when the backend can't capture (the null
+     * backend) or the file can't be written (R_ERROR_IO).
+     */
+    public static int Rwindow_save_preview(int window, String png_path, float scale) {
+        MethodHandle $h = Rwindow_save_preview$;
+        if ($h == null) Rwindow_save_preview$ = $h = find("Rwindow_save_preview", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_FLOAT));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment png_path$ = png_path == null ? MemorySegment.NULL : utf8($a, png_path);
+            int $r = (int) $h.invokeExact(window, png_path$, scale);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rwindow_get_focused_widget$;
 
     /**

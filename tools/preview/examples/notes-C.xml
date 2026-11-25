@@ -1,0 +1,6 @@
+<Window Title="Notes" Width="420" Height="260">
+    <VBox Spacing="10" Slot.Padding="24">
+        <TextInput Placeholder="What needs doing?"/>
+        <Label Text="2 notes"/>
+    </VBox>
+</Window>

@@ -538,6 +538,22 @@ extern "C" {
 	 */
 	RAVEN_API uint8_t* Rwindow_capture(Rid window, int* width, int* height);
 
+	/**
+	 * @brief Saves a preview of a window: draws frames until nothing is
+	 * pending (Rwait_idle), captures it and writes a PNG. The size is the
+	 * window's, and the theme Raven's (Rtheme_apply before building the
+	 * window). A window that is seen through keeps its alpha, made straight.
+	 * Headless Vulkan (RInitDesc.headless) renders it with nothing on screen.
+	 * Never from inside a callback (it is refused and reported).
+	 * @param png_path The file to write, a UTF-8 path.
+	 * @param scale Device pixels per UI pixel; 0 = 1. The window is laid out
+	 * and drawn at it (Rset_ui_scale, restored afterwards, which closes its
+	 * popups), so text stays crisp: not resampled.
+	 * @return R_FALSE, reported, when the backend can't capture (the null
+	 * backend) or the file can't be written (R_ERROR_IO).
+	 */
+	RAVEN_API int Rwindow_save_preview(Rid window, const char* png_path, float scale);
+
 
 	/* ============================================================================
 	 *  INPUT STATE & SYNTHETIC INPUT

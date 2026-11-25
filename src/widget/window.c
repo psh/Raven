@@ -2623,6 +2623,66 @@ uint8_t* Rwindow_capture(Rid id, int* width, int* height) {
 	return capture.pixels;
 }
 
+/* A capture of a window that is seen through is premultiplied; PNG stores straight alpha. */
+static void rvn_unpremultiply(uint8_t* pixels, size_t count) {
+	size_t i;
+	for (i = 0; i < count; i++, pixels += 4) {
+		unsigned a = pixels[3], c;
+		if (a == 255) continue;
+		for (c = 0; c < 3; c++) pixels[c] = a == 0 ? 0 : (uint8_t)rvn_mini(255, (int)((pixels[c] * 255u + a / 2) / a));
+	}
+}
+
+int Rwindow_save_preview(Rid id, const char* png_path, float scale) {
+	rvn_window_t* window;
+	uint8_t* pixels;
+	int width = 0, height = 0, px_width = 0, px_height = 0, rescaled, ok;
+	float old_ui_scale, platform_scale;
+	window = rvn_window_check(id, __func__);
+	if (!window) return R_FALSE;
+	if (!png_path || !png_path[0]) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rwindow_save_preview: no path");
+		return R_FALSE;
+	}
+	/* it draws frames: from a callback, they would run the app's callbacks inside one of its own */
+	if (g_rvn.in_update || g_rvn.dispatch_depth > 0) {
+		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_ERROR,
+			"Rwindow_save_preview: not from inside a callback (post it with Rtask_post)");
+		return R_FALSE;
+	}
+	/* (its capture is only the clear color: a picture of nothing) */
+	if (g_rvn.backend == R_BACKEND_NULL) {
+		rvn_error(R_ERROR_BACKEND, R_SEVERITY_ERROR, "Rwindow_save_preview: the null backend draws nothing (headless Vulkan renders previews)");
+		return R_FALSE;
+	}
+	if (!(scale > 0.0f)) scale = 1.0f;
+	/* drawn at the scale, not resampled: the UI scale that gives `scale` device pixels per UI pixel on
+	   this window's screen, and the window made as big in UI pixels as it was */
+	Rwindow_get_size(id, &width, &height);
+	old_ui_scale = Rget_ui_scale();
+	platform_scale = window->scale > 0.0f ? window->scale / old_ui_scale : 1.0f;
+	rescaled = fabsf(scale / platform_scale - old_ui_scale) > 1e-4f;
+	if (rescaled) {
+		Rset_ui_scale(scale / platform_scale);
+		if (width > 0 && height > 0) Rwindow_set_size(id, width, height);
+	}
+	/* (still busy after that, something animates for ever: it is captured as it is) */
+	Rwait_idle(600);
+	pixels = Rwindow_capture(id, &px_width, &px_height);
+	if (rescaled) {
+		Rset_ui_scale(old_ui_scale);
+		if (width > 0 && height > 0 && rvn_window_get(id)) Rwindow_set_size(id, width, height);
+	}
+	if (!pixels) {
+		rvn_error(R_ERROR_BACKEND, R_SEVERITY_ERROR, "Rwindow_save_preview: this backend can't capture a window");
+		return R_FALSE;
+	}
+	rvn_unpremultiply(pixels, (size_t)px_width * (size_t)px_height);
+	ok = Rimage_save_png(pixels, px_width, px_height, png_path);
+	Rpixels_free(pixels);
+	return ok;
+}
+
 void Rwindow_get_frame_stats(Rid id, RFrameStats* stats) {
 	rvn_window_t* window;
 	if (!stats) return;
