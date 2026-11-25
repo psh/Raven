@@ -1,0 +1,4 @@
+#!/bin/sh
+# Builds samples/notes for this machine and runs it; arguments go to the sample.
+# RAVEN_MCP=1 serves its tools to agents, and RAVEN_MCP_UI=1 the UI tools too.
+exec "$(dirname "$0")/../launch-sample" notes "$@"

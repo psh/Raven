@@ -33,7 +33,13 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import platform.posix.SIGINT
+import platform.posix.SIGTERM
 import platform.posix.getenv
+import platform.posix.sigaction
 import raven.mcp.cinterop.RAVEN_VERSION_MAJOR
 import raven.mcp.cinterop.RAVEN_VERSION_MINOR
 import raven.mcp.cinterop.R_TRUE
@@ -184,11 +190,15 @@ public object RavenMcp {
             }
         }
         val engine = try {
-            embeddedServer(CIO, settings) {
-                connector { host = "127.0.0.1"; this.port = port }
-                // As the probe binds: a port whose old connections are in TIME_WAIT can be served again.
-                reuseAddress = true
-            }.start(wait = false)
+            // Ktor's start takes SIGINT and SIGTERM for a shutdown hook that stops only the server:
+            // the app keeps the handlers it had, so Ctrl+C and kill still end it.
+            keepingSignalHandlers {
+                embeddedServer(CIO, settings) {
+                    connector { host = "127.0.0.1"; this.port = port }
+                    // As the probe binds: a port whose old connections are in TIME_WAIT can be served again.
+                    reuseAddress = true
+                }.start(wait = false)
+            }
         } catch (e: Exception) {
             removeUiTools()
             return refuse("can't serve on port $port: ${e.message}")
@@ -266,6 +276,15 @@ public object RavenMcp {
         if (removed.origin != Origin.App) return
         if (UiTools.on) UiTools.add(name)
         ExposedActions.sync(name)
+    }
+
+    /** Says [message] through the server's log, as Raven MCP's own messages go: for compose-raven. */
+    public fun log(level: McpLogLevel, message: String) {
+        when (level) {
+            McpLogLevel.Info -> McpLog.info(message)
+            McpLogLevel.Warning -> McpLog.warn(message)
+            McpLogLevel.Error -> McpLog.error(message)
+        }
     }
 
     /** Withdraws every tool, the UI tools and the exposed actions included, which are forgotten. */
@@ -386,6 +405,18 @@ public object RavenMcp {
     }
 
     private val TOOL_NAME = Regex("[A-Za-z0-9_.-]{1,128}")
+}
+
+/** Runs [block], then gives SIGINT and SIGTERM back the handlers they had before it. */
+@OptIn(ExperimentalForeignApi::class)
+private fun <T> keepingSignalHandlers(block: () -> T): T = memScoped {
+    val signals = listOf(SIGINT, SIGTERM)
+    val saved = signals.map { signal -> alloc<sigaction>().also { sigaction(signal, null, it.ptr) } }
+    try {
+        block()
+    } finally {
+        for ((signal, handler) in signals.zip(saved)) sigaction(signal, handler.ptr, null)
+    }
 }
 
 /** Runs [block] on Raven's UI thread, through Rtask_post. Thread-safe. */

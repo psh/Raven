@@ -77,10 +77,14 @@ samples/hello/launch-hello
 samples/notepad/launch-notepad README.md
 ```
 
-The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-overlay`,
+The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-notes`, `launch-overlay`,
 `launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
 `launch-music` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
+
+`samples/notes` is the list of notes every language's samples have. Started with `RAVEN_MCP=1`, it
+serves `notes.add`, `notes.list` and `notes.delete` to agents through `compose-raven-mcp`, and the
+UI tools too with `RAVEN_MCP_UI=1` (see [`docs/mcp.md`](docs/mcp.md)).
 
 Each sample is an executable. Kotlin/Native's run tasks also build and start it:
 

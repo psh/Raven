@@ -107,7 +107,8 @@ extern "C" {
 	 * after Rinit. There is one server in a process. Tools may be added before it
 	 * starts or while it runs.
 	 * RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
-	 * kill switch for whoever runs the app.
+	 * kill switch for whoever runs the app. The app's SIGINT and SIGTERM handlers
+	 * are left as they were.
 	 * @param config Settings, or NULL for the defaults.
 	 * @return R_FALSE, with the reason logged, when the server already runs, the
 	 * port is taken, or tools are left from an earlier run of Raven.

@@ -7,6 +7,7 @@ import androidx.compose.runtime.BroadcastFrameClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composition
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.snapshots.ObserverHandle
 import androidx.compose.runtime.snapshots.Snapshot
@@ -442,9 +443,9 @@ internal class HostCaches {
     fun clear() = entries.clear()
 }
 
-/** The host of the composition, for windows and anything that keeps Raven handles. */
-@OptIn(InternalComposeRavenApi::class)
-internal val LocalRavenHost = staticCompositionLocalOf<RavenHost> { error("no RavenHost") }
+/** The host of the composition, for windows, anything that keeps Raven handles, and compose-raven-mcp's tools. */
+@InternalComposeRavenApi
+public val LocalRavenHost: ProvidableCompositionLocal<RavenHost> = staticCompositionLocalOf { error("no RavenHost") }
 
 /** The application composition holds windows, which emit no nodes into it. */
 private class ApplicationApplier : AbstractApplier<Unit>(Unit) {

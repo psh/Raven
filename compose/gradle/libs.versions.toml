@@ -12,6 +12,8 @@ ktor = "3.6.1"
 mcp-sdk = "0.16.0"
 # What the SDK logs with; Raven MCP routes it to the app's log callback.
 kotlin-logging = "8.0.4"
+# The JSON the SDK uses, for compose-raven-mcp's typed tools.
+kotlinx-serialization = "1.11.0"
 
 [libraries]
 compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "compose-runtime" }
@@ -26,6 +28,7 @@ ktor-client-curl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlin-logging" }
 mcp-sdk-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp-sdk" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]

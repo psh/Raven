@@ -122,7 +122,8 @@ extern "C" {
 	 * after Rinit. There is one server in a process. Tools may be added before it
 	 * starts or while it runs.
 	 * RAVEN_MCP=0 in the environment makes it refuse, whatever the code asks: a
-	 * kill switch for whoever runs the app.
+	 * kill switch for whoever runs the app. The app's SIGINT and SIGTERM handlers
+	 * are left as they were.
 	 * @param config Settings, or NULL for the defaults.
 	 * @return R_FALSE, with the reason logged, when the server already runs, the
 	 * port is taken, or tools are left from an earlier run of Raven.
@@ -462,11 +463,18 @@ fun main() = application(mcp = McpConfig(port = 8765, uiTools = false)) { … }
 fun main() = singleWindowApplication(mcp = McpConfig()) { … }
 ```
 
-`McpConfig` mirrors `RMcpConfig` (name, version, instructions, port, log), plus `uiTools`, the
-separate opt-in for [the UI tools](#the-ui-tools). The `mcp` parameters are overloads from
-`compose-raven-mcp`, so `compose-raven-ui` never depends on MCP. In an app started without `mcp`,
-`McpTool` does nothing and costs nothing. How a developer switches it on from outside is for
+`McpConfig` mirrors `RMcpConfig` (name, version, instructions, port, token, log), plus `uiTools`,
+the separate opt-in for [the UI tools](#the-ui-tools), and `onAgentConnected(client)`. The `mcp`
+parameters are overloads from `compose-raven-mcp`, and take null (as
+`McpConfig.fromEnvironment()` gives without `RAVEN_MCP=1`) for no server, so `compose-raven-ui`
+never depends on MCP. In an app started without a server, `McpTool` does nothing and costs nothing.
+How a developer switches it on from outside is for
 [Who may connect, and what they may do](#who-may-connect).
+
+The overloads wrap the content in **`McpServer(config) { … }`**, which a test hosts too. It starts
+the server as it enters the composition, from the config it has then, and stops it, withdrawing
+every tool, as it leaves, before Raven shuts down. Recomposing it with another config doesn't
+restart the server; only `onAgentConnected` follows the latest.
 
 ### A tool is a composable
 
@@ -501,10 +509,12 @@ fun NotesScreen(notes: SnapshotStateList<Note>) {
 - **Typed arguments.** With a `@Serializable` type, the input schema is derived from its descriptor:
   property types, required or defaulted, enums, lists, nested objects, and descriptions from
   `@McpDescription` (a `@SerialInfo` annotation). Arguments arrive deserialized; ones that don't
-  deserialize fail the call with kotlinx.serialization's message. An untyped overload takes a
+  deserialize fail the call with kotlinx.serialization's message. Nullable and defaulted properties
+  aren't required. An overload takes the `KSerializer` itself, and an untyped one takes a
   `JsonObject` and an optional schema string, for what the derivation can't say.
 - **The handler is a `suspend` lambda on the UI thread** (`RavenDispatcher`). It returns the reply: a
-  `String` for text, or an `McpReply` (text, JSON, image) for more. Long work can
+  `String` for text, or an `McpReply` (`Text`, `Json`, `Image` from PNG bytes) for more; anything
+  else replies with its `toString()`. Long work can
   `withContext(Dispatchers.Default)` and come back. A thrown exception is the tool's failure, with its
   message, and the agent cancelling the call cancels the coroutine. The header's one reply per call is
   kept underneath.
@@ -516,6 +526,14 @@ fun NotesScreen(notes: SnapshotStateList<Note>) {
 - **The rest of a tool**: `McpTool(name, description, title = null, hints = emptySet())`. `McpHint`
   is `ReadOnly`, `NotDestructive`, `Idempotent` and `ClosedWorld`, one to one with `RMcpToolHint`,
   and as there they are claims an app makes on purpose.
+
+- **compose-raven's UI tools** are the contract above, over the composition's nodes, found with
+  `compose-raven-ui-test`. A node's role, name and states are what Raven tells screen readers of its
+  widget, read through `McpAccessible`, the same as the library's tools read them, so the outlines
+  match. `tag=` finds a node by `Modifier.testTag`, and `widget=` isn't taken. A node with neither a
+  role nor a tag adds no line; one with only a tag is a line of its own, `- tag="notes"`, so a list
+  of rows reads as rows. Actions wait in `RavenHost.awaitIdle(120)`. An `McpTool` named `ui.*` wins
+  over the UI tool of that name, as the last one composed does.
 
 Decided in [The McpTool composable](issues/archive/0152-the-mcptool-composable.md).
 
@@ -632,8 +650,11 @@ open.
   the app's tools, and every tool's hints say what it claims to be safe to do.
 - **Knowing an agent is there**: `RMcpConfig.on_session` is called as agents connect and
   disconnect, with the client's name, and every connection is logged. In compose-raven,
-  `McpConfig(onAgentConnected = …)`, and a ready-made `McpStatus()` composable shows a small "agent
-  connected" marker wherever the app places it. Nothing is shown unless the app asks.
+  `McpConfig(onAgentConnected = …)`, and a ready-made `McpStatus()` composable shows a small marker,
+  `● claude-code connected`, wherever the app places it. Nothing is shown unless the app asks.
+- **The app keeps its signals.** Ktor's server takes SIGINT and SIGTERM for a shutdown hook of its
+  own as it starts, which stops only the server, so Ctrl+C and `kill` stopped ending the app.
+  `Rmcp_start` gives both back the handlers they had before it.
 
 Decided in [Who may connect, and what they may do](issues/archive/0154-who-may-connect.md).
 

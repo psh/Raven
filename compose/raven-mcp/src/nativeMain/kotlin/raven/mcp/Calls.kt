@@ -22,12 +22,23 @@ public class McpCall internal constructor(
 ) {
     internal val result = CompletableDeferred<CallToolResult>()
     private val cancelled = AtomicBoolean(false)
+    private val onCancel = AtomicReference<(() -> Unit)?>(null)
 
     /** True once the agent cancelled the call or the server stopped. The call still needs its reply. */
     public val isCancelled: Boolean get() = cancelled.load()
 
+    /**
+     * Calls [block] once, when the call is cancelled, on whichever thread cancels it; at once if it
+     * already was. One block per call: a later one replaces it.
+     */
+    public fun invokeOnCancel(block: () -> Unit) {
+        onCancel.store(block)
+        if (cancelled.load()) onCancel.exchange(null)?.invoke()
+    }
+
     internal fun cancel() {
         cancelled.store(true)
+        onCancel.exchange(null)?.invoke()
     }
 
     /** Replies with a text. */
