@@ -41,7 +41,7 @@ followed the new language files. The apps were served by the wrappers: `notes_ap
   was confirmed on both running apps through the `notes.add` tool, which is the reporter's own
   path. A tab, a newline or a no-break space each became a note, because notes are trimmed of `' '`
   only, in C too. Paul agreed bug and `ready-for-agent`; the brief is
-  [Blank notes from an agent](../0192-blank-notes-from-an-agent.md).
+  [Blank notes from an agent](0192-blank-notes-from-an-agent.md).
 
 **Guidance changed:**
 

@@ -71,7 +71,7 @@ followed by hand. The skills are mattpocock-skills 1.3.1.
   one), typing that appends, fixes in the XML that turn every language green at once, and
   previews of XML that run no app code.
 
-**Found besides**, now [Small fixes the skill runs found](../0191-small-fixes-the-skill-runs-found.md):
+**Found besides**, now [Small fixes the skill runs found](0191-small-fixes-the-skill-runs-found.md):
 
 - `raven_preview` exits 0 when the XML had an unknown attribute but the window still built.
 - `raven::testing` panics at its own line, not the test's.
