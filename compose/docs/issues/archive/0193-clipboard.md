@@ -18,7 +18,7 @@ compose-raven has no way to read or write the clipboard; Raven's `Rclipboard_get
 Done on macOS. `./gradlew build allTests` passes: 563 tests, 1 of them new in ui's `WindowTest`.
 
 - **`ClipboardManager` and `LocalClipboardManager`**, in `platform/ClipboardManager.kt`, are built
-  like `UriHandler` ([LocalUriHandler](archive/0094-localurihandler.md)): an interface with
+  like `UriHandler` ([LocalUriHandler](0094-localurihandler.md)): an interface with
   Compose's three members, a local that errors outside a `Window`, and the host's
   `RavenClipboardManager`, which `Window` provides beside `RavenUriHandler`. They take a `String`,
   compose-raven having no `AnnotatedString`. `getText()` reads Raven's "" for an empty clipboard

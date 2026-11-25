@@ -178,7 +178,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     uses `Rclipboard_set_text` and `Rclipboard_get_text`, the clipboard Raven's own fields and
     editors copy to and paste from; an app or a test provides its own. Raven's HTML copy
     (`Rclipboard_set_html`) has no counterpart in Compose's interface and isn't bound
-    ([Clipboard](issues/0193-clipboard.md)).
+    ([Clipboard](issues/archive/0193-clipboard.md)).
   - **`minimumSize`** uses `Rwindow_set_min_size`; `null` keeps Raven's default, and a change calls
     it again (phase 2, on `singleWindowApplication` too).
   - **`WindowState`** (phase 2) holds `size: DpSize` (as Compose Desktop's, replacing phase 1's
