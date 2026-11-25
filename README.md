@@ -413,6 +413,36 @@ Undo and redo follow the tab in front; a folder or an interface dropped on
 the window opens. The visual editor uses the public API only. The files are in
 `tools/designer/` (`designer.h` says what each one does).
 
+## UI tests
+
+`raven/raven_test.h` (header-only, not included by `Raven.h`) tests a C app's
+interface headless, as a user would use it: the selectors of
+[raven_driver.h](include/raven/raven_driver.h), real clicks and typing, and
+checks that say what they found.
+
+```c
+#include <Raven.h>
+#include <raven/raven_test.h>
+
+int main(void) {
+    if (!Rtest_begin(NULL)) return RTEST_SKIPPED;          /* 77 */
+    notes_open("notes.xml");
+    RTEST_TYPE("role=text-field", "buy milk");
+    RTEST_CLICK("role=button name=\"Add\"");
+    RTEST_EXPECT_TEXT("role=list-item [0]", "buy milk");
+    return Rtest_end();                                    /* failures counted, leaks checked */
+}
+```
+
+It runs on the null backend (no window system, no GPU), animations advance
+by a fixed step, the app is waited on until idle around every step, Raven's
+errors fail the test and so does memory left after `Rshutdown`. With
+`RTestOptions.capture` it runs on headless Vulkan, and a failure saves a PNG
+of each window into `RAVEN_TEST_CAPTURES`. The checks are `EXISTS`,
+`ABSENT`, `COUNT`, `TEXT`, `VALUE`, `CHECKED`, `ENABLED` and `FOCUSED`;
+`RTEST_DESCRIBE` reads anything else. A hook reports failures to another
+test runner. `examples/notes` is the worked example.
+
 ## Previews
 
 `raven_preview` renders XML to PNG files on Vulkan without a window system:
@@ -633,6 +663,7 @@ The build trees are in `build\dist\`.
 |---|---|
 | `examples/hello` | a window with the C API |
 | `examples/editor` | a scene editor described in `editor.xml`: menus, splitters, tree, tabs, property grid, a viewport rendered in software on the job system, a custom-drawn graph, a virtual list. Its View menu switches between the four themes |
+| `examples/notes` | a list of notes in `notes.xml`, and its headless UI test (`test_notes.c`, ctest `example_notes`) written with `raven/raven_test.h`: add a note, check the list, delete it |
 | `examples/notepad` | a text editor: custom header bar, languages chosen from the name of the file, a language declared by the application, proposals from a callback, markers, the file dialogs of the system, files dropped on the window |
 | `examples/animations` | transitions played on demand, four springs in a custom widget, cards that pop in and out, an island, speed and "reduce motion" |
 | `examples/workspace` | panels that dock, a file browser that opens files in new panels, the three kinds of glass for everything or for one panel, saving and restoring the arrangement |

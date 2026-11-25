@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Raven example - notes
+
+  The interface of a small notes list, and the app every language's UI test
+  drives: add a note, check the list, delete it. The XML holds no logic; each
+  language binds notes.add and notes.delete to its own code (notes_app.c in C)
+  and tests it headless (test_notes.c in C, through raven_test.h).
+-->
+<Window Title="Notes" Width="360" Height="320">
+	<VBox Spacing="8" Slot.Padding="12">
+		<HBox Spacing="8">
+			<TextInput Name="note" AccessibleName="New note" Placeholder="New note" Slot.Fill="1" OnCommitted="notes.add"/>
+			<Button Name="add" Text="Add" Style="Primary" OnClicked="notes.add"/>
+		</HBox>
+		<ListView Name="notes" AccessibleName="Notes" Slot.Fill="1"/>
+		<HBox Spacing="8">
+			<Label Name="count" Text="No notes" Slot.Fill="1" Slot.VAlign="Center"/>
+			<Button Name="delete" Text="Delete" Enabled="false" OnClicked="notes.delete"/>
+		</HBox>
+	</VBox>
+</Window>

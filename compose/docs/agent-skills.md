@@ -243,11 +243,12 @@ A header-only `raven/raven_test.h`, shipped with Raven and not included by `Rave
 `tests/test.h` stays as it is.
 
 ```c
-#include "raven/raven_test.h"
+#include <Raven.h>
+#include <raven/raven_test.h>
 
 int main(void) {
     if (!Rtest_begin(NULL)) return RTEST_SKIPPED;         /* 77 */
-    Rid window = Rwindow_create_from_xml(NOTEPAD_XML);
+    notes_open(RAVEN_EXAMPLE_DIR "/notes.xml");           /* the app's own code binds the actions */
     RTEST_TYPE("role=text-field", "buy milk");
     RTEST_CLICK("role=button name=\"Add\"");
     RTEST_EXPECT_TEXT("role=list-item [0]", "buy milk");
@@ -257,6 +258,24 @@ int main(void) {
 
 A hook decides how a failure is reported (by default, printed and counted), so the macros work with
 any C test runner.
+
+Built in [UI tests in C](issues/archive/0171-ui-tests-in-c.md):
+
+- **Every step returns** `R_TRUE`, or `R_FALSE` after reporting, and the test goes on, as C has no
+  exceptions: `if (!RTEST_CLICK(...)) return Rtest_end();` stops it. The hook can `longjmp` too.
+- **The checks**: `RTEST_EXPECT_EXISTS` (exactly one), `_ABSENT`, `_COUNT`, `_TEXT` (the driver's
+  `text=`), `_VALUE` (a range's number), and `_CHECKED`, `_ENABLED` and `_FOCUSED` with the state
+  expected. `RTEST_DESCRIBE` reads the rest, and `RTEST_CHECK` checks the app's own state. A message
+  names the macro, the selector, what it found and what was expected:
+  `RTEST_EXPECT_ENABLED(role=button name="Off"): disabled, expected enabled`.
+- **A step fails when the app is still busy** after the idle wait (600 frames by default).
+- **Raven's warnings fail a test too**, not only errors, since an XML attribute Raven doesn't know is
+  a warning. `Rtest_expect_errors` counts the ones a test means to cause.
+- **Captures** go through `Rwindow_save_preview`, named `<name>-<failure>-window<n>.png`. They are
+  not taken for a failure that is one of Raven's errors, since Raven is in the middle of something
+  then.
+- **The state is static, in the file that includes the header**: one test file, one `Rtest_begin`
+  ... `Rtest_end` at a time.
 
 ### Python
 
@@ -293,7 +312,7 @@ fn adds_a_note() {
 
 ### The worked example
 
-The same `notepad.xml` is tested in C, Python and Rust: add a note, check the list, delete it. XML is
+The same `notes.xml` (`examples/notes/`, since `examples/notepad` is the text editor) is tested in C, Python and Rust: add a note, check the list, delete it. XML is
 first, so one file serves all three, and `tdd` and `diagnosing-bugs` have one pattern to follow in
 each language. compose-raven's `samples/notepad` tests stay as they are.
 

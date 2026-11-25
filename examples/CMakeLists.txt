@@ -4,6 +4,7 @@
 #   editor           a window described in XML, software-rendered viewport,
 #                    custom widget, virtual list
 #   glass            the glass themes: translucent, refracting controls and panels
+#   notes            a list of notes, and its headless UI test (raven/raven_test.h)
 #   notepad          a text editor: custom header bar, languages, file dialogs,
 #                    files dropped from the system
 #   animations       transitions, springs in a custom widget, an island
@@ -61,6 +62,21 @@ raven_add_example(hello hello/main.c)
 raven_add_example(editor editor/main.c editor/editor.xml)
 raven_add_example(glass glass/main.c glass/glass.xml)
 raven_add_example(notepad notepad/main.c notepad/notepad.xml)
+raven_add_example(notes notes/main.c notes/notes_app.c notes/notes_app.h notes/notes.xml)
+# its UI test, headless (raven/raven_test.h): the notes.xml every language's example tests
+if(RAVEN_BUILD_TESTS AND NOT EMSCRIPTEN)
+	add_executable(raven_test_notes notes/test_notes.c notes/notes_app.c notes/notes_app.h)
+	target_link_libraries(raven_test_notes PRIVATE raven::raven)
+	set_target_properties(raven_test_notes PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON FOLDER "examples")
+	target_compile_definitions(raven_test_notes PRIVATE RAVEN_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/notes")
+	if(MSVC)
+		target_compile_definitions(raven_test_notes PRIVATE _CRT_SECURE_NO_WARNINGS)
+	else()
+		target_link_libraries(raven_test_notes PRIVATE m)
+	endif()
+	add_test(NAME example_notes COMMAND raven_test_notes)
+	set_tests_properties(example_notes PROPERTIES SKIP_RETURN_CODE 77)
+endif()
 raven_add_example(animations animations/main.c animations/animations.xml)
 raven_add_example(workspace workspace/main.c workspace/workspace.xml)
 raven_add_example(components components/main.c components/components.xml components/widgets.xml)
