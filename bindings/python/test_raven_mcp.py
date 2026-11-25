@@ -79,6 +79,16 @@ class SchemaTest(unittest.TestCase):
             _Tool("t", lambda *rest: None)
 
 
+class WithoutRavenMcpTest(unittest.TestCase):
+    def test_an_app_not_asked_for_raven_mcp_never_loads_it(self):
+        import os
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"RAVEN_MCP": "0"}), mock.patch.object(r, "_mcp", side_effect=AssertionError("loaded")):
+            m = Mcp()
+            self.assertFalse(m.start_from_environment(name="notes", ui_tools=True))
+            m.stop()
+
+
 def _colour_tool(colour: Colour):
     pass
 

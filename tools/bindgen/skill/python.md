@@ -19,21 +19,21 @@ failure is a `RavenTestFailure` (an `AssertionError`) with the driver's message.
 and `ui.find` are in `raven_testing.py`'s docstrings. Raven's repository has the worked example,
 `examples/notes/test_notes.py`.
 
-### Serving the `ui.*` tools
+### Serving the `ui.*` tools, and the app's own
 
-For an agent to drive the running app, start Raven MCP after the window is built. Its library,
-`libraven_mcp`, is found through `RAVEN_MCP_LIBRARY`, then beside libraven:
+For an agent to drive the running app, start Raven MCP after the window is built, with
+`raven_mcp` beside `raven`. Its library, `libraven_mcp`, is found through `RAVEN_MCP_LIBRARY`, then
+beside libraven, and isn't loaded unless `RAVEN_MCP=1` asks for it:
 
 ```python
-import os
+from raven_mcp import mcp
 
-mcp = False
-if os.environ.get("RAVEN_MCP"):                      # the Rmcp_ calls load the library: only when asked
-    config = r.RMcpConfig()
-    config.name = b"notes"                           # else the program's name (the interpreter's), and its token file
-    mcp = bool(r.Rmcp_config_from_environment(config)) and bool(r.Rmcp_start(config))
+mcp.start_from_environment(name="notes")             # RAVEN_MCP=1; RAVEN_MCP_UI=1 adds ui.*; token: ~/.raven/mcp/notes.json
 # ... the app's loop ...
-if mcp:
-    r.Rmcp_stop()
-    r.Rmcp_tool_remove_all()                         # before Rshutdown
+mcp.stop()                                           # before Rshutdown
 ```
+
+The app's own tools are functions: `@mcp.tool("notes.add", "Add a note")` on
+`def add(text: str) -> str`, the schema from the type hints and the return value as the reply
+(`raven_mcp.py`'s docstring has the rest). Raven's actions need no code:
+`r.Rmcp_expose_actions("notes.")`. The worked example is `examples/notes/notes_app.py`.

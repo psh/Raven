@@ -100,14 +100,13 @@ def main():
         print("cannot start Raven")
         return 1
     from raven_mcp import mcp
-    asked = bool(os.environ.get("RAVEN_MCP"))  # the Raven MCP library is loaded only then
-    open_notes(mcp=mcp if asked else None)
-    if asked and mcp.start_from_environment(name="notes"):
-        print("notes: serving its tools at", mcp.url)
+    # the tools load the Raven MCP library: published only when RAVEN_MCP=1 asks for them
+    open_notes(mcp=mcp if os.environ.get("RAVEN_MCP") == "1" else None)
+    if mcp.start_from_environment(name="notes"):
+        print("notes: serving its tools at", mcp.url, flush=True)
     while r.Rwait_frame(-1.0):
         pass
-    if asked:
-        mcp.stop()  # the tools go too, before Rshutdown
+    mcp.stop()  # the tools go too, before Rshutdown
     r.Rshutdown()
     return 0
 

@@ -103,5 +103,12 @@ fn adds_and_deletes_notes() {
         ui.expect_absent("role=list-item selected");
         ui.key("role=list", "Delete");
         ui.expect_count("role=list-item", 1);
+
+        // adding a note keeps the one selected
+        ui.click(r#"role=list-item text="ax""#);
+        ui.type_text("role=text-field", "water plants");
+        ui.key("role=text-field", "Enter");
+        ui.expect_exists(r#"role=list-item text="ax" selected"#);
+        ui.expect_count("role=list-item", 2);
     });
 }

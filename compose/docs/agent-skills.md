@@ -111,9 +111,14 @@ Run in [Verify the skills on Raven's samples](issues/archive/0182-verify-the-ski
 Nothing went wrong on the skills' side, so nothing is proposed to `mattpocock/skills`. What the
 runs found went into the `raven` skill: how each language serves the `ui.*` tools, a client in
 the middle of a session, typing that appends, and XML fixes and previews that run no app code.
-Two runs are still to come: with the plugin installed, so an agent finds the skill by itself
-([0189](issues/0189-verify-the-skills-with-the-raven-plugin-installed.md)), and with the Python and
-Rust MCP wrappers ([0190](issues/0190-verify-the-skills-with-the-mcp-wrappers.md)).
+`diagnosing-bugs` and `triage` were run again in Python and Rust with the MCP wrappers
+(`raven_mcp`, and the crate `raven-gui-mcp`) serving the running apps, in
+[0190](issues/0190-verify-the-skills-with-the-mcp-wrappers.md). Both stayed compatible, and the
+wrappers added a step the raw calls didn't make easy: the app's own tools (`notes.list`) beside
+`ui.*` on one connection, so a loop reads the app's state directly, and comparing the tool's path
+with the window's narrowed a bug down. One run is still to come: with the plugin installed, so an
+agent finds the skill by itself
+([0189](issues/0189-verify-the-skills-with-the-raven-plugin-installed.md)).
 
 ### Keeping it true
 

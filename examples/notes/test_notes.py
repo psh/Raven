@@ -103,6 +103,13 @@ def check_notes(ui):
     ui.key("role=list", "Delete")
     ui.expect_count("role=list-item", 1)
 
+    # adding a note keeps the one selected
+    ui.click('role=list-item text="ax"')
+    ui.type("role=text-field", "water plants")
+    ui.key("role=text-field", "Enter")
+    ui.expect_exists('role=list-item text="ax" selected')
+    ui.expect_count("role=list-item", 2)
+
 
 def test_adds_and_deletes_notes(raven_ui):
     """pytest, with the raven_ui fixture."""

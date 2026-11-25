@@ -42,6 +42,7 @@ import ctypes
 import enum
 import inspect
 import json
+import os
 import threading
 import typing
 
@@ -243,6 +244,7 @@ class Mcp:
 
     def __init__(self):
         self._tools = {}      # name -> (the tool, its ctypes callback): alive until removed
+        self._used = False    # the Raven MCP library was called: stop() has something to do
         self._config = None   # the RMcpConfig, and what it points to, while the server runs
 
     def tool(self, name, description=None, title=None, hints=()):
@@ -264,6 +266,7 @@ class Mcp:
                               description=description.encode() if description else None,
                               input_schema_json=json.dumps(tool.schema).encode(), hints=flags)
         callback = r.RMcpToolCallback(lambda pointer, tool_name, arguments, user: tool(pointer, arguments and arguments.decode()))
+        self._used = True
         if not r.Rmcp_tool_add(desc, callback):
             raise ValueError("Raven MCP refused the tool %s (its log says why)" % name)
         self._tools[name] = (tool, callback)
@@ -277,11 +280,17 @@ class Mcp:
               log=None, on_session=None):
         """Starts serving the tools (Rmcp_start), with RMcpConfig's fields. log(severity, message) and
         on_session(connected, client) are Python functions. Returns False, logged, when it can't."""
+        self._used = True
         return bool(r.Rmcp_start(self._configure(name, version, instructions, port, token, ui_tools, log, on_session)))
 
     def start_from_environment(self, name=None, **fields):
         """Starts only when RAVEN_MCP=1, for an app that offers Raven MCP to developers:
-        RAVEN_MCP_PORT and RAVEN_MCP_UI=1 (the ui.* tools) override the fields. Returns whether it runs."""
+        RAVEN_MCP_PORT and RAVEN_MCP_UI=1 (the ui.* tools) override the fields. Returns whether it runs.
+        Without RAVEN_MCP=1 it returns False before loading the Raven MCP library, so the app runs
+        where the library isn't."""
+        if os.environ.get("RAVEN_MCP") != "1":
+            return False
+        self._used = True
         config = self._configure(name, fields.pop("version", None), fields.pop("instructions", None),
                                  fields.pop("port", 0), fields.pop("token", None), fields.pop("ui_tools", False),
                                  fields.pop("log", None), fields.pop("on_session", None))
@@ -302,7 +311,10 @@ class Mcp:
         return config
 
     def stop(self):
-        """Stops serving and withdraws every tool (Rmcp_stop, Rmcp_tool_remove_all): before Rshutdown."""
+        """Stops serving and withdraws every tool (Rmcp_stop, Rmcp_tool_remove_all): before Rshutdown.
+        Does nothing when Raven MCP was never used, so an app can call it unconditionally."""
+        if not self._used:
+            return
         r.Rmcp_stop()
         r.Rmcp_tool_remove_all()
         self._tools.clear()
