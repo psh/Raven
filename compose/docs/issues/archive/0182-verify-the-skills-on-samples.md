@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: closed
 ---
 
 # Verify the skills on Raven's samples
@@ -7,12 +7,12 @@ status: in-progress
 The proof the skills map asked for: run every skill in mattpocock-skills' `engineering/` and
 `productivity/` folders that needs the stack against a Raven sample, in C, Python and Rust, with the
 `raven` skill installed, and record what happens. Design:
-[The skills themselves](../agent-skills.md#the-skills-themselves); the skills audited in
-[Audit the skills against Raven](archive/0158-audit-the-skills-against-raven.md).
+[The skills themselves](../../agent-skills.md#the-skills-themselves); the skills audited in
+[Audit the skills against Raven](0158-audit-the-skills-against-raven.md).
 
-**Depends on:** [The raven agent skill](archive/0181-the-raven-agent-skill.md),
-[Raven's actions as tools](archive/0177-ravens-actions-as-tools.md),
-[Python and Rust MCP wrappers](0180-python-and-rust-mcp-wrappers.md).
+**Depends on:** [The raven agent skill](0181-the-raven-agent-skill.md),
+[Raven's actions as tools](0177-ravens-actions-as-tools.md),
+[Python and Rust MCP wrappers](../0180-python-and-rust-mcp-wrappers.md).
 
 **Settled when started (2026-11-24):**
 
@@ -20,10 +20,10 @@ The proof the skills map asked for: run every skill in mattpocock-skills' `engin
   `.rs`). `examples/notepad`, the text editor, is C only.
 - It goes ahead without 0180: the six skills need only the `ui.*` tools, which the Raven MCP library
   serves to every binding through the raw `Rmcp_*` calls and `RAVEN_MCP_UI=1`. Running them again
-  with the wrappers is [0190](0190-verify-the-skills-with-the-mcp-wrappers.md).
+  with the wrappers is [0190](../0190-verify-the-skills-with-the-mcp-wrappers.md).
 - The `raven` skill is read by hand (`skills/raven/SKILL.md` and the language file), not installed.
   Whether an agent finds it through its description with the plugin installed is
-  [0189](0189-verify-the-skills-with-the-raven-plugin-installed.md).
+  [0189](../0189-verify-the-skills-with-the-raven-plugin-installed.md).
 
 ## Deliverables
 
@@ -71,7 +71,7 @@ followed by hand. The skills are mattpocock-skills 1.3.1.
   one), typing that appends, fixes in the XML that turn every language green at once, and
   previews of XML that run no app code.
 
-**Found besides**, now [Small fixes the skill runs found](0191-small-fixes-the-skill-runs-found.md):
+**Found besides**, now [Small fixes the skill runs found](../0191-small-fixes-the-skill-runs-found.md):
 
 - `raven_preview` exits 0 when the XML had an unknown attribute but the window still built.
 - `raven::testing` panics at its own line, not the test's.

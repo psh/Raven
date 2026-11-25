@@ -4,13 +4,13 @@ status: open
 
 # Verify the skills with the raven plugin installed
 
-[Verify the skills on Raven's samples](0182-verify-the-skills-on-samples.md) read the `raven` skill
+[Verify the skills on Raven's samples](archive/0182-verify-the-skills-on-samples.md) read the `raven` skill
 by hand. This runs the same six skills (`diagnosing-bugs`, `pr`, `prototype`, `tdd`, `triage`,
 `implement`) on `examples/notes` in a fresh session with the plugin installed from the repository's
 root, to show that an agent finds the skill through its description, with nothing pointing at it.
 Asked for on 2026-11-24.
 
-**Depends on:** [Verify the skills on Raven's samples](0182-verify-the-skills-on-samples.md).
+**Depends on:** [Verify the skills on Raven's samples](archive/0182-verify-the-skills-on-samples.md).
 
 ## Deliverables
 

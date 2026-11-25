@@ -66,4 +66,4 @@ plugin has no icon. `bindgen.py --check` covers the generated files.
   kept apart as [0188](../0188-compose-raven-in-the-raven-skill.md): `compose.md` and
   `renderPreview`.
 - **Not here**: the skill isn't yet tried in a real session. That is
-  [0182](../0182-verify-the-skills-on-samples.md).
+  [0182](0182-verify-the-skills-on-samples.md).

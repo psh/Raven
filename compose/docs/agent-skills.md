@@ -97,7 +97,7 @@ stay in its findings for reference.
 Each of the six skills that need the stack was run on `examples/notes` (one `notes.xml`, with its
 logic in `notes_app.c`, `.py` and `.rs`), with the `raven` skill read by hand. The 21 stack-neutral
 skills need nothing of Raven ([the audit](issues/archive/0158-audit-the-skills-against-raven.md)).
-Run in [Verify the skills on Raven's samples](issues/0182-verify-the-skills-on-samples.md).
+Run in [Verify the skills on Raven's samples](issues/archive/0182-verify-the-skills-on-samples.md).
 
 | Skill | C | Python | Rust | What the Raven steps were |
 |---|---|---|---|---|

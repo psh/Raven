@@ -5,7 +5,7 @@ status: open
 # Small fixes the skill runs found
 
 Running the skills on `examples/notes`
-([Verify the skills on Raven's samples](0182-verify-the-skills-on-samples.md)) turned up small
+([Verify the skills on Raven's samples](archive/0182-verify-the-skills-on-samples.md)) turned up small
 snags in Raven's tools. Nothing blocked a skill. Found on 2026-11-24.
 
 ## Deliverables
