@@ -24,13 +24,14 @@ pub fn open_notes(xml_path: &str) -> Rid {
         Rlabel_set_text(count, cstr(&shown).as_ptr());
     };
 
-    // the text typed becomes a note, and the field is emptied for the next one
+    // the text typed, without the spaces around it, becomes a note, and the field is emptied for the next one
     action_bind("notes.add", move |_, _| unsafe {
         let typed = text(Rtext_input_get_text(note));
+        let typed = typed.trim_matches(' ');
         if typed.is_empty() {
             return;
         }
-        Rlist_view_add_item(notes, cstr(&typed).as_ptr());
+        Rlist_view_add_item(notes, cstr(typed).as_ptr());
         Rtext_input_set_text(note, cstr("").as_ptr());
         show_count();
     });

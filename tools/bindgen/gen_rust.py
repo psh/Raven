@@ -248,6 +248,10 @@ mcp = []
 [[example]]
 name = "mcp"
 required-features = ["mcp"]
+
+[[example]]
+name = "notes"
+required-features = ["mcp"]
 '''
 
 EXAMPLE = '''// A window described in XML, driven from Rust.

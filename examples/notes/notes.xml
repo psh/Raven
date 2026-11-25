@@ -3,20 +3,23 @@
   Raven example - notes
 
   The interface of a small notes list, and the app every language's UI test
-  drives: add a note, check the list, delete it. The XML holds no logic; each
-  language binds notes.add and notes.delete to its own code (notes_app.c in C)
-  and tests it headless (test_notes.c in C, through raven_test.h).
+  drives: add a note, check the list, delete it (with the button or the Delete
+  key). The XML holds no logic; each language binds notes.add and notes.delete
+  to its own code (notes_app.c, notes_app.py, notes_app.rs) and tests it
+  headless (test_notes.c, test_notes.py, bindings/rust/tests/notes.rs).
 -->
 <Window Title="Notes" Width="360" Height="320">
-	<VBox Spacing="8" Slot.Padding="12">
+	<Shortcut Keys="Delete" Action="notes.delete"/>
+	<VBox Spacing="6" Slot.Padding="12">
+		<!-- the count and Delete over the list, the field under it: a new note is written where it lands -->
 		<HBox Spacing="8">
-			<TextInput Name="note" AccessibleName="New note" Placeholder="New note" Slot.Fill="1" OnCommitted="notes.add"/>
-			<Button Name="add" Text="Add" Style="Primary" OnClicked="notes.add"/>
+			<Label Name="count" Text="No notes" TextSize="16" Slot.Fill="1" Slot.VAlign="Center"/>
+			<Button Name="delete" Text="Delete" Style="Flat" Enabled="false" OnClicked="notes.delete"/>
 		</HBox>
 		<ListView Name="notes" AccessibleName="Notes" Slot.Fill="1"/>
 		<HBox Spacing="8">
-			<Label Name="count" Text="No notes" Slot.Fill="1" Slot.VAlign="Center"/>
-			<Button Name="delete" Text="Delete" Enabled="false" OnClicked="notes.delete"/>
+			<TextInput Name="note" AccessibleName="New note" Placeholder="Write a note, then Enter" Slot.Fill="1" OnCommitted="notes.add"/>
+			<Button Name="add" Text="Add" Style="Primary" OnClicked="notes.add"/>
 		</HBox>
 	</VBox>
 </Window>

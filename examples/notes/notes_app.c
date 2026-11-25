@@ -1,6 +1,7 @@
 /* The notes example's logic: what notes.xml's actions do. */
 #include "notes_app.h"
 #include <stdio.h>
+#include <string.h>
 
 static struct {
 	Rid note, list, count, delete_button;
@@ -14,12 +15,21 @@ static void show_count(void) {
 	Rlabel_set_text(g_notes.count, text);
 }
 
-/* notes.add: the text typed becomes a note, and the field is emptied for the next one. */
+/* notes.add: the text typed, without the spaces around it, becomes a note, and the field is emptied for the next one. */
 static void add(Rid sender, const char* action, void* user_data) {
 	const char* text = Rtext_input_get_text(g_notes.note);
+	char note[1024];
+	size_t first = 0, end;
 	(void)sender, (void)action, (void)user_data;
-	if (!text || !text[0]) return;
-	Rlist_view_add_item(g_notes.list, text);
+	if (!text) return;
+	end = strlen(text);
+	while (text[first] == ' ') first++;
+	while (end > first && text[end - 1] == ' ') end--;
+	if (end == first) return;
+	if (end - first >= sizeof(note)) end = first + sizeof(note) - 1;
+	memcpy(note, text + first, end - first);
+	note[end - first] = '\0';
+	Rlist_view_add_item(g_notes.list, note);
 	Rtext_input_set_text(g_notes.note, "");
 	show_count();
 }

@@ -14,6 +14,15 @@
 #define RAVEN_EXAMPLE_DIR "."
 #endif
 
+#ifdef NOTES_WITH_MCP
+/* Built against the shared libraven and libraven_mcp: RAVEN_MCP=1 (RAVEN_MCP_UI=1 for ui.*) lets an agent drive it. */
+#include <raven/raven_mcp.h>
+static int g_mcp;
+static void mcp_stop(void) {
+	if (g_mcp) Rmcp_stop(), Rmcp_tool_remove_all();
+}
+#endif
+
 int main(void) {
 	Rid window;
 	if (!example_init("notes")) return 1;
@@ -22,6 +31,15 @@ int main(void) {
 		Rshutdown();
 		return 1;
 	}
+#ifdef NOTES_WITH_MCP
+	{
+		RMcpConfig config = { 0 };
+		config.name = "notes";
+		g_mcp = Rmcp_config_from_environment(&config) && Rmcp_start(&config);
+	}
+	example_run(window, NULL, mcp_stop);
+#else
 	example_run(window, NULL, NULL);
+#endif
 	return 0;
 }

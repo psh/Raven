@@ -29,8 +29,8 @@ def open_notes(xml_path=NOTES_XML):
         r.Rlabel_set_text(count, "No notes" if n == 0 else "%d note%s" % (n, "" if n == 1 else "s"))
 
     def add(sender, action, user_data):
-        # the text typed becomes a note, and the field is emptied for the next one
-        text = r.Rtext_input_get_text(note)
+        # the text typed, without the spaces around it, becomes a note, and the field is emptied for the next one
+        text = (r.Rtext_input_get_text(note) or "").strip(" ")
         if not text:
             return
         r.Rlist_view_add_item(notes, text)
@@ -61,8 +61,17 @@ def main():
         print("cannot start Raven")
         return 1
     open_notes()
+    # RAVEN_MCP=1 (RAVEN_MCP_UI=1 for the ui.* tools) lets an agent drive the running app
+    mcp = False
+    if os.environ.get("RAVEN_MCP"):
+        config = r.RMcpConfig()
+        config.name = b"notes"
+        mcp = bool(r.Rmcp_config_from_environment(config)) and bool(r.Rmcp_start(config))
     while r.Rwait_frame(-1.0):
         pass
+    if mcp:
+        r.Rmcp_stop()
+        r.Rmcp_tool_remove_all()
     r.Rshutdown()
     return 0
 

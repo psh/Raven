@@ -51,5 +51,57 @@ fn adds_and_deletes_notes() {
         // an empty note is not added
         ui.click(r#"role=button name="Add""#);
         ui.expect_count("role=list-item", 1);
+
+        // nor is a note of only spaces
+        ui.type_text("role=text-field", "   ");
+        ui.click(r#"role=button name="Add""#);
+        ui.expect_count("role=list-item", 1);
+        ui.expect_text("widget=count", "1 note");
+
+        // a note is added without the spaces around it
+        ui.type_text("role=text-field", "  water plants  ");
+        ui.key("role=text-field", "Enter");
+        ui.expect_text("role=list-item [1]", "water plants");
+
+        // deleting the last notes leaves the label saying so
+        for _ in 0..2 {
+            ui.click("role=list-item [0]");
+            ui.click(r#"role=button name="Delete""#);
+        }
+        ui.expect_absent("role=list-item");
+        ui.expect_text("widget=count", "No notes");
+
+        // the Delete key deletes the selected note, as the button does
+        ui.type_text("role=text-field", "buy milk");
+        ui.key("role=text-field", "Enter");
+        ui.click(r#"role=list-item text="buy milk""#);
+        ui.key("role=list", "Delete");
+        ui.expect_absent("role=list-item");
+        ui.expect_text("widget=count", "No notes");
+        ui.expect_enabled(r#"role=button name="Delete""#, false);
+
+        // in the text field, Delete edits the text and deletes no note, even with one selected:
+        // Left then Delete removes the b, and Delete at the end of the text does nothing
+        ui.type_text("role=text-field", "call Oscar");
+        ui.key("role=text-field", "Enter");
+        ui.click(r#"role=list-item text="call Oscar""#);
+        ui.type_text("role=text-field", "ab");
+        ui.key("role=text-field", "Left");
+        ui.key("role=text-field", "Delete");
+        ui.expect_text("role=text-field", "a");
+        ui.key("role=text-field", "End");
+        ui.key("role=text-field", "Delete");
+        ui.expect_text("role=text-field", "a");
+        ui.expect_exists(r#"role=list-item text="call Oscar" selected"#);
+        ui.expect_text("widget=count", "1 note");
+
+        // with no note selected, Delete changes nothing (Delete on the list first, to delete call Oscar)
+        ui.key("role=list", "Delete");
+        ui.expect_absent("role=list-item");
+        ui.type_text("role=text-field", "x");
+        ui.key("role=text-field", "Enter");
+        ui.expect_absent("role=list-item selected");
+        ui.key("role=list", "Delete");
+        ui.expect_count("role=list-item", 1);
     });
 }
