@@ -24,3 +24,19 @@ The macros and `RTestOptions` (capture, a failure hook for another test runner) 
 top of `raven/raven_test.h`. Each macro returns `R_FALSE` after reporting, and the test goes on:
 `if (!RTEST_CLICK(...)) return Rtest_end();` stops it. Raven's repository has the worked example,
 `examples/notes/test_notes.c`.
+
+### Serving the `ui.*` tools
+
+For an agent to drive the running app, start Raven MCP after the window is built. It is its own
+library, `libraven_mcp` (`raven/raven_mcp.h`), and it needs the **shared** libraven, so an app
+linked with the static one is relinked with `-lraven -lraven_mcp`:
+
+```c
+#include <raven/raven_mcp.h>
+
+RMcpConfig config = { 0 };
+config.name = "notes";                                   /* the token file: ~/.raven/mcp/notes.json */
+int mcp = Rmcp_config_from_environment(&config) && Rmcp_start(&config);   /* RAVEN_MCP=1, RAVEN_MCP_UI=1 */
+/* ... the app's loop ... */
+if (mcp) { Rmcp_stop(); Rmcp_tool_remove_all(); }        /* before Rshutdown */
+```

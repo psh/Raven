@@ -18,3 +18,22 @@ PNGs of the windows on failure into `RAVEN_TEST_CAPTURES`; without Vulkan the te
 failure is a `RavenTestFailure` (an `AssertionError`) with the driver's message. The other checks
 and `ui.find` are in `raven_testing.py`'s docstrings. Raven's repository has the worked example,
 `examples/notes/test_notes.py`.
+
+### Serving the `ui.*` tools
+
+For an agent to drive the running app, start Raven MCP after the window is built. Its library,
+`libraven_mcp`, is found through `RAVEN_MCP_LIBRARY`, then beside libraven:
+
+```python
+import os
+
+mcp = False
+if os.environ.get("RAVEN_MCP"):                      # the Rmcp_ calls load the library: only when asked
+    config = r.RMcpConfig()
+    config.name = b"notes"                           # else the program's name (the interpreter's), and its token file
+    mcp = bool(r.Rmcp_config_from_environment(config)) and bool(r.Rmcp_start(config))
+# ... the app's loop ...
+if mcp:
+    r.Rmcp_stop()
+    r.Rmcp_tool_remove_all()                         # before Rshutdown
+```

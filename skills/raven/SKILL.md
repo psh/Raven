@@ -41,14 +41,18 @@ and waits until the app is **idle**.
 - **The running app** (`diagnosing-bugs` reproducing what the user sees, `triage`): Raven MCP's
   `ui.tree`, `ui.find`, `ui.click`, `ui.type`, `ui.key` and `ui.screenshot`, each replying with the
   window's outline. An app wired with `Rmcp_config_from_environment` serves them when started with
-  `RAVEN_MCP=1 RAVEN_MCP_UI=1`. Connect with the URL and token in `~/.raven/mcp/<app name>.json`:
+  `RAVEN_MCP=1 RAVEN_MCP_UI=1`; the C, Python and Rust files show the wiring, a few lines after the
+  window is built. Connect with the URL and token in `~/.raven/mcp/<app name>.json`:
 
   ```sh
   claude mcp add --transport http <app> http://127.0.0.1:8765/mcp \
       --header "Authorization: Bearer $(jq -r .token ~/.raven/mcp/<app>.json)"
   ```
 
-  An app without Raven MCP is reproduced in a headless test instead.
+  A server added that way arrives with the next session. In the middle of one, a short script is
+  the client: `POST` JSON-RPC to the URL (`initialize`, then `tools/call`) with the token as a
+  bearer header and the `Mcp-Session-Id` the first reply gives, and the token kept out of what is
+  shown. An app without Raven MCP is reproduced in a headless test instead.
 
 ## Selectors
 
@@ -68,9 +72,18 @@ by `role=text-field` or by its `AccessibleName`; its placeholder is not its name
   Raven's callbacks; inside one, post the work with `Rtask_post`.
 - **Real input**: a click is a mouse click, so a disabled button stays unpressed for a test too.
   `Raccessible_act` (expand, collapse, select, focus) covers what input can't reach.
+- **Typing appends**: `type` types at the caret as a keyboard does, Playwright's
+  `pressSequentially`, not its `fill`. What a field already holds stays, so a test that types
+  after a step that left text behind checks the two together.
 - **Raven's warnings fail a test**: an XML attribute Raven doesn't know is a warning, and the
   message names it.
 - **Variants are XML first**: one file renders the same from every language, with no build.
+- **A fix in the XML is a fix in every language**: a shortcut or a layout change in the shared
+  `.xml` turns every language's test green at once. For the other languages' red, run their new
+  tests with the XML change taken out, then put it back.
+- **A preview of XML runs no app code**: `raven_preview` binds no actions, so a step a script
+  takes that needs the app (Add, a button the code enables) does nothing there. Show such a state
+  from a test with `capture` and `Rwindow_save_preview`.
 
 ## The language in use
 

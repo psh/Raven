@@ -27,6 +27,21 @@ true, .. })` renders on headless Vulkan and saves PNGs of the windows on failure
 turns: Raven is one per process. `RAVEN_LIB_DIR=/path/to/lib cargo test`. Raven's repository has
 the worked example, `bindings/rust/tests/notes.rs`.
 
+### Serving the `ui.*` tools
+
+For an agent to drive the running app, build with the crate's `mcp` feature (`RAVEN_MCP_LIB_DIR`
+names the folder of `libraven_mcp`, which needs the shared libraven) and start it after the window
+is built:
+
+```rust
+let mut config: RMcpConfig = unsafe { std::mem::zeroed() };
+let name = cstr("notes");                                // the token file: ~/.raven/mcp/notes.json
+config.name = name.as_ptr();
+let mcp = unsafe { Rmcp_config_from_environment(&mut config) != 0 && Rmcp_start(&config) != 0 };
+// ... the app's loop ...
+if mcp { unsafe { Rmcp_stop(); Rmcp_tool_remove_all(); } }   // before Rshutdown
+```
+
 ## The driver in Rust
 
 The calls of `raven/raven_driver.h`, and those a test, a script or a preview makes besides. What each takes and returns is in the header's comments.

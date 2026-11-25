@@ -92,12 +92,36 @@ despite the guidance, that session (what was run, what the skill did, what was e
 issue on `mattpocock/skills`, judged against `SCOPE.md` like anyone's. The audit's web-only wordings
 stay in its findings for reference.
 
+### Verified on the samples
+
+Each of the six skills that need the stack was run on `examples/notes` (one `notes.xml`, with its
+logic in `notes_app.c`, `.py` and `.rs`), with the `raven` skill read by hand. The 21 stack-neutral
+skills need nothing of Raven ([the audit](issues/archive/0158-audit-the-skills-against-raven.md)).
+Run in [Verify the skills on Raven's samples](issues/0182-verify-the-skills-on-samples.md).
+
+| Skill | C | Python | Rust | What the Raven steps were |
+|---|---|---|---|---|
+| `tdd` | compatible | compatible | compatible | red and green at the window's seam, through `raven_test.h`, `raven_testing`, `raven::testing` |
+| `diagnosing-bugs` | compatible | compatible | compatible | the loop on the running app through `ui.*`, and a headless test; minimised with the harness |
+| `triage` | compatible | compatible | compatible | the reporter's steps reproduced on the running app with `ui.click` and `ui.key` |
+| `implement` | compatible | compatible | compatible | `tdd` at the brief's seam; a fix in the shared XML, shown red in each language by taking it out |
+| `prototype` | compatible | compatible | compatible | XML variants rendered by `raven_preview`, the winner folded in, each language's tests unchanged |
+| `pr` | compatible | compatible | compatible | before and after with `Rwindow_save_preview` from a test with capture; byte-identical across languages |
+
+Nothing went wrong on the skills' side, so nothing is proposed to `mattpocock/skills`. What the
+runs found went into the `raven` skill: how each language serves the `ui.*` tools, a client in
+the middle of a session, typing that appends, and XML fixes and previews that run no app code.
+Two runs are still to come: with the plugin installed, so an agent finds the skill by itself
+([0189](issues/0189-verify-the-skills-with-the-raven-plugin-installed.md)), and with the Python and
+Rust MCP wrappers ([0190](issues/0190-verify-the-skills-with-the-mcp-wrappers.md)).
+
 ### Keeping it true
 
 Reviewing the skill is a checkbox here: whenever this design or `raven_driver.h` changes, the skill's
 table, gotchas and template are checked against it.
 
-- [x] The `raven` skill matches this design and `raven_driver.h` (checked 2026-11-24, in 0181).
+- [x] The `raven` skill matches this design and `raven_driver.h` (checked 2026-11-24, in 0181;
+  again in 0182, after its gotchas and the language files' MCP wiring were added).
 
 Decided in [Where agents find Raven's guidance](issues/archive/0163-where-agents-find-ravens-guidance.md).
 
