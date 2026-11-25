@@ -623,7 +623,7 @@ Decided in [Python and Rust wrappers](issues/archive/0153-python-and-rust-wrappe
 
 ### As built
 
-Built in [Python and Rust MCP wrappers](issues/0180-python-and-rust-mcp-wrappers.md). What the design
+Built in [Python and Rust MCP wrappers](issues/archive/0180-python-and-rust-mcp-wrappers.md). What the design
 left open was settled this way:
 
 - **Where they are.** `raven_mcp.py` sits beside `raven.py` and isn't in the wheel yet: the

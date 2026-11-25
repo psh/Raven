@@ -12,7 +12,7 @@ The proof the skills map asked for: run every skill in mattpocock-skills' `engin
 
 **Depends on:** [The raven agent skill](0181-the-raven-agent-skill.md),
 [Raven's actions as tools](0177-ravens-actions-as-tools.md),
-[Python and Rust MCP wrappers](../0180-python-and-rust-mcp-wrappers.md).
+[Python and Rust MCP wrappers](0180-python-and-rust-mcp-wrappers.md).
 
 **Settled when started (2026-11-24):**
 
