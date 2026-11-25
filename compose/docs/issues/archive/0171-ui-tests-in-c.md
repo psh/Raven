@@ -68,6 +68,9 @@ checks). The header compiles without warnings as C99, C11 and C++17 under `-Wall
   [UI tests in each language](../../agent-skills.md#c). The design's C example passed no size to
   `Rwindow_create_from_xml`, which doesn't take null-terminated text (size 0 builds nothing). It now
   loads the notes example.
+- **Changed in [UI tests in Python](0172-ui-tests-in-python.md):** `Rtest_begin` returned `R_FALSE`,
+  so the test was skipped, when Raven failed to start headless. That is a failure now: reported,
+  with `Rtest_end` returning 1. Only no Vulkan with capture skips.
 - **Not here**:
   - Not tried on Linux or Windows. Under MSVC, `getenv` in the header may warn (C4996) unless the
     test defines `_CRT_SECURE_NO_WARNINGS`.

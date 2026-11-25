@@ -294,6 +294,24 @@ def test_adds_a_note(raven_ui):                           # pytest: a fixture ov
     ...
 ```
 
+Built in [UI tests in Python](issues/archive/0172-ui-tests-in-python.md):
+
+- **`raven_testing.py`** sits beside `raven.py`, and the wheel ships both. It registers itself as a
+  pytest plugin (`[pytest11]` in the wheel's entry points), so `raven_ui` needs no `conftest.py`.
+  Outside the wheel, use `-p raven_testing`. The fixture is defined only when pytest imports, so
+  neither module needs pytest.
+- **A failure raises `RavenTestFailure`**, an `AssertionError`, so pytest and unittest report it as
+  a failure. Without Vulkan, `capture=True` raises `unittest.SkipTest`, which both report as a
+  skip. Raven failing to start headless is a failure, not a skip.
+- **Raven's errors can't be raised from its callback** (ctypes swallows exceptions there). They are
+  collected and raised at the next step, or when the block or fixture ends. `ui.expect_errors()`
+  is a context manager that collects them instead.
+- **A test that already failed** isn't reported a second time when its block or fixture ends, and
+  isn't leak-checked.
+- **Keys** are `"Enter"`, `"Ctrl+S"` or `"a"`, or an `RKey` with modifiers. Actions are
+  `"expand"`, `"collapse"`, `"select"` and `"focus"`. `ui.find` returns an `Accessible`, whose
+  states are a set of names.
+
 ### Rust
 
 A `raven::testing` module in the crate. Failures panic with the driver's message, as `cargo test`
@@ -309,6 +327,21 @@ fn adds_a_note() {
     });
 }
 ```
+
+Built in [UI tests in Rust](issues/archive/0173-ui-tests-in-rust.md):
+
+- **`src/testing.rs`** is written by hand. bindgen's `lib.rs` declares it.
+- **Tests take turns.** cargo runs tests on several threads, and Raven is one per process, so
+  `run` holds a global lock. It catches a test's panic, shuts Raven down, then resumes the panic,
+  so the next test starts clean.
+- **Raven's errors** go into a static list, since a C callback can't capture. They fail the next
+  step, or the end of `run`. `ui.expect_errors(|ui| ...)` returns them instead.
+- **No skipped outcome in cargo**: without Vulkan, a capture test prints that it is skipped and
+  returns.
+- **`run(xml, ...)`**, with `""` for no window, and `run_with(Options { ... })`.
+- **`build.rs` gives the crate's own examples and tests an rpath** to `RAVEN_LIB_DIR`, because
+  libraven's install name on macOS is `@rpath/...` and the `DYLD_*` variables don't reach them.
+  Before this, `binding_rust` failed on macOS.
 
 ### The worked example
 

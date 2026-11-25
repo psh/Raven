@@ -10,6 +10,8 @@
 //! - [`action_bind`] binds an action to a closure;
 //! - [`window_from_xml`] and [`widget_find`] take `&str`.
 //!
+//! [`testing`] runs headless UI tests over Raven's UI driver (`raven::testing::run`).
+//!
 //! ```no_run
 //! use raven::*;
 //! unsafe { Rinit(R_BACKEND_VULKAN) };
@@ -27,6 +29,9 @@
 
 pub mod sys;
 pub use sys::*;
+
+/// Headless UI tests (written by hand: src/testing.rs).
+pub mod testing;
 
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};

@@ -173,8 +173,9 @@ static inline int Rtest_failures(void) {
 /**
  * @brief Starts Raven for a test (see the top of this file).
  * @param options NULL for the defaults.
- * @return R_FALSE when it can't run here: with capture, no usable Vulkan
- * driver (return RTEST_SKIPPED); or Raven didn't start.
+ * @return R_FALSE only when the test can't run here: with capture, no
+ * usable Vulkan driver (return RTEST_SKIPPED). Raven failing to start
+ * headless is a failure instead: reported, and Rtest_end returns 1.
  */
 static inline int Rtest_begin(const RTestOptions* options) {
 	RInitDesc desc;
@@ -192,8 +193,14 @@ static inline int Rtest_begin(const RTestOptions* options) {
 	Rerror_set_callback(Rtest_on_raven_error);
 	if (!Rinit_ex(&desc)) {
 		Rtest_expect_errors(R_FALSE);
-		fprintf(stderr, "%s: SKIPPED, Raven didn't start (%s)\n", g_rtest.capture_name, g_rtest.options.capture ? "no usable Vulkan driver" : "headless");
-		return R_FALSE;
+		if (g_rtest.options.capture) {
+			fprintf(stderr, "%s: SKIPPED, no usable Vulkan driver to capture with\n", g_rtest.capture_name);
+			return R_FALSE;
+		}
+		/* headless needs nothing: not a reason to skip (Raven already running, most likely). The steps
+		   fail as not started, and Rtest_end returns 1. */
+		Rtest_fail_at(__FILE__, __LINE__, "Raven didn't start headless (Rinit_ex failed: is it running already?)");
+		return R_TRUE;
 	}
 	if (g_rtest.options.capture) {
 		Rid probe = Rwindow_create("probe", 16, 16, R_WINDOW_DEFAULT);

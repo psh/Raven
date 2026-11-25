@@ -9,6 +9,8 @@ The wheel holds:
 
     raven/__init__.py        bindings/python/raven.py
     raven/<library>          raven.dll, libraven.so or libraven.dylib
+    raven_testing.py         bindings/python/raven_testing.py: headless UI tests,
+                             registered as a pytest plugin (the raven_ui fixture)
 
 `import raven` then works with nothing else installed: raven.py looks for the
 library beside itself first.
@@ -148,6 +150,7 @@ def main():
             files.append((arcname, f.read(), executable))
 
     add_file("raven/__init__.py", os.path.join(HERE, "raven.py"))
+    add_file("raven_testing.py", os.path.join(HERE, "raven_testing.py"))
     add_file("raven/" + library_name, library)
     for license_name in ("LICENSE", "NOTICE"):
         path = os.path.join(ROOT, license_name)
@@ -157,7 +160,9 @@ def main():
     info = "%s-%s.dist-info" % (DIST, ver)
     files.append((info + "/METADATA", metadata(ver).encode("utf-8"), False))
     files.append((info + "/WHEEL", ("Wheel-Version: 1.0\nGenerator: raven build_wheel.py\nRoot-Is-Purelib: false\nTag: %s\n" % tag).encode(), False))
-    files.append((info + "/top_level.txt", b"raven\n", False))
+    files.append((info + "/top_level.txt", b"raven\nraven_testing\n", False))
+    # pytest finds the raven_ui fixture with nothing to configure; nothing needs pytest otherwise
+    files.append((info + "/entry_points.txt", b"[pytest11]\nraven_testing = raven_testing\n", False))
 
     record = io.StringIO()
     for arcname, data, _ in files:

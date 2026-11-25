@@ -80,6 +80,8 @@ LIB_RS = '''//! Raven for Rust.
 //! - [`action_bind`] binds an action to a closure;
 //! - [`window_from_xml`] and [`widget_find`] take `&str`.
 //!
+//! [`testing`] runs headless UI tests over Raven's UI driver (`raven::testing::run`).
+//!
 //! ```no_run
 //! use raven::*;
 //! unsafe { Rinit(R_BACKEND_VULKAN) };
@@ -97,6 +99,9 @@ LIB_RS = '''//! Raven for Rust.
 
 pub mod sys;
 pub use sys::*;
+
+/// Headless UI tests (written by hand: src/testing.rs).
+pub mod testing;
 
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
@@ -168,6 +173,16 @@ fn main() {
     }
     let is_static = env::var("RAVEN_STATIC").map(|value| value == "1").unwrap_or(false);
     println!("cargo:rustc-link-lib={}=raven", if is_static { "static" } else { "dylib" });
+    // this package's examples and tests find the shared library where they were linked to it
+    // (libraven's install name on macOS is @rpath/...); crates that use this one decide for themselves
+    if !is_static {
+        if let Ok(dir) = env::var("RAVEN_LIB_DIR") {
+            let target = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+            if target == "macos" || target == "linux" {
+                println!("cargo:rustc-link-arg=-Wl,-rpath,{}", dir);
+            }
+        }
+    }
     if env::var_os("CARGO_FEATURE_MCP").is_some() {
         // Raven MCP calls the app's own libraven, so it needs the shared one
         if is_static {

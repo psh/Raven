@@ -170,6 +170,25 @@ static void test_not_started(void) {
 	OK(Rtest_end() == 1);
 }
 
+/* Raven failing to start headless is a failure, not a skip: here, because it runs already. */
+static void test_start_failure_is_no_skip(void) {
+	RInitDesc desc;
+	RTestOptions options = { 0 };
+	memset(&desc, 0, sizeof(desc));
+	desc.backend = R_BACKEND_NULL;
+	desc.headless = R_TRUE;
+	OK(Rinit_ex(&desc));
+	g_message_count = 0;
+	options.name = "twice";
+	options.on_failure = collect;
+	OK(Rtest_begin(&options));
+	OK(said("Raven didn't start headless"));
+	OK(!RTEST_CLICK("role=button"));
+	OK(Rtest_end() == 1);
+	Rerror_set_callback(NULL);
+	Rshutdown();
+}
+
 int main(void) {
 	printf("test_passing_checks\n");
 	test_passing_checks();
@@ -179,6 +198,8 @@ int main(void) {
 	test_captures_on_failure();
 	printf("test_not_started\n");
 	test_not_started();
+	printf("test_start_failure_is_no_skip\n");
+	test_start_failure_is_no_skip();
 	printf("test_raven_test: %d checks, %d failures\n", g_ok + g_bad, g_bad);
 	return g_bad == 0 ? 0 : 1;
 }

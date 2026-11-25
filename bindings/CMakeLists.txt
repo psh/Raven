@@ -5,7 +5,12 @@
 #   bindings_up_to_date   bindings/ is what tools/bindgen writes from the headers
 #   binding_cpp           needs a C++ compiler
 #   binding_python        needs Python 3 and the shared library (RAVEN_BUILD_SHARED); not on Windows
+#   binding_python_ui, binding_python_testing    the same needs: examples/notes/test_notes.py through
+#                         raven_testing, and raven_testing's own tests (unittest)
+#   binding_python_ui_pytest   the same test under pytest, with the raven_ui fixture: needs pytest
 #   binding_rust          needs cargo and the shared library; not on Windows
+#   binding_rust_ui       the same needs: examples/notes through raven::testing (tests/notes.rs), and
+#                         raven::testing's own tests (tests/testing.rs), as cargo tests
 #   binding_go            needs go, a C compiler for cgo, and the shared library; not on Windows
 #   binding_java          needs a JDK 22 or later and the shared library; not on Windows
 #   binding_odin          needs odin and the shared library; not on Windows
@@ -55,6 +60,21 @@ if(RAVEN_BUILD_SHARED AND NOT WIN32)
 	if(Python3_FOUND)
 		add_test(NAME binding_python
 			COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/example.py --test)
+		# headless UI tests in Python (raven_testing): the notes example, as examples/notes/test_notes.c in C
+		set(_python_ui_env ${RAVEN_BINDING_ENV} "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python")
+		add_test(NAME binding_python_ui
+			COMMAND ${CMAKE_COMMAND} -E env ${_python_ui_env} ${Python3_EXECUTABLE} test_notes.py
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/notes)
+		set_tests_properties(binding_python_ui PROPERTIES SKIP_RETURN_CODE 77)
+		add_test(NAME binding_python_testing
+			COMMAND ${CMAKE_COMMAND} -E env ${_python_ui_env} ${Python3_EXECUTABLE} -m unittest test_raven_testing
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python)
+		execute_process(COMMAND ${Python3_EXECUTABLE} -c "import pytest" RESULT_VARIABLE _no_pytest OUTPUT_QUIET ERROR_QUIET)
+		if(_no_pytest EQUAL 0)
+			add_test(NAME binding_python_ui_pytest
+				COMMAND ${CMAKE_COMMAND} -E env ${_python_ui_env} ${Python3_EXECUTABLE} -m pytest -p raven_testing -p no:cacheprovider -q test_notes.py
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/notes)
+		endif()
 		if(RAVEN_WITH_MAP)
 			add_test(NAME binding_python_map
 				COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/map_example.py --test)
@@ -66,6 +86,11 @@ if(RAVEN_BUILD_SHARED AND NOT WIN32)
 		add_test(NAME binding_rust
 			COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust"
 				${RAVEN_CARGO} run --offline --quiet --example hello -- --test
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rust)
+		# headless UI tests in Rust (raven::testing): the notes example, as examples/notes/test_notes.c in C
+		add_test(NAME binding_rust_ui
+			COMMAND ${CMAKE_COMMAND} -E env ${RAVEN_BINDING_ENV} "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust"
+				${RAVEN_CARGO} test --offline --quiet --test notes --test testing
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rust)
 	endif()
 
