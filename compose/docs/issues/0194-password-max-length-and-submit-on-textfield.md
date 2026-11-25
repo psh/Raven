@@ -12,6 +12,6 @@ in the [Raven API coverage review](https://claude.ai/artifact/J56iXnntbqm8dmAUXW
 ## Deliverables
 
 - [ ] `visualTransformation = PasswordVisualTransformation()` sets `Rtext_input_set_password`.
-- [ ] A max length (`maxLength` parameter, or the Compose-style value filter, whichever the spec settles on) through `Rtext_input_set_max_length`.
+- [ ] `maxLength: Int? = null`, a compose-raven extension (Compose's `TextField` has none), set through `Rtext_input_set_max_length`. Raven cuts typed and pasted text inside the field, so the caret stays put, which filtering in `onValueChange` can't do here (text the app rewrites moves the caret to the end). Filtering still works alongside it. A `value` longer than `maxLength` is shown whole, as Raven does, and only edits are limited (confirm when building).
 - [ ] `keyboardActions = KeyboardActions(onDone = …)` called from the committed callback.
-- [ ] Spec updated; tests for each.
+- [ ] Spec updated, `maxLength` listed with the other extensions; tests for each, including a paste cut to `maxLength` with the caret after it.
