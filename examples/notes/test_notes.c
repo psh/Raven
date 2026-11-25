@@ -52,14 +52,14 @@ int main(void) {
 	RTEST_CLICK("role=button name=\"Add\"");
 	RTEST_EXPECT_COUNT("role=list-item", 1);
 
-	/* nor is a note of only spaces */
-	RTEST_TYPE("role=text-field", "   ");
+	/* nor is a note of only whitespace (a no-break space: typing drops a tab or a newline) */
+	RTEST_TYPE("role=text-field", " \xc2\xa0 ");
 	RTEST_CLICK("role=button name=\"Add\"");
 	RTEST_EXPECT_COUNT("role=list-item", 1);
 	RTEST_EXPECT_TEXT("widget=count", "1 note");
 
-	/* a note is added without the spaces around it */
-	RTEST_TYPE("role=text-field", "  water plants  ");
+	/* a note is added without the whitespace around it */
+	RTEST_TYPE("role=text-field", "  water plants\xc2\xa0");
 	RTEST_KEY("role=text-field", R_KEY_ENTER, 0);
 	RTEST_EXPECT_TEXT("role=list-item [1]", "water plants");
 

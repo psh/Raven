@@ -45,8 +45,13 @@ fn an_agent_adds_lists_and_deletes_notes() {
             names.sort();
             let results = vec![
                 client.call("notes.list", json!({})),
-                client.call("notes.add", json!({"text": "  buy milk "})),
+                client.call("notes.add", json!({"text": "  buy milk\t"})),
                 client.call("notes.add", json!({"text": "   "})),
+                // any whitespace is blank: a tab, a newline, a no-break space
+                client.call("notes.add", json!({"text": "\t"})),
+                client.call("notes.add", json!({"text": " \n "})),
+                client.call("notes.add", json!({"text": "\u{a0}"})),
+                client.call("notes.list", json!({})),
                 client.call("notes.add", json!({"text": "call Oscar"})),
                 client.call("notes.delete", json!({"index": 0})),
                 client.call("notes.delete", json!({"index": 5})),
@@ -59,11 +64,16 @@ fn an_agent_adds_lists_and_deletes_notes() {
         assert_eq!(text_of(&results[1]), r#"added "buy milk", note 0"#);
         assert_eq!(results[2]["isError"], true);
         assert_eq!(text_of(&results[2]), "a note can't be blank");
-        assert_eq!(text_of(&results[3]), r#"added "call Oscar", note 1"#);
-        assert_eq!(text_of(&results[4]), r#"deleted "buy milk""#);
-        assert_eq!(results[5]["isError"], true);
-        assert_eq!(text_of(&results[5]), "there is no note 5: the list has 1");
-        assert_eq!(text_of(&results[6]), r#"["call Oscar"]"#);
+        for blank in &results[3..6] {
+            assert_eq!(blank["isError"], true, "{}", blank);
+            assert_eq!(text_of(blank), "a note can't be blank");
+        }
+        assert_eq!(text_of(&results[6]), r#"["buy milk"]"#);
+        assert_eq!(text_of(&results[7]), r#"added "call Oscar", note 1"#);
+        assert_eq!(text_of(&results[8]), r#"deleted "buy milk""#);
+        assert_eq!(results[9]["isError"], true);
+        assert_eq!(text_of(&results[9]), "there is no note 5: the list has 1");
+        assert_eq!(text_of(&results[10]), r#"["call Oscar"]"#);
 
         // the window shows what the agent did
         ui.expect_count("role=list-item", 1);

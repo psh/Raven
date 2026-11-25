@@ -15,16 +15,39 @@ static void show_count(void) {
 	Rlabel_set_text(g_notes.count, text);
 }
 
-/* notes.add: the text typed, without the spaces around it, becomes a note, and the field is emptied for the next one. */
+/* Unicode's White_Space, as Python's and Rust's versions trim: tabs, newlines, spaces, no-break spaces. */
+static int is_white_space(unsigned code) {
+	return (code >= 0x09 && code <= 0x0D) || code == 0x20 || code == 0x85 || code == 0xA0 || code == 0x1680
+		|| (code >= 0x2000 && code <= 0x200A) || code == 0x2028 || code == 0x2029 || code == 0x202F
+		|| code == 0x205F || code == 0x3000;
+}
+
+/* The code point of the UTF-8 at text[i] (before end); its length in *length. */
+static unsigned decode(const char* text, size_t i, size_t end, size_t* length) {
+	const unsigned char* s = (const unsigned char*)text + i;
+	size_t left = end - i;
+	*length = 1;
+	if (s[0] < 0x80) return s[0];
+	if ((s[0] & 0xE0) == 0xC0 && left >= 2) return *length = 2, ((s[0] & 0x1Fu) << 6) | (s[1] & 0x3Fu);
+	if ((s[0] & 0xF0) == 0xE0 && left >= 3) return *length = 3, ((s[0] & 0x0Fu) << 12) | ((s[1] & 0x3Fu) << 6) | (s[2] & 0x3Fu);
+	return 0xFFFD; /* a longer code point, never white space, or not UTF-8 */
+}
+
+/* notes.add: the text typed, without the whitespace around it, becomes a note, and the field is emptied for the next one. */
 static void add(Rid sender, const char* action, void* user_data) {
 	const char* text = Rtext_input_get_text(g_notes.note);
 	char note[1024];
-	size_t first = 0, end;
+	size_t first = 0, end, length;
 	(void)sender, (void)action, (void)user_data;
 	if (!text) return;
 	end = strlen(text);
-	while (text[first] == ' ') first++;
-	while (end > first && text[end - 1] == ' ') end--;
+	while (first < end && is_white_space(decode(text, first, end, &length))) first += length;
+	while (end > first) {
+		size_t last = end - 1;
+		while (last > first && ((unsigned char)text[last] & 0xC0) == 0x80) last--; /* the start of the last code point */
+		if (!is_white_space(decode(text, last, end, &length)) || last + length != end) break;
+		end = last;
+	}
 	if (end == first) return;
 	if (end - first >= sizeof(note)) end = first + sizeof(note) - 1;
 	memcpy(note, text + first, end - first);

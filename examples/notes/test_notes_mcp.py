@@ -30,19 +30,25 @@ def check_notes_tools(ui):
             tools = sorted(tool["name"] for tool in client.request("tools/list")["result"]["tools"])
             return tools, [
                 client.call("notes.list"),
-                client.call("notes.add", {"text": "  buy milk "}),
+                client.call("notes.add", {"text": "  buy milk\t"}),
                 client.call("notes.add", {"text": "   "}),
+                [client.call("notes.add", {"text": blank}) for blank in ("\t", " \n ", "\u00a0")],
+                client.call("notes.list"),
                 client.call("notes.add", {"text": "call Oscar"}),
                 client.call("notes.delete", {"index": 0}),
                 client.call("notes.delete", {"index": 5}),
                 client.call("notes.list"),
             ]
 
-        tools, (empty, added, blank, second, deleted, missing, listed) = on_client(agent)
+        tools, (empty, added, blank, other_blanks, after_blanks, second, deleted, missing, listed) = on_client(agent)
         assert tools == ["notes.add", "notes.delete", "notes.list"], tools
         assert json.loads(text_of(empty)) == []
         assert text_of(added) == "added 'buy milk', note 0", text_of(added)
         assert blank["isError"] and text_of(blank) == "a note can't be blank", blank
+        # any whitespace is blank: a tab, a newline, a no-break space
+        for result in other_blanks:
+            assert result["isError"] and text_of(result) == "a note can't be blank", result
+        assert json.loads(text_of(after_blanks)) == ["buy milk"], text_of(after_blanks)
         assert text_of(second) == "added 'call Oscar', note 1"
         assert text_of(deleted) == "deleted 'buy milk'"
         assert missing["isError"] and text_of(missing) == "there is no note 5: the list has 1", missing

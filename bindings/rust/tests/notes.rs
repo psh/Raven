@@ -52,14 +52,14 @@ fn adds_and_deletes_notes() {
         ui.click(r#"role=button name="Add""#);
         ui.expect_count("role=list-item", 1);
 
-        // nor is a note of only spaces
-        ui.type_text("role=text-field", "   ");
+        // nor is a note of only whitespace (a no-break space: typing drops a tab or a newline)
+        ui.type_text("role=text-field", " \u{a0} ");
         ui.click(r#"role=button name="Add""#);
         ui.expect_count("role=list-item", 1);
         ui.expect_text("widget=count", "1 note");
 
-        // a note is added without the spaces around it
-        ui.type_text("role=text-field", "  water plants  ");
+        // a note is added without the whitespace around it
+        ui.type_text("role=text-field", "  water plants\u{a0}");
         ui.key("role=text-field", "Enter");
         ui.expect_text("role=list-item [1]", "water plants");
 

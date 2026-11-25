@@ -13,7 +13,7 @@ use raven_mcp::{tool, Hint, NoArgs, ToolHandle};
 #[serde(crate = "raven_mcp::serde")]
 #[schemars(crate = "raven_mcp::schemars")]
 struct AddNote {
-    /// The note's text; the spaces around it are dropped
+    /// The note's text; the whitespace around it is dropped
     text: String,
 }
 

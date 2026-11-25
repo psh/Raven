@@ -52,14 +52,14 @@ def check_notes(ui):
     ui.click('role=button name="Add"')
     ui.expect_count("role=list-item", 1)
 
-    # nor is a note of only spaces
-    ui.type("role=text-field", "   ")
+    # nor is a note of only whitespace (a no-break space: typing drops a tab or a newline)
+    ui.type("role=text-field", " \u00a0 ")
     ui.click('role=button name="Add"')
     ui.expect_count("role=list-item", 1)
     ui.expect_text("widget=count", "1 note")
 
-    # a note is added without the spaces around it
-    ui.type("role=text-field", "  water plants  ")
+    # a note is added without the whitespace around it
+    ui.type("role=text-field", "  water plants\u00a0")
     ui.key("role=text-field", "Enter")
     ui.expect_text("role=list-item [1]", "water plants")
 

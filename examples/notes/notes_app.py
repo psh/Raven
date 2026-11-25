@@ -18,6 +18,8 @@ import raven as r
 from raven_mcp import Hint
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# Unicode's White_Space, as notes_app.c and notes_app.rs trim: tabs, newlines, spaces, no-break spaces
+WHITESPACE = "\t\n\v\f\r \x85\xa0\u1680" + "".join(map(chr, range(0x2000, 0x200B))) + "\u2028\u2029\u202f\u205f\u3000"
 NOTES_XML = os.path.join(HERE, "notes.xml")
 
 
@@ -37,8 +39,8 @@ def open_notes(xml_path=NOTES_XML, mcp=None):
         r.Rlabel_set_text(count, "No notes" if n == 0 else "%d note%s" % (n, "" if n == 1 else "s"))
 
     def add_note(text):
-        """Adds a note, without the spaces around it; a blank one is not added. Returns the note, or None."""
-        text = (text or "").strip(" ")
+        """Adds a note, without the whitespace around it; a blank one is not added. Returns the note, or None."""
+        text = (text or "").strip(WHITESPACE)
         if not text:
             return None
         r.Rlist_view_add_item(notes, text)
@@ -74,7 +76,7 @@ def open_notes(xml_path=NOTES_XML, mcp=None):
 
     if mcp is not None:
         @mcp.tool("notes.add", "Add a note at the end of the list", hints={Hint.NOT_DESTRUCTIVE, Hint.CLOSED_WORLD})
-        def add_tool(text: Annotated[str, "The note's text; the spaces around it are dropped"]) -> str:
+        def add_tool(text: Annotated[str, "The note's text; the whitespace around it is dropped"]) -> str:
             added = add_note(text)
             if added is None:
                 raise ValueError("a note can't be blank")

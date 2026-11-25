@@ -30,9 +30,10 @@ impl Notes {
         unsafe { Rlabel_set_text(self.count, cstr(&shown).as_ptr()) };
     }
 
-    /// Adds a note, without the spaces around it; a blank one is not added. Returns the note.
+    /// Adds a note, without the whitespace around it (Unicode's White_Space, as in C and Python:
+    /// tabs, newlines, no-break spaces); a blank one is not added. Returns the note.
     pub fn add(self, typed: &str) -> Option<String> {
-        let typed = typed.trim_matches(' ');
+        let typed = typed.trim();
         if typed.is_empty() {
             return None;
         }
