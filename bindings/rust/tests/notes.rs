@@ -8,7 +8,7 @@
 #[path = "../../../examples/notes/notes_app.rs"]
 mod notes_app;
 
-use notes_app::{open_notes, NOTES_XML};
+use notes_app::{notes_xml, open_notes};
 use raven::testing::{self, Options};
 
 #[test]
@@ -19,7 +19,7 @@ fn adds_and_deletes_notes() {
         ..Options::default()
     };
     testing::run_with(options, |ui| {
-        open_notes(NOTES_XML);
+        open_notes(&notes_xml());
 
         // nothing yet: Delete waits for a note to be selected
         ui.expect_absent("role=list-item");

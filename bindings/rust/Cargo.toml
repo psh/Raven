@@ -20,13 +20,10 @@ name = "raven"
 path = "src/lib.rs"
 
 [features]
-# Raven MCP (raven_mcp.h): links the Raven MCP library, from RAVEN_MCP_LIB_DIR
+# Raven MCP (raven_mcp.h): links the Raven MCP library, from RAVEN_MCP_LIB_DIR. Its idioms
+# (tools from closures, serde arguments) are the crate raven-gui-mcp, in mcp/.
 mcp = []
 
 [[example]]
 name = "mcp"
-required-features = ["mcp"]
-
-[[example]]
-name = "notes"
 required-features = ["mcp"]

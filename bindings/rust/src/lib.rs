@@ -11,6 +11,8 @@
 //! - [`window_from_xml`] and [`widget_find`] take `&str`.
 //!
 //! [`testing`] runs headless UI tests over Raven's UI driver (`raven::testing::run`).
+//! With the feature `mcp`, the `Rmcp_*` calls of Raven MCP are here as they are; the crate
+//! `raven-gui-mcp` (`raven_mcp::tool`) publishes an app's own tools from closures.
 //!
 //! ```no_run
 //! use raven::*;

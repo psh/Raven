@@ -119,12 +119,31 @@ val cTest = tasks.register<Exec>("cTest") {
 }
 tasks.named("check") { dependsOn(cTest) }
 
-// The Rust binding's feature `mcp` (bindings/rust/examples/mcp.rs): links the library and calls a
-// tool over HTTP. Part of `check` only where cargo is installed.
+// Python's raven_mcp (bindings/python/raven_mcp.py): its own tests, then the notes example's tools
+// (examples/notes/test_notes_mcp.py), each called by an MCP client.
+val pythonWrapperTest = tasks.register<Exec>("pythonWrapperTest") {
+    description = "Runs raven_mcp's tests and the notes example's tools against the Raven MCP library."
+    val link = tasks.named("linkRaven_mcpReleaseShared${targetName.replaceFirstChar { it.uppercase() }}")
+    dependsOn(link, buildRavenShared)
+    val library = if (hostTarget == KonanTarget.MACOS_ARM64) "libraven.dylib" else "libraven.so"
+    val mcpLibrary = if (hostTarget == KonanTarget.MACOS_ARM64) "libraven_mcp.dylib" else "libraven_mcp.so"
+    val python = ravenRoot.dir("bindings/python").asFile.absolutePath
+    environment("RAVEN_LIBRARY", ravenSharedDir.get().file(library).asFile.absolutePath)
+    environment("RAVEN_MCP_LIBRARY", layout.buildDirectory.file("bin/$targetName/raven_mcpReleaseShared/$mcpLibrary").get().asFile.absolutePath)
+    environment("PYTHONPATH", python)
+    workingDir(ravenRoot.dir("examples/notes").asFile)
+    commandLine("sh", "-c", "python3 -u -m unittest -v test_raven_mcp && python3 -u test_notes_mcp.py")
+}
+tasks.named("check") { dependsOn(pythonWrapperTest) }
+
+// Rust: raven-gui's feature `mcp` (examples/mcp.rs, the C API), then the crate raven-gui-mcp in
+// bindings/rust/mcp: raven_mcp's tests (tests/mcp.rs) and the notes example's tools (tests/notes_mcp.rs),
+// each linking the library and calling tools over HTTP. raven-gui-mcp's dependencies (serde,
+// schemars) may be fetched the first time. Part of `check` only where cargo is installed.
 val cargo = listOf(System.getenv("HOME") + "/.cargo/bin/cargo", "/opt/homebrew/bin/cargo", "/opt/homebrew/opt/rustup/bin/cargo", "/usr/local/bin/cargo", "/usr/bin/cargo")
     .firstOrNull { File(it).canExecute() }
 val rustTest = tasks.register<Exec>("rustTest") {
-    description = "Runs the Rust binding's Raven MCP example (--test) against the Raven MCP library."
+    description = "Runs the Rust binding's Raven MCP example (--test), raven_mcp's tests and the notes example's tools against the Raven MCP library."
     val link = tasks.named("linkRaven_mcpReleaseShared${targetName.replaceFirstChar { it.uppercase() }}")
     dependsOn(link, buildRavenShared)
     val ravenDir = ravenSharedDir.get().asFile.absolutePath
@@ -137,6 +156,11 @@ val rustTest = tasks.register<Exec>("rustTest") {
     environment("CARGO_TARGET_DIR", layout.buildDirectory.dir("rust").get().asFile.absolutePath)
     // both libraries are found by rpath (cargo run replaces DYLD_FALLBACK_LIBRARY_PATH)
     environment("RUSTFLAGS", "-C link-arg=-Wl,-rpath,$ravenDir -C link-arg=-Wl,-rpath,$mcpDir")
-    commandLine(cargo ?: "cargo", "run", "--offline", "--quiet", "--features", "mcp", "--example", "mcp", "--", "--test")
+    commandLine(
+        "sh", "-c",
+        "\"$1\" run --offline --quiet --features mcp --example mcp -- --test && " +
+            "cd mcp && \"$1\" test --quiet",
+        "rustTest", cargo ?: "cargo",
+    )
 }
 if (cargo != null) tasks.named("check") { dependsOn(rustTest) }

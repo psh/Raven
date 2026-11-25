@@ -365,7 +365,8 @@ Raven MCP is implemented on the MCP Kotlin SDK
     libraven. Where it is missing, that call says Raven MCP isn't available here, and the rest of
     the binding works.
   - A binding that **links** libraven (Rust, Go, Zig, Odin, C3, C++) puts `Rmcp_*` in an opt-in
-    unit that links the Raven MCP library: Rust's cargo feature `mcp` (`RAVEN_MCP_LIB_DIR`), a
+    unit that links the Raven MCP library: Rust's cargo feature `mcp` (`RAVEN_MCP_LIB_DIR`; the
+    idioms are the crate `raven-gui-mcp` on top), a
     package or file of its own elsewhere, and `raven_mcp.h` itself for C++. An app that doesn't opt
     in links none of it.
 
@@ -541,10 +542,10 @@ Decided in [The McpTool composable](issues/archive/0152-the-mcptool-composable.m
 
 Every binding gets the `Rmcp_*` calls from `tools/bindgen`, loaded on first use. Python and Rust add
 only their own idioms on top, kept thin
-([ADR 0002](adr/0002-rendering-in-c-bindings-thin.md)). Both publish the notepad's `notes.add`,
-`notes.list` and `notes.delete` over the same `notepad.xml` the UI tests use (`agent-skills.md`, "UI
-tests in each language"). Raven's actions as tools (`Rmcp_expose_action(s)`) need no idiom: they
-reach both through `tools/bindgen` like any C call.
+([ADR 0002](adr/0002-rendering-in-c-bindings-thin.md)). Both publish the notes example's `notes.add`,
+`notes.list` and `notes.delete` over the same `examples/notes/notes.xml` the UI tests use
+(`agent-skills.md`, "UI tests in each language"). Raven's actions as tools (`Rmcp_expose_action(s)`)
+need no idiom: they reach both through `tools/bindgen` like any C call.
 
 ### Python: `raven_mcp`
 
@@ -581,10 +582,12 @@ mcp.start()                            # RMcpConfig's fields as keyword argument
   the call itself ("the tool never replied"). Raven has no asyncio loop, so there is no `async def`.
 - `mcp.remove_tool(name)` withdraws a tool. The module keeps every tool's function alive until then.
 
-### Rust: `raven::mcp`
+### Rust: `raven_mcp`
 
-A module of the crate behind the cargo feature `mcp`, which brings in `serde`, `serde_json` and
-`schemars`.
+A crate of its own, `raven-gui-mcp` (used as `raven_mcp`, like Python's module), over `raven-gui`'s
+feature `mcp`. It brings in `serde`, `serde_json` and `schemars`. The design first put it in
+`raven-gui` behind the feature. It became a crate in 0180 (Paul, 2026-11-24) so that `raven-gui`
+keeps no dependencies and still builds offline from nothing, as its ctest checks do.
 
 ```rust
 #[derive(Deserialize, JsonSchema)]
@@ -595,14 +598,14 @@ struct AddNote {
     pinned: bool,
 }
 
-let _add = raven::mcp::tool("notes.add", "Add a note to the list")
+let _add = raven_mcp::tool("notes.add", "Add a note to the list")
     .hints(Hint::NOT_DESTRUCTIVE | Hint::CLOSED_WORLD)
     .add(move |args: AddNote| -> Result<String, String> {
         notes.borrow_mut().push(args.text);
         Ok("added".into())
     });
 
-let _export = raven::mcp::tool("notes.export", "Export the notes to a file")
+let _export = raven_mcp::tool("notes.export", "Export the notes to a file")
     .add_deferred(|args: Export, call: Call| {
         std::thread::spawn(move || call.reply("exported"));   // `reply` consumes the Call
     });
@@ -617,6 +620,46 @@ let _export = raven::mcp::tool("notes.export", "Export the notes to a file")
   itself.
 
 Decided in [Python and Rust wrappers](issues/archive/0153-python-and-rust-wrappers.md).
+
+### As built
+
+Built in [Python and Rust MCP wrappers](issues/0180-python-and-rust-mcp-wrappers.md). What the design
+left open was settled this way:
+
+- **Where they are.** `raven_mcp.py` sits beside `raven.py` and isn't in the wheel yet: the
+  optional `raven-gui[mcp]` package waits for [Shipping Raven MCP](issues/0175-shipping-raven-mcp.md),
+  which is on hold. `raven_mcp` for Rust is the crate in `bindings/rust/mcp`. `tools/bindgen` writes
+  its `Cargo.toml`, so its version follows Raven's, and its `build.rs`, which gives its programs the
+  run-time paths of both libraries, since a dependency's link arguments don't carry over.
+- **Starting and stopping**, the same in both:
+  - `start(...)` takes `RMcpConfig`'s fields: keyword arguments in Python, `mcp::Config` in Rust.
+  - `start_from_environment(...)` starts only when `RAVEN_MCP=1`.
+  - `stop()` is `Rmcp_stop` then `Rmcp_tool_remove_all`, before `Rshutdown`.
+  - `url` gives the address being served.
+- **Python's schema** reads the annotation as written, so a default of `None` doesn't make a
+  parameter nullable on Python 3.9 and 3.10 while leaving it plain on 3.11 and later (string
+  annotations are resolved with `get_type_hints`). It covers `dict` (an object), `list[X]` (its
+  items), an `Enum` (its values, and the argument arrives as the member), and `Optional[X]`
+  (nullable). Any other type is refused when the tool is published.
+- **Arguments are checked before the function runs.** In Python a call fails with "missing
+  argument: x", "unknown argument: x" or "argument x: ...". In Rust it fails with
+  `invalid arguments: <serde's message>`. A tool without arguments takes `raven_mcp::NoArgs` in
+  Rust.
+- **Replies.** `None` and `()` reply with an empty text. JSON is sent as text, and also as
+  `structuredContent` when it is an object. In Rust a reply is a `String`, a `&str`, `()` or a
+  `serde_json::Value`, and a panic fails the call ("the tool panicked: ..."). A tool Raven MCP
+  refuses (an invalid name) raises `ValueError` in Python and panics in Rust, pointing at the log.
+- **A replaced or removed tool's function is freed at once.** The library fails a call queued for
+  a replaced or removed tool rather than reaching its old function, so the old closure can go
+  straight away. A Rust `ToolHandle` withdraws its tool only while that name is still its own: a
+  handle for a replaced tool frees its closure and leaves the new tool alone. A `ToolHandle` isn't
+  `Send`, since tools are added and removed on Raven's UI thread.
+- **Tested through a client** in compose's `check`:
+  - `:raven-mcp:pythonWrapperTest` runs `bindings/python/test_raven_mcp.py` and
+    `examples/notes/test_notes_mcp.py`.
+  - `:raven-mcp:rustTest` runs the crate's `tests/mcp.rs` and `tests/notes_mcp.rs` after
+    `raven-gui`'s `examples/mcp.rs`.
+  - Each agent's calls are checked in the window afterwards, with the UI test harness.
 
 ## Who may connect
 

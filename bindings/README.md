@@ -72,9 +72,19 @@ functions:
 - **Python**: in `raven.py`, loading the library on the first `Rmcp_` call,
   from `RAVEN_MCP_LIBRARY`, then beside libraven, then beside `raven.py`.
   Without it, `raven` works and the `Rmcp_` functions raise `OSError`.
+  `raven_mcp.py`, beside it, is the Python way: `@mcp.tool` on a function
+  whose type hints give the schema, the return value as the reply.
 - **Rust**: in `raven::sys` (and at the root of the crate) with the cargo
   feature `mcp`, which links the library from `RAVEN_MCP_LIB_DIR`;
   `examples/mcp.rs` publishes a tool. It can't be used with `RAVEN_STATIC`.
+  The Rust way is the crate `raven-gui-mcp` in `rust/mcp` (used as
+  `raven_mcp`): `raven_mcp::tool(..).add(|args| ..)` with serde arguments and
+  a `schemars` schema, and a handle that withdraws the tool when dropped. It
+  keeps `raven-gui` free of dependencies.
+
+Both are used by the notes example (`examples/notes`), whose `notes.add`,
+`notes.list` and `notes.delete` tools are tested through an MCP client
+(`./gradlew :raven-mcp:pythonWrapperTest :raven-mcp:rustTest` in `compose/`).
 
 ## The simplest way to use Raven from any of them
 
