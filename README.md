@@ -443,6 +443,20 @@ of each window into `RAVEN_TEST_CAPTURES`. The checks are `EXISTS`,
 `RTEST_DESCRIBE` reads anything else. A hook reports failures to another
 test runner. `examples/notes` is the worked example.
 
+## The agent skill
+
+`skills/raven` is Raven's skill for coding agents: how to preview, drive and test a Raven UI, in C
+and in each binding's language. It works alongside skills written for the web, such as TDD and
+debugging. It is a Claude Code plugin:
+
+```
+/plugin marketplace add /path/to/Raven
+/plugin install raven@raven
+```
+
+`tools/bindgen` writes its language files from the headers, the bindings and
+`tools/bindgen/skill/`.
+
 ## Previews
 
 `raven_preview` renders XML to PNG files on Vulkan without a window system:

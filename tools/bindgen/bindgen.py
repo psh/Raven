@@ -2,8 +2,8 @@
 """
 Writes the bindings of Raven for other languages from its C headers.
 
-    python3 tools/bindgen/bindgen.py            writes bindings/
-    python3 tools/bindgen/bindgen.py --check    fails when bindings/ is not what would be written
+    python3 tools/bindgen/bindgen.py            writes bindings/, skills/raven/languages/ and .claude-plugin/
+    python3 tools/bindgen/bindgen.py --check    fails when they are not what would be written
 
 The result is part of the repository (bindings/), so that using Raven from
 another language does not need Python; run this again after changing a
@@ -35,10 +35,15 @@ def main():
         except ImportError:
             continue
         files.update(module.generate(api))
+    # the raven agent skill: its language files read the bindings just made
+    if not only or "skill" in only:
+        import gen_skill
+        files.update(gen_skill.generate(api, files))
 
     stale = []
     for path, text in sorted(files.items()):
-        full = os.path.join(out_dir, path)
+        # (the skill and the plugin's manifests live at the root of the repository)
+        full = os.path.join(root if path.startswith(("skills/", ".claude-plugin/")) else out_dir, path)
         if not text.endswith("\n"):
             text += "\n"
         current = open(full, encoding="utf-8").read() if os.path.exists(full) else None

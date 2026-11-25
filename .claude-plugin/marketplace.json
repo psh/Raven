@@ -1,0 +1,26 @@
+{
+  "name": "raven",
+  "owner": {
+    "name": "Raven",
+    "url": "https://github.com/oscar-soirey/Raven"
+  },
+  "description": "Raven's agent skill, as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "raven",
+      "source": "./",
+      "description": "Preview, drive and test a Raven UI in C or any language Raven binds: the raven agent skill.",
+      "author": {
+        "name": "Raven contributors",
+        "url": "https://github.com/oscar-soirey/Raven"
+      },
+      "category": "development",
+      "keywords": [
+        "raven",
+        "gui",
+        "ui-testing",
+        "preview"
+      ]
+    }
+  ]
+}

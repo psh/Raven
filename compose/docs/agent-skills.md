@@ -39,7 +39,7 @@ This document is the design, for people. The guidance is written from it, for ag
   `raven_driver.h`, `raven_test.h`, `raven_preview --help`.
 - **One file per language, disclosed**, loaded only for the language in use: C and each of main
   Raven's 12 bindings (C++, Python, Rust, Go, C#, Zig, LuaJIT, Java, Odin, Bun, Node.js, C3).
-  compose-raven is left out for now; a `compose.md` can join later.
+  compose-raven is left out for now; a `compose.md` can join later ([0188](issues/0188-compose-raven-in-the-raven-skill.md)).
 
 ### Generated, like the bindings
 
@@ -56,8 +56,32 @@ other. A small hand-written snippet per language adds only what differs by hand:
 
 The skill is published as a **Claude Code plugin**, the way mattpocock-skills is: someone working on
 any Raven app installs it once, for every project and language. Its source lives at the Raven
-repository's root, `agents/raven/`, with the marketplace manifest in `.claude-plugin/`. It is
+repository's root, `skills/raven/`, with the marketplace manifest in `.claude-plugin/`. It is
 versioned with Raven, and proposed upstream with the driver.
+
+Built in [The raven agent skill](issues/archive/0181-the-raven-agent-skill.md):
+
+- **`skills/raven/`, not `agents/raven/`.** The repository's root is the plugin's root, and a
+  plugin's `agents/` folder holds subagent definitions. Under `agents/`, every language file loaded
+  as a broken subagent, which `claude plugin validate` showed. `skills/` is where Claude Code finds
+  a plugin's skills with nothing to configure.
+- **`tools/bindgen/gen_skill.py`** runs after the bindings and writes `skills/raven/languages/*.md`
+  and `.claude-plugin/plugin.json` and `marketplace.json`, with Raven's version from
+  `CMakeLists.txt`. `bindgen.py --check` (the `bindings_up_to_date` test) covers them.
+- **Each language file** holds the hand-written snippet (`tools/bindgen/skill/<language>.md`),
+  then a table of the driver's calls as the binding spells them. The table covers everything in
+  `raven_driver.h`, plus `Rinit_ex`, `Rset_animation_time_step`, `Rerror_set_callback`,
+  `Rwait_idle`, `Ris_idle`, `Rwindow_save_preview` and `Rshutdown`.
+- **A spelling is written only when the binding declares it**: in the generated file, or in a
+  hand-written one beside it, such as Go's `callbacks.go`. The rest are listed as not in the
+  binding (Go has no `Raccessible_describe`). Where a binding offers its own way, a small table
+  says so: Go's `InitHeadless`, and C++'s `Window::save_preview`.
+- **C++ uses the C harness**, since `raven_test.h` compiles as C++. The other nine check by
+  selector: they count matches of a selector that states what is expected (`text=`, a state).
+  A count is a plain number in every binding, and Go can't read `RAccessibleInfo`.
+- **Run here**: C, C++, Python, Rust and Node.js's snippets. Java needs 22 (this machine has 17).
+  Go, C#, Zig, LuaJIT, Odin, Bun and C3 have no toolchain here, so their snippets follow the idioms
+  of the build-tested examples.
 
 ### The skills themselves
 
@@ -73,7 +97,7 @@ stay in its findings for reference.
 Reviewing the skill is a checkbox here: whenever this design or `raven_driver.h` changes, the skill's
 table, gotchas and template are checked against it.
 
-- [ ] The `raven` skill matches this design and `raven_driver.h`.
+- [x] The `raven` skill matches this design and `raven_driver.h` (checked 2026-11-24, in 0181).
 
 Decided in [Where agents find Raven's guidance](issues/archive/0163-where-agents-find-ravens-guidance.md).
 
