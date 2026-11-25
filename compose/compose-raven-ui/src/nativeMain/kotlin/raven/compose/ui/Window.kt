@@ -95,9 +95,11 @@ import raven.compose.ui.input.key.KeyEvent
 import raven.compose.ui.platform.FrameStats
 import raven.compose.ui.platform.LocalFocusManager
 import raven.compose.ui.platform.LocalUriHandler
+import raven.compose.ui.platform.LocalClipboardManager
 import raven.compose.ui.platform.LocalDensity
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.WindowDensity
+import raven.compose.ui.platform.RavenClipboardManager
 import raven.compose.ui.platform.RavenUriHandler
 import raven.compose.ui.platform.WindowInfo
 import raven.compose.ui.theme.LocalThemePlacement
@@ -363,6 +365,7 @@ internal class RavenWindow(
             LocalWindowInfo provides info,
             LocalDensity provides density.current,
             LocalUriHandler provides RavenUriHandler,
+            LocalClipboardManager provides RavenClipboardManager,
             LocalLifecycleOwner provides owners,
             LocalSavedStateRegistryOwner provides owners,
             LocalFocusManager provides WindowFocusManager(window),

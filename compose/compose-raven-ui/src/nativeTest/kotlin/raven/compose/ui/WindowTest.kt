@@ -23,6 +23,8 @@ import raven.cinterop.R_WINDOW_HIDDEN
 import raven.cinterop.R_WINDOW_MAXIMIZED
 import raven.cinterop.R_WINDOW_NO_RESIZE
 import raven.cinterop.R_WINDOW_TRANSPARENT
+import raven.cinterop.Rclipboard_get_text
+import raven.cinterop.Rclipboard_set_text
 import raven.cinterop.Rid
 import raven.cinterop.Rwindow_get_backdrop
 import raven.cinterop.Rwindow_get_opacity
@@ -38,6 +40,8 @@ import raven.cinterop.Rwindow_restore
 import raven.cinterop.Rwindow_set_position
 import raven.cinterop.Rwindow_set_size
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.platform.ClipboardManager
+import raven.compose.ui.platform.LocalClipboardManager
 import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.UriHandler
@@ -292,6 +296,28 @@ class WindowTest {
         // Raven refuses an empty URI before asking the OS, so nothing opens; a real one would.
         val thrown = assertFailsWith<IllegalArgumentException> { handler!!.openUri("") }
         assertEquals("Raven can't open \"\"", thrown.message)
+    }
+
+    @Test
+    fun theHostsClipboardManagerUsesRavensClipboard() {
+        var clipboard: ClipboardManager? = null
+        withHost({ Window(onCloseRequest = {}) { clipboard = LocalClipboardManager.current } }) {
+            val manager = clipboard!!
+            // Raven's headless window system keeps a clipboard of its own, empty at start.
+            assertNull(manager.getText(), "an empty clipboard holds no text")
+            assertEquals(false, manager.hasText())
+
+            manager.setText("copied é")
+            assertEquals("copied é", Rclipboard_get_text().toRavenString(), "written to Raven's clipboard")
+            assertEquals("copied é", manager.getText())
+            assertEquals(true, manager.hasText())
+
+            Rclipboard_set_text("from a text field")
+            assertEquals("from a text field", manager.getText(), "what Raven's own copy puts there is read")
+
+            manager.setText("")
+            assertNull(manager.getText(), "emptied")
+        }
     }
 
     @Test

@@ -172,6 +172,13 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     `widgetCount`, `primitiveCount`, `drawCallCount`, `backdropCount`, `paintJobCount` and
     `frameIndex`. It is a plain call, not snapshot state, since the numbers change every frame:
     an app samples it from its own loop ([The editor's run-time extras](issues/archive/0102-the-editors-run-time-extras.md)).
+  - **`LocalClipboardManager`** provides a `ClipboardManager`, in `raven.compose.ui.platform`, with
+    Compose's three members: `setText(text)`, `getText()` (null when the clipboard holds no text)
+    and `hasText()`. They take a `String`, since compose-raven has no `AnnotatedString`. The host's
+    uses `Rclipboard_set_text` and `Rclipboard_get_text`, the clipboard Raven's own fields and
+    editors copy to and paste from; an app or a test provides its own. Raven's HTML copy
+    (`Rclipboard_set_html`) has no counterpart in Compose's interface and isn't bound
+    ([Clipboard](issues/0193-clipboard.md)).
   - **`minimumSize`** uses `Rwindow_set_min_size`; `null` keeps Raven's default, and a change calls
     it again (phase 2, on `singleWindowApplication` too).
   - **`WindowState`** (phase 2) holds `size: DpSize` (as Compose Desktop's, replacing phase 1's
@@ -1591,6 +1598,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | External drops are a `Window(onExternalDrop)` handler for the whole window | `Modifier.dragAndDropTarget` on any element | [4](#4-application-host) |
 | `LocalWindowInfo` adds `isTransparent` | `WindowInfo` has focus, modifiers and size | [4](#4-application-host) |
 | `LocalWindowInfo.frameStats()` reports Raven's frame timings and counts | no counterpart | [4](#4-application-host) |
+| `ClipboardManager` takes and returns `String` | `AnnotatedString`; `ClipboardManager` is deprecated for the suspending `Clipboard` and `ClipEntry` | [4](#4-application-host) |
 | `RavenTheme(metrics)` sets Raven's theme metrics at run time | Material has no metrics; sizes are per component | [8](#phase-2-theming) |
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |
 | `Dialog` is a sheet over its window, and a click outside it does nothing (no `dismissOnClickOutside`) | a separate window on desktop | [4](#4-application-host) |
