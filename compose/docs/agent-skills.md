@@ -113,7 +113,7 @@ runs found went into the `raven` skill: how each language serves the `ui.*` tool
 the middle of a session, typing that appends, and XML fixes and previews that run no app code.
 `diagnosing-bugs` and `triage` were run again in Python and Rust with the MCP wrappers
 (`raven_mcp`, and the crate `raven-gui-mcp`) serving the running apps, in
-[0190](issues/0190-verify-the-skills-with-the-mcp-wrappers.md). Both stayed compatible, and the
+[0190](issues/archive/0190-verify-the-skills-with-the-mcp-wrappers.md). Both stayed compatible, and the
 wrappers added a step the raw calls didn't make easy: the app's own tools (`notes.list`) beside
 `ui.*` on one connection, so a loop reads the app's state directly, and comparing the tool's path
 with the window's narrowed a bug down. One run is still to come: with the plugin installed, so an

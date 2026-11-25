@@ -30,4 +30,4 @@ registry package the Python module lives in comes with
   `bindings/rust/mcp/tests/mcp.rs` (5) and `tests/notes_mcp.rs`. They run in compose's `check` through
   `:raven-mcp:pythonWrapperTest` and `:raven-mcp:rustTest`. The real Python and Rust notes apps
   were also driven with `RAVEN_MCP=1 RAVEN_MCP_UI=1`: `notes.*` and `ui.*` worked side by side.
-- Unblocks [0190](../0190-verify-the-skills-with-the-mcp-wrappers.md), the skills' rerun with the wrappers.
+- Unblocks [0190](0190-verify-the-skills-with-the-mcp-wrappers.md), the skills' rerun with the wrappers.

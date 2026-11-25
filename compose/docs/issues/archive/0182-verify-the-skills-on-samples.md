@@ -20,7 +20,7 @@ The proof the skills map asked for: run every skill in mattpocock-skills' `engin
   `.rs`). `examples/notepad`, the text editor, is C only.
 - It goes ahead without 0180: the six skills need only the `ui.*` tools, which the Raven MCP library
   serves to every binding through the raw `Rmcp_*` calls and `RAVEN_MCP_UI=1`. Running them again
-  with the wrappers is [0190](../0190-verify-the-skills-with-the-mcp-wrappers.md).
+  with the wrappers is [0190](0190-verify-the-skills-with-the-mcp-wrappers.md).
 - The `raven` skill is read by hand (`skills/raven/SKILL.md` and the language file), not installed.
   Whether an agent finds it through its description with the plugin installed is
   [0189](../0189-verify-the-skills-with-the-raven-plugin-installed.md).
