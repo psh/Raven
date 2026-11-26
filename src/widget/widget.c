@@ -781,6 +781,17 @@ void Rwidget_set_focusable(Rid id, int focusable) {
 	}
 }
 
+void Rwidget_set_focus_on_click(Rid id, int enabled) {
+	RVN_WIDGET_VOID(widget, id, 0);
+	if (enabled) widget->flags &= ~RVN_WF_NO_CLICK_FOCUS;
+	else widget->flags |= RVN_WF_NO_CLICK_FOCUS;
+}
+
+int Rwidget_get_focus_on_click(Rid id) {
+	RVN_WIDGET(widget, id, 0, R_TRUE);
+	return (widget->flags & RVN_WF_NO_CLICK_FOCUS) ? R_FALSE : R_TRUE;
+}
+
 void Rwidget_focus(Rid id) {
 	RVN_WIDGET_VOID(widget, id, 0);
 	rvn_widget_focus(widget);

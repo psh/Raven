@@ -2416,6 +2416,17 @@ fn bool Widget.is_hovered(self) @inline => c::r_widget_is_hovered((c::Rid)self) 
 
 fn void Widget.set_focusable(self, bool focusable) @inline => c::r_widget_set_focusable((c::Rid)self, (CInt)focusable);
 
+<*
+ R_FALSE: a click on the widget or on anything inside it leaves the
+ keyboard focus where it is, as a toolbar button does, while the click
+ itself works and Tab still reaches what is focusable inside. For a
+ button over a text field (a password's eye, a clear button), so the
+ typing goes on. Default R_TRUE.
+*>
+fn void Widget.set_focus_on_click(self, bool enabled) @inline => c::r_widget_set_focus_on_click((c::Rid)self, (CInt)enabled);
+
+fn CInt Widget.get_focus_on_click(self) @inline => c::r_widget_get_focus_on_click((c::Rid)self);
+
 <* Gives the keyboard focus to the widget. *>
 fn void Widget.focus(self) @inline => c::r_widget_focus((c::Rid)self);
 

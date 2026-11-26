@@ -2549,6 +2549,18 @@ func WidgetSetFocusable(widget ID, focusable int) {
 	C.Rwidget_set_focusable(C.Rid(widget), C.int(focusable))
 }
 
+// WidgetSetFocusOnClick: R_FALSE: a click on the widget or on anything inside it leaves the keyboard focus
+// where it is, as a toolbar button does, while the click itself works and Tab still reaches what is focusable
+// inside. For a button over a text field (a password's eye, a clear button), so the typing goes on. Default
+// R_TRUE.
+func WidgetSetFocusOnClick(widget ID, enabled int) {
+	C.Rwidget_set_focus_on_click(C.Rid(widget), C.int(enabled))
+}
+
+func WidgetGetFocusOnClick(widget ID) int {
+	return int(C.Rwidget_get_focus_on_click(C.Rid(widget)))
+}
+
 // WidgetFocus: Gives the keyboard focus to the widget.
 func WidgetFocus(widget ID) {
 	C.Rwidget_focus(C.Rid(widget))

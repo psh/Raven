@@ -3204,6 +3204,17 @@ extern fn CInt r_widget_is_hovered(Rid widget) @cname("Rwidget_is_hovered");
 
 extern fn void r_widget_set_focusable(Rid widget, CInt focusable) @cname("Rwidget_set_focusable");
 
+<*
+ R_FALSE: a click on the widget or on anything inside it leaves the
+ keyboard focus where it is, as a toolbar button does, while the click
+ itself works and Tab still reaches what is focusable inside. For a
+ button over a text field (a password's eye, a clear button), so the
+ typing goes on. Default R_TRUE.
+*>
+extern fn void r_widget_set_focus_on_click(Rid widget, CInt enabled) @cname("Rwidget_set_focus_on_click");
+
+extern fn CInt r_widget_get_focus_on_click(Rid widget) @cname("Rwidget_get_focus_on_click");
+
 <* Gives the keyboard focus to the widget. *>
 extern fn void r_widget_focus(Rid widget) @cname("Rwidget_focus");
 

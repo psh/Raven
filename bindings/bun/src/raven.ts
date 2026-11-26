@@ -430,6 +430,8 @@ const _symbols = {
 	Rwidget_get_desired_size: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rwidget_is_hovered: { args: ["u32"], returns: "i32" },
 	Rwidget_set_focusable: { args: ["u32", "i32"], returns: "void" },
+	Rwidget_set_focus_on_click: { args: ["u32", "i32"], returns: "void" },
+	Rwidget_get_focus_on_click: { args: ["u32"], returns: "i32" },
 	Rwidget_focus: { args: ["u32"], returns: "void" },
 	Rwidget_is_focused: { args: ["u32"], returns: "i32" },
 	Rwidget_set_user_handle: { args: ["u32", "ptr"], returns: "void" },
@@ -8701,6 +8703,21 @@ export function Rwidget_is_hovered(widget: Rid): number {
 
 export function Rwidget_set_focusable(widget: Rid, focusable: number): void {
 	_lib.Rwidget_set_focusable(widget, focusable);
+}
+
+/**
+ * R_FALSE: a click on the widget or on anything inside it leaves the
+ * keyboard focus where it is, as a toolbar button does, while the click
+ * itself works and Tab still reaches what is focusable inside. For a
+ * button over a text field (a password's eye, a clear button), so the
+ * typing goes on. Default R_TRUE.
+ */
+export function Rwidget_set_focus_on_click(widget: Rid, enabled: number): void {
+	_lib.Rwidget_set_focus_on_click(widget, enabled);
+}
+
+export function Rwidget_get_focus_on_click(widget: Rid): number {
+	return _lib.Rwidget_get_focus_on_click(widget);
 }
 
 /** Gives the keyboard focus to the widget. */

@@ -2658,6 +2658,13 @@ foreign lib {
 	Rwidget_get_desired_size :: proc(widget: Rid, width: ^f32, height: ^f32) ---
 	Rwidget_is_hovered :: proc(widget: Rid) -> i32 ---
 	Rwidget_set_focusable :: proc(widget: Rid, focusable: i32) ---
+	// R_FALSE: a click on the widget or on anything inside it leaves the
+	// keyboard focus where it is, as a toolbar button does, while the click
+	// itself works and Tab still reaches what is focusable inside. For a
+	// button over a text field (a password's eye, a clear button), so the
+	// typing goes on. Default R_TRUE.
+	Rwidget_set_focus_on_click :: proc(widget: Rid, enabled: i32) ---
+	Rwidget_get_focus_on_click :: proc(widget: Rid) -> i32 ---
 	// Gives the keyboard focus to the widget.
 	Rwidget_focus :: proc(widget: Rid) ---
 	Rwidget_is_focused :: proc(widget: Rid) -> i32 ---

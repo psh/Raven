@@ -327,6 +327,40 @@ static void test_text_input_insets(void) {
 	CHECK(start == 0.0f && end == 100.0f);
 }
 
+static void test_focus_on_click(void) {
+	Rid box = column();
+	Rid input = Rwidget_add_child(box, Rwidget_create(R_WIDGET_TEXT_INPUT));
+	Rid icons = Rwidget_add_child(box, Rwidget_create(R_WIDGET_HBOX));
+	Rid eye = Rwidget_add_child(icons, Rbutton_create("Eye"));
+	Rid plain = Rwidget_add_child(box, Rbutton_create("Plain"));
+	Rbutton_set_clicked_callback(eye, on_click, NULL);
+	CHECK(Rwidget_get_focus_on_click(icons));
+	Rwidget_set_focus_on_click(icons, R_FALSE);
+	CHECK(!Rwidget_get_focus_on_click(icons));
+	CHECK(Rwidget_get_focus_on_click(eye));
+
+	/* a click inside it works, and the field keeps the keyboard */
+	test_click(g_window, input);
+	CHECK(Rwidget_is_focused(input));
+	g_clicks = 0;
+	test_click(g_window, eye);
+	CHECK(g_clicks == 1);
+	CHECK(Rwidget_is_focused(input));
+	Rwindow_inject_text(g_window, "ok");
+	CHECK_STR(Rtext_input_get_text(input), "ok");
+
+	/* Tab still reaches the button */
+	test_key(g_window, R_KEY_TAB, 0);
+	CHECK(Rwidget_is_focused(eye));
+
+	/* a click elsewhere focuses as before, and given back, the flag no longer holds */
+	test_click(g_window, plain);
+	CHECK(Rwidget_is_focused(plain));
+	Rwidget_set_focus_on_click(icons, R_TRUE);
+	test_click(g_window, eye);
+	CHECK(Rwidget_is_focused(eye));
+}
+
 static int g_focus_lost;
 
 static int on_focus_event(Rid widget, const REvent* event, void* user_data) {
@@ -1155,6 +1189,7 @@ int main(void) {
 	RUN(test_slider_and_spin_box);
 	RUN(test_text_input);
 	RUN(test_text_input_insets);
+	RUN(test_focus_on_click);
 	RUN(test_clear_focus);
 	RUN(test_window_focus_moves_the_keyboard);
 	RUN(test_selectable_label);

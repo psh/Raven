@@ -234,6 +234,15 @@ public:
 
 	void set_focusable(int focusable) const { Rwidget_set_focusable(id_, focusable); }
 
+	/// R_FALSE: a click on the widget or on anything inside it leaves the
+	/// keyboard focus where it is, as a toolbar button does, while the click
+	/// itself works and Tab still reaches what is focusable inside. For a
+	/// button over a text field (a password's eye, a clear button), so the
+	/// typing goes on. Default R_TRUE.
+	void set_focus_on_click(int enabled) const { Rwidget_set_focus_on_click(id_, enabled); }
+
+	int get_focus_on_click() const { return Rwidget_get_focus_on_click(id_); }
+
 	/// Gives the keyboard focus to the widget.
 	void focus() const { Rwidget_focus(id_); }
 

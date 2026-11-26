@@ -1454,6 +1454,8 @@ void Rwidget_get_rect(Rid widget, float* x, float* y, float* width, float* heigh
 void Rwidget_get_desired_size(Rid widget, float* width, float* height);
 int Rwidget_is_hovered(Rid widget);
 void Rwidget_set_focusable(Rid widget, int focusable);
+void Rwidget_set_focus_on_click(Rid widget, int enabled);
+int Rwidget_get_focus_on_click(Rid widget);
 void Rwidget_focus(Rid widget);
 int Rwidget_is_focused(Rid widget);
 void Rwidget_set_user_handle(Rid widget, void* handle);

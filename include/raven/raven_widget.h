@@ -358,6 +358,15 @@ extern "C" {
 	RAVEN_API int Rwidget_is_hovered(Rid widget);
 
 	RAVEN_API void Rwidget_set_focusable(Rid widget, int focusable);
+	/**
+	 * @brief R_FALSE: a click on the widget or on anything inside it leaves the
+	 * keyboard focus where it is, as a toolbar button does, while the click
+	 * itself works and Tab still reaches what is focusable inside. For a
+	 * button over a text field (a password's eye, a clear button), so the
+	 * typing goes on. Default R_TRUE.
+	 */
+	RAVEN_API void Rwidget_set_focus_on_click(Rid widget, int enabled);
+	RAVEN_API int Rwidget_get_focus_on_click(Rid widget);
 	/** @brief Gives the keyboard focus to the widget. */
 	RAVEN_API void Rwidget_focus(Rid widget);
 	RAVEN_API int Rwidget_is_focused(Rid widget);

@@ -10177,6 +10177,38 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rwidget_set_focus_on_click$;
+
+    /**
+     * R_FALSE: a click on the widget or on anything inside it leaves the
+     * keyboard focus where it is, as a toolbar button does, while the click
+     * itself works and Tab still reaches what is focusable inside. For a
+     * button over a text field (a password's eye, a clear button), so the
+     * typing goes on. Default R_TRUE.
+     */
+    public static void Rwidget_set_focus_on_click(int widget, int enabled) {
+        MethodHandle $h = Rwidget_set_focus_on_click$;
+        if ($h == null) Rwidget_set_focus_on_click$ = $h = find("Rwidget_set_focus_on_click", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(widget, enabled);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rwidget_get_focus_on_click$;
+
+    public static int Rwidget_get_focus_on_click(int widget) {
+        MethodHandle $h = Rwidget_get_focus_on_click$;
+        if ($h == null) Rwidget_get_focus_on_click$ = $h = find("Rwidget_get_focus_on_click", FunctionDescriptor.of(JAVA_INT, JAVA_INT));
+        try {
+            int $r = (int) $h.invokeExact(widget);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rwidget_focus$;
 
     /**

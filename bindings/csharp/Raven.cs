@@ -5046,6 +5046,19 @@ namespace Raven
         public static extern void Rwidget_set_focusable(uint widget, int focusable);
 
         /// <summary>
+        /// R_FALSE: a click on the widget or on anything inside it leaves the
+        /// keyboard focus where it is, as a toolbar button does, while the click
+        /// itself works and Tab still reaches what is focusable inside. For a
+        /// button over a text field (a password's eye, a clear button), so the
+        /// typing goes on. Default R_TRUE.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rwidget_set_focus_on_click(uint widget, int enabled);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rwidget_get_focus_on_click(uint widget);
+
+        /// <summary>
         /// Gives the keyboard focus to the widget.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]

@@ -1510,6 +1510,15 @@ static rvn_widget_t* rvn_focusable_ancestor(rvn_widget_t* widget) {
 	return NULL;
 }
 
+/* A click on or inside a widget given Rwidget_set_focus_on_click(R_FALSE) leaves the focus where it is. */
+static int rvn_click_takes_focus(const rvn_widget_t* widget) {
+	for (; widget; widget = widget->parent) {
+		if (widget->flags & RVN_WF_NO_CLICK_FOCUS) return R_FALSE;
+		if (widget->flags & RVN_WF_POPUP) break;
+	}
+	return R_TRUE;
+}
+
 static void rvn_window_open_context_menu(rvn_window_t* window, rvn_widget_t* target) {
 	rvn_widget_t* walk;
 	for (walk = target; walk; walk = walk->parent) {
@@ -1603,7 +1612,7 @@ static void rvn_window_mouse_button(rvn_window_t* window, RMouseButton button, i
 		}
 		if (!rvn_widget_is_enabled(target)) return;
 		/* menus and lists do not take the keyboard focus from the widget that opened them; a dialog has its own */
-		if ((popup_index < 0 || window->popups[popup_index].placement == RVN_POPUP_DIALOG) && !window->capture) {
+		if ((popup_index < 0 || window->popups[popup_index].placement == RVN_POPUP_DIALOG) && !window->capture && rvn_click_takes_focus(target)) {
 			rvn_window_set_focus(window, rvn_focusable_ancestor(target));
 			if (window->dead || (target->flags & RVN_WF_DEAD)) return;
 		}

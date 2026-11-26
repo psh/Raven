@@ -2646,6 +2646,13 @@ pub extern fn Rwidget_get_rect(widget: Rid, x: ?*f32, y: ?*f32, width: ?*f32, he
 pub extern fn Rwidget_get_desired_size(widget: Rid, width: ?*f32, height: ?*f32) void;
 pub extern fn Rwidget_is_hovered(widget: Rid) c_int;
 pub extern fn Rwidget_set_focusable(widget: Rid, focusable: c_int) void;
+/// R_FALSE: a click on the widget or on anything inside it leaves the
+/// keyboard focus where it is, as a toolbar button does, while the click
+/// itself works and Tab still reaches what is focusable inside. For a
+/// button over a text field (a password's eye, a clear button), so the
+/// typing goes on. Default R_TRUE.
+pub extern fn Rwidget_set_focus_on_click(widget: Rid, enabled: c_int) void;
+pub extern fn Rwidget_get_focus_on_click(widget: Rid) c_int;
 /// Gives the keyboard focus to the widget.
 pub extern fn Rwidget_focus(widget: Rid) void;
 pub extern fn Rwidget_is_focused(widget: Rid) c_int;

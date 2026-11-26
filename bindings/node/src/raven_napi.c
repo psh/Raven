@@ -306,6 +306,8 @@ static struct {
 	void (*Rwidget_get_desired_size)(Rid, float*, float*);
 	int (*Rwidget_is_hovered)(Rid);
 	void (*Rwidget_set_focusable)(Rid, int);
+	void (*Rwidget_set_focus_on_click)(Rid, int);
+	int (*Rwidget_get_focus_on_click)(Rid);
 	void (*Rwidget_focus)(Rid);
 	int (*Rwidget_is_focused)(Rid);
 	void (*Rwidget_set_user_handle)(Rid, void*);
@@ -1495,6 +1497,8 @@ static const struct {
 	{"Rwidget_get_desired_size", offsetof(__typeof__(rn), Rwidget_get_desired_size)},
 	{"Rwidget_is_hovered", offsetof(__typeof__(rn), Rwidget_is_hovered)},
 	{"Rwidget_set_focusable", offsetof(__typeof__(rn), Rwidget_set_focusable)},
+	{"Rwidget_set_focus_on_click", offsetof(__typeof__(rn), Rwidget_set_focus_on_click)},
+	{"Rwidget_get_focus_on_click", offsetof(__typeof__(rn), Rwidget_get_focus_on_click)},
 	{"Rwidget_focus", offsetof(__typeof__(rn), Rwidget_focus)},
 	{"Rwidget_is_focused", offsetof(__typeof__(rn), Rwidget_is_focused)},
 	{"Rwidget_set_user_handle", offsetof(__typeof__(rn), Rwidget_set_user_handle)},
@@ -8765,6 +8769,33 @@ static napi_value rn_w_Rwidget_set_focusable(napi_env env, napi_callback_info in
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	if (!rn_get_int(env, argv[1], &a1)) return NULL;
 	rn.Rwidget_set_focusable((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rwidget_set_focus_on_click(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rwidget_set_focus_on_click((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rwidget_get_focus_on_click(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rwidget_get_focus_on_click((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
 
@@ -24407,6 +24438,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwidget_get_desired_size", NULL, rn_w_Rwidget_get_desired_size, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_is_hovered", NULL, rn_w_Rwidget_is_hovered, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_focusable", NULL, rn_w_Rwidget_set_focusable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwidget_set_focus_on_click", NULL, rn_w_Rwidget_set_focus_on_click, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwidget_get_focus_on_click", NULL, rn_w_Rwidget_get_focus_on_click, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_focus", NULL, rn_w_Rwidget_focus, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_is_focused", NULL, rn_w_Rwidget_is_focused, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_user_handle", NULL, rn_w_Rwidget_set_user_handle, NULL, NULL, NULL, napi_enumerable, NULL},
