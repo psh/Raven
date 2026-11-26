@@ -40,6 +40,8 @@ fog and [Raven API coverage](../api-coverage.md).
 
 ## Decisions so far
 
+- [Icons and resources: SVG facts](archive/0206-icons-and-resources-svg-facts.md): Raven reads every Google icon and redraws SVGs per scale already; only tinting is missing, since Raven's tint multiplies and the icons are black.
+
 ## Not yet specified
 
 - **Gestures and drag**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`,

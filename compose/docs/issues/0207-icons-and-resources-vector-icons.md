@@ -17,3 +17,10 @@ composable with Compose's shape, `ImageVector` or not), how it stays crisp at ev
 **Compatibility is required**: any icon downloaded from <https://fonts.google.com/icons>, Material
 Symbols and Material Icons alike, renders correctly, crisp and tinted, proved by a few committed
 Google icon fixtures in a test. The answer is the spec section and its implementation tickets.
+
+From [Icons and resources: SVG facts](archive/0206-icons-and-resources-svg-facts.md): Raven already
+reads every Google file correctly (nanosvg, the negative `viewBox`) and `painterResource` already
+redraws an SVG at each density and UI scale. What is missing is **tint**: Raven's tint multiplies
+the texture's colour, so the icons, black by default, stay black. Decide how an icon is tinted (a
+Raven change drawing an SVG as an alpha mask, or recolouring the fill before rasterising, or
+another way), and whether Material Icons' two-tone `opacity` layers keep their opacity.
