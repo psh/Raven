@@ -8,18 +8,18 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-25, after [Window operations](issues/archive/0197-window-operations.md).*
+*Last updated 2026-11-25, after [System accessibility settings](issues/0198-system-accessibility-settings.md).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 466 of 1,218 (38%) |
+| Functions used | 370 of 1,157 (31%) | 475 of 1,218 (38%) |
 | Widget types bound | 36 of 51 | 37 of 52 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 300 of the
 functions it doesn't call are deliberately unnecessary in a Compose binding. Of the everyday
-features the review found missing, five of seven are now bound. Raven grew 61 functions in the
+features the review found missing, six of seven are now bound. Raven grew 61 functions in the
 meantime, most of them in the UI driver (`raven_driver.h`) and the MCP library (`raven_mcp.h`),
 which compose-raven binds almost whole. The map widget was added and bound too.
 
@@ -43,7 +43,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_resources.h` | 17 | 28 | 61% | SVG and async textures, text measuring |
 | `raven_style.h` | 17 | 27 | 63% | per-style theme overrides, wallpaper |
 | `raven_touch.h` | 0 | 23 | 0% | touch, pen and gestures |
-| `raven_accessibility.h` | 9 | 22 | 41% | reading the system's settings ([0198](issues/0198-system-accessibility-settings.md)), colour filters |
+| `raven_accessibility.h` | 18 | 22 | 82% | colour filters, getters |
 | `raven_draw.h` | 17 | 21 | 81% | springs |
 | `raven_locale.h` | 0 | 18 | 0% | translation and locales |
 | `raven_driver.h` | 13 | 14 | 93% | |
@@ -54,7 +54,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_viewport.h` | 8 | 9 | 89% | |
 | `raven_emscripten.h` | 0 | 7 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
-| **Total** | **466** | **1,218** | **38%** | |
+| **Total** | **475** | **1,218** | **38%** | |
 
 ## Not needed by design
 
@@ -89,7 +89,7 @@ phase 5 design pass, since none needs new design; that went ahead on 2026-11-25.
 | Selectable label text | `Rlabel_set_selectable` | `SelectionContainer`, `DisableSelection` | **Done** ([0195](issues/archive/0195-selectable-text.md)) |
 | Scroll a widget into view | `Rwidget_scroll_into_view` | `BringIntoViewRequester` | **Done** ([0196](issues/archive/0196-bring-into-view.md)) |
 | Window operations | `Rwindow_focus`, `_center`, `_hide`, `_request_attention`, `_set_picture_in_picture`, `Rwidget_set_window_drag` | `Window(visible)`, `WindowPosition.Aligned`, `WindowPlacement.PictureInPicture`, `LocalWindowController`, `WindowDraggableArea` | **Done** ([0197](issues/archive/0197-window-operations.md)) |
-| System accessibility settings | `Raccessibility_get_reduce_motion`, `_high_contrast`, `_text_scale`, `_is_screen_reader_active` | `LocalAccessibilitySettings`, following changes while the app runs | Open ([0198](issues/0198-system-accessibility-settings.md)) |
+| System accessibility settings | `Raccessibility_get_reduce_motion`, `_high_contrast`, `_text_scale`, `_is_screen_reader_active`, `_get_system_settings` | `LocalAccessibilitySettings`; the host follows the system while the app runs | **Done** ([0198](issues/0198-system-accessibility-settings.md)) |
 | UI scale | `Rget_ui_scale`, `Rset_ui_scale` | an app-level UI scale | Open ([0199](issues/0199-ui-scale.md)) |
 
 Found while doing them:
@@ -149,7 +149,7 @@ SizeBox and Canvas are the other unbound widget types, which Compose idioms cove
 The roadmap's phase 5 list is mostly structural: custom `Layout {}`, lazy virtualisation, popups
 and gestures. This review adds:
 
-1. **The everyday-features batch**: under way, five of seven done (above).
+1. **The everyday-features batch**: under way, six of seven done (above).
 2. **Table and TileView**, designed together with lazy virtualisation, since both depend on it.
 3. **Decide first**: localisation with right-to-left, touch and pen, and Plot each need a design
    decision (scope, API shape) before they become tickets.

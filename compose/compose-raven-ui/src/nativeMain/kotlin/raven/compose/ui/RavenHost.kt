@@ -2,6 +2,8 @@
 
 package raven.compose.ui
 
+import raven.compose.ui.platform.AccessibilityFollower
+import raven.compose.ui.platform.systemAccessibilityCalls
 import androidx.compose.runtime.AbstractApplier
 import androidx.compose.runtime.BroadcastFrameClock
 import androidx.compose.runtime.Composable
@@ -37,7 +39,6 @@ import raven.cinterop.R_BACKEND_NULL
 import raven.cinterop.R_BACKEND_VULKAN
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_TRUE
-import raven.cinterop.Raccessibility_follow_system
 import raven.cinterop.Rdraw_frame
 import raven.cinterop.Rerror_get_last
 import raven.cinterop.Rget_time
@@ -129,6 +130,14 @@ public class RavenHost(
     /** The nodes whose widgets a [WidgetFollower] follows once a frame. */
     internal val followedNodes: MutableSet<RavenNode> = LinkedHashSet()
 
+    /** The accessibility settings, which it follows from Raven and, unless told not to, from the system. */
+    internal val accessibility: AccessibilityFollower = AccessibilityFollower(
+        followSystemAccessibility && (!headless || systemAccessibilityCalls.followsWhenHeadless),
+    )
+
+    // Whether one of the windows was the active one at the last frame; none is before the first.
+    private var appWasActive = true
+
     /** The windows open now, in the order they opened. */
     internal val windows: MutableList<RavenWindow> = mutableListOf()
 
@@ -151,7 +160,7 @@ public class RavenHost(
         state = State.Started
         epoch = HostEpoch.current
         if (animationTimeStep > 0.0) Rset_animation_time_step(animationTimeStep)
-        if (followSystemAccessibility && !headless) Raccessibility_follow_system()
+        accessibility.start()
         RavenAnimation.followRaven()
         if (getenv("RAVEN_LIVE_RELOAD") == null) Rxml_set_live_reload(if (liveReload) R_TRUE else R_FALSE)
         running = this
@@ -358,8 +367,15 @@ public class RavenHost(
             resumeIdleWaiters()
             // Raven reports no moves and no changes of placement: each window reads them here.
             windows.forEach { it.followRaven() }
+            // Nor the app's activation. Just activated, the user may be back from the system's
+            // settings: they are read again, before what follows them is read below.
+            val active = windows.any { it.isActive }
+            if (active && !appWasActive) accessibility.onAppActivated()
+            appWasActive = active
             // Nor a change of its animation settings, which follow the system's reduced motion.
             RavenAnimation.followRaven()
+            // Nor the accessibility settings.
+            accessibility.frame()
             // Nor a text editor's cursor: each follower reads what it follows here, before recomposing.
             followedNodes.forEach { node -> node.follower?.follow(node.widget) }
             // What was dispatched since the frame's tasks ran, a timer's state write say, joins this frame.

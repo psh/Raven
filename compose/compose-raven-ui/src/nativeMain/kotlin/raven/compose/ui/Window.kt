@@ -105,6 +105,7 @@ import raven.compose.ui.platform.LocalClipboardManager
 import raven.compose.ui.platform.LocalDensity
 import raven.compose.ui.platform.LocalWindowInfo
 import raven.compose.ui.platform.LocalWindowController
+import raven.compose.ui.platform.LocalAccessibilitySettings
 import raven.compose.ui.platform.WindowController
 import raven.compose.ui.platform.WindowDensity
 import raven.compose.ui.platform.RavenClipboardManager
@@ -388,6 +389,7 @@ internal class RavenWindow(
             LocalNavigationEventDispatcher provides navigationEvents,
             LocalWindowInfo provides info,
             LocalWindowController provides controller,
+            LocalAccessibilitySettings provides host.accessibility.settings,
             LocalDensity provides density.current,
             LocalUriHandler provides RavenUriHandler,
             LocalClipboardManager provides RavenClipboardManager,
@@ -535,8 +537,11 @@ internal class RavenWindow(
         followLifecycle()
     }
 
+    /** Whether the window is the one the user is working in. */
+    val isActive: Boolean get() = windowCalls.isActive(window)
+
     private fun followLifecycle() {
-        owners.follow(shown, minimized = readPlacement() == RavenPlacement.Minimized, active = Rwindow_is_active(window) == R_TRUE)
+        owners.follow(shown, minimized = readPlacement() == RavenPlacement.Minimized, active = isActive)
     }
 
     /**
@@ -707,6 +712,8 @@ internal open class WindowCalls {
     open fun hide(window: Rid) = Rwindow_hide(window)
 
     open fun focus(window: Rid) = Rwindow_focus(window)
+
+    open fun isActive(window: Rid): Boolean = Rwindow_is_active(window) == R_TRUE
 
     open fun setPictureInPicture(window: Rid, enabled: Boolean): Boolean =
         Rwindow_set_picture_in_picture(window, if (enabled) R_TRUE else R_FALSE) == R_TRUE

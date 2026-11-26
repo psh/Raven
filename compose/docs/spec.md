@@ -141,7 +141,20 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   or when `ApplicationScope.exitApplication()` is called. `singleWindowApplication(title, width,
   height, ...)` is shorthand for `application { Window(onCloseRequest = ::exitApplication, ...) }`.
   At start, the host calls `Raccessibility_follow_system()` unless `followSystemAccessibility` is
-  false, so text scale, contrast and reduced motion follow the OS.
+  false, so text scale, contrast and reduced motion follow the OS. It follows them while the app
+  runs too: when the app becomes active again (none of its windows was, and one is), it reads the
+  system's settings (`Raccessibility_get_system_settings`) and applies only those whose system value
+  changed since it last read them, so a setting the app changed itself stays until the system's
+  does. Switching between the app's windows reads nothing, as reading the system is slow on Linux
+  (`gsettings`). The screen reader is checked every 2 seconds, and its starting shows the focus
+  always (`Raccessibility_set_focus_always_visible`), as `follow_system` does. A headless host
+  follows nothing.
+  - **`LocalAccessibilitySettings`** (in `raven.compose.ui.platform`), which `Window` provides, is an
+    `AccessibilitySettings(reduceMotion, highContrast, textScale, isScreenReaderActive)` read from
+    Raven once a frame (`Raccessibility_get_*`, the screen reader from its last check), so it is what
+    the app runs with, the system's or the app's own. Its readers recompose when one changes;
+    outside a window it is `AccessibilitySettings.Default`
+    ([System accessibility settings](issues/0198-system-accessibility-settings.md)).
   - **In phase 1**, `application`, `ApplicationScope.exitApplication()` and `Window(onCloseRequest,
     title, width, height) { }` are already public, so `samples/hello`'s Quit button can end the app.
     Phase 2 completes the single `Window`: `WindowState` and every parameter below but `icon`,
@@ -1654,6 +1667,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `LocalWindowInfo` adds `isTransparent` | `WindowInfo` has focus, modifiers and size | [4](#4-application-host) |
 | `LocalWindowInfo.frameStats()` reports Raven's frame timings and counts | no counterpart | [4](#4-application-host) |
 | `LocalWindowController` brings a window to the front and asks for attention | `window.toFront()` and AWT's `Taskbar` through `FrameWindowScope.window` | [4](#4-application-host) |
+| `LocalAccessibilitySettings` reports reduced motion, contrast, text scale and the screen reader, following the system while the app runs | no counterpart on desktop; `LocalDensity.fontScale` for the text scale | [4](#4-application-host) |
 | `WindowPlacement.PictureInPicture`; no `Fullscreen` | `Floating`, `Maximized`, `Fullscreen` | [4](#4-application-host) |
 | `WindowPosition.Aligned` only centres | any alignment on the screen | [4](#4-application-host) |
 | `WindowDraggableArea` needs no `WindowScope`, and only drags a `customHeader` window | an extension of `WindowScope` | [4](#4-application-host) |
