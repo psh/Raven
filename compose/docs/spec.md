@@ -438,6 +438,13 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   and back ([The editor's scene viewport](issues/archive/0101-the-editors-scene-viewport.md)). Raven
   reports no change of scale, so the window reads it once a frame, and a change recomposes its
   readers ([Modifier.offset and LocalDensity](issues/archive/0118-layout-offset-and-density.md)).
+- **`RavenUiScale.value`**, in `raven.compose.ui`, is the scale of the whole interface on top of
+  each monitor's (`Rset_ui_scale`, 0.25 to 4; outside that it throws), for an app's zoom setting:
+  every window is laid out again in the same logical units, so `LocalDensity` follows and a window
+  shows less at a larger scale, and Raven closes the open popups. It is snapshot state, read from
+  Raven once a frame (`Rwindow_save_preview` changes it while it draws), and a value set before the
+  application starts applies at start, so a saved zoom is restored before the first frame
+  ([UI scale](issues/0199-ui-scale.md)).
 - **Packages follow Compose's**: `Modifier`, `Alignment` and `testTag` are in `raven.compose.ui`.
   The modifier functions (`padding`, `size`, `fillMaxWidth`, ...), `Arrangement`, the scopes and
   `Column`/`Row`/`Box` are in `raven.compose.foundation.layout`. The elements they create, and the
@@ -1668,6 +1675,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `LocalWindowInfo.frameStats()` reports Raven's frame timings and counts | no counterpart | [4](#4-application-host) |
 | `LocalWindowController` brings a window to the front and asks for attention | `window.toFront()` and AWT's `Taskbar` through `FrameWindowScope.window` | [4](#4-application-host) |
 | `LocalAccessibilitySettings` reports reduced motion, contrast, text scale and the screen reader, following the system while the app runs | no counterpart on desktop; `LocalDensity.fontScale` for the text scale | [4](#4-application-host) |
+| `RavenUiScale.value` zooms the whole interface | no counterpart; an app scales its own `LocalDensity` | [6](#6-layout-and-modifiers) |
 | `WindowPlacement.PictureInPicture`; no `Fullscreen` | `Floating`, `Maximized`, `Fullscreen` | [4](#4-application-host) |
 | `WindowPosition.Aligned` only centres | any alignment on the screen | [4](#4-application-host) |
 | `WindowDraggableArea` needs no `WindowScope`, and only drags a `customHeader` window | an extension of `WindowScope` | [4](#4-application-host) |

@@ -8,18 +8,18 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-25, after [System accessibility settings](issues/archive/0198-system-accessibility-settings.md).*
+*Last updated 2026-11-25, after [UI scale](issues/0199-ui-scale.md).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 475 of 1,218 (38%) |
+| Functions used | 370 of 1,157 (31%) | 477 of 1,218 (39%) |
 | Widget types bound | 36 of 51 | 37 of 52 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 300 of the
 functions it doesn't call are deliberately unnecessary in a Compose binding. Of the everyday
-features the review found missing, six of seven are now bound. Raven grew 61 functions in the
+features the review found missing, all seven are now bound. Raven grew 61 functions in the
 meantime, most of them in the UI driver (`raven_driver.h`) and the MCP library (`raven_mcp.h`),
 which compose-raven binds almost whole. The map widget was added and bound too.
 
@@ -34,7 +34,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_tools.h` | 8 | 194 | 4% | NodeGraph, Timeline, BlockEditor unbound (phase 5 fog) |
 | `raven_window.h` | 46 | 86 | 53% | drag and drop inside the app, window themes, shortcuts, the inspector, getters |
 | `raven_widget.h` | 53 | 79 | 67% | getters, style classes, free-form slots, drop targets on widgets |
-| `raven_core.h` | 38 | 64 | 59% | allocator and memory, UI scale ([0199](issues/0199-ui-scale.md)), async tasks, vsync |
+| `raven_core.h` | 40 | 64 | 63% | allocator and memory, async tasks, vsync |
 | `raven_xml.h` | 4 | 64 | 6% | the XML loader, replaced by the composition |
 | `raven_layout.h` | 34 | 61 | 56% | Switcher, SizeBox, Spacer (Compose idioms), layout direction |
 | `raven_shell.h` | 23 | 56 | 41% | tray, taskbar, parts of the header bar and dock area |
@@ -54,7 +54,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_viewport.h` | 8 | 9 | 89% | |
 | `raven_emscripten.h` | 0 | 7 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
-| **Total** | **475** | **1,218** | **38%** | |
+| **Total** | **477** | **1,218** | **39%** | |
 
 ## Not needed by design
 
@@ -80,7 +80,7 @@ needed yet.
 ### Everyday features
 
 Each is small, and an app would notice it missing. The review proposed doing them ahead of the
-phase 5 design pass, since none needs new design; that went ahead on 2026-11-25.
+phase 5 design pass, since none needs new design; they were all done on 2026-11-25.
 
 | Feature | Raven API | compose-raven | Status |
 |---|---|---|---|
@@ -90,7 +90,7 @@ phase 5 design pass, since none needs new design; that went ahead on 2026-11-25.
 | Scroll a widget into view | `Rwidget_scroll_into_view` | `BringIntoViewRequester` | **Done** ([0196](issues/archive/0196-bring-into-view.md)) |
 | Window operations | `Rwindow_focus`, `_center`, `_hide`, `_request_attention`, `_set_picture_in_picture`, `Rwidget_set_window_drag` | `Window(visible)`, `WindowPosition.Aligned`, `WindowPlacement.PictureInPicture`, `LocalWindowController`, `WindowDraggableArea` | **Done** ([0197](issues/archive/0197-window-operations.md)) |
 | System accessibility settings | `Raccessibility_get_reduce_motion`, `_high_contrast`, `_text_scale`, `_is_screen_reader_active`, `_get_system_settings` | `LocalAccessibilitySettings`; the host follows the system while the app runs | **Done** ([0198](issues/archive/0198-system-accessibility-settings.md)) |
-| UI scale | `Rget_ui_scale`, `Rset_ui_scale` | an app-level UI scale | Open ([0199](issues/0199-ui-scale.md)) |
+| UI scale | `Rget_ui_scale`, `Rset_ui_scale` | `RavenUiScale.value` | **Done** ([0199](issues/0199-ui-scale.md)) |
 
 Found while doing them:
 
@@ -149,7 +149,7 @@ SizeBox and Canvas are the other unbound widget types, which Compose idioms cove
 The roadmap's phase 5 list is mostly structural: custom `Layout {}`, lazy virtualisation, popups
 and gestures. This review adds:
 
-1. **The everyday-features batch**: under way, six of seven done (above).
+1. **The everyday-features batch**: done, all seven (above).
 2. **Table and TileView**, designed together with lazy virtualisation, since both depend on it.
 3. **Decide first**: localisation with right-to-left, touch and pen, and Plot each need a design
    decision (scope, API shape) before they become tickets.

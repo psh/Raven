@@ -162,6 +162,7 @@ public class RavenHost(
         if (animationTimeStep > 0.0) Rset_animation_time_step(animationTimeStep)
         accessibility.start()
         RavenAnimation.followRaven()
+        RavenUiScale.start()
         if (getenv("RAVEN_LIVE_RELOAD") == null) Rxml_set_live_reload(if (liveReload) R_TRUE else R_FALSE)
         running = this
         registerEmbeddedResources()
@@ -374,8 +375,9 @@ public class RavenHost(
             appWasActive = active
             // Nor a change of its animation settings, which follow the system's reduced motion.
             RavenAnimation.followRaven()
-            // Nor the accessibility settings.
+            // Nor the accessibility settings, nor the UI scale, which a preview changes for a while.
             accessibility.frame()
+            RavenUiScale.followRaven()
             // Nor a text editor's cursor: each follower reads what it follows here, before recomposing.
             followedNodes.forEach { node -> node.follower?.follow(node.widget) }
             // What was dispatched since the frame's tasks ran, a timer's state write say, joins this frame.
