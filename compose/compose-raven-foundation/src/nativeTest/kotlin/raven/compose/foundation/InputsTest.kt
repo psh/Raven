@@ -5,31 +5,56 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import raven.cinterop.RKey
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_KEY_BACKSPACE
+import raven.cinterop.R_KEY_C
+import raven.cinterop.R_KEY_ENTER
 import raven.cinterop.R_KEY_LEFT
+import raven.cinterop.R_KEY_V
+import raven.cinterop.R_MOD_CTRL
 import raven.cinterop.R_TRUE
+import raven.cinterop.Rclipboard_get_text
+import raven.cinterop.Rclipboard_set_text
 import raven.cinterop.Rcombo_box_get_item_count
 import raven.cinterop.Rcombo_box_get_item_text
 import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rslider_get_value
 import raven.cinterop.Rspin_box_get_value
 import raven.cinterop.Rtext_input_get_text
+import raven.cinterop.Rtext_input_is_password
+import raven.cinterop.Rtext_input_select_all
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_key
+import raven.compose.foundation.text.KeyboardActions
 import raven.compose.ui.Modifier
+import raven.compose.ui.layoutWarningSink
 import raven.compose.ui.test.RavenTestScope
 import raven.compose.ui.test.runRavenTest
 import raven.compose.ui.testTag
+import raven.compose.ui.text.input.PasswordVisualTransformation
+import raven.compose.ui.text.input.VisualTransformation
 import raven.native.toRavenString
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class InputsTest {
     private fun RavenTestScope.fieldText(tag: String): String = Rtext_input_get_text(onNodeWithTag(tag).fetchWidget()).toRavenString()
 
-    private fun RavenTestScope.press(tag: String, key: RKey) {
+    private fun RavenTestScope.press(tag: String, key: RKey, modifiers: UInt = 0u) {
         val window = Rwidget_get_window(onNodeWithTag(tag).fetchWidget())
-        Rwindow_inject_key(window, key, R_TRUE, 0u)
-        Rwindow_inject_key(window, key, R_FALSE, 0u)
+        Rwindow_inject_key(window, key, R_TRUE, modifiers)
+        Rwindow_inject_key(window, key, R_FALSE, modifiers)
+    }
+
+    /** Ctrl+[key], which Raven's fields take as the command on every platform. */
+    private fun RavenTestScope.command(tag: String, key: RKey) = press(tag, key, R_MOD_CTRL)
+
+    private val defaultSink = layoutWarningSink
+
+    @AfterTest
+    fun restore() {
+        layoutWarningSink = defaultSink
     }
 
     @Test
@@ -105,6 +130,125 @@ class InputsTest {
         assertEquals("draft", fieldText("field"))
         text = ""
         assertEquals("", fieldText("field"))
+    }
+
+    @Test
+    fun aPasswordFieldHidesItsTextAndRefusesToCopyIt() = runRavenTest {
+        var text by mutableStateOf("")
+        var hidden by mutableStateOf(true)
+        setContent {
+            TextField(
+                text, onValueChange = { text = it }, Modifier.testTag("field"),
+                visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
+            )
+        }
+        val widget = onNodeWithTag("field").fetchWidget()
+        assertEquals(R_TRUE, Rtext_input_is_password(widget))
+        onNodeWithTag("field").performTextInput("secret")
+        assertEquals("secret", text, "the app still gets the text")
+
+        Rclipboard_set_text("before")
+        Rtext_input_select_all(widget)
+        command("field", R_KEY_C)
+        assertEquals("before", Rclipboard_get_text().toRavenString(), "nothing copied")
+
+        hidden = false
+        assertEquals(R_FALSE, Rtext_input_is_password(onNodeWithTag("field").fetchWidget()))
+    }
+
+    @Test
+    fun anotherPasswordMaskWarnsAndIsDrawnAsABullet() = runRavenTest {
+        val warnings = mutableListOf<String>()
+        layoutWarningSink = { warnings += it }
+        setContent { TextField("", onValueChange = {}, Modifier.testTag("field"), visualTransformation = PasswordVisualTransformation('*')) }
+        assertEquals(R_TRUE, Rtext_input_is_password(onNodeWithTag("field").fetchWidget()))
+        assertEquals(listOf("TextField: Raven hides a password with bullets, so the mask '*' is drawn as one"), warnings)
+    }
+
+    @Test
+    fun maxLengthCutsTyping() = runRavenTest {
+        var text by mutableStateOf("")
+        val changes = mutableListOf<String>()
+        setContent {
+            TextField(text, onValueChange = {
+                changes += it
+                text = it
+            }, Modifier.testTag("field"), maxLength = 3)
+        }
+        onNodeWithTag("field").performTextInput("abcde")
+        assertEquals("abc", fieldText("field"))
+        assertEquals(listOf("a", "ab", "abc"), changes, "a key past the limit changes nothing")
+    }
+
+    @Test
+    fun maxLengthCountsCharactersNotUtf16Units() = runRavenTest {
+        var text by mutableStateOf("")
+        setContent { TextField(text, onValueChange = { text = it }, Modifier.testTag("field"), maxLength = 2) }
+        onNodeWithTag("field").performTextInput("😀é!")
+        assertEquals("😀é", text)
+    }
+
+    @Test
+    fun aPasteIsCutToMaxLengthWithTheCaretAfterIt() = runRavenTest {
+        var text by mutableStateOf("")
+        setContent { TextField(text, onValueChange = { text = it }, Modifier.testTag("field"), maxLength = 5) }
+        onNodeWithTag("field").performTextInput("ab")
+        press("field", R_KEY_LEFT)
+        Rclipboard_set_text("XYZW")
+        command("field", R_KEY_V)
+        assertEquals("aXYZb", text, "three of the four fit")
+        // The caret is after the pasted text, not at the end: Backspace deletes the Z.
+        press("field", R_KEY_BACKSPACE)
+        assertEquals("aXYb", text)
+    }
+
+    @Test
+    fun aValueLongerThanMaxLengthIsShownWhole() = runRavenTest {
+        var text by mutableStateOf("abcdef")
+        setContent { TextField(text, onValueChange = { text = it }, Modifier.testTag("field"), maxLength = 3) }
+        assertEquals("abcdef", fieldText("field"))
+        onNodeWithTag("field").performTextInput("g")
+        assertEquals("abcdef", text, "no room to type")
+        press("field", R_KEY_BACKSPACE)
+        assertEquals("abcde", text, "deleting still works")
+    }
+
+    @Test
+    fun maxLengthMustBePositive() = runRavenTest {
+        val thrown = assertFailsWith<IllegalArgumentException> {
+            setContent { TextField("", onValueChange = {}, maxLength = 0) }
+        }
+        assertEquals("a TextField's maxLength must be positive, not 0", thrown.message)
+    }
+
+    @Test
+    fun enterCallsOnDone() = runRavenTest {
+        var text by mutableStateOf("")
+        val done = mutableListOf<String>()
+        var second by mutableStateOf(false)
+        setContent {
+            TextField(
+                text, onValueChange = { text = it }, Modifier.testTag("field"),
+                keyboardActions = KeyboardActions(onDone = { done += if (second) "second: $text" else "first: $text" }),
+            )
+        }
+        onNodeWithTag("field").performTextInput("hi")
+        press("field", R_KEY_ENTER)
+        assertEquals(listOf("first: hi"), done)
+        assertEquals("hi", text, "Enter doesn't change the text")
+
+        second = true
+        press("field", R_KEY_ENTER)
+        assertEquals(listOf("first: hi", "second: hi"), done, "the latest onDone")
+    }
+
+    @Test
+    fun enterWithoutOnDoneDoesNothing() = runRavenTest {
+        var text by mutableStateOf("")
+        setContent { TextField(text, onValueChange = { text = it }, Modifier.testTag("field")) }
+        onNodeWithTag("field").performTextInput("hi")
+        press("field", R_KEY_ENTER)
+        assertEquals("hi", text)
     }
 
     private fun RavenTestScope.sliderValue(tag: String): Float = Rslider_get_value(onNodeWithTag(tag).fetchWidget())

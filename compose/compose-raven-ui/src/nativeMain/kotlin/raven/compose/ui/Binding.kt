@@ -69,6 +69,7 @@ import raven.cinterop.Rtext_editor_set_completion_callback
 import raven.cinterop.Rtext_editor_set_text
 import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rtext_input_set_changed_callback
+import raven.cinterop.Rtext_input_set_committed_callback
 import raven.cinterop.Rtext_input_set_text
 import raven.cinterop.Rwidget_create
 import raven.cinterop.Rwidget_is_valid
@@ -381,6 +382,12 @@ public val TextChanged: Event<(String) -> Unit> = Event(marks = TextInputText) {
     Rtext_input_set_changed_callback(widget, onTextChanged, userData)
 }
 
+/** Enter pressed in a text input. Raven passes the text too, but the app's value is already it. */
+@InternalComposeRavenApi
+public val TextCommitted: Event<() -> Unit> = Event { widget, userData ->
+    Rtext_input_set_committed_callback(widget, onTextCommitted, userData)
+}
+
 /** A text editor's edit. Raven's callback carries no text, so the editor's whole text is read. */
 @InternalComposeRavenApi
 public val TextEditorChanged: Event<(String) -> Unit> = Event(marks = TextEditorText) { widget, userData ->
@@ -427,6 +434,10 @@ private val onCheckboxChanged = staticCFunction { _: Rid, checked: Int, userData
 
 private val onTextChanged = staticCFunction { _: Rid, text: CPointer<ByteVar>?, userData: COpaquePointer? ->
     dispatchEvent(userData, TextChanged) { it(text.toRavenString()) }
+}
+
+private val onTextCommitted = staticCFunction { _: Rid, _: CPointer<ByteVar>?, userData: COpaquePointer? ->
+    dispatchEvent(userData, TextCommitted) { it() }
 }
 
 private val onTextEditorChanged = staticCFunction { editor: Rid, userData: COpaquePointer? ->

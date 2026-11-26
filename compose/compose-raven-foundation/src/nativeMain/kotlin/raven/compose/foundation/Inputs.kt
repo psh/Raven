@@ -30,6 +30,8 @@ import raven.cinterop.Rslider_set_step
 import raven.cinterop.Rspin_box_set_decimals
 import raven.cinterop.Rspin_box_set_range
 import raven.cinterop.Rspin_box_set_step
+import raven.cinterop.Rtext_input_set_max_length
+import raven.cinterop.Rtext_input_set_password
 import raven.cinterop.Rtext_input_set_placeholder
 import raven.cinterop.Rtext_input_set_read_only
 import raven.cinterop.Rwidget_clear_metric
@@ -45,6 +47,11 @@ import raven.compose.ui.SliderValue
 import raven.compose.ui.SpinBoxChanged
 import raven.compose.ui.SpinBoxValue
 import raven.compose.ui.TextChanged
+import raven.compose.ui.TextCommitted
+import raven.compose.ui.layoutWarningSink
+import raven.compose.ui.text.input.PasswordVisualTransformation
+import raven.compose.ui.text.input.VisualTransformation
+import raven.compose.foundation.text.KeyboardActions
 import raven.compose.ui.TextInputText
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
@@ -57,7 +64,7 @@ import raven.compose.ui.text.font.rememberRavenFont
 import raven.compose.ui.unit.TextUnit
 import raven.compose.ui.unit.isSpecified
 
-private val TextFieldWidget = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged))
+private val TextFieldWidget = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged, TextCommitted))
 private val SliderWidget = WidgetDescriptor("Slider", R_WIDGET_SLIDER, events = listOf(SliderChanged))
 private val ComboBoxWidget = WidgetDescriptor("ComboBox", R_WIDGET_COMBO_BOX, events = listOf(ComboBoxChanged))
 private val SpinBoxWidget = WidgetDescriptor("SpinBox", R_WIDGET_SPIN_BOX, events = listOf(SpinBoxChanged))
@@ -65,6 +72,13 @@ private val IntSpinBoxWidget = WidgetDescriptor("SpinBox", R_WIDGET_SPIN_BOX, ev
 
 private val Placeholder = Property<String> { widget, text -> Rtext_input_set_placeholder(widget, text) }
 private val ReadOnly = Property<Boolean> { widget, readOnly -> Rtext_input_set_read_only(widget, if (readOnly) R_TRUE else R_FALSE) }
+private val Password = Property<VisualTransformation> { widget, transformation ->
+    if (transformation is PasswordVisualTransformation && transformation.mask != '\u2022') {
+        layoutWarningSink("TextField: Raven hides a password with bullets, so the mask '${transformation.mask}' is drawn as one")
+    }
+    Rtext_input_set_password(widget, if (transformation is PasswordVisualTransformation) R_TRUE else R_FALSE)
+}
+private val MaxLength = Property<Int?> { widget, maxLength -> Rtext_input_set_max_length(widget, maxLength ?: 0) }
 private val SliderRange = Property<ClosedFloatingPointRange<Float>> { widget, range ->
     Rslider_set_range(widget, range.start, range.endInclusive)
 }
@@ -158,6 +172,14 @@ private val FontSizeMetric = Property<TextUnit> { widget, size ->
  * [textStyle] gives the text its font, size and colour; its colour wins over [colors]'
  * `textColor`. Raven's field has no alignment, so `textAlign` is ignored.
  *
+ * [visualTransformation] `PasswordVisualTransformation()` hides the text and refuses to copy it.
+ * [keyboardActions]' `onDone` is called when the user presses Enter.
+ *
+ * [maxLength], a compose-raven extension, limits what the user types or pastes to that many
+ * characters (code points, so an emoji is one): Raven cuts the insertion inside the field, so the
+ * caret stays after it. A [value] the app sets is shown whole, even when it is longer. Null is no
+ * limit.
+ *
  * Only single-line fields exist: `CodeEditor` edits several lines.
  */
 @Composable
@@ -169,11 +191,15 @@ public fun TextField(
     readOnly: Boolean = false,
     textStyle: TextStyle = LocalTextStyle.current,
     placeholder: String = "",
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
+    maxLength: Int? = null,
     shape: Shape? = null,
     colors: TextFieldColors = TextFieldDefaults.colors(),
 ) {
     require(singleLine) { "TextField is single-line only; CodeEditor edits several lines" }
+    require(maxLength == null || maxLength > 0) { "a TextField's maxLength must be positive, not $maxLength" }
     val roleColors = roleColors(
         R_COLOR_INPUT to colors.containerColor,
         R_COLOR_TEXT to if (textStyle.color.isSpecified) textStyle.color else colors.textColor,
@@ -195,8 +221,11 @@ public fun TextField(
         bind(shape, TextFieldShape)
         bind(roleColors, WidgetColors)
         bind(placeholder, Placeholder)
+        bind(visualTransformation, Password)
+        bind(maxLength, MaxLength)
         bind(value, TextInputText)
         bind(onValueChange, TextChanged)
+        bind(keyboardActions.onDone, TextCommitted)
     })
 }
 

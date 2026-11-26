@@ -480,6 +480,18 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
   from what the widget shows, so typing never moves the caret. Text the app rewrites moves the
   caret to the end. Raven sees only committed text, never an IME preedit, so a write-back can't
   cancel a composition ([verified](../spikes/README.md)).
+  - `visualTransformation = PasswordVisualTransformation()` uses `Rtext_input_set_password`: Raven
+    draws a bullet per character and refuses to copy or cut. `VisualTransformation` is sealed, with
+    `None` and `PasswordVisualTransformation(mask)`, since Raven can only show or hide the text; a
+    mask other than U+2022 is drawn as a bullet with a warning.
+  - `keyboardActions = KeyboardActions(onDone)`: Enter calls `onDone`, from
+    `Rtext_input_set_committed_callback`. There is no `KeyboardOptions`, so no IME action picks
+    another handler.
+  - `maxLength: Int? = null`, a compose-raven extension, uses `Rtext_input_set_max_length`. Raven cuts
+    what is typed or pasted to that many code points inside the field, so the caret stays after the
+    insertion, which filtering in `onValueChange` can't keep (rewritten text moves the caret to the
+    end). A longer `value` from the app is shown whole, and only edits are limited
+    ([Password, max length and submit on TextField](issues/0194-password-max-length-and-submit-on-textfield.md)).
 - **Errors**: a Kotlin exception must not cross a `staticCFunction`. Each shared callback catches
   it and passes it to the host's error path ([section 4](#4-application-host)).
 - **Phase 1 events** are only the callbacks that belong to each widget, listed in
@@ -563,7 +575,7 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
 | `Switch(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_SWITCH` | as `Checkbox` |
 | `RadioButton(selected, onClick)` | Checkbox, `R_CHECKBOX_RADIO` | the controlled check makes the app's state override Raven's sibling unchecking: Raven reports each sibling it unchecks, so each is marked, and only the radio that became checked calls `onClick` |
-| `TextField(value, onValueChange, modifier, enabled, readOnly, placeholder: String, singleLine = true)` | TextInput | single line only: `singleLine = false` fails |
+| `TextField(value, onValueChange, modifier, enabled, readOnly, textStyle, placeholder: String, visualTransformation, keyboardActions, singleLine = true, maxLength: Int? = null, shape, colors)` | TextInput | single line only: `singleLine = false` fails; `maxLength` is a compose-raven extension ([section 7](#7-events-and-state)) |
 | `Slider(value, onValueChange, modifier, enabled, valueRange, steps)` | Slider | controlled. `steps` values lie between the ends, as in Compose, so Raven's step is `range / (steps + 1)` |
 | `LinearProgressIndicator(progress)` | ProgressBar | |
 | `HorizontalDivider()`, `VerticalDivider()` | Separator | |
@@ -1530,6 +1542,9 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
+| `TextField(maxLength)` limits typing and pasting inside the field | no limit; the app filters in `onValueChange` | [7](#7-events-and-state) |
+| `VisualTransformation` is sealed: `None` or `PasswordVisualTransformation` | any `filter(AnnotatedString)` | [7](#7-events-and-state) |
+| `KeyboardActions` has only `onDone`, which Enter calls; no `KeyboardOptions` | `onDone`, `onGo`, `onSearch` and others, picked by `KeyboardOptions.imeAction` | [7](#7-events-and-state) |
 | `CodeEditor(completions)` is a synchronous `(prefix) -> List<Completion>`, called inside Raven's completion callback | no code editor; completions come from the app's own popup | [8](#phase-2-codeeditors-editing-extras) |
 | A rejected input change can show for a frame before it reverts | never shown | [7](#7-events-and-state) |
 | Plain `Button` is Raven's primary style; `OutlinedButton` is the default style | Material's filled and outlined buttons | [8](#8-component-vocabulary) |
