@@ -444,7 +444,7 @@ Decided in: [How Mosaic is built](issues/archive/0003-how-mosaic-is-built.md),
   shows less at a larger scale, and Raven closes the open popups. It is snapshot state, read from
   Raven once a frame (`Rwindow_save_preview` changes it while it draws), and a value set before the
   application starts applies at start, so a saved zoom is restored before the first frame
-  ([UI scale](issues/0199-ui-scale.md)).
+  ([UI scale](issues/archive/0199-ui-scale.md)).
 - **Packages follow Compose's**: `Modifier`, `Alignment` and `testTag` are in `raven.compose.ui`.
   The modifier functions (`padding`, `size`, `fillMaxWidth`, ...), `Arrangement`, the scopes and
   `Column`/`Row`/`Box` are in `raven.compose.foundation.layout`. The elements they create, and the

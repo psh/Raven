@@ -8,7 +8,7 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-25, after [UI scale](issues/0199-ui-scale.md).*
+*Last updated 2026-11-25, after [UI scale](issues/archive/0199-ui-scale.md).*
 
 ## Summary
 
@@ -90,7 +90,7 @@ phase 5 design pass, since none needs new design; they were all done on 2026-11-
 | Scroll a widget into view | `Rwidget_scroll_into_view` | `BringIntoViewRequester` | **Done** ([0196](issues/archive/0196-bring-into-view.md)) |
 | Window operations | `Rwindow_focus`, `_center`, `_hide`, `_request_attention`, `_set_picture_in_picture`, `Rwidget_set_window_drag` | `Window(visible)`, `WindowPosition.Aligned`, `WindowPlacement.PictureInPicture`, `LocalWindowController`, `WindowDraggableArea` | **Done** ([0197](issues/archive/0197-window-operations.md)) |
 | System accessibility settings | `Raccessibility_get_reduce_motion`, `_high_contrast`, `_text_scale`, `_is_screen_reader_active`, `_get_system_settings` | `LocalAccessibilitySettings`; the host follows the system while the app runs | **Done** ([0198](issues/archive/0198-system-accessibility-settings.md)) |
-| UI scale | `Rget_ui_scale`, `Rset_ui_scale` | `RavenUiScale.value` | **Done** ([0199](issues/0199-ui-scale.md)) |
+| UI scale | `Rget_ui_scale`, `Rset_ui_scale` | `RavenUiScale.value` | **Done** ([0199](issues/archive/0199-ui-scale.md)) |
 
 Found while doing them:
 

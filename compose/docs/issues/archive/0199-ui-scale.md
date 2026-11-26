@@ -5,9 +5,9 @@ status: closed
 # UI scale
 
 `LocalDensity` follows a change to Raven's UI scale
-([Layout offset and density](archive/0118-layout-offset-and-density.md)), but an app can't read or set
+([Layout offset and density](0118-layout-offset-and-density.md)), but an app can't read or set
 it: `Rget_ui_scale` and `Rset_ui_scale` are unbound. Expose them so an app can offer a zoom
-setting. One of the everyday features in the [Raven API coverage](../api-coverage.md) review (2026-11-14).
+setting. One of the everyday features in the [Raven API coverage](../../api-coverage.md) review (2026-11-14).
 
 ## Deliverables
 
@@ -35,5 +35,5 @@ Done on macOS. `./gradlew build allTests` passes: 605 tests, 4 of them in founda
   recomposes, with the layout in the same logical units; Raven's own change is followed; a value
   set before start applies, and the next app starts at 1; a value out of range throws.
 - **Spec**: a bullet in section 6 beside `LocalDensity` and a row in section 12.
-- **The everyday-features batch** of the [Raven API coverage](../api-coverage.md) review is done
+- **The everyday-features batch** of the [Raven API coverage](../../api-coverage.md) review is done
   with this: 0193 to 0199.
