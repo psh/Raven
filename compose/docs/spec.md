@@ -44,7 +44,7 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 |---|---|---|
 | `compose-raven-native` | The cinterop over `Raven.h` (`raven.cinterop`) and the small public helpers in `raven.native` ([section 3](#3-compose-raven-native)). It contains no Compose code. | libraven |
 | `compose-raven-ui` | The core, in `raven.compose.ui`: the host and windows, the Applier and node, the binding layer ([section 5](#5-node-model-and-applier)), `Modifier`, `Dp`, input, semantics, theming plumbing | `compose-raven-native` with `implementation`, so apps don't see it; `androidx.compose.runtime:runtime`; from phase 3, `androidx.lifecycle:lifecycle-runtime-compose` and `androidx.savedstate:savedstate-compose` with `api`, for the window owners |
-| `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `compose-raven-native` with `implementation` |
+| `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `compose-raven-native` with `implementation`; from phase 5, `kotlinx-datetime` with `api`, for the date and time pickers |
 | `compose-raven-bom` (phase 4) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
 | `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `compose-raven-native` (`implementation`) |
@@ -689,6 +689,24 @@ Added for the `notepad`, `themes` and `overlay` ports (and `glass` in phase 3). 
 
 `codeEditorLanguages(): List<String>` lists Raven's editor languages (`Rlanguage_get_count`/`_name`).
 It is valid only inside the composition.
+
+### Date and time pickers (phase 5)
+
+Raven's DatePicker is a date field with a calendar that drops down from it, and its TimePicker a
+24-hour field of hours, minutes and seconds changed by the arrows, the wheel or typing. Both are
+controlled, as `TextField` is: the user's change calls back, and the app's value is shown again.
+
+- **`DatePicker(date: LocalDate, onDateChange, modifier, enabled, range: ClosedRange<LocalDate>? = null, firstDayOfWeek: DayOfWeek = DayOfWeek.SUNDAY, format: String = "YYYY-MM-DD")`**
+  uses `Rdate_picker_set_date` / `_set_changed_callback`, `_set_range` (an open end where `range`
+  is null), `_set_first_day_of_week` and `_set_format`, whose pattern is Raven's (`YYYY`, `MM`,
+  `M`, `DD`, `D`, `MMMM`, `MMM`, `dddd`, `ddd`; `"D MMMM YYYY"` gives "3 November 2026"). `date`
+  is never null, as Raven's widget always holds one.
+- **`TimePicker(time: LocalTime, onTimeChange, modifier, enabled, showSeconds = false, minuteStep = 1)`**
+  uses `Rtime_picker_set_time` / `_set_changed_callback`, `_set_seconds_visible` and
+  `_set_minute_step`. It is 24-hour only; seconds the picker doesn't show are kept.
+- **Types**: kotlinx-datetime's `LocalDate`, `LocalTime` and `DayOfWeek`, a dependency of
+  compose-raven-foundation that apps see
+  ([Small widgets: date and time pickers](issues/archive/0210-small-widgets-date-and-time-pickers.md)).
 
 ### ColorPicker (phase 3)
 
@@ -1711,6 +1729,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `bringIntoView()` takes no `rect`, brings the whole widget and jumps | `bringIntoView(rect)` animates to show a part of it | [8](#scroll-position-phase-3) |
+| `DatePicker` is a field with a drop-down calendar, controlled by a `LocalDate`; `TimePicker` a 24-hour field controlled by a `LocalTime` | Material 3's inline calendar and clock dial, driven by `DatePickerState` (UTC milliseconds) and `TimePickerState(is24Hour)` | [8](#date-and-time-pickers-phase-5) |
 | `TextField` takes a `String` placeholder, single line only, and has no `label`, `prefix`, `suffix` or `supportingText` | a placeholder slot, multi-line, and those slots | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
