@@ -708,6 +708,23 @@ controlled, as `TextField` is: the user's change calls back, and the app's value
   compose-raven-foundation that apps see
   ([Small widgets: date and time pickers](issues/archive/0210-small-widgets-date-and-time-pickers.md)).
 
+### Rating, Pagination, Breadcrumb and VerticalSlider (phase 5)
+
+Raven draws these itself, the stars, the chevrons (mirrored right to left) and the arrows, so
+they take no icons. Each is controlled.
+
+- **`Rating(value: Float, onValueChange, modifier, enabled, readOnly = false, max = 5, allowHalf = false, starSize: Dp = 18.dp)`**
+  over `Rrating_*`: `value` from 0 to `max`, `max` from 1 to 20, `readOnly` as `TextField`'s.
+- **`Pagination(page: Int, pageCount: Int, onPageChange, modifier, enabled, siblings = 1)`** over
+  `Rpagination_*`: pages count from 0, as Raven's and Compose's `PagerState.currentPage` do, and
+  are shown from 1.
+- **`Breadcrumb(items: List<String>, onItemClick: (index: Int) -> Unit, modifier)`** over
+  `Rbreadcrumb_*`: the app owns the list and shortens it when an earlier item is clicked; the items
+  are given to Raven one by one (`Rbreadcrumb_add_item`), so a text may hold `|`.
+- **`VerticalSlider(value, onValueChange, modifier, enabled, valueRange, steps, colors)`**:
+  `Slider`'s parameters with `Rslider_set_orientation(R_VERTICAL)`, the minimum at the bottom
+  ([Small widgets: Rating, Pagination, Breadcrumb and a vertical Slider](issues/archive/0211-small-widgets-rating-pagination-breadcrumb-and-a-vertical-slider.md)).
+
 ### ColorPicker (phase 3)
 
 Added for the `music` port, and replacing the stand-in swatches of the phase 2 `themes` port:
@@ -1730,6 +1747,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `bringIntoView()` takes no `rect`, brings the whole widget and jumps | `bringIntoView(rect)` animates to show a part of it | [8](#scroll-position-phase-3) |
 | `DatePicker` is a field with a drop-down calendar, controlled by a `LocalDate`; `TimePicker` a 24-hour field controlled by a `LocalTime` | Material 3's inline calendar and clock dial, driven by `DatePickerState` (UTC milliseconds) and `TimePickerState(is24Hour)` | [8](#date-and-time-pickers-phase-5) |
+| `Rating`, `Pagination` and `Breadcrumb` | no counterpart | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
+| `VerticalSlider` is controlled by a `value` | Material 3's `VerticalSlider(state: SliderState)` | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
 | `TextField` takes a `String` placeholder, single line only, and has no `label`, `prefix`, `suffix` or `supportingText` | a placeholder slot, multi-line, and those slots | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
