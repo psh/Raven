@@ -184,6 +184,28 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   - **`WindowState`** (phase 2) holds `size: DpSize` (as Compose Desktop's, replacing phase 1's
     `width` and `height`), `position`, `placement` (Floating or Maximized) and
     `isMinimized`. Writes call Raven's setters, and Raven's resize and move callbacks write back.
+  - **Window operations** ([Window operations](issues/0197-window-operations.md)):
+    - `Window(visible = true)`, on `singleWindowApplication` too: false hides the window
+      (`Rwindow_hide`) and keeps its composition, with its lifecycle CREATED; a window composed
+      hidden is never shown until it is visible.
+    - `WindowPosition.Aligned(alignment)`, made by `WindowPosition(alignment)`, centres the window on
+      its monitor's work area with `Rwindow_center` when it opens or is asked again, then becomes
+      the real position, as `PlatformDefault` does. Raven has no other placement and no monitor
+      geometry, so another alignment centres with a warning.
+    - `WindowPlacement.PictureInPicture`, a compose-raven extension, is
+      `Rwindow_set_picture_in_picture`: small, above the other windows, in a corner. The state
+      follows the user leaving it, and a refusal (Wayland) warns and gives the placement back.
+    - `LocalWindowController.current`, beside `LocalWindowInfo`, has `toFront()` (`Rwindow_focus`,
+      nothing for a hidden window) and `requestAttention(critical)` (`Rwindow_request_attention`).
+      Compose Desktop does both through AWT's window.
+    - `WindowDraggableArea(modifier) { }`, in `raven.compose.foundation.window`, is a `Box` whose
+      widget drags its window and maximises it on a double click (`Rwidget_set_window_drag`), in
+      a `customHeader` window; without one it warns once and does nothing. Compose Desktop's is an
+      extension of `WindowScope`, which compose-raven doesn't have.
+    - The headless window system centres on a 1920 by 1080 work area, focuses and does picture in
+      picture, so the tests check those against Raven. It shows nothing for showing, hiding, asking
+      for attention or dragging, so the tests record those calls (`WindowCalls`,
+      `WindowDragCalls`).
   - **Composition**: a window emits no node into its parent. It has its own composition, with its
     own Overlay root and Applier, under the one Recomposer, linked with
     `rememberCompositionContext()`.
@@ -1631,6 +1653,10 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | External drops are a `Window(onExternalDrop)` handler for the whole window | `Modifier.dragAndDropTarget` on any element | [4](#4-application-host) |
 | `LocalWindowInfo` adds `isTransparent` | `WindowInfo` has focus, modifiers and size | [4](#4-application-host) |
 | `LocalWindowInfo.frameStats()` reports Raven's frame timings and counts | no counterpart | [4](#4-application-host) |
+| `LocalWindowController` brings a window to the front and asks for attention | `window.toFront()` and AWT's `Taskbar` through `FrameWindowScope.window` | [4](#4-application-host) |
+| `WindowPlacement.PictureInPicture`; no `Fullscreen` | `Floating`, `Maximized`, `Fullscreen` | [4](#4-application-host) |
+| `WindowPosition.Aligned` only centres | any alignment on the screen | [4](#4-application-host) |
+| `WindowDraggableArea` needs no `WindowScope`, and only drags a `customHeader` window | an extension of `WindowScope` | [4](#4-application-host) |
 | `ClipboardManager` takes and returns `String` | `AnnotatedString`; `ClipboardManager` is deprecated for the suspending `Clipboard` and `ClipEntry` | [4](#4-application-host) |
 | `RavenTheme(metrics)` sets Raven's theme metrics at run time | Material has no metrics; sizes are per component | [8](#phase-2-theming) |
 | `Modifier.tooltip(text)` is text only | `TooltipArea(tooltip = { ... })` takes any composable | [6](#6-layout-and-modifiers) |

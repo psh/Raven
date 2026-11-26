@@ -80,6 +80,7 @@ public fun application(
 public fun singleWindowApplication(
     mcp: McpConfig?,
     state: WindowState = WindowState(),
+    visible: Boolean = true,
     title: String = "Untitled",
     customHeader: Boolean = false,
     transparent: Boolean = false,
@@ -95,8 +96,10 @@ public fun singleWindowApplication(
     content: @Composable () -> Unit,
 ) {
     raven.compose.ui.singleWindowApplication(
-        state, title, customHeader, transparent, undecorated, resizable, minimumSize, background, opacity, onExternalDrop,
-        followSystemAccessibility, liveReload, resourceRoot,
+        state = state, visible = visible, title = title, customHeader = customHeader, transparent = transparent,
+        undecorated = undecorated, resizable = resizable, minimumSize = minimumSize, background = background,
+        opacity = opacity, onExternalDrop = onExternalDrop, followSystemAccessibility = followSystemAccessibility,
+        liveReload = liveReload, resourceRoot = resourceRoot,
     ) {
         McpServer(mcp, content)
     }

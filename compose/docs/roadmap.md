@@ -246,12 +246,12 @@ Decided for phase 4 (in the spec):
 virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,
 multi-window tests, build-time XML translation, app bundling (with no fork change now, since Raven
 finds MoltenVK in the bundle), gestures (with drop targets on widgets, drags inside the app,
-dragging a window by its content, `samples/overlay`'s `WindowDrag`, and scroll-linked effects such
+and scroll-linked effects such
 as collapsing toolbars: `Modifier.nestedScroll` over a Raven change that offers a scroll to a
 callback before the scroll box applies it and reports what is left, and a getter for a scroll box's
 drawn offset, so an effect follows Raven's smooth scroll rather than its target; until then
 `ScrollState.value` reaches the target at once, a frame late), popups (over Raven's new
-`Rpopup_open`), bringing a window to the front (`Rwindow_focus`), and Lottie animations in an
+`Rpopup_open`), and Lottie animations in an
 opt-in `compose-raven-lottie` module over ThorVG ([A compose-raven-lottie module](issues/0111-compose-raven-lottie-module.md)).
 
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`

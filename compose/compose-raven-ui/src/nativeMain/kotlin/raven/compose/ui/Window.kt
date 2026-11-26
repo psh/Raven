@@ -85,6 +85,12 @@ import raven.cinterop.Rwindow_set_resize_callback
 import raven.cinterop.Rwindow_set_size
 import raven.cinterop.Rwindow_set_title
 import raven.cinterop.Rwindow_show
+import raven.cinterop.Rwindow_hide
+import raven.cinterop.Rwindow_focus
+import raven.cinterop.Rwindow_center
+import raven.cinterop.Rwindow_request_attention
+import raven.cinterop.Rwindow_set_picture_in_picture
+import raven.cinterop.Rwindow_is_picture_in_picture
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.isSpecified
 import raven.compose.ui.graphics.painter.Painter
@@ -98,6 +104,8 @@ import raven.compose.ui.platform.LocalUriHandler
 import raven.compose.ui.platform.LocalClipboardManager
 import raven.compose.ui.platform.LocalDensity
 import raven.compose.ui.platform.LocalWindowInfo
+import raven.compose.ui.platform.LocalWindowController
+import raven.compose.ui.platform.WindowController
 import raven.compose.ui.platform.WindowDensity
 import raven.compose.ui.platform.RavenClipboardManager
 import raven.compose.ui.platform.RavenUriHandler
@@ -118,7 +126,9 @@ import kotlin.math.roundToInt
  * the window closes when it leaves the composition.
  *
  * [state] holds the window's size, position and placement, and follows what the user does to the
- * window. [title], [minimumSize] (`null` keeps Raven's), [background] (`Unspecified` keeps the
+ * window. While [visible] is false the window is hidden, its composition kept; its lifecycle is
+ * CREATED, as a minimised window's. `LocalWindowController` brings it to the front or asks the
+ * user to look at it. [title], [minimumSize] (`null` keeps Raven's), [background] (`Unspecified` keeps the
  * theme's) and [opacity] (0 to 1, the frame included) follow the composition. [customHeader] (the
  * content draws the title bar, with a `HeaderBar`), [transparent] (what is behind the window shows
  * where nothing opaque is drawn: see [WindowBackdrop]), [undecorated] (no frame) and [resizable]
@@ -149,6 +159,7 @@ import kotlin.math.roundToInt
 public fun Window(
     onCloseRequest: () -> Unit,
     state: WindowState = rememberWindowState(),
+    visible: Boolean = true,
     title: String = "Untitled",
     customHeader: Boolean = false,
     transparent: Boolean = false,
@@ -174,7 +185,7 @@ public fun Window(
     val settings = WindowSettings(
         title, WindowFlags(customHeader, transparent, undecorated, resizable), minimumSize, background, opacity,
         onExternalDrop, state.size, state.position, state.placement, state.isMinimized,
-        hasIsland = island != null,
+        hasIsland = island != null, visible = visible,
     )
     val opened = remember { OpenedWindow() }
     DisposableEffect(Unit) {
@@ -207,6 +218,7 @@ internal data class WindowSettings(
     val placement: WindowPlacement,
     val isMinimized: Boolean,
     val hasIsland: Boolean = false,
+    val visible: Boolean = true,
 )
 
 /** The parameters Raven takes only when it creates a window. */
@@ -293,8 +305,21 @@ internal class RavenWindow(
     }
     private val density = WindowDensity(window)
 
-    // Created hidden, the window is shown once it has its settings.
+    // Created hidden, the window is shown once it has its settings, unless it is composed hidden.
     private var shown = false
+    private var opened = false
+
+    // The alignment last applied, so the same one isn't applied again.
+    private var aligned: Alignment? = null
+
+    /** What `LocalWindowController` gives the content. */
+    val controller = object : WindowController {
+        override fun toFront() {
+            if (shown) windowCalls.focus(window)
+        }
+
+        override fun requestAttention(critical: Boolean): Boolean = windowCalls.requestAttention(window, critical)
+    }
 
     // The island's composition, while the Window has one.
     private var islandComposition: WindowIsland? = null
@@ -324,9 +349,8 @@ internal class RavenWindow(
         listenForKeys(selfRef.asCPointer())
         host.windows += this
         update(state, settings)
-        Rwindow_show(window)
-        shown = true
-        followLifecycle()
+        opened = true
+        setVisible(settings.visible)
         // The state takes what the window opened with in place of a default position or size.
         if (!state.position.isSpecified) state.position = ravenPosition.toPosition()
         if (!state.size.width.isSpecified || !state.size.height.isSpecified) state.size = ravenSize.toDpSize()
@@ -363,6 +387,7 @@ internal class RavenWindow(
             LocalRavenWindow provides this,
             LocalNavigationEventDispatcher provides navigationEvents,
             LocalWindowInfo provides info,
+            LocalWindowController provides controller,
             LocalDensity provides density.current,
             LocalUriHandler provides RavenUriHandler,
             LocalClipboardManager provides RavenClipboardManager,
@@ -427,6 +452,14 @@ internal class RavenWindow(
             if (settings.hasIsland) openIsland() else closeIsland()
         }
         updateState(settings)
+        if (opened) setVisible(settings.visible)
+        followLifecycle()
+    }
+
+    private fun setVisible(visible: Boolean) {
+        if (visible == shown) return
+        shown = visible
+        if (visible) windowCalls.show(window) else windowCalls.hide(window)
         followLifecycle()
     }
 
@@ -437,6 +470,17 @@ internal class RavenWindow(
             Rwindow_set_size(window, size.width, size.height)
         }
         val position = settings.position
+        if (position is WindowPosition.Aligned && position.alignment !== aligned) {
+            aligned = position.alignment
+            if (position.alignment !== Alignment.Center) {
+                warn("Window: Raven can only centre a window, so ${position.alignment} centres it")
+            }
+            Rwindow_center(window)
+            ravenPosition = readPosition()
+            // The window is placed: its position takes the alignment's place, as a default's.
+            state.position = ravenPosition.toPosition()
+        }
+        if (position !is WindowPosition.Aligned) aligned = null
         if (position is WindowPosition.Absolute) {
             val point = LogicalPoint(position.x.toUnits(ravenPosition.x), position.y.toUnits(ravenPosition.y))
             if (point != ravenPosition) {
@@ -447,14 +491,23 @@ internal class RavenWindow(
         val placement = when {
             settings.isMinimized -> RavenPlacement.Minimized
             settings.placement == WindowPlacement.Maximized -> RavenPlacement.Maximized
+            settings.placement == WindowPlacement.PictureInPicture -> RavenPlacement.PictureInPicture
             else -> RavenPlacement.Floating
         }
         if (placement != ravenPlacement) {
+            val previous = ravenPlacement
             ravenPlacement = placement
+            // Leaving picture in picture gives back the placement the window had; then the new one.
+            if (previous == RavenPlacement.PictureInPicture) windowCalls.setPictureInPicture(window, false)
             when (placement) {
-                RavenPlacement.Floating -> Rwindow_restore(window)
-                RavenPlacement.Maximized -> Rwindow_maximize(window)
+                RavenPlacement.Floating -> if (readPlacement() != RavenPlacement.Floating) Rwindow_restore(window)
+                RavenPlacement.Maximized -> if (readPlacement() != RavenPlacement.Maximized) Rwindow_maximize(window)
                 RavenPlacement.Minimized -> Rwindow_minimize(window)
+                RavenPlacement.PictureInPicture -> if (!windowCalls.setPictureInPicture(window, true)) {
+                    warn("Window: the window system refused picture in picture, so the window stays as it was")
+                    ravenPlacement = readPlacement()
+                    state.placement = if (ravenPlacement == RavenPlacement.Maximized) WindowPlacement.Maximized else WindowPlacement.Floating
+                }
             }
         }
     }
@@ -477,6 +530,7 @@ internal class RavenWindow(
             state.isMinimized = placement == RavenPlacement.Minimized
             if (placement == RavenPlacement.Maximized) state.placement = WindowPlacement.Maximized
             if (placement == RavenPlacement.Floating) state.placement = WindowPlacement.Floating
+            if (placement == RavenPlacement.PictureInPicture) state.placement = WindowPlacement.PictureInPicture
         }
         followLifecycle()
     }
@@ -610,6 +664,7 @@ internal class RavenWindow(
     }
 
     private fun readPlacement(): RavenPlacement = when {
+        Rwindow_is_picture_in_picture(window) == R_TRUE -> RavenPlacement.PictureInPicture
         Rwindow_is_minimized(window) == R_TRUE -> RavenPlacement.Minimized
         Rwindow_is_maximized(window) == R_TRUE -> RavenPlacement.Maximized
         else -> RavenPlacement.Floating
@@ -647,6 +702,18 @@ internal open class WindowCalls {
 
     open fun setMinSize(window: Rid, width: Int, height: Int) = Rwindow_set_min_size(window, width, height)
 
+    open fun show(window: Rid) = Rwindow_show(window)
+
+    open fun hide(window: Rid) = Rwindow_hide(window)
+
+    open fun focus(window: Rid) = Rwindow_focus(window)
+
+    open fun setPictureInPicture(window: Rid, enabled: Boolean): Boolean =
+        Rwindow_set_picture_in_picture(window, if (enabled) R_TRUE else R_FALSE) == R_TRUE
+
+    open fun requestAttention(window: Rid, critical: Boolean): Boolean =
+        Rwindow_request_attention(window, if (critical) R_TRUE else R_FALSE) == R_TRUE
+
     open fun setClearColor(window: Rid, color: Color) = color.toRaven { r, g, b, a -> Rwindow_set_clear_color(window, r, g, b, a) }
 
     open fun setOpacity(window: Rid, opacity: Float): Boolean = Rwindow_set_opacity(window, opacity) == R_TRUE
@@ -663,7 +730,7 @@ internal var windowCalls: WindowCalls = WindowCalls()
 /** A window warning, given each time: through the layout warnings' sink. */
 private fun warn(warning: String) = layoutWarningSink(warning)
 
-private enum class RavenPlacement { Floating, Maximized, Minimized }
+private enum class RavenPlacement { Floating, Maximized, Minimized, PictureInPicture }
 
 private data class LogicalSize(val width: Int, val height: Int) {
     fun toDpSize() = DpSize(width.dp, height.dp)

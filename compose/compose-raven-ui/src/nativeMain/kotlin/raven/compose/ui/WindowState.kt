@@ -17,6 +17,15 @@ public enum class WindowPlacement {
 
     /** Filling the screen's work area. */
     Maximized,
+
+    /**
+     * Small, floating above the other windows on every desktop, in a corner of the work area
+     * (`Rwindow_set_picture_in_picture`), a compose-raven extension. Leaving it gives the window
+     * back the size, place and placement it had. A window system that can't keep a window above
+     * the others (Wayland) refuses it: a warning says so, and the placement goes back to what it was.
+     * The content offers the way out, as Raven adds no button.
+     */
+    PictureInPicture,
 }
 
 /** Where a window is on the screen, in logical units from its top left corner. */
@@ -38,10 +47,24 @@ public sealed class WindowPosition {
     public data class Absolute(override val x: Dp, override val y: Dp) : WindowPosition() {
         override val isSpecified: Boolean get() = true
     }
+
+    /**
+     * Placed by [alignment] on the work area of the window's monitor, the task bar left out. Raven
+     * can only centre a window (`Rwindow_center`), so any other alignment centres it with a warning.
+     * Once the window is placed, its real position replaces this, as for [PlatformDefault].
+     */
+    public data class Aligned(val alignment: Alignment) : WindowPosition() {
+        override val x: Dp get() = Dp.Unspecified
+        override val y: Dp get() = Dp.Unspecified
+        override val isSpecified: Boolean get() = false
+    }
 }
 
 /** The position [x], [y]: [WindowPosition.Absolute]. */
 public fun WindowPosition(x: Dp, y: Dp): WindowPosition = WindowPosition.Absolute(x, y)
+
+/** The position [alignment] gives on the monitor's work area: [WindowPosition.Aligned]. */
+public fun WindowPosition(alignment: Alignment): WindowPosition = WindowPosition.Aligned(alignment)
 
 /**
  * A window's size, position and placement, as snapshot state. A write moves, resizes, maximises or

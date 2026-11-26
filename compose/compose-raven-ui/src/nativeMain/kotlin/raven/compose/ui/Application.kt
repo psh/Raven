@@ -53,6 +53,7 @@ public fun application(
  */
 public fun singleWindowApplication(
     state: WindowState = WindowState(),
+    visible: Boolean = true,
     title: String = "Untitled",
     customHeader: Boolean = false,
     transparent: Boolean = false,
@@ -71,6 +72,7 @@ public fun singleWindowApplication(
         Window(
             onCloseRequest = ::exitApplication,
             state = state,
+            visible = visible,
             title = title,
             customHeader = customHeader,
             transparent = transparent,

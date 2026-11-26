@@ -3,6 +3,13 @@ package raven.compose.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import raven.cinterop.Rwindow_is_active
+import raven.cinterop.Rwindow_is_picture_in_picture
+import raven.cinterop.Rwindow_set_picture_in_picture
+import raven.compose.ui.platform.LocalWindowController
+import raven.compose.ui.platform.WindowController
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.cstr
@@ -299,6 +306,147 @@ class WindowTest {
     }
 
     @Test
+    fun aWindowComposedHiddenIsShownWhenItBecomesVisible() {
+        val calls = RecordingWindowCalls()
+        var visible by mutableStateOf(false)
+        var lifecycle: Lifecycle? = null
+        withWindowCalls(calls) {
+            withHost({ Window(onCloseRequest = {}, visible = visible) { lifecycle = LocalLifecycleOwner.current.lifecycle } }) {
+                assertEquals(emptyList(), calls.windowOps, "never shown")
+                assertEquals(Lifecycle.State.CREATED, lifecycle!!.currentState)
+
+                visible = true
+                runUntilIdle()
+                assertEquals(listOf("show"), calls.windowOps)
+                assertEquals(true, lifecycle!!.currentState.isAtLeast(Lifecycle.State.STARTED))
+
+                visible = false
+                runUntilIdle()
+                assertEquals(listOf("show", "hide"), calls.windowOps)
+                assertEquals(Lifecycle.State.CREATED, lifecycle!!.currentState, "as a minimised window's")
+            }
+        }
+    }
+
+    @Test
+    fun aVisibleWindowIsShownOnce() {
+        val calls = RecordingWindowCalls()
+        withWindowCalls(calls) {
+            withHost({ Window(onCloseRequest = {}) {} }) {
+                assertEquals(listOf("show"), calls.windowOps)
+            }
+        }
+    }
+
+    @Test
+    fun anAlignedPositionCentresTheWindowAndBecomesItsPosition() {
+        val state = WindowState(size = DpSize(400.dp, 200.dp), position = WindowPosition(Alignment.Center))
+        withHost({ Window(onCloseRequest = {}, state = state) {} }) {
+            val window = windows.single().window
+            // The headless window system's work area is 1920 by 1080.
+            assertEquals(760 to 440, positionOf(window))
+            assertEquals(WindowPosition(760.dp, 440.dp), state.position)
+
+            Rwindow_set_position(window, 5, 6)
+            drawFrame()
+            runUntilIdle()
+            state.position = WindowPosition(Alignment.Center)
+            runUntilIdle()
+            assertEquals(760 to 440, positionOf(window), "centred again when asked again")
+        }
+    }
+
+    @Test
+    fun anotherAlignmentCentresWithAWarning() {
+        val state = WindowState(size = DpSize(400.dp, 200.dp), position = WindowPosition(Alignment.TopEnd))
+        val warnings = collectWarnings {
+            withHost({ Window(onCloseRequest = {}, state = state) {} }) {
+                assertEquals(760 to 440, positionOf(windows.single().window))
+            }
+        }
+        assertEquals(listOf("Window: Raven can only centre a window, so ${Alignment.TopEnd} centres it"), warnings)
+    }
+
+    @Test
+    fun pictureInPictureIsAPlacement() {
+        val state = WindowState(size = DpSize(800.dp, 600.dp))
+        withHost({ Window(onCloseRequest = {}, state = state) {} }) {
+            val window = windows.single().window
+            state.placement = WindowPlacement.PictureInPicture
+            runUntilIdle()
+            assertEquals(R_TRUE, Rwindow_is_picture_in_picture(window))
+
+            state.placement = WindowPlacement.Floating
+            runUntilIdle()
+            assertEquals(R_FALSE, Rwindow_is_picture_in_picture(window))
+            assertEquals(800 to 600, sizeOf(window), "its size given back")
+
+            state.placement = WindowPlacement.PictureInPicture
+            runUntilIdle()
+            // The user leaves it, with the content's button and the built-in action.
+            Rwindow_set_picture_in_picture(window, R_FALSE)
+            drawFrame()
+            runUntilIdle()
+            assertEquals(WindowPlacement.Floating, state.placement, "the state follows")
+        }
+    }
+
+    @Test
+    fun aRefusedPictureInPictureWarnsAndKeepsThePlacement() {
+        val state = WindowState()
+        val warnings = collectWarnings {
+            withWindowCalls(RecordingWindowCalls(refuse = true)) {
+                withHost({ Window(onCloseRequest = {}, state = state) {} }) {
+                    state.placement = WindowPlacement.PictureInPicture
+                    runUntilIdle()
+                    assertEquals(R_FALSE, Rwindow_is_picture_in_picture(windows.single().window))
+                    assertEquals(WindowPlacement.Floating, state.placement)
+                }
+            }
+        }
+        assertEquals(listOf("Window: the window system refused picture in picture, so the window stays as it was"), warnings)
+    }
+
+    @Test
+    fun toFrontFocusesTheWindow() {
+        var first: WindowController? = null
+        withHost({
+            Window(onCloseRequest = {}) { first = LocalWindowController.current }
+            Window(onCloseRequest = {}) {}
+        }) {
+            val (a, b) = windows.map { it.window }
+            first!!.toFront()
+            assertEquals(R_TRUE, Rwindow_is_active(a))
+            assertEquals(R_FALSE, Rwindow_is_active(b), "the other lost it")
+        }
+    }
+
+    @Test
+    fun aHiddenWindowStaysHiddenOnToFront() {
+        val calls = RecordingWindowCalls()
+        var controller: WindowController? = null
+        withWindowCalls(calls) {
+            withHost({ Window(onCloseRequest = {}, visible = false) { controller = LocalWindowController.current } }) {
+                controller!!.toFront()
+                assertEquals(emptyList(), calls.windowOps, "neither focused nor shown")
+            }
+        }
+    }
+
+    @Test
+    fun requestAttentionAsksRaven() {
+        val calls = RecordingWindowCalls()
+        var controller: WindowController? = null
+        withWindowCalls(calls) {
+            withHost({ Window(onCloseRequest = {}) { controller = LocalWindowController.current } }) {
+                assertEquals(true, controller!!.requestAttention(critical = true))
+                assertEquals(true, controller!!.requestAttention())
+                assertEquals(listOf("show", "attention critical=true", "attention critical=false"), calls.windowOps)
+            }
+        }
+    }
+
+    @Test
     fun theHostsClipboardManagerUsesRavensClipboard() {
         var clipboard: ClipboardManager? = null
         withHost({ Window(onCloseRequest = {}) { clipboard = LocalClipboardManager.current } }) {
@@ -422,6 +570,32 @@ private class RecordingWindowCalls(private val refuse: Boolean = false) : Window
     }
 
     override fun setOpacity(window: Rid, opacity: Float): Boolean = !refuse && super.setOpacity(window, opacity)
+
+    /** Showing, hiding, focusing and asking for attention, apart from [calls]. */
+    val windowOps = mutableListOf<String>()
+
+    override fun show(window: Rid) {
+        windowOps += "show"
+        super.show(window)
+    }
+
+    override fun hide(window: Rid) {
+        windowOps += "hide"
+        super.hide(window)
+    }
+
+    override fun focus(window: Rid) {
+        windowOps += "focus"
+        super.focus(window)
+    }
+
+    override fun requestAttention(window: Rid, critical: Boolean): Boolean {
+        windowOps += "attention critical=$critical"
+        return super.requestAttention(window, critical)
+    }
+
+    override fun setPictureInPicture(window: Rid, enabled: Boolean): Boolean =
+        if (refuse && enabled) false else super.setPictureInPicture(window, enabled)
 
     override fun setBackdrop(window: Rid, backdrop: RBackdrop): Boolean =
         if (refuse && backdrop != R_BACKDROP_NONE) false else super.setBackdrop(window, backdrop)
