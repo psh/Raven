@@ -816,7 +816,7 @@ Added for the `overlay` and `glass` ports:
   Markdown copies without its marks, and its links are still clicked. The container stacks its
   content as a `Box`, as Compose's lays it out; `DisableSelection` lays nothing out. Each text
   selects on its own, and a selectable text takes the mouse, so a `clickable` around it no longer
-  gets the click ([Selectable text](issues/0195-selectable-text.md)).
+  gets the click ([Selectable text](issues/archive/0195-selectable-text.md)).
 
 ### Custom drawing, viewports and effects (phase 3)
 
