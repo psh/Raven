@@ -12,11 +12,13 @@ import raven.cinterop.Rid
 import raven.cinterop.Rlabel_set_color
 import raven.cinterop.Rlabel_set_font
 import raven.cinterop.Rlabel_set_markdown
+import raven.cinterop.Rlabel_set_selectable
 import raven.cinterop.Rlabel_set_text
 import raven.cinterop.Rlabel_set_text_align
 import raven.cinterop.Rlabel_set_text_size
 import raven.cinterop.Rlabel_set_wrap
 import raven.cinterop.Rwidget_clear_color
+import raven.compose.foundation.text.selection.LocalTextSelectable
 import raven.compose.ui.Modifier
 import raven.compose.ui.Property
 import raven.compose.ui.RavenWidget
@@ -55,6 +57,11 @@ private val LabelFont = Property<Rid> { widget, font -> Rlabel_set_font(widget, 
 private val LabelAlign = Property<RTextAlign> { widget, align -> Rlabel_set_text_align(widget, align) }
 private val LabelWrap = Property<Boolean> { widget, wrap -> Rlabel_set_wrap(widget, if (wrap) R_TRUE else R_FALSE) }
 
+/** Inside a `SelectionContainer`. Raven clears the selection when it is switched off. */
+private val LabelSelectable = Property<Boolean> { widget, selectable ->
+    Rlabel_set_selectable(widget, if (selectable) R_TRUE else R_FALSE)
+}
+
 /**
  * Shows [text] as [style] says, the theme's by default, with each parameter given winning over the
  * style: [color], [fontSize], the [fontFamily] in [fontWeight] and [fontStyle], and [textAlign]
@@ -62,6 +69,8 @@ private val LabelWrap = Property<Boolean> { widget, wrap -> Rlabel_set_wrap(widg
  *
  * Unlike Compose, a Text keeps to one line unless [softWrap] is true, as Raven's labels do: then it
  * wraps on the width its parent gives it. A weight of 600 or more is bold; any other is regular.
+ *
+ * Inside a `SelectionContainer`, the text can be selected and copied.
  */
 @Composable
 public fun Text(
@@ -78,6 +87,7 @@ public fun Text(
 ) {
     val merged = style.merge(TextStyle(color, fontSize, fontFamily, fontWeight, fontStyle, textAlign))
     val font = rememberRavenFont(merged.fontFamily, merged.fontWeight, merged.fontStyle)
+    val selectable = LocalTextSelectable.current
     RavenWidget(TextWidget, modifier, {
         bind(text, LabelText)
         bind(merged.color, LabelColor)
@@ -85,6 +95,7 @@ public fun Text(
         bind(font, LabelFont)
         bind(ravenTextAlign(merged.textAlign), LabelAlign)
         bind(softWrap, LabelWrap)
+        bind(selectable, LabelSelectable)
     })
 }
 
@@ -105,6 +116,9 @@ private val LabelMarkdown = Property<String> { widget, markdown ->
  *
  * [style] gives the body text its colour, size, font and alignment. Strong and emphasised text use
  * the family's bold and italic, and headings are sized from the body by Raven's own factors.
+ *
+ * Inside a `SelectionContainer`, the text can be selected and copied without its marks; links are
+ * still clicked.
  */
 @Composable
 public fun MarkdownText(
@@ -117,6 +131,7 @@ public fun MarkdownText(
     // The handler is read when a link is clicked, so the label's callback stays the same lambda.
     val uriHandler = rememberUpdatedState(LocalUriHandler.current)
     val openUri = remember { { url: String -> uriHandler.value.openUri(url) } }
+    val selectable = LocalTextSelectable.current
     RavenWidget(MarkdownTextWidget, modifier, {
         bind(markdown, LabelMarkdown)
         bind(style.color, LabelColor)
@@ -124,5 +139,6 @@ public fun MarkdownText(
         bind(font, LabelFont)
         bind(ravenTextAlign(style.textAlign), LabelAlign)
         bindLinkClick(onLinkClick ?: openUri)
+        bind(selectable, LabelSelectable)
     })
 }

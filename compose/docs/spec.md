@@ -809,6 +809,14 @@ Added for the `overlay` and `glass` ports:
   throws `IllegalArgumentException` when Raven can't, as Compose's does. An app or a test provides
   its own to change how links open (phase 2,
   [LocalUriHandler](issues/archive/0094-localurihandler.md)).
+- **`SelectionContainer(modifier) { }`** and **`DisableSelection { }`**, in
+  `raven.compose.foundation.text.selection`, provide a composition local that `Text` and
+  `MarkdownText` read: inside a container they call `Rlabel_set_selectable`, so the mouse selects
+  (drag, double click for a word, triple for a paragraph, Shift + click) and Ctrl+C (Cmd+C) copies;
+  Markdown copies without its marks, and its links are still clicked. The container stacks its
+  content as a `Box`, as Compose's lays it out; `DisableSelection` lays nothing out. Each text
+  selects on its own, and a selectable text takes the mouse, so a `clickable` around it no longer
+  gets the click ([Selectable text](issues/0195-selectable-text.md)).
 
 ### Custom drawing, viewports and effects (phase 3)
 
@@ -1570,6 +1578,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `FontWeight` has two steps (W100 to W500 regular, W600 to W900 bold) | any weight the font file has | [8](#8-component-vocabulary) |
 | No `AnnotatedString` or spans; `MarkdownText` for formatted text | `AnnotatedString`, `SpanStyle` | [8](#8-component-vocabulary) |
 | `MarkdownText`'s links go to `onLinkClick` or `LocalUriHandler`; Raven's `action:` links aren't special | `LinkAnnotation` listeners, then `LocalUriHandler` | [8](#8-component-vocabulary) |
+| In a `SelectionContainer`, each `Text` selects on its own, and Ctrl+A selects the focused one; a selectable text takes the click from a `clickable` around it | one selection runs across every text in the container | [8](#fonts-and-text-styling-phase-3) |
 | `Typography` has eight compose-raven roles (`display` ... `code`), sized by Raven's Markdown factors; Raven-drawn text and Markdown headings don't follow a custom typography | Material's fifteen roles, applied to every component | [8](#8-component-vocabulary) |
 | `Canvas` has no `Path`, but has Raven's cubic curves, triangles, glass and shaders | `Path`, `DrawScope` on Skia | [8](#8-component-vocabulary) |
 | `Viewport(onSizeChanged)` reports its pixel size; there is no generic `Modifier.onSizeChanged`, and `Density` has only `density`, `toPx` and `toDp` | `Modifier.onSizeChanged` on any element; a full `Density` with `fontScale` | [8](#custom-drawing-viewports-and-effects-phase-3) |
