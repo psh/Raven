@@ -154,7 +154,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
     Raven once a frame (`Raccessibility_get_*`, the screen reader from its last check), so it is what
     the app runs with, the system's or the app's own. Its readers recompose when one changes;
     outside a window it is `AccessibilitySettings.Default`
-    ([System accessibility settings](issues/0198-system-accessibility-settings.md)).
+    ([System accessibility settings](issues/archive/0198-system-accessibility-settings.md)).
   - **In phase 1**, `application`, `ApplicationScope.exitApplication()` and `Window(onCloseRequest,
     title, width, height) { }` are already public, so `samples/hello`'s Quit button can end the app.
     Phase 2 completes the single `Window`: `WindowState` and every parameter below but `icon`,
