@@ -2887,6 +2887,19 @@ fn void TextInput.set_read_only(self, bool read_only) @inline => c::r_text_input
 <* Maximum number of characters. 0 = no limit (default). *>
 fn void TextInput.set_max_length(self, CInt max_length) @inline => c::r_text_input_set_max_length((c::Rid)self, max_length);
 
+<*
+ Room kept at the start and the end of the text, in logical units,
+ beyond the look's own margin: for icons or buttons laid over the field (a
+ search glass, a clear button, a password's eye). The text, the caret, the
+ placeholder and the selection keep to what is left, as do scrolling the
+ text and placing the caret with the mouse; the field's background and
+ focus ring stay the whole widget, and its desired width grows by both.
+ The start is on the right in a right-to-left layout. Default 0, 0.
+*>
+fn void TextInput.set_insets(self, float start, float end) @inline => c::r_text_input_set_insets((c::Rid)self, start, end);
+
+fn void TextInput.get_insets(self, float* start, float* end) @inline => c::r_text_input_get_insets((c::Rid)self, start, end);
+
 fn void TextInput.select_all(self) @inline => c::r_text_input_select_all((c::Rid)self);
 
 <* Called on every edit. *>

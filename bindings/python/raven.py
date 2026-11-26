@@ -6743,6 +6743,32 @@ def Rtext_input_set_max_length(text_input, max_length):
     _lib.Rtext_input_set_max_length(text_input, max_length)
 
 
+_lib.Rtext_input_set_insets.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rtext_input_set_insets.restype = None
+
+
+def Rtext_input_set_insets(text_input, start, end):
+    """Room kept at the start and the end of the text, in logical units,
+    beyond the look's own margin: for icons or buttons laid over the field (a
+    search glass, a clear button, a password's eye). The text, the caret, the
+    placeholder and the selection keep to what is left, as do scrolling the
+    text and placing the caret with the mouse; the field's background and
+    focus ring stay the whole widget, and its desired width grows by both.
+    The start is on the right in a right-to-left layout. Default 0, 0."""
+    _lib.Rtext_input_set_insets(text_input, start, end)
+
+
+_lib.Rtext_input_get_insets.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rtext_input_get_insets.restype = None
+
+
+def Rtext_input_get_insets(text_input):
+    start_ = ctypes.c_float()
+    end_ = ctypes.c_float()
+    _lib.Rtext_input_get_insets(text_input, ctypes.byref(start_), ctypes.byref(end_))
+    return (start_.value, end_.value)
+
+
 _lib.Rtext_input_select_all.argtypes = [ctypes.c_uint32]
 _lib.Rtext_input_select_all.restype = None
 

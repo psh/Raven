@@ -3689,6 +3689,19 @@ extern fn void r_text_input_set_read_only(Rid text_input, CInt read_only) @cname
 <* Maximum number of characters. 0 = no limit (default). *>
 extern fn void r_text_input_set_max_length(Rid text_input, CInt max_length) @cname("Rtext_input_set_max_length");
 
+<*
+ Room kept at the start and the end of the text, in logical units,
+ beyond the look's own margin: for icons or buttons laid over the field (a
+ search glass, a clear button, a password's eye). The text, the caret, the
+ placeholder and the selection keep to what is left, as do scrolling the
+ text and placing the caret with the mouse; the field's background and
+ focus ring stay the whole widget, and its desired width grows by both.
+ The start is on the right in a right-to-left layout. Default 0, 0.
+*>
+extern fn void r_text_input_set_insets(Rid text_input, float start, float end) @cname("Rtext_input_set_insets");
+
+extern fn void r_text_input_get_insets(Rid text_input, float* start, float* end) @cname("Rtext_input_get_insets");
+
 extern fn void r_text_input_select_all(Rid text_input) @cname("Rtext_input_select_all");
 
 <* Called on every edit. *>

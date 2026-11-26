@@ -1598,6 +1598,8 @@ int Rtext_input_is_password(Rid text_input);
 int Rtext_input_is_read_only(Rid text_input);
 void Rtext_input_set_read_only(Rid text_input, int read_only);
 void Rtext_input_set_max_length(Rid text_input, int max_length);
+void Rtext_input_set_insets(Rid text_input, float start, float end);
+void Rtext_input_get_insets(Rid text_input, float* start, float* end);
 void Rtext_input_select_all(Rid text_input);
 void Rtext_input_set_changed_callback(Rid text_input, RTextChangedCallback callback, void* user_data);
 void Rtext_input_set_committed_callback(Rid text_input, RTextChangedCallback callback, void* user_data);

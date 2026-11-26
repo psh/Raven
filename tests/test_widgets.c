@@ -6,6 +6,7 @@
 #include "test.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 static Rid g_window;
 static int g_clicks;
@@ -268,6 +269,62 @@ static void test_text_input(void) {
 	Rwindow_inject_text(g_window, "x");
 	test_key(g_window, R_KEY_BACKSPACE, 0);
 	CHECK_STR(Rtext_input_get_text(input), "abc");
+}
+
+/*
+ * Clicks the input 102 in from its left edge, where an inset of 100 is, and types an X there.
+ * Then it clicks [elsewhere], so the next click isn't a double click (no time passes headless).
+ */
+static void test_type_at_100(Rid input, Rid elsewhere) {
+	float x, y, w, h;
+	Rwidget_get_rect(input, &x, &y, &w, &h);
+	test_click_at(g_window, x + 102.0f, y + h * 0.5f);
+	Rwindow_inject_text(g_window, "X");
+	test_click(g_window, elsewhere);
+}
+
+static void test_text_input_insets(void) {
+	Rid box = column();
+	Rid input = Rwidget_add_child(box, Rwidget_create(R_WIDGET_TEXT_INPUT));
+	Rid other = Rwidget_add_child(box, Rwidget_create(R_WIDGET_TEXT_INPUT));
+	float start, end, width, height, wide;
+	Rslot_set_size(input, 300.0f, 0.0f);
+	Rtext_input_get_insets(input, &start, &end);
+	CHECK(start == 0.0f && end == 0.0f);
+	Rwidget_get_desired_size(input, &width, &height);
+
+	/* no inset: 100 in is well into the text */
+	Rtext_input_set_text(input, "abcdefghijklmnopqrstuvwxyz");
+	test_type_at_100(input, other);
+	CHECK(strncmp(Rtext_input_get_text(input), "X", 1) != 0);
+
+	/* a start inset of 100: the text begins past it, so the click lands before the first letter */
+	Rtext_input_set_insets(input, 100.0f, 40.0f);
+	Rtext_input_get_insets(input, &start, &end);
+	CHECK(start == 100.0f && end == 40.0f);
+	Rwidget_get_desired_size(input, &wide, &height);
+	CHECK_NEAR(wide, width + 140.0f);
+	Rtext_input_set_text(input, "abcdefghijklmnopqrstuvwxyz");
+	test_type_at_100(input, other);
+	CHECK_STR(Rtext_input_get_text(input), "Xabcdefghijklmnopqrstuvwxyz");
+
+	/* right to left: the end inset is on the left */
+	Rtext_input_set_insets(input, 0.0f, 100.0f);
+	Rwidget_set_direction(input, R_DIRECTION_RTL);
+	Rtext_input_set_text(input, "abcdefghijklmnopqrstuvwxyz");
+	test_type_at_100(input, other);
+	CHECK_STR(Rtext_input_get_text(input), "Xabcdefghijklmnopqrstuvwxyz");
+	Rwidget_set_direction(input, R_DIRECTION_LTR);
+	Rtext_input_set_text(input, "abcdefghijklmnopqrstuvwxyz");
+	test_type_at_100(input, other);
+	CHECK(strncmp(Rtext_input_get_text(input), "X", 1) != 0);
+
+	/* a negative inset is refused, and the insets stay */
+	EXPECT_ERRORS_BEGIN();
+	Rtext_input_set_insets(input, -1.0f, 0.0f);
+	EXPECT_ERRORS_END(1);
+	Rtext_input_get_insets(input, &start, &end);
+	CHECK(start == 0.0f && end == 100.0f);
 }
 
 static int g_focus_lost;
@@ -1097,6 +1154,7 @@ int main(void) {
 	RUN(test_checkbox_and_radio);
 	RUN(test_slider_and_spin_box);
 	RUN(test_text_input);
+	RUN(test_text_input_insets);
 	RUN(test_clear_focus);
 	RUN(test_window_focus_moves_the_keyboard);
 	RUN(test_selectable_label);

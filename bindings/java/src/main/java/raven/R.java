@@ -12357,6 +12357,43 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rtext_input_set_insets$;
+
+    /**
+     * Room kept at the start and the end of the text, in logical units,
+     * beyond the look's own margin: for icons or buttons laid over the field (a
+     * search glass, a clear button, a password's eye). The text, the caret, the
+     * placeholder and the selection keep to what is left, as do scrolling the
+     * text and placing the caret with the mouse; the field's background and
+     * focus ring stay the whole widget, and its desired width grows by both.
+     * The start is on the right in a right-to-left layout. Default 0, 0.
+     */
+    public static void Rtext_input_set_insets(int text_input, float start, float end) {
+        MethodHandle $h = Rtext_input_set_insets$;
+        if ($h == null) Rtext_input_set_insets$ = $h = find("Rtext_input_set_insets", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            $h.invokeExact(text_input, start, end);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rtext_input_get_insets$;
+
+    public static void Rtext_input_get_insets(int text_input, float[] start, float[] end) {
+        MethodHandle $h = Rtext_input_get_insets$;
+        if ($h == null) Rtext_input_get_insets$ = $h = find("Rtext_input_get_insets", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment start$ = start == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment end$ = end == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            $h.invokeExact(text_input, start$, end$);
+            if (start != null && start.length > 0) start[0] = start$.get(JAVA_FLOAT, 0);
+            if (end != null && end.length > 0) end[0] = end$.get(JAVA_FLOAT, 0);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rtext_input_select_all$;
 
     public static void Rtext_input_select_all(int text_input) {

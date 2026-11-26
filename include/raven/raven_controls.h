@@ -290,6 +290,17 @@ extern "C" {
 	RAVEN_API void Rtext_input_set_read_only(Rid text_input, int read_only);
 	/** @brief Maximum number of characters. 0 = no limit (default). */
 	RAVEN_API void Rtext_input_set_max_length(Rid text_input, int max_length);
+	/**
+	 * @brief Room kept at the start and the end of the text, in logical units,
+	 * beyond the look's own margin: for icons or buttons laid over the field (a
+	 * search glass, a clear button, a password's eye). The text, the caret, the
+	 * placeholder and the selection keep to what is left, as do scrolling the
+	 * text and placing the caret with the mouse; the field's background and
+	 * focus ring stay the whole widget, and its desired width grows by both.
+	 * The start is on the right in a right-to-left layout. Default 0, 0.
+	 */
+	RAVEN_API void Rtext_input_set_insets(Rid text_input, float start, float end);
+	RAVEN_API void Rtext_input_get_insets(Rid text_input, float* start, float* end);
 	RAVEN_API void Rtext_input_select_all(Rid text_input);
 	typedef void (*RTextChangedCallback)(Rid text_input, const char* text, void* user_data);
 	/** @brief Called on every edit. */

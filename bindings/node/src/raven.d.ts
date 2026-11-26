@@ -4830,6 +4830,19 @@ export function Rtext_input_set_read_only(text_input: Rid, read_only: number): v
 /** Maximum number of characters. 0 = no limit (default). */
 export function Rtext_input_set_max_length(text_input: Rid, max_length: number): void;
 
+/**
+ * Room kept at the start and the end of the text, in logical units,
+ * beyond the look's own margin: for icons or buttons laid over the field (a
+ * search glass, a clear button, a password's eye). The text, the caret, the
+ * placeholder and the selection keep to what is left, as do scrolling the
+ * text and placing the caret with the mouse; the field's background and
+ * focus ring stay the whole widget, and its desired width grows by both.
+ * The start is on the right in a right-to-left layout. Default 0, 0.
+ */
+export function Rtext_input_set_insets(text_input: Rid, start: number, end: number): void;
+
+export function Rtext_input_get_insets(text_input: Rid): [start: number, end: number];
+
 export function Rtext_input_select_all(text_input: Rid): void;
 
 /** Called on every edit. */

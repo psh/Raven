@@ -2944,6 +2944,15 @@ pub extern fn Rtext_input_is_read_only(text_input: Rid) c_int;
 pub extern fn Rtext_input_set_read_only(text_input: Rid, read_only: c_int) void;
 /// Maximum number of characters. 0 = no limit (default).
 pub extern fn Rtext_input_set_max_length(text_input: Rid, max_length: c_int) void;
+/// Room kept at the start and the end of the text, in logical units,
+/// beyond the look's own margin: for icons or buttons laid over the field (a
+/// search glass, a clear button, a password's eye). The text, the caret, the
+/// placeholder and the selection keep to what is left, as do scrolling the
+/// text and placing the caret with the mouse; the field's background and
+/// focus ring stay the whole widget, and its desired width grows by both.
+/// The start is on the right in a right-to-left layout. Default 0, 0.
+pub extern fn Rtext_input_set_insets(text_input: Rid, start: f32, end: f32) void;
+pub extern fn Rtext_input_get_insets(text_input: Rid, start: ?*f32, end: ?*f32) void;
 pub extern fn Rtext_input_select_all(text_input: Rid) void;
 /// Called on every edit.
 pub extern fn Rtext_input_set_changed_callback(text_input: Rid, callback: RTextChangedCallback, user_data: ?*anyopaque) void;

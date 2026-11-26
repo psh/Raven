@@ -450,6 +450,8 @@ static struct {
 	int (*Rtext_input_is_read_only)(Rid);
 	void (*Rtext_input_set_read_only)(Rid, int);
 	void (*Rtext_input_set_max_length)(Rid, int);
+	void (*Rtext_input_set_insets)(Rid, float, float);
+	void (*Rtext_input_get_insets)(Rid, float*, float*);
 	void (*Rtext_input_select_all)(Rid);
 	void (*Rtext_input_set_changed_callback)(Rid, RTextChangedCallback, void*);
 	void (*Rtext_input_set_committed_callback)(Rid, RTextChangedCallback, void*);
@@ -1637,6 +1639,8 @@ static const struct {
 	{"Rtext_input_is_read_only", offsetof(__typeof__(rn), Rtext_input_is_read_only)},
 	{"Rtext_input_set_read_only", offsetof(__typeof__(rn), Rtext_input_set_read_only)},
 	{"Rtext_input_set_max_length", offsetof(__typeof__(rn), Rtext_input_set_max_length)},
+	{"Rtext_input_set_insets", offsetof(__typeof__(rn), Rtext_input_set_insets)},
+	{"Rtext_input_get_insets", offsetof(__typeof__(rn), Rtext_input_get_insets)},
 	{"Rtext_input_select_all", offsetof(__typeof__(rn), Rtext_input_select_all)},
 	{"Rtext_input_set_changed_callback", offsetof(__typeof__(rn), Rtext_input_set_changed_callback)},
 	{"Rtext_input_set_committed_callback", offsetof(__typeof__(rn), Rtext_input_set_committed_callback)},
@@ -11103,6 +11107,46 @@ static napi_value rn_w_Rtext_input_set_max_length(napi_env env, napi_callback_in
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	if (!rn_get_int(env, argv[1], &a1)) return NULL;
 	rn.Rtext_input_set_max_length((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_set_insets(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	rn.Rtext_input_set_insets((Rid)a0, (float)a1, (float)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_get_insets(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1 = 0;
+	float a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtext_input_get_insets((Rid)a0, &a1, &a2);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a2, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
 	return result_;
 }
 
@@ -24507,6 +24551,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtext_input_is_read_only", NULL, rn_w_Rtext_input_is_read_only, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_read_only", NULL, rn_w_Rtext_input_set_read_only, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_max_length", NULL, rn_w_Rtext_input_set_max_length, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_set_insets", NULL, rn_w_Rtext_input_set_insets, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_get_insets", NULL, rn_w_Rtext_input_get_insets, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_select_all", NULL, rn_w_Rtext_input_select_all, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_changed_callback", NULL, rn_w_Rtext_input_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_committed_callback", NULL, rn_w_Rtext_input_set_committed_callback, NULL, NULL, NULL, napi_enumerable, NULL},

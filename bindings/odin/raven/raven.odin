@@ -2956,6 +2956,15 @@ foreign lib {
 	Rtext_input_set_read_only :: proc(text_input: Rid, read_only: i32) ---
 	// Maximum number of characters. 0 = no limit (default).
 	Rtext_input_set_max_length :: proc(text_input: Rid, max_length: i32) ---
+	// Room kept at the start and the end of the text, in logical units,
+	// beyond the look's own margin: for icons or buttons laid over the field (a
+	// search glass, a clear button, a password's eye). The text, the caret, the
+	// placeholder and the selection keep to what is left, as do scrolling the
+	// text and placing the caret with the mouse; the field's background and
+	// focus ring stay the whole widget, and its desired width grows by both.
+	// The start is on the right in a right-to-left layout. Default 0, 0.
+	Rtext_input_set_insets :: proc(text_input: Rid, start: f32, end: f32) ---
+	Rtext_input_get_insets :: proc(text_input: Rid, start: ^f32, end: ^f32) ---
 	Rtext_input_select_all :: proc(text_input: Rid) ---
 	// Called on every edit.
 	Rtext_input_set_changed_callback :: proc(text_input: Rid, callback: RTextChangedCallback, user_data: rawptr) ---

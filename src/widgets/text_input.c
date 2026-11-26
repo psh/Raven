@@ -14,6 +14,8 @@ typedef struct rvn_text_input_t {
 	void* changed_user;
 	RTextChangedCallback committed;
 	void* committed_user;
+	/* room kept at the start and the end of the text, for icons laid over the field (Rtext_input_set_insets) */
+	float inset_start, inset_end;
 } rvn_text_input_t;
 
 static void rvn_text_input_init(rvn_widget_t* widget) {
@@ -27,16 +29,23 @@ static void rvn_text_input_destroy(rvn_widget_t* widget) {
 	rvn_free(input->placeholder);
 }
 
+/* Where the text is: inside the look's margin, and the insets, the start on the right in right-to-left. */
 static rvn_rect_t rvn_text_input_area(const rvn_widget_t* widget) {
+	const rvn_text_input_t* input = (const rvn_text_input_t*)widget;
 	/* (Windows: the text starts 10 from the edge) */
 	float px = rvn_widget_family(widget) == RVN_FAMILY_WINDOWS ? rvn_widget_metric(widget, R_METRIC_PADDING_X) - 1.0f :
 		rvn_widget_family(widget) == RVN_FAMILY_MACOS ? 5.0f : rvn_widget_family(widget) == RVN_FAMILY_GNOME ? 9.0f :
 		rvn_widget_metric(widget, R_METRIC_PADDING_X) * 0.7f;
-	return rvn_rect(px, 0.0f, rvn_maxf(0.0f, widget->rect.w - px * 2.0f), widget->rect.h);
+	int rtl = rvn_widget_is_rtl(widget);
+	float left = px + (rtl ? input->inset_end : input->inset_start);
+	float right = px + (rtl ? input->inset_start : input->inset_end);
+	return rvn_rect(left, 0.0f, rvn_maxf(0.0f, widget->rect.w - left - right), widget->rect.h);
 }
 
+/* The insets widen it, so the text keeps its room beside the icons. */
 static rvn_vec2_t rvn_text_input_measure(rvn_widget_t* widget) {
-	return rvn_vec2(140.0f, rvn_widget_metric(widget, R_METRIC_CONTROL_HEIGHT));
+	rvn_text_input_t* input = (rvn_text_input_t*)widget;
+	return rvn_vec2(140.0f + input->inset_start + input->inset_end, rvn_widget_metric(widget, R_METRIC_CONTROL_HEIGHT));
 }
 
 static void rvn_text_input_paint(rvn_widget_t* widget, RPainter* painter) {
@@ -246,6 +255,30 @@ void Rtext_input_set_changed_callback(Rid id, RTextChangedCallback callback, voi
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
 	((rvn_text_input_t*)widget)->changed = callback;
 	((rvn_text_input_t*)widget)->changed_user = user_data;
+}
+
+void Rtext_input_set_insets(Rid id, float start, float end) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
+	rvn_text_input_t* input = (rvn_text_input_t*)widget;
+	if (!(start >= 0.0f) || !(end >= 0.0f)) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rtext_input_set_insets: an inset is negative");
+		return;
+	}
+	if (input->inset_start == start && input->inset_end == end) return;
+	input->inset_start = start;
+	input->inset_end = end;
+	rvn_widget_invalidate_layout(widget);
+	rvn_widget_invalidate_paint(widget);
+}
+
+void Rtext_input_get_insets(Rid id, float* start, float* end) {
+	rvn_widget_t* widget;
+	if (start) *start = 0.0f;
+	if (end) *end = 0.0f;
+	widget = rvn_widget_check(id, R_WIDGET_TEXT_INPUT, __func__);
+	if (!widget) return;
+	if (start) *start = ((rvn_text_input_t*)widget)->inset_start;
+	if (end) *end = ((rvn_text_input_t*)widget)->inset_end;
 }
 
 void Rtext_input_set_committed_callback(Rid id, RTextChangedCallback callback, void* user_data) {

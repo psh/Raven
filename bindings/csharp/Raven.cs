@@ -5793,6 +5793,21 @@ namespace Raven
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rtext_input_set_max_length(uint text_input, int max_length);
 
+        /// <summary>
+        /// Room kept at the start and the end of the text, in logical units,
+        /// beyond the look's own margin: for icons or buttons laid over the field (a
+        /// search glass, a clear button, a password's eye). The text, the caret, the
+        /// placeholder and the selection keep to what is left, as do scrolling the
+        /// text and placing the caret with the mouse; the field's background and
+        /// focus ring stay the whole widget, and its desired width grows by both.
+        /// The start is on the right in a right-to-left layout. Default 0, 0.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtext_input_set_insets(uint text_input, float start, float end);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtext_input_get_insets(uint text_input, out float start, out float end);
+
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rtext_input_select_all(uint text_input);
 

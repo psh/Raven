@@ -3285,6 +3285,24 @@ func TextInputSetMaxLength(text_input ID, max_length int) {
 	C.Rtext_input_set_max_length(C.Rid(text_input), C.int(max_length))
 }
 
+// TextInputSetInsets: Room kept at the start and the end of the text, in logical units, beyond the look's own
+// margin: for icons or buttons laid over the field (a search glass, a clear button, a password's eye). The
+// text, the caret, the placeholder and the selection keep to what is left, as do scrolling the text and
+// placing the caret with the mouse; the field's background and focus ring stay the whole widget, and its
+// desired width grows by both. The start is on the right in a right-to-left layout. Default 0, 0.
+func TextInputSetInsets(text_input ID, start float32, end float32) {
+	C.Rtext_input_set_insets(C.Rid(text_input), C.float(start), C.float(end))
+}
+
+func TextInputGetInsets(text_input ID) (start float32, end float32) {
+	var start_ C.float
+	var end_ C.float
+	C.Rtext_input_get_insets(C.Rid(text_input), &start_, &end_)
+	start = float32(start_)
+	end = float32(end_)
+	return
+}
+
 func TextInputSelectAll(text_input ID) {
 	C.Rtext_input_select_all(C.Rid(text_input))
 }
