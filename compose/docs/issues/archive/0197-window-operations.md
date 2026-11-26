@@ -40,12 +40,12 @@ Done on macOS. `./gradlew build allTests` passes: 594 tests, 9 of them new in ui
 - **`LocalWindowController`**: `toFront()` is `Rwindow_focus`, but not for a hidden window, which
   Raven would show; `requestAttention(critical)` returns what Raven says.
 - **`WindowDraggableArea(modifier) { }`**, in `raven.compose.foundation.window`: a `Box` with a
-  `WidgetAttachedElement` (from [Bring into view](archive/0196-bring-into-view.md)) that calls
+  `WidgetAttachedElement` (from [Bring into view](0196-bring-into-view.md)) that calls
   `Rwidget_set_window_drag`, through a `WindowDragCalls` seam the tests record. Without
   `customHeader` Raven ignores the drag, so it warns once for each area and does nothing.
 - **Broke and fixed**: compose-raven-mcp's `singleWindowApplication` passed its arguments by
   position, so the new `visible` shifted them; it takes `visible` too and passes them by name now.
 - **Roadmap**: "bringing a window to the front" and "dragging a window by its content" leave phase
   5. `samples/overlay` stays as it is: its C window isn't `customHeader`, so its `WindowDrag`
-  doesn't drag there either ([samples/overlay](archive/0072-samples-overlay.md)).
+  doesn't drag there either ([samples/overlay](0072-samples-overlay.md)).
 - **Spec**: section 4's window operations and four rows in section 12.

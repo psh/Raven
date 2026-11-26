@@ -184,7 +184,7 @@ fun main() = singleWindowApplication(title = "Hello", width = 800, height = 600)
   - **`WindowState`** (phase 2) holds `size: DpSize` (as Compose Desktop's, replacing phase 1's
     `width` and `height`), `position`, `placement` (Floating or Maximized) and
     `isMinimized`. Writes call Raven's setters, and Raven's resize and move callbacks write back.
-  - **Window operations** ([Window operations](issues/0197-window-operations.md)):
+  - **Window operations** ([Window operations](issues/archive/0197-window-operations.md)):
     - `Window(visible = true)`, on `singleWindowApplication` too: false hides the window
       (`Rwindow_hide`) and keeps its composition, with its lifecycle CREATED; a window composed
       hidden is never shown until it is visible.
