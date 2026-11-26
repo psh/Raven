@@ -1584,7 +1584,7 @@ for change 6, which only a real macOS window reaches.
     and placing the caret with the mouse keep to what is left; the background and focus ring stay
     the whole widget, and the desired width grows by both. The start is on the right in
     right-to-left; a negative inset is an error. With a C test in `tests/test_widgets.c`. Made in
-    [Leading and trailing icons on TextField](issues/0200-leading-and-trailing-icons-on-textfield.md).
+    [Leading and trailing icons on TextField](issues/archive/0200-leading-and-trailing-icons-on-textfield.md).
 11. **`Rwidget_set_focus_on_click(Rid widget, int enabled)`** and `Rwidget_get_focus_on_click`
     (required for `TextField`'s icons): with false, a click on the widget or inside it leaves the
     keyboard focus where it is, as a toolbar button does, while the click works and Tab still

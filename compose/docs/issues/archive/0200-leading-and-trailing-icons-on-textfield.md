@@ -10,9 +10,9 @@ app can't lay one over the field well: Raven's text input keeps the same small m
 of its text (a fixed 5 px in the macOS look, 9 px in GNOME's), so long text runs under the icon,
 and clicking a button laid over it takes the focus from the field. Raven needs to keep room at the
 start and the end of its text, and the binding then places the icons there. Asked for on
-2026-11-25, from [Password, max length and submit on TextField](archive/0194-password-max-length-and-submit-on-textfield.md).
+2026-11-25, from [Password, max length and submit on TextField](0194-password-max-length-and-submit-on-textfield.md).
 
-**Depends on:** [Password, max length and submit on TextField](archive/0194-password-max-length-and-submit-on-textfield.md),
+**Depends on:** [Password, max length and submit on TextField](0194-password-max-length-and-submit-on-textfield.md),
 for the password example.
 
 ## Deliverables
