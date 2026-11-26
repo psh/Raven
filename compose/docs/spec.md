@@ -491,7 +491,7 @@ Decided in: [Layout and Modifiers](issues/archive/0009-layout-and-modifiers.md).
     what is typed or pasted to that many code points inside the field, so the caret stays after the
     insertion, which filtering in `onValueChange` can't keep (rewritten text moves the caret to the
     end). A longer `value` from the app is shown whole, and only edits are limited
-    ([Password, max length and submit on TextField](issues/0194-password-max-length-and-submit-on-textfield.md)).
+    ([Password, max length and submit on TextField](issues/archive/0194-password-max-length-and-submit-on-textfield.md)).
 - **Errors**: a Kotlin exception must not cross a `staticCFunction`. Each shared callback catches
   it and passes it to the host's error path ([section 4](#4-application-host)).
 - **Phase 1 events** are only the callbacks that belong to each widget, listed in
