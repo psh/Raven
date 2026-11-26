@@ -49,6 +49,7 @@ fog and [Raven API coverage](../api-coverage.md).
 - [Small widgets: Rating, Pagination, Breadcrumb and a vertical Slider](archive/0211-small-widgets-rating-pagination-breadcrumb-and-a-vertical-slider.md): four controlled composables over Raven's own drawing, no icons; `VerticalSlider` by Material 3's name. Filed as [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md).
 - [Small widgets: the CodeEditor extras](archive/0212-small-widgets-the-codeeditor-extras.md): undo availability, selection, scroll to line and zoom on the state; four editing parameters; a `SyntaxTheme` composition local, over a Raven change for colours per editor. Filed as [Raven: token colours per editor](0229-raven-token-colours-per-editor.md) and [Small widgets: CodeEditor extras](0230-small-widgets-codeeditor-extras.md).
 - [Small widgets: notifications and tray](archive/0213-small-widgets-notifications-and-tray.md): Compose Desktop's `Tray` and notifications (also without a tray, returning whether shown); taskbar progress as a `Window` parameter, `TaskbarBadge` and `DockMenu` composables; no jump list. Filed as [Small widgets: Tray and notifications](0231-small-widgets-tray-and-notifications.md) and [Small widgets: taskbar progress, badge and Dock menu](0232-small-widgets-taskbar-progress-badge-and-dock-menu.md).
+- [Lists at scale: lazy virtualisation](archive/0214-lists-at-scale-lazy-virtualisation.md): only the items in view, between two Spacers in the ScrollBox, sizes cached by key with estimates, the place held by key, focus pinned; `layoutInfo` and `canScroll*`; no Raven change. Filed as [Lists at scale: the lazy list window](0233-lists-at-scale-the-lazy-list-window.md) and [Lists at scale: layoutInfo and contentType](0234-lists-at-scale-layoutinfo-and-contenttype.md).
 
 ## Not yet specified
 
@@ -70,6 +71,8 @@ fog and [Raven API coverage](../api-coverage.md).
   `Rtr`, direction-aware `Alignment.Start`/`End`); touch and pen (`raven_touch.h`); Plot; custom
   `Layout { }`, which needs a Raven change (custom widgets that take children, measure and arrange
   callbacks). Each needs its scope and API shape decided before it can be ticketed.
+- **Lazy extras**: sticky headers, `Modifier.animateItem` and prefetching ahead of the scroll for
+  `LazyColumn`/`LazyRow`.
 - **Lottie**: an opt-in `compose-raven-lottie` module over ThorVG; the spike passes, and the
   design sketch and open questions are in [A compose-raven-lottie module](0111-compose-raven-lottie-module.md).
   ThorVG's SVG loader could also serve vector icons.

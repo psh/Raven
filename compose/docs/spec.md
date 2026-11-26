@@ -997,7 +997,7 @@ Added for the `overlay` and `glass` ports:
 
 - **`LazyColumn { }` / `LazyRow { }`** use Compose's DSL (`items(list, key = { ... }) { item -> }`)
   over `VerticalScroll`/`HorizontalScroll`. In phase 3 they compose every item, with no
-  virtualisation. `key` keeps rows stable through `Rwidget_move_child`. Each item is in an
+  virtualisation (from phase 5, [only the items in view](#lazy-virtualisation-phase-5)). `key` keeps rows stable through `Rwidget_move_child`. Each item is in an
   internal Box filling the list across, as each item of Compose's lazy layouts is a node of its
   own, so `LazyListState` knows where items start.
 - **`ListView(items, itemText, selectedIndex, onSelectedIndexChange, modifier, state, onActivate)`** uses
@@ -1029,7 +1029,8 @@ is.
     item widgets' positions (every item is composed in phase 3).
   - `suspend scrollToItem(index, scrollOffset = 0)` puts the item at the top, as in Compose.
     `animateScrollToItem` jumps the same way. There is no `layoutInfo`, `isScrollInProgress` or
-    `canScrollForward`.
+    `canScrollForward` (phase 5 adds `layoutInfo` and the `canScroll` flags:
+    [Lazy virtualisation](#lazy-virtualisation-phase-5)).
 - **Saved and restored**: both are `rememberSaveable`, with `ScrollState.Saver` and
   `LazyListState.Saver`, so a position comes back wherever saveable state is kept, such as a
   Navigation 3 entry under its saveable-state decorator.
@@ -1050,6 +1051,47 @@ is.
   There is no `rect` parameter, as there is no `Rect`. A `ListView` row isn't a widget, so
   `revealItem` stays its way. The modifier is a `WidgetAttachedElement`, ui's internal hook for an
   element that needs its widget ([Bring into view](issues/archive/0196-bring-into-view.md)).
+
+### Lazy virtualisation (phase 5)
+
+From phase 5, `LazyColumn` and `LazyRow` compose only the items in view, so a list of thousands
+of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](issues/archive/0214-lists-at-scale-lazy-virtualisation.md)).
+`LazyVerticalGrid`'s virtualisation is decided with TileView.
+
+- **Spacers in the ScrollBox**: the list stays a `VerticalScroll`/`HorizontalScroll` holding a
+  Spacer, the visible items (each in its internal Box), and a Spacer, each Spacer sized to the items
+  it stands in for. The state's `follow` reads the offset at the start of the frame, before
+  recomposing, so the items it needs are composed, laid out and drawn in that same frame.
+- **Sizes**: each item's size along the axis is read from its Box after layout and cached by key
+  (an item without one by its place), and read again whenever it is composed. An item never
+  measured counts as the average of those measured, 48 dp before any are. On its first frame a
+  list composes as many items as the estimate says fill the viewport, and corrects on the next.
+- **Past the edges**: one item beyond each edge of the viewport is composed, so arrow keys and Tab
+  have somewhere to go, and the item holding the focus stays composed (pinned) while it is
+  scrolled out of view.
+- **Keeping the place**: when an item above the viewport turns out a different size than its
+  estimate, or items are inserted or removed above it, the offset shifts so the first visible
+  item, found by its key, stays where it was on screen.
+- **State in items**: an item scrolled away is disposed, so its `remember` is lost, as in Compose.
+  Its `rememberSaveable` is kept by a `SaveableStateHolder` under the item's key and comes back
+  with it.
+- **`contentType`** on `item` and `items` is accepted, for Compose's code, and ignored: Raven has
+  no compositions to reuse.
+- **`LazyListState`** gains:
+  - `layoutInfo: LazyListLayoutInfo`, snapshot state read once a frame: `visibleItemsInfo` (each
+    composed item in view, with `index`, `key`, `offset` and `size`), `totalItemsCount`,
+    `viewportStartOffset` and `viewportEndOffset`, in dp;
+  - `canScrollForward` and `canScrollBackward`.
+  
+  `firstVisibleItemIndex` and its offset come from the cached sizes rather than every item's
+  widget. `scrollToItem` to an item never measured jumps to its estimated place and corrects over
+  the next frames until the item is at the start. `isScrollInProgress` stays out, as Raven reports
+  no scrolling.
+- **The window**: the arithmetic is one internal, pure module, the lazy list window. From the
+  cached sizes, the items' keys, the offset, the viewport and the focused item, it gives the range
+  to compose, the two Spacers' sizes, the offset correction and the layout info. It is tested on
+  its own with plain numbers, and the lists through `runRavenTest`.
+- **Not yet**: sticky headers, `Modifier.animateItem` and prefetching ahead of the scroll.
 
 ### Tabs and grids (phase 3)
 
@@ -1789,7 +1831,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `padding` is always outside the widget (no drawing modifiers) | position in the chain decides | [6](#6-layout-and-modifiers) |
 | No `Layout {}`, and no right-to-left yet, although Raven supports it (`Start`/`End` are left/right) | custom layouts, `LayoutDirection` | [6](#6-layout-and-modifiers) |
 | `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-component-vocabulary) |
-| `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
+| `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `isScrollInProgress`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3), [8](#lazy-virtualisation-phase-5) |
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `bringIntoView()` takes no `rect`, brings the whole widget and jumps | `bringIntoView(rect)` animates to show a part of it | [8](#scroll-position-phase-3) |
 | `DatePicker` is a field with a drop-down calendar, controlled by a `LocalDate`; `TimePicker` a 24-hour field controlled by a `LocalTime` | Material 3's inline calendar and clock dial, driven by `DatePickerState` (UTC milliseconds) and `TimePickerState(is24Hour)` | [8](#date-and-time-pickers-phase-5) |
@@ -1838,7 +1880,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Shader effects are SPIR-V (`ShaderEffect`) | `RuntimeShader` / AGSL | [8](#8-component-vocabulary) |
 | Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
 | `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
-| `LazyColumn`/`LazyRow` compose every item in phase 3 (not lazy yet) | only visible items are composed | [8](#8-component-vocabulary) |
+| `LazyColumn`/`LazyRow` compose every item in phase 3; from phase 5 the items in view and one past each edge, sized by estimate until measured | only visible items are composed, measured as they are | [8](#lazy-virtualisation-phase-5) |
+| `contentType` is accepted and ignored, and there are no sticky headers, `animateItem` or prefetching | compositions reused by content type | [8](#lazy-virtualisation-phase-5) |
 | `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
 | `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
 | `TabView` holds its pages | Material's `TabRow` is separate from the content | [8](#8-component-vocabulary) |

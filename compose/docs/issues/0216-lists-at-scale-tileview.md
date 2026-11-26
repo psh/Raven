@@ -11,5 +11,6 @@ assignee: null
 ## Question
 
 How does Raven's TileView, a virtualised grid of tiles from a callback with multi-select, become
-a composable, and how does it relate to `LazyVerticalGrid`? Decide its items, selection and
+a composable, and how does it relate to `LazyVerticalGrid`, whose virtualisation is decided here
+([Lists at scale: lazy virtualisation](archive/0214-lists-at-scale-lazy-virtualisation.md) covered the lists only)? Decide its items, selection and
 virtualisation. The answer is the spec section and its implementation tickets.
