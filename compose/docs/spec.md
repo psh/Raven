@@ -1044,6 +1044,29 @@ is.
   `ImageVector` and no bundled icon set: an app ships the SVG files it downloads
   ([Icons and resources: vector icons](issues/archive/0207-icons-and-resources-vector-icons.md)).
 
+### Generated resources (phase 5)
+
+- **Layout**: an app keeps its files in Compose Multiplatform's `composeResources/`, under
+  `drawable/`, `font/` and `files/`. There are no strings (`values/strings.xml` waits for
+  localisation) and no qualifiers (dark, density, locale): an SVG is redrawn at each density
+  already, and the others wait for localisation and theming.
+- **`Res`**: a Gradle convention plugin in `build-logic` (`raven.compose-resources`, applied by the
+  samples) generates `Res`, with `Res.drawable.<name>` (`DrawableResource`), `Res.font.<name>`
+  (`FontResource`) and `suspend Res.readBytes(path)`. It goes in Compose's default package,
+  `<group>.<module>.generated.resources`, set by `ravenResources { packageOfResClass }`. File names
+  become identifiers by Compose's rules (`ic-arrow back.svg` is `ic_arrow_back`), and two files
+  with one name in one kind fail the build. A resource is its path under `composeResources/`.
+- **Shipping**: by default the plugin copies `composeResources/` into the `resources/` folder beside
+  each executable, the default resource root. With `ravenResources { embed = true }` it instead
+  generates the `registerResource` calls that build every file into the binary, for a single-file
+  app; Raven finds an embedded file before the resource root, so the code reading them is the same.
+- **Runtime**: `painterResource(res: DrawableResource)`, `Font(res: FontResource, weight, style)` and
+  `Res.readBytes(path)` take Compose's signatures and resolve through Raven's files.
+- **Not yet**: a published Gradle plugin for apps outside this repository goes with the release
+  (phase 4). `samples/resources`, a check module and not a port, holds an SVG drawable, a font and
+  a file, and tests them copied and embedded
+  ([Icons and resources: generated resources](issues/archive/0208-icons-and-resources-generated-resources.md)).
+
 ### Transitions and Island (phase 3)
 
 - **`Modifier.appearTransition(AppearTransition.Fade | Pop | Zoom | FlyUp | FlyDown | FlyLeft |
@@ -1716,7 +1739,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ColorFilter.tint` multiplies; `ColorFilter.textColor()` follows the text colour | `tint` blends `SrcIn` | [8](#images-and-resources-phase-3) |
 | `Window(icon)` is a `painterResource` only | any `Painter` | [8](#images-and-resources-phase-3) |
 | `ContentScale` has `Fit`, `Crop`, `FillBounds` and `None` only | also `Inside`, `FillWidth`, `FillHeight` | [8](#8-component-vocabulary) |
-| Resources come from a resource root or `registerResource`; no generated `Res` yet | `Res.drawable.foo` from compose resources | [8](#8-component-vocabulary) |
+| `Res` has drawables, fonts and files, with no strings or qualifiers, from an in-repo convention plugin; embedding is opt-in | strings, qualifiers, and the published `org.jetbrains.compose` plugin | [8](#generated-resources-phase-5) |
 | `AnimatedVisibility` enter specs map to Raven's spring transitions and ignore `animationSpec`; exit is `fadeOut` only | any enter and exit spec, timed by the spec | [8](#8-component-vocabulary) |
 | `Modifier.appearTransition` replays on every appearance | no counterpart | [6](#6-layout-and-modifiers) |
 | `TransitionRequester` plays a Raven transition on demand | no counterpart | [8](#transitions-and-island-phase-3) |
