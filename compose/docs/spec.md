@@ -931,7 +931,7 @@ is.
   next frame. It jumps, as `animateScrollTo` does, and a requester attached to nothing does nothing.
   There is no `rect` parameter, as there is no `Rect`. A `ListView` row isn't a widget, so
   `revealItem` stays its way. The modifier is a `WidgetAttachedElement`, ui's internal hook for an
-  element that needs its widget ([Bring into view](issues/0196-bring-into-view.md)).
+  element that needs its widget ([Bring into view](issues/archive/0196-bring-into-view.md)).
 
 ### Tabs and grids (phase 3)
 
