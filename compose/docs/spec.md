@@ -1030,6 +1030,19 @@ is.
   pixels (`Rwindow_set_icon`, Windows and X11), and a texture can't be read back, so it is read
   again from the image file: only a `painterResource` can be one, and another painter logs a
   warning.
+- **`Icon(painter, contentDescription, modifier, tint: Color = Color.Unspecified)`** (phase 5), in
+  `raven.compose.foundation`, draws a vector or raster icon in one colour, 24 dp by default whatever
+  the file's own size. A `painterResource` is drawn as a **mask**: its alpha only, loaded with
+  `Rtexture_create_mask_from_file_async` and cached beside the colour texture by path, so the tint
+  gives exactly its colour and a two-tone icon's lighter layer stays lighter; another painter is
+  multiplied, as `Image`'s tint is. `Unspecified` is the text colour where the icon sits
+  (`Rimage_set_tint_text`), so it follows a button's content colour, hover and the disabled fade
+  without recomposing; an untinted icon is an `Image`. Raven redraws an SVG at each density and
+  `RavenUiScale`, so an icon stays sharp at any size. **Any icon downloaded from
+  fonts.google.com/icons** renders correctly (Material Symbols' `0 -960 960 960` viewBox, Material
+  Icons' two-tone layers, a grey fill): committed Google fixtures prove it. There is no
+  `ImageVector` and no bundled icon set: an app ships the SVG files it downloads
+  ([Icons and resources: vector icons](issues/archive/0207-icons-and-resources-vector-icons.md)).
 
 ### Transitions and Island (phase 3)
 
@@ -1627,6 +1640,10 @@ for change 6, which only a real macOS window reaches.
     keyboard focus where it is, as a toolbar button does, while the click works and Tab still
     reaches what is focusable inside; the window's press checks the widget and its ancestors up to
     a popup. With a C test in `tests/test_widgets.c`. Made in the same ticket.
+12. **`Rtexture_create_mask_from_file_async(const char* path)`** (required for `Icon`, to be made):
+    decodes any image, SVG or raster, keeping only its alpha in `R_TEXTURE_ALPHA8`, which the shader
+    samples as white with that alpha, so a tint gives exactly its colour; an SVG is redrawn at each
+    scale as a colour texture is. Planned in [Icons and resources: vector icons](issues/archive/0207-icons-and-resources-vector-icons.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
@@ -1670,6 +1687,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | No style classes; theme rules by class don't apply | no such concept | [8](#8-component-vocabulary) |
 | Buttons, `Checkbox`, `RadioButton` and `Slider` colours take explicit hovered and pressed colours | hover and press come from `interactionSource` and indication | [8](#phase-2-theming) |
 | `ColorFilter.textColor()` tints an image with the text colour around it; there is no `LocalContentColor` | `Icon(tint = LocalContentColor.current)` | [8](#images-and-resources-phase-3) |
+| `Icon`'s `tint = Color.Unspecified` is the text colour where it sits; an untinted icon is an `Image` | `Unspecified` draws the icon untinted, and the default is `LocalContentColor.current` | [8](#images-and-resources-phase-3) |
+| No `ImageVector` and no bundled icons: an app ships the SVG files it downloads | `Icons.Filled.*` from the material-icons libraries | [8](#images-and-resources-phase-3) |
 | No coroutine `pointerInput`, drag gestures or long press | `pointerInput`, `draggable`, `combinedClickable(onLongClick)` | [7](#7-events-and-state) |
 | No `onPreviewKeyEvent`, because Raven doesn't tunnel events | preview handlers run root to leaf | [7](#7-events-and-state) |
 | No `clearAndSetSemantics` or `mergeDescendants` | merging and clearing semantics | [7](#7-events-and-state) |
