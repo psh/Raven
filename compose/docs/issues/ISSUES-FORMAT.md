@@ -30,6 +30,10 @@ that this directory stays easy to scan. **Wayfinder maps (`wayfinder: map`) are 
 archived**, closed or not. They stay here permanently as tables of contents, even after every
 child ticket has moved.
 
+A ticket that binds Raven API, or finds a gap in what is bound, also updates
+[`../api-coverage.md`](../api-coverage.md) when it closes: its row's status and link, and the numbers
+from `compose/tools/api-coverage.sh`. Its archive link there is fixed with the others below.
+
 When a ticket other than a map reaches `closed` or `wont-fix`, move it into `archive/` with
 `git mv`, keeping the same filename, and fix the links in both directions:
 

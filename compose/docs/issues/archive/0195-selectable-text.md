@@ -5,7 +5,7 @@ status: closed
 # Selectable text
 
 A `Text` can't be selected and copied. Bind `Rlabel_set_selectable` behind Compose's
-`SelectionContainer`, so text inside one is selectable. One of the everyday features in the [Raven API coverage review](https://claude.ai/artifact/J56iXnntbqm8dmAUXWAEeh) (2026-11-14).
+`SelectionContainer`, so text inside one is selectable. One of the everyday features in the [Raven API coverage](../../api-coverage.md) review (2026-11-14).
 
 ## Deliverables
 

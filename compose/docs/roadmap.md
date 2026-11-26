@@ -241,6 +241,9 @@ Decided for phase 4 (in the spec):
 
 ## Later
 
+[Raven API coverage](api-coverage.md) tracks what of Raven's C API is still unbound, and which of
+those gaps have tickets or wait here.
+
 **Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
 virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,

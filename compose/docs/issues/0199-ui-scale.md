@@ -7,7 +7,7 @@ status: open
 `LocalDensity` follows a change to Raven's UI scale
 ([Layout offset and density](archive/0118-layout-offset-and-density.md)), but an app can't read or set
 it: `Rget_ui_scale` and `Rset_ui_scale` are unbound. Expose them so an app can offer a zoom
-setting. One of the everyday features in the [Raven API coverage review](https://claude.ai/artifact/J56iXnntbqm8dmAUXWAEeh) (2026-11-14).
+setting. One of the everyday features in the [Raven API coverage](../api-coverage.md) review (2026-11-14).
 
 ## Deliverables
 
