@@ -4,13 +4,13 @@ status: closed
 
 # TextInput's Password, MaxLength and action in the translator
 
-[Password, max length and submit on TextField](archive/0194-password-max-length-and-submit-on-textfield.md)
+[Password, max length and submit on TextField](0194-password-max-length-and-submit-on-textfield.md)
 gave `TextField` a password mode, `maxLength` and `KeyboardActions(onDone)`, but `samples/xml-translator`
 still translates a `<TextInput>` as if it had none. It warns that the action "fires on Enter, which
 TextField doesn't report", and `Password="true"` and `MaxLength="20"` fall through to "has no
 equivalent on TextField". Section 10 of the spec says the same. Translate all three.
 
-**Depends on:** [Password, max length and submit on TextField](archive/0194-password-max-length-and-submit-on-textfield.md).
+**Depends on:** [Password, max length and submit on TextField](0194-password-max-length-and-submit-on-textfield.md).
 
 ## Deliverables
 

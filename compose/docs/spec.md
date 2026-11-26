@@ -1416,7 +1416,7 @@ This sample translates Raven XML into compose-raven source.
     /* name */ })`. `Password="true"` becomes `visualTransformation = PasswordVisualTransformation()`,
     or an `if` with `VisualTransformation.None` when it is bound; `MaxLength` becomes `maxLength`,
     0 (Raven's no limit) nothing, a bound one `.takeIf { it > 0 }`, and a negative one a warning
-    ([TextInput's Password, MaxLength and action in the translator](issues/0201-textinputs-password-maxlength-and-action-in-the-translator.md)).
+    ([TextInput's Password, MaxLength and action in the translator](issues/archive/0201-textinputs-password-maxlength-and-action-in-the-translator.md)).
 - **Templates**:
   - Each `<Widget Name="Card" Title="Untitled" Wide="false">` becomes a top-level composable,
     `@Composable fun Card(modifier: Modifier = Modifier, title: String = "Untitled", wide: Boolean = false, content: @Composable () -> Unit = {})`,

@@ -8,7 +8,7 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-25, after [TextInput's Password, MaxLength and action in the translator](issues/0201-textinputs-password-maxlength-and-action-in-the-translator.md).*
+*Last updated 2026-11-25, after [TextInput's Password, MaxLength and action in the translator](issues/archive/0201-textinputs-password-maxlength-and-action-in-the-translator.md).*
 
 ## Summary
 
@@ -97,7 +97,7 @@ Found while doing them:
 | Feature | Needs | Status |
 |---|---|---|
 | Leading and trailing icons on `TextField` (a password toggle, a search glass, a clear button) | two Raven changes: `Rtext_input_set_insets`, `Rwidget_set_focus_on_click` | **Done** ([0200](issues/archive/0200-leading-and-trailing-icons-on-textfield.md)) |
-| The XML translator emitting `Password`, `MaxLength` and a TextInput's action | translator only | **Done** ([0201](issues/0201-textinputs-password-maxlength-and-action-in-the-translator.md)) |
+| The XML translator emitting `Password`, `MaxLength` and a TextInput's action | translator only | **Done** ([0201](issues/archive/0201-textinputs-password-maxlength-and-action-in-the-translator.md)) |
 | Scroll-linked effects (collapsing toolbars) | two Raven changes: a pre-scroll callback for `Modifier.nestedScroll`, and the drawn scroll offset | Roadmap, phase 5 gestures |
 | Raven's HTML copy | `Rclipboard_set_html`; Compose's `ClipboardManager` has nothing for it | Not planned |
 
