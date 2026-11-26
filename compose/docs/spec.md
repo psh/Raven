@@ -1490,6 +1490,39 @@ This sample translates Raven XML into compose-raven source.
     compiles them against foundation. The translator binary is an input, so a changed translator
     always translates again.
 
+### `samples/effects` (phase 5)
+
+A port of Raven's `examples/effects`: a four-column grid of cards, one for each of Raven's eight
+built-in effects (`Surface(effect = ShaderEffect.builtin(...), effectStyle = EffectStyle(color,
+color2, params))`, ripple over a card it runs across), and a row of the app's two effects,
+`wave.spv` and `liquid.spv` (`ShaderEffect.fromFile(path, backdrop, animated)`, liquid reading
+what is behind it). A `Card` composable stands for the XML's `<Widget Name="Card">`. The `.spv`
+files are read from Raven's `examples/effects` at a path the build writes into the sample, as
+`samples/themes` does, not copied. The C example's web-only code (GLSL handed to WebGL) has no
+counterpart, as there is no web target. No library change; the headless test checks each card's
+effect and style and that both of the app's shaders load
+([Designed samples: the three ports' plan](issues/archive/0205-designed-samples-the-three-ports-plan.md)).
+
+### `samples/viewport-opengl` (phase 5)
+
+A port of Raven's `examples/viewport_opengl` over `OpenGLViewport`: the spinning scene in a native
+child window, a speed slider, a wireframe switch and a label with the GL renderer. The C example
+draws with OpenGL 1.1 on a WGL or GLX context and has no macOS branch; `compose-raven-opengl`
+makes a 3.2 core context, so the port draws the same scene with a small vertex and fragment shader
+and a vertex buffer, a deviation with no library change. It runs on macOS; Linux is a port gap
+that waits for GLX on Linux (graphics extras). The headless test checks the controls and the
+viewport's warning; with `RAVEN_GPU_TESTS=1`, a frame is drawn and read back.
+
+### `samples/viewport-vulkan` (phase 5)
+
+A port of Raven's `examples/viewport_vulkan` over `compose-raven-vulkan`: the scene shown both ways,
+rendered into the app's own image and shown as a texture (`ImageBitmap.fromVulkanImageView`), and
+drawn in Raven's frame by `VulkanViewport(onDraw)`, on Raven's device with the queue lock. The Vulkan
+calls come from a cinterop local to the sample, against the system's Vulkan headers (MoltenVK's on
+macOS, `vulkan-headers` on Linux), found through a Gradle property with Homebrew's path as the
+default; shipping Vulkan bindings with the module stays in graphics extras. The headless test checks
+the controls and that neither view draws; with `RAVEN_GPU_TESTS=1`, both views draw a frame.
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the

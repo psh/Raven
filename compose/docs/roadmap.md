@@ -263,8 +263,12 @@ drawn offset, so an effect follows Raven's smooth scroll rather than its target;
 opt-in `compose-raven-lottie` module over ThorVG ([A compose-raven-lottie module](issues/0111-compose-raven-lottie-module.md)).
 
 - `effects` (shader effects), `viewport_opengl` (`compose-raven-opengl`), `viewport_vulkan`
-  (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md). They port after
-  phase 3, once the modules exist.
+  (`compose-raven-vulkan`): designed in [Custom drawing and custom layout](issues/archive/0028-custom-drawing-and-layout.md)
+  and planned in [Designed samples: the three ports' plan](issues/archive/0205-designed-samples-the-three-ports-plan.md);
+  filed as [samples/effects](issues/0218-samples-effects.md),
+  [samples/viewport-opengl](issues/0219-samples-viewport-opengl.md) and
+  [samples/viewport-vulkan](issues/0220-samples-viewport-vulkan.md), the first of phase 5's
+  implementation sequence. `viewport_opengl`'s Linux port waits for GLX on Linux.
 - `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, WebView, BlockEditor),
   which are still fog on the phase 3 map. `ColorPicker` left that list for phase 3
   ([Music's accent picker](issues/archive/0100-musics-accent-picker.md)).

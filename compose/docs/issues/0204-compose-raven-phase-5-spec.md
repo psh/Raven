@@ -40,6 +40,7 @@ fog and [Raven API coverage](../api-coverage.md).
 
 ## Decisions so far
 
+- [Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md): `effects` ports as is; `viewport_opengl` redrawn in core GL, macOS only; `viewport_vulkan` over a cinterop local to the sample. Filed as [samples/effects](0218-samples-effects.md), [samples/viewport-opengl](0219-samples-viewport-opengl.md), [samples/viewport-vulkan](0220-samples-viewport-vulkan.md).
 - [Icons and resources: SVG facts](archive/0206-icons-and-resources-svg-facts.md): Raven reads every Google icon and redraws SVGs per scale already; only tinting is missing, since Raven's tint multiplies and the icons are black.
 
 ## Not yet specified
