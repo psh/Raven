@@ -743,6 +743,29 @@ they take no icons. Each is controlled.
   `Slider`'s parameters with `Rslider_set_orientation(R_VERTICAL)`, the minimum at the bottom
   ([Small widgets: Rating, Pagination, Breadcrumb and a vertical Slider](issues/archive/0211-small-widgets-rating-pagination-breadcrumb-and-a-vertical-slider.md)).
 
+### Tray, notifications and taskbar (phase 5)
+
+- **`ApplicationScope.Tray(icon: Painter, state = rememberTrayState(), tooltip: String? = null, onAction = {}, menu: @Composable MenuScope.() -> Unit = {})`**,
+  Compose Desktop's shape over `Rtray_*`: the menu is made of the menu composables (`Item`,
+  `CheckboxItem`, `Menu`, `Separator`); the icon is pixels, so only a `painterResource` can be one,
+  as for `Window(icon)`. While a tray is in the composition the app keeps running after its last
+  window closes, Raven's own rule. Where the system shows none (`Rtray_is_supported`), it does
+  nothing, with a warning.
+- **Notifications**: `TrayState.sendNotification(Notification(title, message, type))`, as Compose
+  Desktop's, and `ApplicationScope.sendNotification(notification)` for an app with no tray, over
+  `Rnotification_show`; `Notification.Type` (None, Info, Warning, Error) maps to Raven's urgency.
+  Each returns whether the system took it, so an app can show its own message where it didn't.
+  Raven's clicked callback, Windows only, isn't bound.
+- **Taskbar and Dock**: `Window(taskbarProgress: TaskbarProgress? = null)` (`Normal(value)`,
+  `Indeterminate`, `Paused(value)`, `Error(value)`; `Rwindow_set_taskbar_progress`);
+  `TaskbarBadge(text)`, a composable anywhere in the app whose badge (`Rtaskbar_set_badge`) goes
+  when it leaves the composition, the last composed winning; `ApplicationScope.DockMenu { }`, the
+  Dock icon's menu on macOS (`Rtaskbar_set_menu`), nothing elsewhere. Windows' jump list goes with
+  the Windows target.
+- **Tests** record Raven's calls through a seam, as for the window operations, since the headless
+  window system shows none of it
+  ([Small widgets: notifications and tray](issues/archive/0213-small-widgets-notifications-and-tray.md)).
+
 ### ColorPicker (phase 3)
 
 Added for the `music` port, and replacing the stand-in swatches of the phase 2 `themes` port:
@@ -1773,6 +1796,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `Rating`, `Pagination` and `Breadcrumb` | no counterpart | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
 | `VerticalSlider` is controlled by a `value` | Material 3's `VerticalSlider(state: SliderState)` | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
+| `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
+| `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `TextField` takes a `String` placeholder, single line only, and has no `label`, `prefix`, `suffix` or `supportingText` | a placeholder slot, multi-line, and those slots | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
