@@ -98,6 +98,21 @@ class TemplatesTest {
     }
 
     @Test
+    fun aBoundPasswordAndMaxLengthFollowTheirParameters() {
+        val code = translate(
+            el(
+                "Widgets",
+                children = listOf(
+                    widget("Secret", "Hidden" to "true", "Limit" to "8", body = el("TextInput", "Password" to "{Hidden}", "MaxLength" to "{Limit}")),
+                ),
+            ),
+        ).code
+        assertTrue("visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None" in code, code)
+        assertTrue("maxLength = limit.takeIf { it > 0 }" in code, code)
+        assertTrue("import raven.compose.ui.text.input.VisualTransformation" in code, code)
+    }
+
+    @Test
     fun parametersAreTypedFromTheirDefaults() {
         val translation = translate(
             el(

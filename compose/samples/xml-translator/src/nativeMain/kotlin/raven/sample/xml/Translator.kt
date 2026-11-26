@@ -105,6 +105,7 @@ private val imports = mapOf(
     "Text" to "raven.compose.foundation",
     "TextButton" to "raven.compose.foundation",
     "TextField" to "raven.compose.foundation",
+    "KeyboardActions" to "raven.compose.foundation.text",
     "VerticalDivider" to "raven.compose.foundation",
     "Arrangement" to "raven.compose.foundation.layout",
     "Box" to "raven.compose.foundation.layout",
@@ -133,6 +134,8 @@ private val imports = mapOf(
     "WindowState" to "raven.compose.ui",
     "singleWindowApplication" to "raven.compose.ui",
     "tooltip" to "raven.compose.ui",
+    "PasswordVisualTransformation" to "raven.compose.ui.text.input",
+    "VisualTransformation" to "raven.compose.ui.text.input",
     "Dp" to "raven.compose.ui.unit",
     "DpSize" to "raven.compose.ui.unit",
     "dp" to "raven.compose.ui.unit",
@@ -468,7 +471,25 @@ private class Translator {
                 enabled(attrs)?.let { args += it }
                 attrs.truth("ReadOnly")?.let { flag("readOnly", it, unless = false)?.let { args += it } }
                 attrs.str("Placeholder")?.let { args += "placeholder = $it" }
-                action(attrs)?.let { warn(element, "the action \"$it\" fires on Enter, which TextField doesn't report") }
+                attrs.truth("Password")?.let { password ->
+                    when (password.constant) {
+                        false -> {}
+                        true -> args += "visualTransformation = PasswordVisualTransformation()".also { use("PasswordVisualTransformation") }
+                        null -> args += "visualTransformation = if (${password.code}) PasswordVisualTransformation() else VisualTransformation.None"
+                            .also { use("PasswordVisualTransformation", "VisualTransformation") }
+                    }
+                }
+                // A text input fires its action on Enter only, whichever of the action names it has.
+                action(attrs)?.let { args += "keyboardActions = KeyboardActions(onDone = ${stub(it)})".also { use("KeyboardActions") } }
+                attrs.num("MaxLength")?.let { max ->
+                    val limit = max.constant
+                    when {
+                        // 0 is Raven's "no limit", which is compose-raven's null too.
+                        limit == null -> args += "maxLength = ${max.expr.to(KType.Int).parenthesized}.takeIf { it > 0 }"
+                        limit < 0f -> warn(element, "MaxLength=\"${attrs.peek("MaxLength")}\": negative, so there is no limit")
+                        limit >= 1f -> args += "maxLength = ${limit.toInt()}"
+                    }
+                }
                 leaf(element, attrs, "TextField", args)
             }
             Tag.TextEditor -> {

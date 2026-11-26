@@ -1411,8 +1411,12 @@ This sample translates Raven XML into compose-raven source.
   - A `Checkbox` with text becomes a `Row(verticalAlignment = Alignment.CenterVertically)` of the
     toggle and a `Text`, and the slot Modifier goes on the `Row`.
   - A Slider's `Step` becomes `steps`, the count of values between the ends, when it divides the
-    range; otherwise a warning. A TextInput's action fires on Enter, which `TextField` doesn't
-    report, so it is a warning.
+    range; otherwise a warning. A TextInput's action, whichever of the action names the XML
+    gives it, fires on Enter in Raven, so it becomes `keyboardActions = KeyboardActions(onDone = {
+    /* name */ })`. `Password="true"` becomes `visualTransformation = PasswordVisualTransformation()`,
+    or an `if` with `VisualTransformation.None` when it is bound; `MaxLength` becomes `maxLength`,
+    0 (Raven's no limit) nothing, a bound one `.takeIf { it > 0 }`, and a negative one a warning
+    ([TextInput's Password, MaxLength and action in the translator](issues/0201-textinputs-password-maxlength-and-action-in-the-translator.md)).
 - **Templates**:
   - Each `<Widget Name="Card" Title="Untitled" Wide="false">` becomes a top-level composable,
     `@Composable fun Card(modifier: Modifier = Modifier, title: String = "Untitled", wide: Boolean = false, content: @Composable () -> Unit = {})`,

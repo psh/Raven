@@ -233,6 +233,40 @@ class TranslatorTest {
     }
 
     @Test
+    fun aTextInputsPasswordMaxLengthAndActionAreTranslated() {
+        val translation = translate(el("TextInput", "Password" to "true", "MaxLength" to "20", "OnCommitted" to "login.submit"))
+        val code = translation.code
+        assertTrue("visualTransformation = PasswordVisualTransformation()" in code, code)
+        assertTrue("keyboardActions = KeyboardActions(onDone = { /* login.submit */ })" in code, code)
+        assertTrue("maxLength = 20" in code, code)
+        assertTrue("import raven.compose.ui.text.input.PasswordVisualTransformation" in code, code)
+        assertTrue("import raven.compose.foundation.text.KeyboardActions" in code, code)
+        assertEquals(emptyList(), translation.warnings.map { it.toString() }, "nothing left without an equivalent")
+    }
+
+    @Test
+    fun anyActionNameOfATextInputIsItsEnter() {
+        // Raven fires a text input's action on Enter, whichever name the XML gives it.
+        for (name in listOf("Action", "OnChanged", "OnCommitted")) {
+            val code = translate(el("TextInput", name to "go")).code
+            assertTrue("keyboardActions = KeyboardActions(onDone = { /* go */ })" in code, code)
+        }
+    }
+
+    @Test
+    fun noPasswordAndNoLimitEmitNothing() {
+        val code = translate(el("TextInput", "Password" to "false", "MaxLength" to "0")).code
+        assertTrue("visualTransformation" !in code && "maxLength" !in code, code)
+    }
+
+    @Test
+    fun aNegativeMaxLengthIsAWarning() {
+        val translation = translate(el("TextInput", "MaxLength" to "-3", line = 5))
+        assertTrue("maxLength" !in translation.code, translation.code)
+        assertEquals(listOf("line 5: MaxLength=\"-3\": negative, so there is no limit"), translation.warnings.map { it.toString() })
+    }
+
+    @Test
     fun aSliderStepThatDoesntDivideTheRangeIsAWarning() {
         val translation = translate(el("Slider", "Max" to "10", "Step" to "3", line = 4))
         assertTrue("steps =" !in translation.code)
