@@ -1093,6 +1093,40 @@ of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](is
   its own with plain numbers, and the lists through `runRavenTest`.
 - **Not yet**: sticky headers, `Modifier.animateItem` and prefetching ahead of the scroll.
 
+### Table (phase 5)
+
+`Table` is Raven's sortable data grid, always in virtual mode, for text cells: only the cells drawn
+are asked for, so a table of 100,000 rows costs no more than a short one ([Lists at scale: Table](issues/archive/0215-lists-at-scale-table.md)).
+Compose has no data table, so the shape follows `ListView`'s.
+
+- **`Table(items: List<T>, selectedIndex, onSelectedIndexChange, modifier, sort: TableSort? = null,
+  onSortChange: (TableSort?) -> Unit = {}, state = rememberTableState(), onActivate: (Int) -> Unit = {},
+  headerVisible = true, gridLines = false, striped = false, columns: TableScope<T>.() -> Unit)`**:
+  ```kotlin
+  Table(people, selected, { selected = it }, sort = sort, onSortChange = { sort = it }) {
+      column("Name", width = 160.dp) { it.name }
+      column("Age", width = 60.dp, align = Alignment.End) { it.age.toString() }
+      column("City", fill = 1f) { it.city }
+  }
+  ```
+- **Columns**: `TableScope.column(header, width = 120.dp, fill = 0f, align: Alignment.Horizontal =
+  Alignment.Start, sortable = true, text: (T) -> String)`, matched to Raven's columns by place. A
+  changed header, alignment, fill or sortable flag is applied; a changed number of columns makes
+  them again. The user resizes a column by dragging its header's edge, and Raven keeps that width:
+  the app's `width` applies when the column is made and again when the app changes it.
+- **Sorting is the app's**: `TableSort(column: Int, descending: Boolean)`. A click on a header
+  calls `onSortChange` (null when Raven turns sorting off), and Raven shows the arrow of the `sort`
+  passed, so a sort the app doesn't take reverts. The app sorts `items`: the table shows them in the
+  order given, and every index is an index of `items`.
+- **Selection** is `ListView`'s: one row or none at -1, controlled, a choice the app doesn't take
+  reverting. `onActivate` gets a row double-clicked or Enter pressed on it.
+- **`TableState`** (`rememberTableState()`) has only `suspend revealRow(index)`
+  (`Rtable_scroll_to_row`); Raven can't report the table's position, so it isn't saveable.
+- **Not yet**: composable cells (a table over the lazy lists), several rows selected, a context
+  menu, and widths the app controls, which would need Raven to report a resize.
+- The XML translator maps `<Table>` and its `<Column>`s onto `Table`, its stored `<Row>`s
+  becoming a `listOf` of each row's texts.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -1881,6 +1915,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | Native, OpenGL and Metal viewports sit above the UI and aren't clipped | composited like any element | [8](#8-component-vocabulary) |
 | `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
 | `LazyColumn`/`LazyRow` compose every item in phase 3; from phase 5 the items in view and one past each edge, sized by estimate until measured | only visible items are composed, measured as they are | [8](#lazy-virtualisation-phase-5) |
+| `Table` has text cells only, one selected row, no context menu, and widths the user sets, not the app; the app sorts its items | no data table in Compose | [8](#table-phase-5) |
 | `contentType` is accepted and ignored, and there are no sticky headers, `animateItem` or prefetching | compositions reused by content type | [8](#lazy-virtualisation-phase-5) |
 | `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
 | `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
