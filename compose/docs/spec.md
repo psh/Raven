@@ -1559,10 +1559,11 @@ macOS, `vulkan-headers` on Linux), found through a Gradle property with Homebrew
 default; shipping Vulkan bindings with the module stays in graphics extras. The headless test checks
 the controls and that neither view draws; with `RAVEN_GPU_TESTS=1`, both views draw a frame.
 
-### `compose-raven-xml` and `raven-xml2compose` (phase 4)
+### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
-sample depends on it. The command-line tool `raven-xml2compose` is built on the module and starts
+sample depends on it. Both are built and tested in this repository in phase 5; publishing them
+stays with the release, phase 4. The command-line tool `raven-xml2compose` is built on the module and starts
 Raven headless, with no window.
 
 ```
@@ -1578,6 +1579,29 @@ raven-xml2compose ui/ --out src/nativeMain/kotlin/app/ui --package app.ui [--mai
   edit.`, and only files with that header are overwritten.
 - **Diagnostics** go to stderr as `file:line:column: message`. The exit code is non-zero on errors,
   and `--werror` also fails on warnings.
+
+**Build-time translation** (phase 5): the convention plugin `raven.compose-xml` in `build-logic`,
+separate from the resources plugin, translates an app's XML as part of its build:
+
+```kotlin
+ravenXml {
+    source = "src/nativeMain/xml"
+    packageName = "app.ui"
+    main = "main.xml"
+    werror = false
+}
+```
+
+- One task runs `raven-xml2compose` over the whole folder; each subfolder is a subpackage of
+  `packageName` (`xml/notes/notes.xml` under `app.ui` is in `app.ui.notes`). Its inputs are the XML
+  files and the tool, taken from the tool project's link task, so a changed translator translates
+  again; its output, `build/generated/ravenXml/<target>`, is a source directory of `nativeMain`.
+- Warnings show in the build's output; `werror = true` fails the build on them, and errors always do.
+- A file the XML names (`<Image Source="drawable/logo.png"/>`) keeps its path, which resolves
+  against the resource root: with the resources plugin, that is its path under `composeResources/`.
+- Only apps in this repository use it, through the tool's project; apps outside wait for the release.
+- The examples check translates Raven's examples through the plugin, each example in its subpackage
+  ([Icons and resources: build-time XML translation](issues/archive/0209-icons-and-resources-build-time-xml-translation.md)).
 
 Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compose-translator.md),
 [Templates in the XML translator](issues/archive/0016-xml-translator-templates.md),
