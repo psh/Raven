@@ -127,6 +127,10 @@ public class RavenNode internal constructor(
             previous.transitionRequesters.forEach { if (it.widget == widget) it.widget = null }
             modifier.transitionRequesters.forEach { it.widget = widget }
         }
+        if (modifier.attached != previous.attached) {
+            previous.attached.forEach { it.detach(widget) }
+            modifier.attached.forEach { it.attach(widget) }
+        }
         applyLayout()
     }
 
@@ -365,6 +369,7 @@ public class RavenNode internal constructor(
         follower = null
         modifier.focusRequesters.forEach { it.detach(widget) }
         modifier.transitionRequesters.forEach { if (it.widget == widget) it.widget = null }
+        modifier.attached.forEach { it.detach(widget) }
         // Destroying an ancestor first has already destroyed this widget with it.
         if (Rwidget_is_valid(widget) == R_TRUE) Rwidget_destroy(widget)
     }

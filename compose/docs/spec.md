@@ -924,6 +924,14 @@ is.
   row. Raven can't report the list's position, so it isn't saveable, and `revealItem` on a state
   not attached to a list does nothing. A log keeps its last line in view with
   `LaunchedEffect(lines.size) { state.revealItem(lines.lastIndex) }`.
+- **`BringIntoViewRequester()`** and **`Modifier.bringIntoViewRequester(it)`**, in
+  `raven.compose.foundation.relocation`: `suspend bringIntoView()` calls `Rwidget_scroll_into_view`
+  on each widget the requester is attached to, so every ScrollBox around it, innermost first,
+  scrolls just far enough along its own axis to show it, and the states read the position on the
+  next frame. It jumps, as `animateScrollTo` does, and a requester attached to nothing does nothing.
+  There is no `rect` parameter, as there is no `Rect`. A `ListView` row isn't a widget, so
+  `revealItem` stays its way. The modifier is a `WidgetAttachedElement`, ui's internal hook for an
+  element that needs its widget ([Bring into view](issues/0196-bring-into-view.md)).
 
 ### Tabs and grids (phase 3)
 
@@ -1547,6 +1555,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `VerticalScroll {}` / `HorizontalScroll {}` containers | `Modifier.verticalScroll(rememberScrollState())` | [8](#8-component-vocabulary) |
 | `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
+| `bringIntoView()` takes no `rect`, brings the whole widget and jumps | `bringIntoView(rect)` animates to show a part of it | [8](#scroll-position-phase-3) |
 | `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |

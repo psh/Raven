@@ -121,7 +121,20 @@ internal data class FoldedModifier(
     val semantics: SemanticsElement? = null,
     /** The transition requesters attached to the widget, in the chain's order. */
     val transitionRequesters: List<TransitionRequester> = emptyList(),
+    /** The elements told which widget they are on, in the chain's order. */
+    val attached: List<WidgetAttachedElement> = emptyList(),
 )
+
+/**
+ * A chain element that needs the widget it is on, as a requester does: [attach] when the chain is
+ * set on a node, [detach] when it leaves the chain or the node is released. Equal elements stay
+ * attached, so a requester's element should compare by its requester.
+ */
+@InternalComposeRavenApi
+public interface WidgetAttachedElement : Modifier.Element {
+    public fun attach(widget: Rid)
+    public fun detach(widget: Rid)
+}
 
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
     when (element) {
@@ -172,6 +185,7 @@ internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedMo
         is SemanticsElement -> folded.copy(semantics = folded.semantics?.then(element) ?: element)
         is ClipElement -> folded.copy(clipToBounds = true)
         is TransitionRequesterElement -> folded.copy(transitionRequesters = folded.transitionRequesters + element.requester)
+        is WidgetAttachedElement -> folded.copy(attached = folded.attached + element)
         else -> folded
     }
 }
