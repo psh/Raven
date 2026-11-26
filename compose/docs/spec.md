@@ -676,6 +676,24 @@ Languages:
   `codeEditorLanguages()` read after it.
 - **`codeEditorLanguageForFile(path): String?`** is `Rlanguage_for_file`, valid only inside the
   composition.
+- **Phase 5 extras** ([Small widgets: the CodeEditor extras](issues/archive/0212-small-widgets-the-codeeditor-extras.md)):
+  - `CodeEditorState` gains `canUndo` and `canRedo` (`Rtext_editor_can_undo`/`_can_redo`) and
+    `selection: EditorSelection?` (`start` and `end` `TextPosition`s in text order, null when
+    nothing is selected), followed once a frame as `cursor` is; `select(start, end)`,
+    `selectedText()` (a function, not copied each frame), `suspend scrollToLine(line)` (a jump);
+    and `zoom: Float` (0.5 to 4), written by Raven's zoom callback and calling
+    `Rtext_editor_set_zoom` when set.
+  - `CodeEditor` gains `zoomable = true`, `tabSize = 4`, `insertSpacesForTab = false`,
+    `autoPairs = true` and `autoCompletion = true` (proposals that pop up by themselves; Ctrl+Space
+    and `showCompletions()` still work without it), Raven's defaults.
+  - **`SyntaxTheme(comment, string, number, keyword, type, function, tag, attribute, punctuation,
+    directive, heading, strong, emphasis, link)`**, one `Color` per token kind, provided as
+    `LocalSyntaxTheme` (every colour `Unspecified` by default). Each `CodeEditor` applies the one
+    around it with `Rtext_editor_set_token_color`, so nested providers scope as a local does; an
+    unspecified colour is the editor's Raven theme's, a theme file's `<Syntax>` or Raven's own pick.
+  - Left unbound: the token at a position, the line count, a line and the length (the app has the
+    text), `set_syntax` and `set_markdown` (`language` covers them, Markdown being Raven's
+    `"Markdown"` language) and `is_completing`.
 
 ### Phase 2: ComboBox and SpinBox
 
@@ -1726,6 +1744,11 @@ for change 6, which only a real macOS window reaches.
     decodes any image, SVG or raster, keeping only its alpha in `R_TEXTURE_ALPHA8`, which the shader
     samples as white with that alpha, so a tint gives exactly its colour; an SVG is redrawn at each
     scale as a colour texture is. Planned in [Icons and resources: vector icons](issues/archive/0207-icons-and-resources-vector-icons.md).
+13. **`Rtext_editor_set_token_color(Rid editor, RToken token, float r, float g, float b, float a)`**
+    and `Rtext_editor_clear_token_colors(Rid editor)` (required for `SyntaxTheme`, to be made): a
+    colour for one kind of token in one editor, over its theme's; Raven's are otherwise only the
+    global theme's (`Rtheme_set_token_color`). Planned in
+    [Small widgets: the CodeEditor extras](issues/archive/0212-small-widgets-the-codeeditor-extras.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
@@ -1749,6 +1772,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `DatePicker` is a field with a drop-down calendar, controlled by a `LocalDate`; `TimePicker` a 24-hour field controlled by a `LocalTime` | Material 3's inline calendar and clock dial, driven by `DatePickerState` (UTC milliseconds) and `TimePickerState(is24Hour)` | [8](#date-and-time-pickers-phase-5) |
 | `Rating`, `Pagination` and `Breadcrumb` | no counterpart | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
 | `VerticalSlider` is controlled by a `value` | Material 3's `VerticalSlider(state: SliderState)` | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
+| `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `TextField` takes a `String` placeholder, single line only, and has no `label`, `prefix`, `suffix` or `supportingText` | a placeholder slot, multi-line, and those slots | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
