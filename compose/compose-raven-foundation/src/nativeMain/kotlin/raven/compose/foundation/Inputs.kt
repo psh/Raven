@@ -2,6 +2,12 @@ package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import kotlinx.cinterop.FloatVar
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.value
 import raven.cinterop.R_COLOR_ACCENT
 import raven.cinterop.R_COLOR_ACCENT_HOVERED
 import raven.cinterop.R_COLOR_ACCENT_PRESSED
@@ -25,17 +31,27 @@ import raven.cinterop.Rcombo_box_add_item
 import raven.cinterop.Rcombo_box_clear_items
 import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rcombo_box_set_selected
+import raven.cinterop.Rid
 import raven.cinterop.Rslider_set_range
 import raven.cinterop.Rslider_set_step
 import raven.cinterop.Rspin_box_set_decimals
 import raven.cinterop.Rspin_box_set_range
 import raven.cinterop.Rspin_box_set_step
+import raven.cinterop.Rtext_input_set_insets
 import raven.cinterop.Rtext_input_set_max_length
 import raven.cinterop.Rtext_input_set_password
 import raven.cinterop.Rtext_input_set_placeholder
 import raven.cinterop.Rtext_input_set_read_only
 import raven.cinterop.Rwidget_clear_metric
+import raven.cinterop.Rwidget_get_rect
+import raven.cinterop.Rwidget_is_valid
+import raven.cinterop.Rwidget_set_focus_on_click
 import raven.cinterop.Rwidget_set_metric
+import raven.compose.foundation.layout.Box
+import raven.compose.foundation.layout.fillMaxWidth
+import raven.compose.foundation.layout.padding
+import raven.compose.foundation.text.KeyboardActions
+import raven.compose.ui.Alignment
 import raven.compose.ui.ComboBoxChanged
 import raven.compose.ui.ComboBoxSelected
 import raven.compose.ui.IntSpinBoxChanged
@@ -48,23 +64,26 @@ import raven.compose.ui.SpinBoxChanged
 import raven.compose.ui.SpinBoxValue
 import raven.compose.ui.TextChanged
 import raven.compose.ui.TextCommitted
-import raven.compose.ui.layoutWarningSink
-import raven.compose.ui.text.input.PasswordVisualTransformation
-import raven.compose.ui.text.input.VisualTransformation
-import raven.compose.foundation.text.KeyboardActions
 import raven.compose.ui.TextInputText
+import raven.compose.ui.WidgetAttachedElement
 import raven.compose.ui.WidgetDescriptor
+import raven.compose.ui.WidgetFollower
 import raven.compose.ui.bind
 import raven.compose.ui.graphics.Color
 import raven.compose.ui.graphics.Shape
 import raven.compose.ui.graphics.isSpecified
+import raven.compose.ui.layoutWarningSink
+import raven.compose.ui.splitAroundWidget
 import raven.compose.ui.text.LocalTextStyle
 import raven.compose.ui.text.TextStyle
 import raven.compose.ui.text.font.rememberRavenFont
+import raven.compose.ui.text.input.PasswordVisualTransformation
+import raven.compose.ui.text.input.VisualTransformation
 import raven.compose.ui.unit.TextUnit
+import raven.compose.ui.unit.dp
 import raven.compose.ui.unit.isSpecified
 
-private val TextFieldWidget = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged, TextCommitted))
+private val TextFieldDescriptor = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged, TextCommitted))
 private val SliderWidget = WidgetDescriptor("Slider", R_WIDGET_SLIDER, events = listOf(SliderChanged))
 private val ComboBoxWidget = WidgetDescriptor("ComboBox", R_WIDGET_COMBO_BOX, events = listOf(ComboBoxChanged))
 private val SpinBoxWidget = WidgetDescriptor("SpinBox", R_WIDGET_SPIN_BOX, events = listOf(SpinBoxChanged))
@@ -180,6 +199,22 @@ private val FontSizeMetric = Property<TextUnit> { widget, size ->
  * caret stays after it. A [value] the app sets is shown whole, even when it is longer. Null is no
  * limit.
  *
+ * [leadingIcon] and [trailingIcon] are composed over the field, centred at its start and its end,
+ * and the field keeps its text clear of them (`Rtext_input_set_insets`), following their width.
+ * A click on a button among them leaves the focus in the field (`Rwidget_set_focus_on_click`),
+ * so a password's show/hide toggle doesn't stop the typing, while Tab still reaches it; an icon
+ * that is only an image lets the click through to the field. The screen reader finds them after
+ * the field. With icons, [modifier]'s layout and visuals go on a `Box` around the field and the
+ * icons, and its test tag, semantics, focus and input handlers on the field itself; adding the
+ * first icon or removing the last recreates the field.
+ *
+ * ```
+ * var hidden by remember { mutableStateOf(true) }
+ * TextField(password, { password = it },
+ *     visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
+ *     trailingIcon = { TextButton(onClick = { hidden = !hidden }) { Text(if (hidden) "Show" else "Hide") } })
+ * ```
+ *
  * Only single-line fields exist: `CodeEditor` edits several lines.
  */
 @Composable
@@ -191,6 +226,8 @@ public fun TextField(
     readOnly: Boolean = false,
     textStyle: TextStyle = LocalTextStyle.current,
     placeholder: String = "",
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
@@ -200,6 +237,43 @@ public fun TextField(
 ) {
     require(singleLine) { "TextField is single-line only; CodeEditor edits several lines" }
     require(maxLength == null || maxLength > 0) { "a TextField's maxLength must be positive, not $maxLength" }
+    if (leadingIcon == null && trailingIcon == null) {
+        TextFieldWidget(value, onValueChange, modifier, enabled, readOnly, textStyle, placeholder, visualTransformation, keyboardActions, maxLength, shape, colors, insets = null)
+        return
+    }
+    val (outer, inner) = modifier.splitAroundWidget()
+    val insets = remember { TextFieldInsets() }
+    Box(outer, contentAlignment = Alignment.CenterStart) {
+        TextFieldWidget(value, onValueChange, inner.fillMaxWidth(), enabled, readOnly, textStyle, placeholder, visualTransformation, keyboardActions, maxLength, shape, colors, insets)
+        if (leadingIcon != null) {
+            Box(Modifier.align(Alignment.CenterStart).padding(start = IconGap).then(IconSlot(insets, leading = true))) { leadingIcon() }
+        }
+        if (trailingIcon != null) {
+            Box(Modifier.align(Alignment.CenterEnd).padding(end = IconGap).then(IconSlot(insets, leading = false))) { trailingIcon() }
+        }
+    }
+}
+
+/** Between an icon and the field's edge, and between the icon and the text. */
+private val IconGap = 4.dp
+
+/** The text field's own widget, with [insets] following its icons when it has any. */
+@Composable
+private fun TextFieldWidget(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier,
+    enabled: Boolean,
+    readOnly: Boolean,
+    textStyle: TextStyle,
+    placeholder: String,
+    visualTransformation: VisualTransformation,
+    keyboardActions: KeyboardActions,
+    maxLength: Int?,
+    shape: Shape?,
+    colors: TextFieldColors,
+    insets: TextFieldInsets?,
+) {
     val roleColors = roleColors(
         R_COLOR_INPUT to colors.containerColor,
         R_COLOR_TEXT to if (textStyle.color.isSpecified) textStyle.color else colors.textColor,
@@ -211,7 +285,7 @@ public fun TextField(
         R_COLOR_BORDER to colors.unfocusedIndicatorColor,
     )
     val font = rememberRavenFont(textStyle.fontFamily, textStyle.fontWeight, textStyle.fontStyle)
-    RavenWidget(TextFieldWidget, modifier, {
+    RavenWidget(TextFieldDescriptor, modifier, {
         // Raven's field has no font setter of its own: the widget's font, which a subtree font
         // also sets, is its font.
         set(font) { setOwnFont(it) }
@@ -226,7 +300,51 @@ public fun TextField(
         bind(value, TextInputText)
         bind(onValueChange, TextChanged)
         bind(keyboardActions.onDone, TextCommitted)
+        bind(insets)
     })
+}
+
+/**
+ * Keeps a field's text clear of its icons: once a frame, before the frame recomposes, the field's
+ * insets become each icon's laid-out width and the gaps around it. Raven ignores an unchanged one.
+ */
+private class TextFieldInsets : WidgetFollower {
+    var leading: Rid? = null
+    var trailing: Rid? = null
+
+    override fun attach(widget: Rid) = Unit
+
+    override fun follow(widget: Rid) {
+        Rtext_input_set_insets(widget, room(leading), room(trailing))
+    }
+
+    override fun detach(widget: Rid) = Unit
+
+    private fun room(icon: Rid?): Float {
+        if (icon == null || Rwidget_is_valid(icon) != R_TRUE) return 0f
+        val width = memScoped {
+            val x = alloc<FloatVar>()
+            val y = alloc<FloatVar>()
+            val w = alloc<FloatVar>()
+            val h = alloc<FloatVar>()
+            Rwidget_get_rect(icon, x.ptr, y.ptr, w.ptr, h.ptr)
+            w.value
+        }
+        return if (width > 0f) width + IconGap.value * 2 else 0f
+    }
+}
+
+/** An icon's box: [insets] reads its width, and a click in it leaves the focus in the field. */
+private data class IconSlot(val insets: TextFieldInsets, val leading: Boolean) : WidgetAttachedElement {
+    override fun attach(widget: Rid) {
+        if (leading) insets.leading = widget else insets.trailing = widget
+        Rwidget_set_focus_on_click(widget, R_FALSE)
+    }
+
+    override fun detach(widget: Rid) {
+        if (leading && insets.leading == widget) insets.leading = null
+        if (!leading && insets.trailing == widget) insets.trailing = null
+    }
 }
 
 /**

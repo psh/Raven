@@ -8,18 +8,18 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-25, after [UI scale](issues/archive/0199-ui-scale.md).*
+*Last updated 2026-11-25, after [Leading and trailing icons on TextField](issues/0200-leading-and-trailing-icons-on-textfield.md).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 477 of 1,218 (39%) |
+| Functions used | 370 of 1,157 (31%) | 479 of 1,222 (39%) |
 | Widget types bound | 36 of 51 | 37 of 52 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 300 of the
 functions it doesn't call are deliberately unnecessary in a Compose binding. Of the everyday
-features the review found missing, all seven are now bound. Raven grew 61 functions in the
+features the review found missing, all seven are now bound. Raven grew 65 functions in the
 meantime, most of them in the UI driver (`raven_driver.h`) and the MCP library (`raven_mcp.h`),
 which compose-raven binds almost whole. The map widget was added and bound too.
 
@@ -30,10 +30,10 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 
 | Header | Used | Declared | Coverage | Main reason for the rest |
 |---|---:|---:|---:|---|
-| `raven_controls.h` | 99 | 296 | 33% | Table, TileView, Plot, Date/TimePicker, Rating, Pagination, Breadcrumb, Toast unbound; getters |
+| `raven_controls.h` | 100 | 298 | 34% | Table, TileView, Plot, Date/TimePicker, Rating, Pagination, Breadcrumb, Toast unbound; getters |
 | `raven_tools.h` | 8 | 194 | 4% | NodeGraph, Timeline, BlockEditor unbound (phase 5 fog) |
 | `raven_window.h` | 46 | 86 | 53% | drag and drop inside the app, window themes, shortcuts, the inspector, getters |
-| `raven_widget.h` | 53 | 79 | 67% | getters, style classes, free-form slots, drop targets on widgets |
+| `raven_widget.h` | 54 | 81 | 67% | getters, style classes, free-form slots, drop targets on widgets |
 | `raven_core.h` | 40 | 64 | 63% | allocator and memory, async tasks, vsync |
 | `raven_xml.h` | 4 | 64 | 6% | the XML loader, replaced by the composition |
 | `raven_layout.h` | 34 | 61 | 56% | Switcher, SizeBox, Spacer (Compose idioms), layout direction |
@@ -54,7 +54,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_viewport.h` | 8 | 9 | 89% | |
 | `raven_emscripten.h` | 0 | 7 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
-| **Total** | **477** | **1,218** | **39%** | |
+| **Total** | **479** | **1,222** | **39%** | |
 
 ## Not needed by design
 
@@ -96,7 +96,7 @@ Found while doing them:
 
 | Feature | Needs | Status |
 |---|---|---|
-| Leading and trailing icons on `TextField` (a password toggle, a search glass, a clear button) | a Raven change: `Rtext_input_set_insets` | Open ([0200](issues/0200-leading-and-trailing-icons-on-textfield.md)) |
+| Leading and trailing icons on `TextField` (a password toggle, a search glass, a clear button) | two Raven changes: `Rtext_input_set_insets`, `Rwidget_set_focus_on_click` | **Done** ([0200](issues/0200-leading-and-trailing-icons-on-textfield.md)) |
 | The XML translator emitting `Password`, `MaxLength` and a TextInput's action | translator only | Open ([0201](issues/0201-textinputs-password-maxlength-and-action-in-the-translator.md)) |
 | Scroll-linked effects (collapsing toolbars) | two Raven changes: a pre-scroll callback for `Modifier.nestedScroll`, and the drawn scroll offset | Roadmap, phase 5 gestures |
 | Raven's HTML copy | `Rclipboard_set_html`; Compose's `ClipboardManager` has nothing for it | Not planned |

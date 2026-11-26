@@ -617,7 +617,7 @@ Phase 1 covers what the translator sample and a basic settings form need. All co
 | `Checkbox(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_CHECK` | controlled. Raven's own checkbox text isn't used; the label is a `Text` in a `Row` |
 | `Switch(checked, onCheckedChange)` | Checkbox, `R_CHECKBOX_SWITCH` | as `Checkbox` |
 | `RadioButton(selected, onClick)` | Checkbox, `R_CHECKBOX_RADIO` | the controlled check makes the app's state override Raven's sibling unchecking: Raven reports each sibling it unchecks, so each is marked, and only the radio that became checked calls `onClick` |
-| `TextField(value, onValueChange, modifier, enabled, readOnly, textStyle, placeholder: String, visualTransformation, keyboardActions, singleLine = true, maxLength: Int? = null, shape, colors)` | TextInput | single line only: `singleLine = false` fails; `maxLength` is a compose-raven extension ([section 7](#7-events-and-state)) |
+| `TextField(value, onValueChange, modifier, enabled, readOnly, textStyle, placeholder: String, leadingIcon, trailingIcon, visualTransformation, keyboardActions, singleLine = true, maxLength: Int? = null, shape, colors)` | TextInput, in an Overlay with its icons when it has any | single line only: `singleLine = false` fails; `maxLength` is a compose-raven extension ([section 7](#7-events-and-state)). The icons are composed over the field at its start and end, which keeps its text clear of them (`Rtext_input_set_insets`, following their widths once a frame), and a click among them leaves the focus in the field (`Rwidget_set_focus_on_click`); with icons, the modifier's layout and visuals go on the Overlay and its tag, semantics, focus and input on the field (`splitAroundWidget`) |
 | `Slider(value, onValueChange, modifier, enabled, valueRange, steps)` | Slider | controlled. `steps` values lie between the ends, as in Compose, so Raven's step is `range / (steps + 1)` |
 | `LinearProgressIndicator(progress)` | ProgressBar | |
 | `HorizontalDivider()`, `VerticalDivider()` | Separator | |
@@ -1514,7 +1514,7 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 ## 11. Required Raven changes
 
 These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
-6, 7, 8 and 9 are made, one commit each on the fork's `fork/compose-raven` branch, with a C test except
+6, 7, 8, 9, 10 and 11 are made, one commit each on the `compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -1578,6 +1578,18 @@ for change 6, which only a real macOS window reaches.
    that loses it, as a window system does. No function changes. With a C test in
    `tests/test_widgets.c`. Made in
    [Windows that come and go, and their owners](issues/archive/0112-windows-that-come-and-go-and-their-owners.md).
+10. **`Rtext_input_set_insets(Rid text_input, float start, float end)`** and `Rtext_input_get_insets`
+    (required for `TextField`'s icons): room at the start and the end of a text input's text, in
+    logical units, beyond the look's margin. The text, caret, placeholder and selection, scrolling
+    and placing the caret with the mouse keep to what is left; the background and focus ring stay
+    the whole widget, and the desired width grows by both. The start is on the right in
+    right-to-left; a negative inset is an error. With a C test in `tests/test_widgets.c`. Made in
+    [Leading and trailing icons on TextField](issues/0200-leading-and-trailing-icons-on-textfield.md).
+11. **`Rwidget_set_focus_on_click(Rid widget, int enabled)`** and `Rwidget_get_focus_on_click`
+    (required for `TextField`'s icons): with false, a click on the widget or inside it leaves the
+    keyboard focus where it is, as a toolbar button does, while the click works and Tab still
+    reaches what is focusable inside; the window's press checks the widget and its ancestors up to
+    a popup. With a C test in `tests/test_widgets.c`. Made in the same ticket.
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
@@ -1598,7 +1610,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `ScrollState` has no `maxValue` or `isScrollInProgress`, and has `scrollToEnd()`; `LazyListState` has no `layoutInfo`; `animateScrollTo`/`animateScrollToItem` jump | the full scroll state, animated | [8](#scroll-position-phase-3) |
 | `ListView` takes a `ListViewState` that can only reveal a row | n/a (no `ListView` in Compose) | [8](#scroll-position-phase-3) |
 | `bringIntoView()` takes no `rect`, brings the whole widget and jumps | `bringIntoView(rect)` animates to show a part of it | [8](#scroll-position-phase-3) |
-| `TextField` takes a `String` placeholder, single line only | a placeholder slot, multi-line | [8](#8-component-vocabulary) |
+| `TextField` takes a `String` placeholder, single line only, and has no `label`, `prefix`, `suffix` or `supportingText` | a placeholder slot, multi-line, and those slots | [8](#8-component-vocabulary) |
 | `Text(softWrap)` is false by default, as Raven's labels are | true | [8](#fonts-and-text-styling-phase-3) |
 | No `TextFieldValue`; if the app rewrites the text, the caret jumps to the end | selection kept in `TextFieldValue` | [7](#7-events-and-state) |
 | `TextField(maxLength)` limits typing and pasting inside the field | no limit; the app filters in `onValueChange` | [7](#7-events-and-state) |

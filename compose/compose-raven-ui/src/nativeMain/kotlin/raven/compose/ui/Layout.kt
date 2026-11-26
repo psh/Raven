@@ -136,6 +136,23 @@ public interface WidgetAttachedElement : Modifier.Element {
     public fun detach(widget: Rid)
 }
 
+/**
+ * Splits a chain for a composable made of a widget inside a panel, such as a `TextField` with
+ * icons: what identifies the widget or acts on it (its test tag, semantics, focus, input handlers,
+ * tooltip, pointer icon and attached requesters) goes to the widget, in [Pair.second], and the
+ * rest (size, padding, weight, alignment, alpha and the other visuals) to the panel around it, in
+ * [Pair.first]. Each keeps its elements in the chain's order.
+ */
+@InternalComposeRavenApi
+public fun Modifier.splitAroundWidget(): Pair<Modifier, Modifier> = foldIn(Pair<Modifier, Modifier>(Modifier, Modifier)) { (outer, inner), element ->
+    when (element) {
+        is TestTagElement, is SemanticsElement, is FocusableElement, is FocusRequesterElement, is InputElement,
+        is TooltipElement, is PointerHoverIconElement, is WidgetAttachedElement,
+        -> outer to inner.then(element)
+        else -> outer.then(element) to inner
+    }
+}
+
 internal fun fold(modifier: Modifier): FoldedModifier = modifier.foldIn(FoldedModifier()) { folded, element ->
     when (element) {
         is PaddingElement -> folded.copy(
