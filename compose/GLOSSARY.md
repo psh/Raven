@@ -41,6 +41,10 @@ _Avoid_: bound field, two-way binding
 A numbered stage of compose-raven's roadmap (phase 1, phase 2, ...): a set of capabilities built together, and the sample ports they unlock.
 _Avoid_: v1, wave, release (a phase is a stage of planning, not a published version)
 
+**Batch**:
+A group of a phase's capabilities that are designed and ticketed together, proved by a sample port or a test app where one exists. A phase holds several batches.
+_Avoid_: milestone (a roadmap section), wave, sprint
+
 **Content node**:
 The hidden container compose-raven puts inside a widget that takes only one child (a button, a surface, an expander), so that its content may hold any number of children. Modifiers, semantics and tests never see it.
 _Avoid_: wrapper, inner box

@@ -244,6 +244,11 @@ Decided for phase 4 (in the spec):
 [Raven API coverage](api-coverage.md) tracks what of Raven's C API is still unbound, and which of
 those gaps have tickets or wait here.
 
+**Phase 5** is charted on [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md):
+its first four batches (designed samples, icons and resources, small widgets, lists at scale) are
+being designed there, and the rest is fog on that map. The list below is the fog as it stood when
+the map was charted.
+
 **Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
 virtualisation, more list widgets, exit transitions, torn-off panels as windows, more navigation,

@@ -62,9 +62,10 @@ implementation.
 
 Closed on 2026-11-06 with the destination reached: every area left as fog by
 [compose-raven spec](0001-compose-raven-spec.md) is decided, and every ticket is archived. The
-patches below are the fog that remains. They seed a future phase 5 map (renumbered from phase 4 by
-[ADR 0001](../adr/0001-phase-split-after-the-phase-2-sample-gaps.md)), and move there when one is
-charted.
+patches below are the fog that remains. They seeded the phase 5 map (renumbered from phase 4 by
+[ADR 0001](../adr/0001-phase-split-after-the-phase-2-sample-gaps.md)), and moved to
+[compose-raven phase 5 spec](0204-compose-raven-phase-5-spec.md) when it was charted on
+2026-11-25, which holds them now.
 
 - **Specialist widgets**: Timeline, NodeGraph, WebView and BlockEditor, for `studio` and
   `browser` (`ColorPicker` moved to phase 3:
