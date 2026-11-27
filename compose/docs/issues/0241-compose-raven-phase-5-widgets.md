@@ -9,9 +9,9 @@ wayfinder: map
 
 The widgets [Raven API coverage](../api-coverage.md#widgets-with-no-composable) lists with no
 composable and no design yet, designed into `compose/docs/spec.md` as phase 5 **batches** five to
-nine, each with its implementation tickets filed in the tracker, its sample port among them, ready
+nine, and printing with PDF writing as batch ten, each with its implementation tickets filed in the tracker, its sample port among them, ready
 to build in this order: overlays and pagers, charts, documents and the web, maps, specialist
-widgets. This map files the implementation tickets; it doesn't build them. Charted on 2026-11-26
+widgets, printing and PDF documents. This map files the implementation tickets; it doesn't build them. Charted on 2026-11-26
 from that table, after merging upstream's `main`, which added six of the widgets. The seven the
 [compose-raven phase 5 spec](0204-compose-raven-phase-5-spec.md) map already designed (Table,
 TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of it.
@@ -23,6 +23,7 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 | 7. Documents and the web | PdfView, DiffView, SystemWebView | the `pdf`, `diff_view` and `web_view` ports |
 | 8. Maps | upstream's raster MapView, beside the vector map | the `map` port |
 | 9. Specialist widgets | NodeGraph, Timeline, BlockEditor | the `studio` port; a test app for BlockEditor |
+| 10. Printing and PDF documents | no widget: printing, and the PDF writing it needs | the `pdf` port's printing; a test |
 
 ## Notes
 
@@ -50,6 +51,8 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 
 ## Decisions so far
 
+- [Printing: Raven's printing and how Kotlin should expose it](0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
+
 ## Not yet specified
 
 - **Specialist widgets (batch 9)**: NodeGraph, Timeline and BlockEditor; how a graph's nodes and
@@ -57,11 +60,6 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
   callbacks an app needs. `studio` uses NodeGraph and Timeline; no example uses BlockEditor. Its
   questions hang on how batches 5 to 8 settle callback-heavy widgets; they graduate once those
   are decided.
-- **Printing, and PDF writing with it**: what Kotlin exposes once
-  [Printing: Raven's printing and how Kotlin should expose it](0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md)
-  reports. If printing needs PDF writing (`Rpdf_document_*`), the two are designed together as one
-  batch of their own; if not, printing joins a batch on its own and PDF writing is ruled out of
-  scope then.
 
 ## Out of scope
 
