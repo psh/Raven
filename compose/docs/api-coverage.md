@@ -141,7 +141,7 @@ Found while doing them:
 | DiffView | 32 | two texts or a patch compared | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | TileView | 29 | virtualised grid of items. With lazy virtualisation | designed: [Lists at scale: TileView](issues/0236-lists-at-scale-tileview.md) |
 | SystemWebView | 19 | the system's web engine in a view | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
-| Carousel | 17 | pages swiped one at a time | charted: batch 5 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Carousel | 17 | pages swiped one at a time | designed: [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) |
 | TimePicker | 15 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
 | DatePicker | 13 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
 | Toast | 13 | transient messages | charted: batch 5 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |

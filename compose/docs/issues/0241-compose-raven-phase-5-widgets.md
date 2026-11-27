@@ -51,6 +51,7 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 
 ## Decisions so far
 
+- [Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md): `HorizontalPager` and `VerticalPager` with a small `PagerState`, every page composed, Raven's loop, dots, arrows and autoplay as parameters. Filed as [Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) and [samples/carousel](0254-samples-carousel.md).
 - [Printing: Raven's printing and how Kotlin should expose it](0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
 - [The web: how Compose web views shape their APIs](0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](0249-the-web-systemwebview.md).
 - [Charts: how Compose chart libraries shape their APIs](0244-charts-how-compose-chart-libraries-shape-their-apis.md): lists of data classes are the norm, Vico's producer the exception; only Vico and KoalaPlot hoist pan and zoom; Raven's Plot streams by index and owns its view, and has no bar chart; seven trade-offs left for [Charts: one model for Plot and Chart](0245-charts-one-model-for-plot-and-chart.md).
@@ -62,6 +63,8 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
   callbacks an app needs. `studio` uses NodeGraph and Timeline; no example uses BlockEditor. Its
   questions hang on how batches 5 to 8 settle callback-heavy widgets; they graduate once those
   are decided.
+- **Lazy pages**: composing only the pages near the one shown, for pagers of many pages; today
+  every page is composed ([Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md)).
 
 ## Out of scope
 

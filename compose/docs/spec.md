@@ -1190,6 +1190,34 @@ From phase 5 `TreeView`'s expansion is the app's state, over Raven change 14, an
   waits for drags inside the app, its only use.
 - The XML translator's `Expanded` on `<Item>` gives the initial `expanded` set.
 
+### Pagers (phase 5)
+
+`HorizontalPager` and `VerticalPager` show one page at a time over Raven's Carousel, named and
+shaped after Compose Foundation's pagers, with Raven's dots, arrows, loop and autoplay as parameters
+([Overlays and pagers: Carousel](issues/archive/0242-overlays-and-pagers-carousel.md)).
+
+- **`HorizontalPager(state: PagerState, modifier = Modifier, loop = false, indicators = true,
+  arrows = true, autoplay: Duration? = null, content: @Composable (page: Int) -> Unit)`**, and
+  `VerticalPager` with the same parameters (`Rcarousel_set_orientation`). Raven swipes the pages
+  with the pointer, a finger or a trackpad, and goes to one with the keys, a dot, an arrow or the
+  wheel. `indicators` are the dots and `arrows` the buttons shown under the pointer, both on by
+  default as in Raven; `loop` lets the user and the autoplay go from the last page to the first.
+- **Every page is composed**, one Raven child each, `content(page)` for `0 until pageCount`; Raven
+  paints only the page shown and the one coming in. A change of `pageCount` adds or removes pages.
+- **`autoplay`** is Raven's timer (`Rcarousel_set_autoplay`): it waits while the pointer is on the
+  pager, while the pages are dragged and while the keyboard is in it, and starts again after the
+  user picks a page. `null` is never.
+- **`PagerState`** (`rememberPagerState(initialPage = 0) { pageCount }`, saveable) has only
+  `currentPage`, `pageCount`, `suspend scrollToPage(page)` and `suspend animateScrollToPage(page)`
+  (`Rcarousel_set_page`, gliding or not). `currentPage` follows Raven's page changed callback (the
+  user, the autoplay); it is the pager's position, not a choice the app accepts. The two moves clamp
+  to the pages, as Compose's do: `loop` doesn't make them wrap.
+- Tests drive a pager through its `PagerState` and the keys and clicks the harness already has
+  (the arrows, Home and End, a dot).
+- The XML translator turns `<Carousel>` into `HorizontalPager` or `VerticalPager` by its
+  `Orientation`, `Page` as `initialPage`, and `Loop`, `Autoplay`, `Indicators` and `Arrows` as their
+  parameters.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -1791,6 +1819,15 @@ the library Raven opened and resolves each function on Raven's device. Shipping 
 the module stays in graphics extras. The headless test checks
 the controls and that neither view draws; with `RAVEN_GPU_TESTS=1`, both views draw a frame.
 
+### `samples/carousel` (phase 5)
+
+A port of Raven's `examples/carousel`: five pages in a `HorizontalPager`, the title and the count of
+the page shown in a label, check boxes for `loop`, `autoplay` (three seconds) and the orientation,
+which swaps `HorizontalPager` for `VerticalPager` over the same hoisted `PagerState`, and Back and
+Next buttons, Next going back to the first page from the last when it doesn't loop, as the C
+example does. No port gaps; the headless test checks each control
+([Overlays and pagers: Carousel](issues/archive/0242-overlays-and-pagers-carousel.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -1958,6 +1995,8 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `DatePicker` is a field with a drop-down calendar, controlled by a `LocalDate`; `TimePicker` a 24-hour field controlled by a `LocalTime` | Material 3's inline calendar and clock dial, driven by `DatePickerState` (UTC milliseconds) and `TimePickerState(is24Hour)` | [8](#date-and-time-pickers-phase-5) |
 | `Rating`, `Pagination` and `Breadcrumb` | no counterpart | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
 | `VerticalSlider` is controlled by a `value` | Material 3's `VerticalSlider(state: SliderState)` | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
+| `HorizontalPager`/`VerticalPager` compose every page, and take `loop`, `indicators`, `arrows` and `autoplay`; no `contentPadding`, `pageSpacing`, `pageSize`, `beyondViewportPageCount`, `flingBehavior`, `key` or `userScrollEnabled` | lazy pages and those parameters; dots, loops and autoplay are the app's to build | [8](#pagers-phase-5) |
+| `PagerState` has only `currentPage`, `pageCount`, `scrollToPage` and `animateScrollToPage` | `currentPageOffsetFraction`, `settledPage`, `targetPage`, `isScrollInProgress` and more | [8](#pagers-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
