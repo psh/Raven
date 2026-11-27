@@ -1904,7 +1904,7 @@ for change 6, which only a real macOS window reaches.
     keyboard focus where it is, as a toolbar button does, while the click works and Tab still
     reaches what is focusable inside; the window's press checks the widget and its ancestors up to
     a popup. With a C test in `tests/test_widgets.c`. Made in the same ticket.
-12. **`Rtexture_create_mask_from_file_async(const char* path)`** (required for `Icon`, to be made):
+12. **`Rtexture_create_mask_from_file_async(const char* path)`** (required for `Icon`, made in `67da73d`):
     decodes any image, SVG or raster, keeping only its alpha in `R_TEXTURE_ALPHA8`, which the shader
     samples as white with that alpha, so a tint gives exactly its colour; an SVG is redrawn at each
     scale as a colour texture is. Planned in [Icons and resources: vector icons](issues/archive/0207-icons-and-resources-vector-icons.md).

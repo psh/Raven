@@ -8,13 +8,13 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-25, after [TextInput's Password, MaxLength and action in the translator](issues/archive/0201-textinputs-password-maxlength-and-action-in-the-translator.md).*
+*Last updated 2026-11-26, after [Raven: mask textures](issues/archive/0221-raven-mask-textures.md), which added a function `Icon` will bind.*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 479 of 1,222 (39%) |
+| Functions used | 370 of 1,157 (31%) | 479 of 1,223 (39%) |
 | Widget types bound | 36 of 51 | 37 of 52 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 300 of the
@@ -40,7 +40,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_shell.h` | 23 | 56 | 41% | tray, taskbar, parts of the header bar and dock area |
 | `raven_text_editor.h` | 24 | 53 | 45% | undo/redo availability, selection, zoom, token colours |
 | `raven_dialogs.h` | 26 | 41 | 63% | popups, system notifications |
-| `raven_resources.h` | 17 | 28 | 61% | SVG and async textures, text measuring |
+| `raven_resources.h` | 17 | 29 | 59% | SVG and async textures, text measuring; mask textures until `Icon` |
 | `raven_style.h` | 17 | 27 | 63% | per-style theme overrides, wallpaper |
 | `raven_touch.h` | 0 | 23 | 0% | touch, pen and gestures |
 | `raven_accessibility.h` | 18 | 22 | 82% | colour filters, getters |
@@ -54,7 +54,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_viewport.h` | 8 | 9 | 89% | |
 | `raven_emscripten.h` | 0 | 7 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
-| **Total** | **479** | **1,222** | **39%** | |
+| **Total** | **479** | **1,223** | **39%** | |
 
 ## Not needed by design
 
