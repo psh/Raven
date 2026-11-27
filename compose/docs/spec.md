@@ -1411,6 +1411,35 @@ vector map ([Maps: raster tiles beside the vector map](issues/archive/0250-maps-
 - The XML translator turns `<MapView>` (`<Map>`, `<TileMap>`) and its `<Marker>` children into
   `MapView(...)` and a list of markers keyed by their order.
 
+### Printing and PDF documents (phase 5)
+
+Raven prints PDFs only, so compose-raven prints PDFs and writes them with a builder over
+`Rpdf_document_*`; no widget ([Printing and PDF documents: what Kotlin exposes](issues/archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md), from [Printing: Raven's printing and how Kotlin should expose it](issues/archive/0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md)). They live beside `PdfView`.
+
+- **`buildPdf(title = "", author = "", subject = "") { page(width = 595f, height = 842f) { ... } }:
+  ByteArray`** runs at once on the UI thread and returns the document's bytes: `PdfSource.Bytes`
+  shows them, `printPdf` prints them, a file saves them. There is no document object to close.
+  Sizes are points from the page's top-left corner.
+- **A page's scope**: `fillColor`, `strokeColor` (`Color`), `lineWidth`; `rect(x, y, width, height,
+  radius = 0f, fill = true, stroke = false)`, `ellipse(...)`, `line(x1, y1, x2, y2)`; `font(font:
+  PdfFont = PdfFont.Sans, size, bold = false, italic = false)`, `text(x, y, text): Float` and
+  `paragraph(x, y, width, text, align = TextAlign.Start): Float` (each giving where it ends),
+  `measureText(text)`, `lineHeight`; `image(x, y, width, height, bitmap: ImageBitmap)`; and
+  `window(x, y, width, height)`, the current window from Raven's capture. **`PdfFont.Sans`** and
+  **`.Mono`** are Raven's; `addFont(bytes): PdfFont` embeds one in the document.
+- **`suspend fun printPdf(source: PdfSource, title: String? = null, printer: String? = null, copies
+  = 1, dialog = true, output: String? = null, password: String? = null): Boolean`** over
+  `Rpdf_print` and `Rpdf_print_file`, through `awaitNativeDialog`: the system's print dialog (macOS's
+  panel, Windows' dialog, Raven's own over CUPS on Linux), `false` when nothing was printed,
+  cancelled or failed, as Raven can't tell them apart. `dialog = false` prints at once; `output`
+  writes the job to a file instead.
+- **`PdfViewState.print(title, printer, copies, dialog, output): Boolean`** prints what a `PdfView`
+  shows (`Rpdf_view_print`).
+- Tests are headless: `buildPdf`'s bytes (`%PDF-`, the pages drawn, their text read back through a
+  `PdfView` where PDFium is, returning early without it) and `printPdf` with `dialog = false` to an
+  `output` file; no new harness API. Whether Compose keeps drawing behind macOS's print panel is
+  checked by hand when it is built.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -2060,6 +2089,14 @@ on a marker flying to it, and the place and cache usage in a label. `RAVEN_MAP_D
 example faking a drag and the wheel to show itself, isn't ported: the headless test covers the same
 paths through the state. No port gaps ([Maps: raster tiles beside the vector map](issues/archive/0250-maps-raster-tiles-beside-the-vector-map.md)).
 
+### `samples/pdf` (phase 5)
+
+A port of Raven's `examples/pdf`: the three-page invoice written with `buildPdf` and shown at the
+start, Open... and Save... through the file dialogs, Print..., Previous and Next with "Page N of
+M", zoom out and in with its percentage (over `PdfViewState`'s observable zoom), the fit, and the
+document's title. No port gaps; the headless test checks each control, those needing PDFium
+returning early without it ([Printing and PDF documents: what Kotlin exposes](issues/archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2254,6 +2291,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `showSnackbar` takes a `kind` (`SnackbarKind`), `SnackbarHost` a `maxVisible` that stacks messages; no `withDismissAction`, `currentSnackbarData` or `snackbar` slot | no kinds, one message at a time, a dismiss button and custom snackbars | [8](#snackbars-phase-5) |
 | `Plot`, `PieChart`, `Gauge`, `Heatmap` and `Sparkline`, drawn by Raven; labels formatted by printf strings; the view and the legend's series visibility are Raven's | no charts (libraries format labels with lambdas, and hoist their views) | [8](#charts-phase-5) |
 | `PdfView` with a `PdfViewState`; no search | no PDF view | [8](#pdfview-phase-5) |
+| `buildPdf { page { } }` returning bytes and `suspend printPdf(...)`: Boolean, no widget | AWT's `PrinterJob`/`Printable` and Android's `PrintManager` | [8](#printing-and-pdf-documents-phase-5) |
 | `DiffView` with a `DiffViewState` whose `currentChange` follows navigation only; Raven's rows unbound | no diff view | [8](#diffview-phase-5) |
 | `WebView(state)` with one `WebViewState` for observed values and commands; no progress, interception, replies, native handle or back key; popups go under the view | compose-webview-multiplatform's `WebViewState` and `WebViewNavigator`, loading progress, a request interceptor and a JS bridge with replies | [8](#webview-phase-5) |
 | `MapView` (raster, markers) and `VectorMapView` (a MapLibre style), sharing `TileSource` | no maps | [8](#maps-phase-5) |

@@ -25,6 +25,8 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 | 9. Specialist widgets | NodeGraph, Timeline, BlockEditor | the `studio` port; a test app for BlockEditor |
 | 10. Printing and PDF documents | no widget: printing, and the PDF writing it needs | the `pdf` port (it writes, saves and prints its invoice) |
 
+Batch ten is built straight after batch eight; batch nine's tickets follow it, once filed.
+
 ## Notes
 
 - Domain: the Compose runtime over Raven's retained widget tree, as before. Vocabulary is in
@@ -58,7 +60,8 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 - [Documents: DiffView](archive/0248-documents-diffview.md): `DiffView(content: DiffContent, ...)` (texts, files or a patch) with the options as parameters, notes as a list, and a `DiffViewState` for navigation; `unifiedDiff` and `countChanges`. Filed as [Documents: DiffView](0266-documents-diffview.md) and [samples/diff-view](0267-samples-diff-view.md).
 - [The web: SystemWebView](archive/0249-the-web-systemwebview.md): `WebView(state, onMessage)` with one `WebViewState` (observed values and commands), scripts as a suspend call that throws, raw messages, the same composable where there is no engine. Filed as [The web: WebView and WebViewState](0269-the-web-webview-and-webviewstate.md) and [samples/web-view](0270-samples-web-view.md).
 - [Maps: raster tiles beside the vector map](archive/0250-maps-raster-tiles-beside-the-vector-map.md): upstream's raster map is `MapView`, landing first; the fork's is renamed `VectorMapView` (and `Rvector_map_*` in C); one `TileSource` for both; markers, `animateTo` and coordinate conversion on `MapView`. Filed as [Raven: the vector map's own names](0272-raven-the-vector-maps-own-names.md), [Maps: VectorMapView](0273-maps-vectormapview.md), [Maps: MapView over upstream's raster map](0274-maps-mapview-over-upstreams-raster-map.md) and [samples/map](0275-samples-map.md).
-- [Printing: Raven's printing and how Kotlin should expose it](archive/0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
+- [Printing and PDF documents: what Kotlin exposes](archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md): print PDFs with a suspend `printPdf` and write them with `buildPdf { page { } }` returning bytes; `PdfViewState.print`; the `pdf` port without port gaps. Filed as [Printing and PDF documents: buildPdf and printPdf](0279-printing-and-pdf-documents-buildpdf-and-printpdf.md) and [samples/pdf](0280-samples-pdf.md); built after batch eight, before batch nine.
+- [Printing: Raven's printing and how Kotlin should expose it](archive/0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md).
 - [The web: how Compose web views shape their APIs](archive/0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](archive/0249-the-web-systemwebview.md).
 - [Charts: how Compose chart libraries shape their APIs](archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md): lists of data classes are the norm, Vico's producer the exception; only Vico and KoalaPlot hoist pan and zoom; Raven's Plot streams by index and owns its view, and has no bar chart; seven trade-offs left for [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md).
 
@@ -76,6 +79,8 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
   Kotlin on the UI thread); menus and popups over the view (hiding it while one is open, or Raven
   compositing); the native view's handle from common Kotlin
   ([The web: SystemWebView](archive/0249-the-web-systemwebview.md)).
+- **Printing's result**: telling a cancelled print from a failed one, which needs each platform's
+  print code to report it ([Printing and PDF documents: what Kotlin exposes](archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md)).
 
 ## Out of scope
 

@@ -135,7 +135,7 @@ Found while doing them:
 | Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation | designed: [Lists at scale: Table](issues/0235-lists-at-scale-table.md) |
 | Plot | 55 | charts; `examples/plot`. Needs a design decision first | designed: [Charts: Plot and PlotState](issues/0259-charts-plot-and-plotstate.md) |
 | Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision | designed: [Charts: PieChart, Gauge, Heatmap and Sparkline](issues/0261-charts-piechart-gauge-heatmap-and-sparkline.md) |
-| PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written | designed: [Documents: PdfView](issues/0265-documents-pdfview.md); writing and printing: batch 10 |
+| PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written | designed: [Documents: PdfView](issues/0265-documents-pdfview.md); writing and printing: [Printing and PDF documents: buildPdf and printPdf](issues/0279-printing-and-pdf-documents-buildpdf-and-printpdf.md) |
 | BlockEditor | 36 | specialist, no example | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | MapView | 34 | raster slippy-map tiles with markers; compose-raven's vector map becomes `VectorMapView` | designed: [Maps: MapView over upstream's raster map](issues/0274-maps-mapview-over-upstreams-raster-map.md) |
 | DiffView | 32 | two texts or a patch compared | designed: [Documents: DiffView](issues/0266-documents-diffview.md) |
