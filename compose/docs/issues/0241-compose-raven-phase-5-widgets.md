@@ -64,11 +64,6 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 
 ## Not yet specified
 
-- **Specialist widgets (batch 9)**: NodeGraph, Timeline and BlockEditor; how a graph's nodes and
-  edges, or a timeline's tracks and clips, live in Compose state, and which of their many
-  callbacks an app needs. `studio` uses NodeGraph and Timeline; no example uses BlockEditor. Its
-  questions hang on how batches 5 to 8 settle callback-heavy widgets; they graduate once those
-  are decided.
 - **Lazy pages**: composing only the pages near the one shown, for pagers of many pages; today
   every page is composed ([Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md)).
 - **Plot extras**: appends detected, so live data isn't copied whole on each update; series
