@@ -1324,6 +1324,33 @@ are decided with batch ten.
   counted from 1 there and from 0 in the state.
 - The `pdf` port writes, saves and prints its invoice, so it is batch ten's.
 
+### DiffView (phase 5)
+
+Two texts, two files or a patch compared over Raven's DiffView, with a `DiffViewState` for moving
+between the changes ([Documents: DiffView](issues/archive/0248-documents-diffview.md)).
+
+- **`DiffView(content: DiffContent, modifier = Modifier, state = rememberDiffViewState(), mode =
+  DiffMode.Unified, context = 3, whitespace = DiffWhitespace.None, ignoreCase = false, wordDiff =
+  true, lineNumbers = true, language: String? = null, annotations: List<DiffAnnotation> =
+  emptyList(), onLineClick: (side: DiffSide, line: Int, inGutter: Boolean) -> Unit = { _, _, _ ->
+  })`**. `DiffContent.Texts(left, right, leftName = "", rightName = "")`, `.Files(leftPath,
+  rightPath)` (the paths as names) or `.Patch(text)` (a unified diff: `git diff`, `diff -u`, each
+  file under its names); a changed content, compared by value, compares again. `context = -1`
+  shows every line; `whitespace` is `None`, `Trailing` or `All`; a null `language` is guessed from
+  the names. Raven folds the unchanged lines and opens a fold when it is clicked.
+- **`annotations`**, `DiffAnnotation(side, line, text)`: notes under lines, the app's; a change of
+  the list clears Raven's and adds them again.
+- **`DiffViewState`** (`rememberDiffViewState()`): observable `changeCount` and `currentChange`,
+  `goToChange(change)`, `nextChange()`, `previousChange()`, and `selectedText`. `currentChange`
+  follows these moves and each new comparison, not the user's scrolling, which Raven doesn't
+  report. Raven's rows (folds expanded by the app, scrolling to a row) aren't bound.
+- **`unifiedDiff(left, right, leftName = "", rightName = "", context = 3, whitespace, ignoreCase):
+  String`** and **`countChanges(left, right, whitespace, ignoreCase): Int`** (`Rdiff_unified`,
+  `Rdiff_count_changes`), for a patch without a view.
+- Tests are headless and send line clicks as Raven's callback; no new harness API.
+- The XML translator turns `<DiffView>` into `DiffView(...)`: `LeftSource`/`RightSource` as
+  `DiffContent.Files`, `<Left>`/`<Right>` as `.Texts`, `<Patch>` or `PatchSource` as `.Patch`.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -1947,6 +1974,13 @@ A port of Raven's `examples/charts`: sparklines pushed every second, gauges nudg
 rescaled in place, and the heatmap retitled from its cell click. No port gaps; the headless test
 checks each chart ([Charts: one model for Plot and Chart](issues/archive/0245-charts-one-model-for-plot-and-chart.md)).
 
+### `samples/diff-view` (phase 5)
+
+A port of Raven's `examples/diff_view`: two versions of `server.c` side by side, the mode and
+context controls, the whitespace and case toggles, Previous and Next with "change N of M", and a
+note added where a line is clicked. The two files are read from Raven's `examples/diff_view` at a
+path the build writes into the sample. No port gaps; the headless test checks each control ([Documents: DiffView](issues/archive/0248-documents-diffview.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2135,6 +2169,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `showSnackbar` takes a `kind` (`SnackbarKind`), `SnackbarHost` a `maxVisible` that stacks messages; no `withDismissAction`, `currentSnackbarData` or `snackbar` slot | no kinds, one message at a time, a dismiss button and custom snackbars | [8](#snackbars-phase-5) |
 | `Plot`, `PieChart`, `Gauge`, `Heatmap` and `Sparkline`, drawn by Raven; labels formatted by printf strings; the view and the legend's series visibility are Raven's | no charts (libraries format labels with lambdas, and hoist their views) | [8](#charts-phase-5) |
 | `PdfView` with a `PdfViewState`; no search | no PDF view | [8](#pdfview-phase-5) |
+| `DiffView` with a `DiffViewState` whose `currentChange` follows navigation only; Raven's rows unbound | no diff view | [8](#diffview-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |

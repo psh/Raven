@@ -138,7 +138,7 @@ Found while doing them:
 | PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written | designed: [Documents: PdfView](issues/0265-documents-pdfview.md); writing and printing: batch 10 |
 | BlockEditor | 36 | specialist, no example | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | MapView | 34 | raster slippy-map tiles with markers; compose-raven's `MapView` binds the vector `Map` widget instead | charted: batch 8 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
-| DiffView | 32 | two texts or a patch compared | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| DiffView | 32 | two texts or a patch compared | designed: [Documents: DiffView](issues/0266-documents-diffview.md) |
 | TileView | 29 | virtualised grid of items. With lazy virtualisation | designed: [Lists at scale: TileView](issues/0236-lists-at-scale-tileview.md) |
 | SystemWebView | 19 | the system's web engine in a view | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | Carousel | 17 | pages swiped one at a time | designed: [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) |
