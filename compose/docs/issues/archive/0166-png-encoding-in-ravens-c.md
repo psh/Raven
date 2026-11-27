@@ -17,12 +17,12 @@ line: what previews, PR screenshots and Raven MCP's `ui.screenshot` need. Design
 - [x] `R_ERROR_IO`, added at the end of `RError`, for a file that can't be written.
 - [x] Tests: a round trip through `Rimage_decode` gives the same pixels; a failure to write reports `R_ERROR_IO`.
 - [x] The bindings regenerated with `tools/bindgen`.
-- [ ] The upstream proposal opened, on its own: moved to [Propose PNG encoding upstream](../0185-propose-png-encoding-upstream.md), on hold.
+- [ ] The upstream proposal opened, on its own: moved to [Propose PNG encoding upstream](0185-propose-png-encoding-upstream.md), won't fix: upstream has its own.
 
 ## Resolution
 
 Done, on macOS (arm64), except the upstream proposal: that publishes outside this machine, so it
-moved to [Propose PNG encoding upstream](../0185-propose-png-encoding-upstream.md), on hold.
+moved to [Propose PNG encoding upstream](0185-propose-png-encoding-upstream.md), won't fix: upstream has its own.
 `test_tools` passes with stb (457 checks) and without it (`RAVEN_WITH_STB_IMAGE=OFF`, 441). The
 rest of `ctest` passes apart from `test_shell` and `test_themes`, which already failed (see
 [Idle and the window list](0168-idle-and-the-window-list.md)). `./gradlew :raven-mcp:check`

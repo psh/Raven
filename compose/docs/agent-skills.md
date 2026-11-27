@@ -407,37 +407,37 @@ Decided in [UI tests in each language](issues/archive/0162-ui-tests-in-each-lang
 ## Images to files
 
 What `pr` (before and after screenshots), `prototype` and `diagnosing-bugs` need: pixels saved as an
-image that GitHub shows in a PR and an agent can read. Raven's C gains a PNG encoder beside its
+image that GitHub shows in a PR and an agent can read. Raven's C has a PNG encoder beside its
 decoder (`Rimage_decode`, `raven_resources.h`), so every binding saves an image in one line, rather
-than each writing its own encoder:
+than each writing its own encoder. The fork built one first; upstream then shipped its own with the
+same two calls, and since the merge of 2026-11-26 the fork uses upstream's:
 
 ```c
 /**
- * @brief Encodes tightly packed RGBA8 pixels, straight alpha (as Rimage_decode gives them), as PNG.
- * Thread-safe.
- * @return The PNG bytes, to release with Rpixels_free; NULL, reported, on failure.
+ * @brief Encodes tightly packed RGBA8 pixels (what Rwindow_capture returns) as a PNG file in
+ * memory. Thread-safe.
+ * @return The bytes of the file, to release with Rpixels_free; NULL when there are no pixels.
  */
-RAVEN_API uint8_t* Rimage_encode_png(const uint8_t* rgba, int width, int height, size_t* png_size);
+RAVEN_API uint8_t* Rimage_encode_png(const uint8_t* rgba, int width, int height, size_t* size);
 
 /**
- * @brief Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file. Thread-safe.
- * @return R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure.
+ * @brief Writes tightly packed RGBA8 pixels to a PNG file. Thread-safe.
+ * @return R_FALSE when the file cannot be written.
  */
-RAVEN_API int Rimage_save_png(const uint8_t* rgba, int width, int height, const char* path);
+RAVEN_API int Rimage_save_png(const char* path, const uint8_t* rgba, int width, int height);
 ```
 
 - **In memory, and to a file.** The in-memory form is what Raven MCP's `ui.screenshot` needs, since
   it replies with image bytes. The file form is the one-liner for everyone else. There is no
   `Rwindow_capture_png`: `Rwindow_save_preview` covers windows.
 - **PNG only.** The examples' PPM/PAM output (`examples/common/example.h`) stays as it is.
-- **The encoder** is `stb_image_write.h` (Sean Barrett, public domain or MIT, as `stb_image`),
-  vendored in `third_party/stb/` and compiled `static` in the same file as `stb_image`, under the
-  same `RAVEN_WITH_STB_IMAGE` switch. With the switch off, the calls fail and say so. It is listed in
-  `THIRD_PARTY.md`. It compresses: a 420x260 preview is tens of kilobytes, not the 437 KB of
-  uncompressed pixels.
-- **`R_ERROR_IO`** joins `RError`, at the end, for a file that can't be written.
-- **Upstream**: proposed to Raven's `main` as one small change (the two calls, the encoder,
-  `R_ERROR_IO`), on its own and ahead of `Rwindow_save_preview`.
+- **The encoder** is Raven's own (`src/render/image_encode.c`): it needs no third-party code and
+  works without `RAVEN_WITH_STB_IMAGE`. The fork's first version vendored `stb_image_write.h`; that
+  went with the merge.
+- **Errors**: a file that can't be written is reported as `R_ERROR_FILE_NOT_FOUND`, and pixels that
+  can't be encoded as `R_ERROR_INVALID_VALUE`. The fork's `R_ERROR_IO` went with the merge.
+- **Upstream**: nothing to propose; upstream has it
+  ([Propose PNG encoding upstream](issues/archive/0185-propose-png-encoding-upstream.md), won't fix).
 
 Decided in [Writing a capture to a file](issues/archive/0160-writing-a-capture-to-a-file.md).
 

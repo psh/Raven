@@ -9,6 +9,14 @@ so every binding can show a vector map. Second of the two proposals the
 [native Map widget](archive/0140-a-native-map-widget.md) recommends; compose-raven's `MapView`
 follows it onto `compose-raven`.
 
+> **Upstream has a map of its own (2026-11-26).** Upstream's `MapView` (`R_WIDGET_MAP_VIEW`,
+> `Rmap_view_*`) draws raster slippy-map tiles the application gives it, with markers; it takes the
+> XML tag `<Map>`. The fork's widget draws vector tiles as a MapLibre style says, which `MapView`
+> doesn't. Merging upstream, the fork's widget became the class `VectorMap`, its tile calls
+> `Rmap_set_tile_data` / `Rmap_set_tile_failed` (beside `Rmap_view_set_tile_data`), and its example
+> `examples/vector_map`. The proposal should say how the two sit side by side, or offer vector tiles
+> as a source for `MapView` instead.
+
 **Depends on:** [0141](0141-map-widget-on-windows-and-linux.md) (Windows and Linux),
 [0142](archive/0142-the-map-spikes-kotlin-drawing.md) (the spike's Kotlin drawing settled), and
 [0143](0143-propose-the-drawing-additions-upstream.md) (the drawing calls it draws with, merged).

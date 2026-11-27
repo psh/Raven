@@ -8,20 +8,26 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-26, after [Icon and Google's icons](issues/archive/0222-icon-and-googles-icons.md).*
+*Last updated 2026-11-26, after merging upstream's `main` into compose-raven (`a0eaab62`).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 480 of 1,223 (39%) |
-| Widget types bound | 36 of 51 | 37 of 52 |
+| Functions used | 370 of 1,157 (31%) | 480 of 1,701 (28%) |
+| Widget types bound | 36 of 51 | 37 of 58 |
 
-compose-raven covers everything the ported samples need, but not all of Raven. About 300 of the
+compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
 functions it doesn't call are deliberately unnecessary in a Compose binding. Of the everyday
-features the review found missing, all seven are now bound. Raven grew 65 functions in the
-meantime, most of them in the UI driver (`raven_driver.h`) and the MCP library (`raven_mcp.h`),
-which compose-raven binds almost whole. The map widget was added and bound too.
+features the review found missing, all seven are now bound. Raven grew 65 functions on the fork,
+most of them in the UI driver (`raven_driver.h`) and the MCP library (`raven_mcp.h`), which
+compose-raven binds almost whole; the map widget was added and bound too.
+
+Merging upstream's `main` (2026-11-26) added 478 functions and 6 widget types that compose-raven
+doesn't bind yet, so the percentage fell while what is bound stayed the same. Most of them are new
+widgets (MapView, Chart, PdfView, Carousel, SystemWebView, DiffView), the C testing API
+(`raven_testing.h`), Raven Script (`raven_script.h`), and the services of mobile devices
+(`raven_device.h`, `raven_host.h`).
 
 ## Coverage by header
 
@@ -30,35 +36,39 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 
 | Header | Used | Declared | Coverage | Main reason for the rest |
 |---|---:|---:|---:|---|
-| `raven_controls.h` | 100 | 298 | 34% | Table, TileView, Plot, Date/TimePicker, Rating, Pagination, Breadcrumb, Toast unbound; getters |
-| `raven_tools.h` | 8 | 194 | 4% | NodeGraph, Timeline, BlockEditor unbound (phase 5 fog) |
-| `raven_window.h` | 46 | 86 | 53% | drag and drop inside the app, window themes, shortcuts, the inspector, getters |
+| `raven_controls.h` | 100 | 557 | 18% | Table, TileView, Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Date/TimePicker, Rating, Pagination, Breadcrumb, Toast unbound; getters |
+| `raven_tools.h` | 8 | 231 | 3% | NodeGraph, Timeline, BlockEditor, DiffView unbound (phase 5 fog) |
+| `raven_window.h` | 46 | 108 | 43% | drag and drop inside the app, window themes, shortcuts, the inspector, mobile insets and keyboard, getters |
+| `raven_text_editor.h` | 24 | 91 | 26% | undo/redo availability, selection, zoom, token colours, find bar, folding, spell checking |
+| `raven_core.h` | 40 | 85 | 47% | allocator and memory, async tasks, vsync, actions with parameters |
 | `raven_widget.h` | 54 | 81 | 67% | getters, style classes, free-form slots, drop targets on widgets |
-| `raven_core.h` | 40 | 64 | 63% | allocator and memory, async tasks, vsync |
 | `raven_xml.h` | 4 | 64 | 6% | the XML loader, replaced by the composition |
 | `raven_layout.h` | 34 | 61 | 56% | Switcher, SizeBox, Spacer (Compose idioms), layout direction |
-| `raven_shell.h` | 23 | 56 | 41% | tray, taskbar, parts of the header bar and dock area |
-| `raven_text_editor.h` | 24 | 53 | 45% | undo/redo availability, selection, zoom, token colours |
-| `raven_dialogs.h` | 26 | 41 | 63% | popups, system notifications |
-| `raven_resources.h` | 18 | 29 | 62% | SVG and async textures, text measuring |
-| `raven_style.h` | 17 | 27 | 63% | per-style theme overrides, wallpaper |
+| `raven_shell.h` | 23 | 60 | 38% | tray, taskbar, parts of the header bar and dock area |
+| `raven_dialogs.h` | 26 | 47 | 55% | popups, system notifications |
+| `raven_resources.h` | 18 | 36 | 50% | SVG, async and URL textures, animated images, text measuring |
+| `raven_locale.h` | 0 | 33 | 0% | translation, locales, dates and time zones |
+| `raven_testing.h` | 0 | 30 | 0% | C UI tests (the Kotlin harness replaces them) |
+| `raven_style.h` | 17 | 29 | 59% | per-style theme overrides, wallpaper |
+| `raven_accessibility.h` | 18 | 24 | 75% | colour filters, getters |
 | `raven_touch.h` | 0 | 23 | 0% | touch, pen and gestures |
-| `raven_accessibility.h` | 18 | 22 | 82% | colour filters, getters |
-| `raven_draw.h` | 17 | 21 | 81% | springs |
-| `raven_locale.h` | 0 | 18 | 0% | translation and locales |
+| `raven_draw.h` | 17 | 22 | 77% | springs |
+| `raven_host.h` | 0 | 16 | 0% | host embedding and device services for embedders (not needed) |
+| `raven_device.h` | 0 | 15 | 0% | permissions, pickers, camera, haptics, sharing (mobile) |
 | `raven_driver.h` | 13 | 14 | 93% | |
 | `raven_shader.h` | 6 | 14 | 43% | getters, effect lookup |
 | `raven_vulkan.h` | 11 | 14 | 79% | getters |
 | `raven_mcp.h` | 13 | 13 | 100% | |
-| `raven_host.h` | 0 | 11 | 0% | host embedding (not needed) |
+| `raven_script.h` | 0 | 12 | 0% | Raven Script, for XML documents (not needed) |
 | `raven_viewport.h` | 8 | 9 | 89% | |
-| `raven_emscripten.h` | 0 | 7 | 0% | web build (not needed) |
+| `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
-| **Total** | **480** | **1,223** | **39%** | |
+| `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
+| **Total** | **480** | **1,701** | **28%** | |
 
 ## Not needed by design
 
-About 300 functions have no use in a Compose binding, and leaving them unbound is correct:
+About 350 functions have no use in a Compose binding, and leaving them unbound is correct:
 
 - **The XML loader** (64): the composition replaces the XML. Named actions are bound only as far as
   MCP needs them ([Raven's actions as tools](issues/archive/0177-ravens-actions-as-tools.md));
@@ -67,8 +77,11 @@ About 300 functions have no use in a Compose binding, and leaving them unbound i
 - **Per-type `R*_create` functions**: the binding creates every widget through the generic
   `Rwidget_create`.
 - **Containers with a Compose idiom**: Switcher is an `if`, SizeBox and Spacer are modifiers.
-- **Platform internals**: host embedding, Emscripten, backend registration, allocator hooks,
-  `Rpoll_event`. Coroutines cover `Rparallel_for` and `Rtask_run_async`.
+- **Platform internals**: host embedding, Emscripten, Android glue, backend registration,
+  allocator hooks, `Rpoll_event`. Coroutines cover `Rparallel_for` and `Rtask_run_async`.
+- **Raven Script** (`raven_script.h`, 12): scripts of XML documents; Kotlin is the app's language.
+- **The C testing API** (`raven_testing.h`, 30): compose-raven's tests drive the UI through its
+  Kotlin harness and the UI driver instead.
 - **`raven_test.h`**: header-only C test helpers, which the Kotlin harness replaces; it declares no
   library API, so it isn't counted.
 
@@ -105,7 +118,7 @@ Found while doing them:
 ### Whole areas with no binding
 
 - **Localisation and right-to-left**: `Rtr`, locales, `Rset_layout_direction` (none of
-  `raven_locale.h`'s 18). Needs a design decision first.
+  `raven_locale.h`'s 33). Needs a design decision first.
 - **Touch, pen and gestures**: none of `raven_touch.h`'s 23. Needs a design decision first; on the
   roadmap under phase 5 gestures.
 - **Drag and drop inside the app**: no drag source (`Rdrag_begin`) and no drop target on a widget
@@ -117,20 +130,26 @@ Found while doing them:
 
 | Widget | Functions | Note |
 |---|---:|---|
-| NodeGraph | 82 | specialist, phase 5 fog (`studio`) |
+| NodeGraph | 87 | specialist, phase 5 fog (`studio`) |
 | Timeline | 59 | specialist, phase 5 fog (`studio`) |
+| Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation |
 | Plot | 55 | charts; `examples/plot`. Needs a design decision first |
+| Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision |
+| PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written |
 | BlockEditor | 36 | specialist, phase 5 fog |
-| Table | 29 | sortable data grid; the one apps reach for first. With lazy virtualisation |
-| TileView | 20 | virtualised grid of items. With lazy virtualisation |
+| MapView | 34 | raster slippy-map tiles with markers; compose-raven's `MapView` binds the vector `Map` widget instead |
+| DiffView | 32 | two texts or a patch compared |
+| TileView | 29 | virtualised grid of items. With lazy virtualisation |
+| SystemWebView | 19 | the system's web engine in a view |
+| Carousel | 17 | pages swiped one at a time |
+| TimePicker | 15 | |
+| DatePicker | 13 | |
 | Toast | 13 | transient messages |
-| DatePicker | 9 | |
 | Rating | 8 | |
 | Pagination | 6 | |
 | Breadcrumb | 6 | |
-| TimePicker | 5 | |
 
-NodeGraph, Timeline and BlockEditor alone are 177 functions, about 15% of Raven's API. Switcher,
+NodeGraph, Timeline and BlockEditor alone are 182 functions, about 11% of Raven's API. Switcher,
 SizeBox and Canvas are the other unbound widget types, which Compose idioms cover.
 
 ### Partial bindings
