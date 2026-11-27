@@ -776,11 +776,13 @@ they take no icons. Each is controlled.
   Each returns whether the system took it, so an app can show its own message where it didn't.
   Raven's clicked callback, Windows only, isn't bound.
 - **Taskbar and Dock**: `Window(taskbarProgress: TaskbarProgress? = null)` (`Normal(value)`,
-  `Indeterminate`, `Paused(value)`, `Error(value)`; `Rwindow_set_taskbar_progress`);
+  `Indeterminate`, `Paused(value)`, `Error(value)`, values coerced to 0 to 1;
+  `Rwindow_set_taskbar_progress`, called only when it changes, so null at first is no call);
   `TaskbarBadge(text)`, a composable anywhere in the app whose badge (`Rtaskbar_set_badge`) goes
-  when it leaves the composition, the last composed winning; `ApplicationScope.DockMenu { }`, the
-  Dock icon's menu on macOS (`Rtaskbar_set_menu`), nothing elsewhere. Windows' jump list goes with
-  the Windows target.
+  when it leaves the composition, the last composed winning (an earlier one's change doesn't take
+  over), an empty text showing none; `ApplicationScope.DockMenu { }`, the Dock icon's menu on macOS
+  (`Rtaskbar_set_menu`), nothing elsewhere, the last composed winning in the same way, made as
+  the tray's menu is. Windows' jump list goes with the Windows target.
 - **Tests** record Raven's calls through a seam (`ShellCalls` in foundation, `WindowCalls` for the
   progress), as for the window operations, since the headless window system shows none of it
   ([Small widgets: notifications and tray](issues/archive/0213-small-widgets-notifications-and-tray.md)).

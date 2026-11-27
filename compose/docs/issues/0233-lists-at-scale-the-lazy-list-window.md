@@ -8,7 +8,7 @@ Make `LazyColumn` and `LazyRow` compose only the items in view, between two Spac
 ScrollBox, over an internal, pure lazy list window. Spec: [8: Lazy virtualisation](../spec.md#lazy-virtualisation-phase-5)
 and section 12. Planned in [Lists at scale: lazy virtualisation](archive/0214-lists-at-scale-lazy-virtualisation.md).
 
-**Depends on:** [Small widgets: taskbar progress, badge and Dock menu](0232-small-widgets-taskbar-progress-badge-and-dock-menu.md).
+**Depends on:** [Small widgets: taskbar progress, badge and Dock menu](archive/0232-small-widgets-taskbar-progress-badge-and-dock-menu.md).
 
 ## Deliverables
 

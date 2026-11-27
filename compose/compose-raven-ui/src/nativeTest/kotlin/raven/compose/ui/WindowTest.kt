@@ -32,6 +32,12 @@ import raven.cinterop.R_WINDOW_NO_RESIZE
 import raven.cinterop.R_WINDOW_TRANSPARENT
 import raven.cinterop.Rclipboard_get_text
 import raven.cinterop.Rclipboard_set_text
+import raven.cinterop.RTaskbarProgress
+import raven.cinterop.R_TASKBAR_PROGRESS_ERROR
+import raven.cinterop.R_TASKBAR_PROGRESS_INDETERMINATE
+import raven.cinterop.R_TASKBAR_PROGRESS_NONE
+import raven.cinterop.R_TASKBAR_PROGRESS_NORMAL
+import raven.cinterop.R_TASKBAR_PROGRESS_PAUSED
 import raven.cinterop.Rid
 import raven.cinterop.Rwindow_get_backdrop
 import raven.cinterop.Rwindow_get_opacity
@@ -434,6 +440,28 @@ class WindowTest {
     }
 
     @Test
+    fun theTaskbarProgressIsSetAndCleared() {
+        val calls = RecordingWindowCalls()
+        var progress by mutableStateOf<TaskbarProgress?>(null)
+        withWindowCalls(calls) {
+            withHost({ Window(onCloseRequest = {}, taskbarProgress = progress) {} }) {
+                assertEquals(emptyList(), calls.progress, "none at first, which needs no call")
+                progress = TaskbarProgress.Normal(0.4f)
+                runUntilIdle()
+                progress = TaskbarProgress.Paused(0.5f)
+                runUntilIdle()
+                progress = TaskbarProgress.Error(2f)
+                runUntilIdle()
+                progress = TaskbarProgress.Indeterminate
+                runUntilIdle()
+                progress = null
+                runUntilIdle()
+                assertEquals(listOf("normal 0.4", "paused 0.5", "error 1.0", "indeterminate 0.0", "none 0.0"), calls.progress)
+            }
+        }
+    }
+
+    @Test
     fun requestAttentionAsksRaven() {
         val calls = RecordingWindowCalls()
         var controller: WindowController? = null
@@ -570,6 +598,18 @@ private class RecordingWindowCalls(private val refuse: Boolean = false) : Window
     }
 
     override fun setOpacity(window: Rid, opacity: Float): Boolean = !refuse && super.setOpacity(window, opacity)
+
+    /** The taskbar progress each call set: its state, less R_TASKBAR_PROGRESS_NONE, and its value. */
+    val progress = mutableListOf<String>()
+
+    override fun setTaskbarProgress(window: Rid, state: RTaskbarProgress, value: Float): Boolean {
+        val names = mapOf(
+            R_TASKBAR_PROGRESS_NONE to "none", R_TASKBAR_PROGRESS_NORMAL to "normal", R_TASKBAR_PROGRESS_PAUSED to "paused",
+            R_TASKBAR_PROGRESS_ERROR to "error", R_TASKBAR_PROGRESS_INDETERMINATE to "indeterminate",
+        )
+        progress += "${names.getValue(state)} $value"
+        return super.setTaskbarProgress(window, state, value)
+    }
 
     /** Showing, hiding, focusing and asking for attention, apart from [calls]. */
     val windowOps = mutableListOf<String>()

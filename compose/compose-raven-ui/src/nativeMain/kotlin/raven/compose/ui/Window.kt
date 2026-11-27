@@ -77,6 +77,13 @@ import raven.cinterop.Rwindow_set_close_callback
 import raven.cinterop.Rwindow_set_content
 import raven.cinterop.Rwindow_set_drop_callback
 import raven.cinterop.Rwindow_set_icon
+import raven.cinterop.Rwindow_set_taskbar_progress
+import raven.cinterop.RTaskbarProgress
+import raven.cinterop.R_TASKBAR_PROGRESS_ERROR
+import raven.cinterop.R_TASKBAR_PROGRESS_INDETERMINATE
+import raven.cinterop.R_TASKBAR_PROGRESS_NONE
+import raven.cinterop.R_TASKBAR_PROGRESS_NORMAL
+import raven.cinterop.R_TASKBAR_PROGRESS_PAUSED
 import raven.cinterop.Rwindow_set_island
 import raven.cinterop.Rwindow_set_min_size
 import raven.cinterop.Rwindow_set_opacity
@@ -155,6 +162,10 @@ import kotlin.math.roundToInt
  * The window has a `NavigationEventDispatcher` ([LocalNavigationEventDispatcher]), which
  * Navigation 3's `NavDisplay` takes its back from. With [backKeys], the mouse's Back button and
  * Cmd+[ or Alt+Left that nothing else consumed go back through it.
+ *
+ * [taskbarProgress] is a progress bar on the app's icon, in the taskbar (Windows), the Dock (macOS)
+ * or the launcher (Linux); null shows none. The Dock and the launchers have one icon for the whole
+ * app, which shows the last window's that set one.
  */
 @Composable
 public fun Window(
@@ -174,6 +185,7 @@ public fun Window(
     onKeyEvent: ((KeyEvent) -> Boolean)? = null,
     icon: Painter? = null,
     backKeys: Boolean = true,
+    taskbarProgress: TaskbarProgress? = null,
     content: @Composable () -> Unit,
 ) {
     val host = LocalRavenHost.current
@@ -203,7 +215,31 @@ public fun Window(
     SideEffect {
         opened.window?.setIcon(icon)
         opened.window?.backKeys = backKeys
+        opened.window?.setTaskbarProgress(taskbarProgress)
     }
+}
+
+/** A progress bar on the app's icon in the taskbar, the Dock or the launcher: [Window]'s `taskbarProgress`. */
+public sealed interface TaskbarProgress {
+    /** Going on, [value] from 0 to 1 done. */
+    public data class Normal(val value: Float) : TaskbarProgress
+
+    /** Going on, with no measure of how far. */
+    public data object Indeterminate : TaskbarProgress
+
+    /** Stopped for now at [value], 0 to 1. */
+    public data class Paused(val value: Float) : TaskbarProgress
+
+    /** Stopped by a failure at [value], 0 to 1. */
+    public data class Error(val value: Float) : TaskbarProgress
+}
+
+private fun TaskbarProgress?.toRaven(): Pair<RTaskbarProgress, Float> = when (this) {
+    null -> R_TASKBAR_PROGRESS_NONE to 0f
+    is TaskbarProgress.Normal -> R_TASKBAR_PROGRESS_NORMAL to value.coerceIn(0f, 1f)
+    TaskbarProgress.Indeterminate -> R_TASKBAR_PROGRESS_INDETERMINATE to 0f
+    is TaskbarProgress.Paused -> R_TASKBAR_PROGRESS_PAUSED to value.coerceIn(0f, 1f)
+    is TaskbarProgress.Error -> R_TASKBAR_PROGRESS_ERROR to value.coerceIn(0f, 1f)
 }
 
 /** What a [Window] composed: its parameters, and the values of its state it read. */
@@ -559,6 +595,17 @@ internal class RavenWindow(
 
     private var icon: Painter? = null
 
+    // Raven's window starts with none, so null needs no call.
+    private var taskbarProgress: TaskbarProgress? = null
+
+    /** Shows [progress] on the app's icon; null clears it. */
+    fun setTaskbarProgress(progress: TaskbarProgress?) {
+        if (progress == taskbarProgress) return
+        taskbarProgress = progress
+        val (state, value) = progress.toRaven()
+        windowCalls.setTaskbarProgress(window, state, value)
+    }
+
     /** Sets the window's icon from the painter's image file; null is the default. */
     fun setIcon(icon: Painter?) {
         if (icon == this.icon) return
@@ -726,6 +773,9 @@ internal open class WindowCalls {
     open fun setOpacity(window: Rid, opacity: Float): Boolean = Rwindow_set_opacity(window, opacity) == R_TRUE
 
     open fun setBackdrop(window: Rid, backdrop: RBackdrop): Boolean = Rwindow_set_backdrop(window, backdrop) == R_TRUE
+
+    open fun setTaskbarProgress(window: Rid, state: RTaskbarProgress, value: Float): Boolean =
+        Rwindow_set_taskbar_progress(window, state, value) == R_TRUE
 
     @OptIn(ExperimentalUnsignedTypes::class)
     open fun setIcon(window: Rid, icon: Pixels?) =

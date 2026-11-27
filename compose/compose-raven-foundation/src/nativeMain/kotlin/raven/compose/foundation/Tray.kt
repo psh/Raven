@@ -22,6 +22,8 @@ import raven.cinterop.R_NOTIFICATION_NORMAL
 import raven.cinterop.R_TRUE
 import raven.cinterop.Rid
 import raven.cinterop.Rnotification_show
+import raven.cinterop.Rtaskbar_set_badge
+import raven.cinterop.Rtaskbar_set_menu
 import raven.cinterop.Rtray_create
 import raven.cinterop.Rtray_destroy
 import raven.cinterop.Rtray_is_supported
@@ -37,7 +39,7 @@ import raven.compose.ui.layoutWarningSink
 import raven.compose.ui.rememberDetachedMenu
 
 /**
- * Raven's tray and notification calls. Raven has getters for none of what a tray was given, and
+ * Raven's tray, notification, badge and Dock menu calls. Raven has getters for none of what a tray was given, and
  * the headless window system shows no notification, so the tests replace [shellCalls] to see them.
  */
 internal open class ShellCalls {
@@ -59,6 +61,10 @@ internal open class ShellCalls {
 
     open fun showNotification(title: String, message: String, urgency: RNotificationUrgency): Boolean =
         Rnotification_show(title, message, urgency) == R_TRUE
+
+    open fun setBadge(text: String?): Boolean = Rtaskbar_set_badge(text) == R_TRUE
+
+    open fun setDockMenu(menu: Rid): Boolean = Rtaskbar_set_menu(menu) == R_TRUE
 }
 
 internal var shellCalls: ShellCalls = ShellCalls()
