@@ -246,8 +246,11 @@ those gaps have tickets or wait here.
 
 **Phase 5** is charted on [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md):
 its first four batches (designed samples, icons and resources, small widgets, lists at scale) are
-being designed there, and the rest is fog on that map. The list below is the fog as it stood when
-the map was charted.
+designed there, and the rest is fog on that map. Batches five to nine, the widgets with no
+composable yet (overlays and pagers, charts, documents and the web, maps, specialist widgets), are
+charted on [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md); `browser`
+is out of scope there, since SystemWebView covers its web pages. The list below is the fog as it
+stood when the first map was charted.
 
 **Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy

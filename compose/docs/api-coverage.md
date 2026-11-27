@@ -128,26 +128,30 @@ Found while doing them:
 
 ### Widgets with no composable
 
-| Widget | Functions | Note |
-|---|---:|---|
-| NodeGraph | 87 | specialist, phase 5 fog (`studio`) |
-| Timeline | 59 | specialist, phase 5 fog (`studio`) |
-| Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation |
-| Plot | 55 | charts; `examples/plot`. Needs a design decision first |
-| Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision |
-| PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written |
-| BlockEditor | 36 | specialist, phase 5 fog |
-| MapView | 34 | raster slippy-map tiles with markers; compose-raven's `MapView` binds the vector `Map` widget instead |
-| DiffView | 32 | two texts or a patch compared |
-| TileView | 29 | virtualised grid of items. With lazy virtualisation |
-| SystemWebView | 19 | the system's web engine in a view |
-| Carousel | 17 | pages swiped one at a time |
-| TimePicker | 15 | |
-| DatePicker | 13 | |
-| Toast | 13 | transient messages |
-| Rating | 8 | |
-| Pagination | 6 | |
-| Breadcrumb | 6 | |
+| Widget | Functions | Note | Status |
+|---|---:|---|---|
+| NodeGraph | 87 | specialist (`studio`) | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Timeline | 59 | specialist (`studio`) | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation | designed: [Lists at scale: Table](issues/0235-lists-at-scale-table.md) |
+| Plot | 55 | charts; `examples/plot`. Needs a design decision first | charted: batch 6 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision | charted: batch 6 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| BlockEditor | 36 | specialist, no example | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| MapView | 34 | raster slippy-map tiles with markers; compose-raven's `MapView` binds the vector `Map` widget instead | charted: batch 8 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| DiffView | 32 | two texts or a patch compared | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| TileView | 29 | virtualised grid of items. With lazy virtualisation | designed: [Lists at scale: TileView](issues/0236-lists-at-scale-tileview.md) |
+| SystemWebView | 19 | the system's web engine in a view | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Carousel | 17 | pages swiped one at a time | charted: batch 5 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| TimePicker | 15 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
+| DatePicker | 13 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
+| Toast | 13 | transient messages | charted: batch 5 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Rating | 8 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
+| Pagination | 6 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
+| Breadcrumb | 6 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
+
+The seven designed by the [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md)
+map wait on their implementation tickets; the rest are charted, in batches, on
+[compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md).
 
 NodeGraph, Timeline and BlockEditor alone are 182 functions, about 11% of Raven's API. Switcher,
 SizeBox and Canvas are the other unbound widget types, which Compose idioms cover.
