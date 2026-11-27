@@ -16,6 +16,6 @@ follows it onto `compose-raven`.
 ## Deliverables
 
 - [ ] Decide whether `RAVEN_WITH_MAP` is on or off by default upstream, from what it adds to the library's size; record it here.
-- [ ] A branch off `main` with the widget alone: `src/map/`, `src/widgets/map.c`, `rvn_inflate`, its tests, `examples/map`, `bindings/python/map_example.py`, and the regenerated bindings. No compose-raven, and no spike data in the tree: tests that need it skip without `MAPS_DATA`.
+- [ ] A branch off `main` with the widget alone: `src/map/`, `src/widgets/map.c`, `rvn_inflate`, its tests, `examples/vector_map`, `bindings/python/map_example.py`, and the regenerated bindings. No compose-raven, and no spike data in the tree: tests that need it skip without `MAPS_DATA`.
 - [ ] A pull request against `main`, its description carrying 0140's measurements; its link recorded here.
 - [ ] Once merged: `compose-raven-map` (`MapView`) and the `MapCameraChanged` binding event moved from `spike/maps-native` onto `compose-raven`, with their tests.

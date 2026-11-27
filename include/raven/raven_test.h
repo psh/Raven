@@ -82,7 +82,7 @@ typedef struct RTestOptions {
  *  Steps: find, act, check. Each returns R_TRUE, or R_FALSE after a failure.
  * ============================================================================ */
 
-#define RTEST_CLICK(selector)                  Rtest_click_at(__FILE__, __LINE__, (selector))
+#define RTEST_CLICK(selector)                  Rtest_click_selector_at(__FILE__, __LINE__, (selector))
 #define RTEST_TYPE(selector, text)             Rtest_type_at(__FILE__, __LINE__, (selector), (text))
 /** A key with RModifier values: RTEST_KEY("role=text-field", R_KEY_ENTER, 0). */
 #define RTEST_KEY(selector, key, modifiers)    Rtest_key_at(__FILE__, __LINE__, (selector), (key), (modifiers))
@@ -248,7 +248,7 @@ static inline int Rtest_idle(const char* file, int line, const char* step) {
 }
 
 /* The one accessible a selector names, after waiting for idle; 0 after reporting why. */
-static inline RAccessible Rtest_find(const char* file, int line, const char* step, const char* selector) {
+static inline RAccessible Rtest_find_at(const char* file, int line, const char* step, const char* selector) {
 	RAccessible found;
 	g_rtest.checks++;
 	if (!g_rtest.running) {
@@ -269,28 +269,28 @@ static inline int Rtest_acted(const char* file, int line, const char* step, cons
 	return Rtest_idle(file, line, step);
 }
 
-static inline int Rtest_click_at(const char* file, int line, const char* selector) {
-	RAccessible found = Rtest_find(file, line, "RTEST_CLICK", selector);
+static inline int Rtest_click_selector_at(const char* file, int line, const char* selector) {
+	RAccessible found = Rtest_find_at(file, line, "RTEST_CLICK", selector);
 	return found && Rtest_acted(file, line, "RTEST_CLICK", selector, Raccessible_click(found));
 }
 
 static inline int Rtest_type_at(const char* file, int line, const char* selector, const char* text) {
-	RAccessible found = Rtest_find(file, line, "RTEST_TYPE", selector);
+	RAccessible found = Rtest_find_at(file, line, "RTEST_TYPE", selector);
 	return found && Rtest_acted(file, line, "RTEST_TYPE", selector, Raccessible_type(found, text));
 }
 
 static inline int Rtest_key_at(const char* file, int line, const char* selector, RKey key, Ruint modifiers) {
-	RAccessible found = Rtest_find(file, line, "RTEST_KEY", selector);
+	RAccessible found = Rtest_find_at(file, line, "RTEST_KEY", selector);
 	return found && Rtest_acted(file, line, "RTEST_KEY", selector, Raccessible_press_key(found, key, modifiers));
 }
 
 static inline int Rtest_act_at(const char* file, int line, const char* selector, RAccessibleAction action) {
-	RAccessible found = Rtest_find(file, line, "RTEST_ACT", selector);
+	RAccessible found = Rtest_find_at(file, line, "RTEST_ACT", selector);
 	return found && Rtest_acted(file, line, "RTEST_ACT", selector, Raccessible_act(found, action));
 }
 
 static inline int Rtest_describe_at(const char* file, int line, const char* selector, RAccessibleInfo* info) {
-	RAccessible found = Rtest_find(file, line, "RTEST_DESCRIBE", selector);
+	RAccessible found = Rtest_find_at(file, line, "RTEST_DESCRIBE", selector);
 	if (!found) return R_FALSE;
 	if (Raccessible_describe(found, info)) return R_TRUE;
 	Rtest_fail_at(file, line, "RTEST_DESCRIBE(%s): it is gone", selector);

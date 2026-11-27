@@ -13,7 +13,7 @@ import raven.mcp.cinterop.R_TRUE
 import raven.mcp.cinterop.Raction_fire
 import raven.mcp.cinterop.Raction_get_count
 import raven.mcp.cinterop.Raction_get_description
-import raven.mcp.cinterop.Raction_get_name
+import raven.mcp.cinterop.Raction_get_name_at
 import raven.mcp.cinterop.Raction_is_builtin
 import raven.mcp.cinterop.Raction_set_list_callback
 import raven.mcp.cinterop.Ris_initialized
@@ -99,7 +99,7 @@ internal object ExposedActions {
         return "Runs the app's action `$name`"
     }
 
-    private fun boundActions(): List<String> = (0 until Raction_get_count()).mapNotNull { Raction_get_name(it)?.toKString() }
+    private fun boundActions(): List<String> = (0 until Raction_get_count()).mapNotNull { Raction_get_name_at(it)?.toKString() }
 
     private fun isBound(name: String): Boolean = boundActions().contains(name)
 

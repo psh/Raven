@@ -40,7 +40,8 @@ struct rvn_xml_node_t;
 #define RVN_WF_INTERNAL      (1u << 11) /* owned by another widget without being its child */
 #define RVN_WF_WINDOW_DRAG   (1u << 12) /* part of the title bar of a window with a custom header */
 #define RVN_WF_NO_TAB        (1u << 13) /* focusable with a click, but Tab passes it by (a selectable label) */
-#define RVN_WF_NO_CLICK_FOCUS (1u << 14) /* a click on it or inside it leaves the focus where it is (Rwidget_set_focus_on_click) */
+#define RVN_WF_FLOAT_LAYER   (1u << 14) /* logical child painted/hit-tested by its window above the content */
+#define RVN_WF_NO_CLICK_FOCUS (1u << 15) /* a click on it or inside it leaves the focus where it is (Rwidget_set_focus_on_click) */
 #define RVN_WF_LAYOUT_DIRTY  (RVN_WF_MEASURE_DIRTY | RVN_WF_ARRANGE_DIRTY)
 
 /* class traits (rvn_widget_class_t::flags) */
@@ -185,6 +186,14 @@ typedef struct rvn_widget_class_t {
 	 * passes the movement to what contains the widget.
 	 */
 	int  (*pan)(rvn_widget_t* widget, float dx, float dy, int coasting);
+	/**
+	 * The finger that panned the widget left, moving at (vx, vy) logical
+	 * units per second (0, 0 when it rested or was cancelled; also called
+	 * when two fingers that panned it leave). Returns R_TRUE when the widget
+	 * settles by itself (pages that snap): nothing coasts then. NULL: the
+	 * content coasts.
+	 */
+	int  (*pan_end)(rvn_widget_t* widget, float vx, float vy);
 	/** Zooms by `factor` around a point of the widget (local units). Returns R_TRUE when the zoom changed. */
 	int  (*zoom)(rvn_widget_t* widget, float factor, float x, float y);
 	/**
@@ -336,9 +345,12 @@ rvn_widget_t* rvn_widget_create_class(const rvn_widget_class_t* cls);
 /** Detaches and destroys a widget and its subtree. */
 void rvn_widget_destroy(rvn_widget_t* widget);
 /** @param index Position among the children, or -1 to append. */
-void rvn_widget_add_child(rvn_widget_t* parent, rvn_widget_t* child, int index);
+/** R_FALSE when the destroy callbacks of the child replaced (single-child containers) destroyed the parent or the child. */
+int rvn_widget_add_child(rvn_widget_t* parent, rvn_widget_t* child, int index);
 /** Removes the widget from its parent without destroying it. */
 void rvn_widget_detach(rvn_widget_t* widget);
+/** A widget whose paint must run on the UI thread from now on (+1) or no longer (-1): RVN_CF_UI_PAINT for one widget. */
+void rvn_widget_add_ui_paint(rvn_widget_t* widget, int delta);
 int  rvn_widget_child_index(const rvn_widget_t* parent, const rvn_widget_t* child);
 /** Sets the window of a whole subtree (used for roots and popups). */
 void rvn_widget_set_window(rvn_widget_t* widget, rvn_window_t* window);
@@ -609,6 +621,8 @@ void  rvn_theme_clear(rvn_theme_t* theme);
 void  rvn_theme_copy(rvn_theme_t* destination, const rvn_theme_t* source);
 /** Something a widget may read from a theme changed: every widget is styled, measured and painted again. */
 void  rvn_theme_changed(void);
+/** Rtheme_follow_system is on: applies the dark or light look of the system. */
+void  rvn_theme_follow_system_apply(void);
 /** Empties the caches of the styles after a rule or the classes of a widget changed. */
 void  rvn_styles_changed(void);
 /** The accent color and what follows from it. */
@@ -712,6 +726,8 @@ typedef struct rvn_popup_t {
 	/** Dialogs: asked before the user dismisses it (Escape); NULL closes at once. */
 	RDialogDismissCallback dismiss;
 	void* dismiss_user;
+	/** Being closed with the popups above it (one that a closed callback opens meanwhile stays open). */
+	int closing;
 } rvn_popup_t;
 
 /**
@@ -770,6 +786,8 @@ struct rvn_window_t {
 	int surface_ready;
 	/** RWindowFlags given at creation. */
 	uint32_t window_flags;
+	/** The window that owns this one (Rwindow_set_owner), or R_INVALID_ID. */
+	Rid owner;
 	rvn_pwindow_state_t state;
 	/** R_TRUE while the window is the one the user works in. */
 	int active;
@@ -779,6 +797,19 @@ struct rvn_window_t {
 	uint32_t a11y_generation;
 
 	int needs_layout;
+	/** The safe area from window_get_safe_area, in logical units: top, right, bottom, left. */
+	float safe_area[4];
+	/** The height of the on-screen keyboard over the bottom of the window, in logical units (0: hidden). */
+	float keyboard_height;
+	/** The focused widget is to be scrolled into view after the next layout (rvn_window_reveal_focus). */
+	int reveal_focus;
+	RKeyboardCallback keyboard_callback;
+	void* keyboard_user;
+	/** Back (Rwindow_set_back_callback, _set_back_enabled), and what the platform was told last (window_set_back_wanted). */
+	RBackCallback back_callback;
+	void* back_user;
+	int back_enabled;
+	int back_wanted;
 	int needs_paint;
 	int continuous;
 	/** Set from any thread by Rwindow_request_redraw. */
@@ -792,6 +823,13 @@ struct rvn_window_t {
 	rvn_atomic_t animating;
 	/** When the window was last painted, for the pace of the animations. */
 	double paint_time;
+	/**
+	 * A frame asked for later (rvn_paint_wake_after) while painting: INT_MAX
+	 * minus its delay in ms, 0 for none; then when that frame is due (clock
+	 * seconds, 0: none).
+	 */
+	rvn_atomic_t wake_request;
+	double wake_time;
 	/** Image drawn behind the content (Rwindow_set_background), or R_INVALID_ID. */
 	Rid background;
 
@@ -820,6 +858,13 @@ struct rvn_window_t {
 	/** Last painted editable caret, in surface pixels; its owner guards against stale focus. */
 	rvn_box_t text_input_rect;
 	Rid text_input_owner;
+	/**
+	 * The text an input method is composing for the focus (preedit), not in
+	 * the widget's text: the text widgets draw it at their caret, underlined.
+	 * NULL: none. composition_start / _end: its selection (bytes).
+	 */
+	char* composition;
+	int composition_start, composition_end;
 	rvn_widget_t* capture;
 	/** R_TRUE when the focus was moved with the keyboard: widgets then draw a focus outline. */
 	int focus_visible;
@@ -844,6 +889,8 @@ struct rvn_window_t {
 	int drop_accepted;
 	/** Highlight of the target: where it is and how much of it shows. */
 	rvn_rect_t drop_rect;
+	int drop_custom;
+	rvn_rect_t drop_custom_rect;
 	float drop_radius;
 	RSpring drop_shown;
 
@@ -852,6 +899,8 @@ struct rvn_window_t {
 	uint32_t popup_count;
 	uint32_t popup_cap;
 	rvn_ghost_t* ghosts;
+	Rid* float_layers;
+	uint32_t float_layer_count, float_layer_cap;
 	uint32_t ghost_count;
 	uint32_t ghost_cap;
 	/** The subtree that is leaving the window right now (rvn_window_forget_widget), or NULL. */
@@ -871,7 +920,7 @@ struct rvn_window_t {
 	uint32_t shortcut_count;
 	uint32_t shortcut_cap;
 
-	/* viewports of this window that own a native child window */
+	/* viewports of this window that own a native child window, and SystemWebViews whose view is in it */
 	rvn_widget_t** native_viewports;
 	uint32_t native_viewport_count;
 	uint32_t native_viewport_cap;
@@ -936,6 +985,8 @@ int  rvn_window_wants_frame(rvn_window_t* window);
 double rvn_window_frame_in(rvn_window_t* window);
 /** Whether the window has work for its next frames: layout, paint, or something moving (Ris_idle). */
 int rvn_window_busy(rvn_window_t* window);
+/** R_TRUE when the window waits for no frame: nothing to lay out or paint, nothing moving (widget/testing.c). Continuous redraws are not counted. */
+int rvn_window_is_settled(rvn_window_t* window);
 /*
  * Waits until the windows that will paint can take a frame (the previous one
  * left for the renderer). Called before the input is read: the frame that
@@ -948,6 +999,8 @@ void rvn_window_set_focus(rvn_window_t* window, rvn_widget_t* widget);
 void rvn_window_destroy(rvn_window_t* window);
 void rvn_windows_destroy_all(void);
 void rvn_windows_collect(void);
+void rvn_window_set_float_layer(rvn_window_t* window, rvn_widget_t* widget, int enabled);
+void rvn_dock_float_arrange(rvn_widget_t* widget);
 /** Logical size of the client area. */
 rvn_vec2_t rvn_window_size(const rvn_window_t* window);
 
@@ -973,6 +1026,8 @@ int  rvn_touch_on_wheel(rvn_window_t* window, const rvn_pevent_t* event);
 /** Moves flicked content and fires a due long press; R_TRUE while something still moves. */
 int  rvn_touch_step(rvn_window_t* window);
 int  rvn_touch_animating(const rvn_window_t* window);
+/** R_TRUE while the press of a finger is delivered as the left button of the mouse (a tap, or a finger that drags). */
+int  rvn_touch_finger_pressing(const rvn_window_t* window);
 void rvn_touch_forget_widget(rvn_window_t* window, rvn_widget_t* widget);
 /** The window lost the input (the keyboard focus, a dialog of the system): every finger and the pen are let go. */
 void rvn_touch_cancel(rvn_window_t* window);
@@ -980,6 +1035,18 @@ void rvn_touch_window_free(rvn_window_t* window);
 void rvn_touch_widget_free(rvn_widget_t* widget);
 /** Touch.* and Pen.* attributes of a widget. Returns -1 when the name is not one of them. */
 int  rvn_touch_attribute(rvn_widget_t* widget, const char* name, const char* value);
+/**
+ * Scrolls every ScrollBox above the widget so that it shows, with `margin`
+ * around it (widgets/scroll_box.c; Rwidget_scroll_into_view with 0).
+ */
+void rvn_widget_reveal(rvn_widget_t* widget, float margin);
+/**
+ * The focused widget is to be seen: after the next layout, the ScrollBoxes
+ * above it scroll it into view, above the on-screen keyboard.
+ */
+void rvn_window_reveal_focus(rvn_window_t* window);
+/** RTouchSettings::min_touch_size of the window (NULL: of the application). */
+float rvn_touch_min_size(const rvn_window_t* window);
 /** Touch.*, Pen.* and Trackpad.* attributes of <Window>, applied to its settings. -1: not one of them. */
 int  rvn_touch_window_attribute(RTouchSettings* settings, const char* name, const char* value);
 /** R_TRUE when what is behind the window on the screen shows where the window draws nothing. */
@@ -1010,12 +1077,29 @@ int rvn_locale_attribute(rvn_widget_t* widget, const char* name, const char* val
 int rvn_locale_rtl(void);
 int rvn_locale_code_is_rtl(const char* code);
 void rvn_locale_shutdown(void);
+/* (core/locale.c: the clock) 12 or 24 for the locale now; for a language code; for a time pattern of a system (0: no hour in it). */
+int rvn_locale_clock(void);
+int rvn_locale_code_clock(const char* code);
+int rvn_locale_pattern_clock(const char* pattern, int* period_first);
+/** AM or PM of the locale (never NULL), and whether it is written before the time. */
+const char* rvn_locale_day_period(int pm);
+int rvn_locale_day_period_first(void);
+/** A time as the locale writes it; clock 12 or 24, 0 for the locale's. */
+void rvn_locale_time_text(int hour, int minute, int second, int show_seconds, int clock, char* out, size_t size);
+/* (core/timezone.c) fields: year, month, day, hour, minute, second. NULL or "" zone: the system's. */
+int rvn_timezone_local(const char* zone, double utc, int* fields);
+/** The instant of local fields (see Rtimezone_from_local); returns how many instants have them (0, 1, 2), -1 for an unknown zone. */
+int rvn_timezone_instant(const char* zone, const int* fields, double* utc);
+/** "CET", or "UTC+3" when the abbreviation is not a name; "" for an unknown zone. */
+void rvn_timezone_short_label(const char* zone, double utc, char* out, size_t size);
+void rvn_timezone_shutdown(void);
 
 /* ---- core/accessibility.c ---- */
 float rvn_a11y_text_scale(void);
 int   rvn_a11y_focus_always(void);
 float rvn_a11y_focus_width(void);
 void  rvn_a11y_structure_changed(void);
+void  rvn_a11y_selection_changed(rvn_widget_t* widget);
 void  rvn_a11y_widget_destroyed(rvn_widget_t* widget);
 void  rvn_a11y_shutdown(void);
 void  rvn_a11y_filter_instances(RDrawInstance* instances, uint32_t count);
@@ -1043,15 +1127,34 @@ void rvn_window_open_dialog(rvn_window_t* window, rvn_widget_t* root, RDialogClo
 int  rvn_window_close_dialog(rvn_widget_t* inside, int result);
 /** Root of the dialog on top of the others, or NULL. */
 rvn_widget_t* rvn_window_top_dialog(const rvn_window_t* window);
+/** R_TRUE while the window takes Back: a popup or dialog is open, or the application can go back (Rwindow_wants_back). */
+int  rvn_window_wants_back(const rvn_window_t* window);
 int  rvn_window_popup_index(const rvn_window_t* window, const rvn_widget_t* root);
+/** A popup or dialog that was closed and is still drawn on its way out (its ghost). */
+int  rvn_window_is_leaving(const rvn_window_t* window, const rvn_widget_t* root);
 
 /** Triggers a menu item (shortcuts). Implemented in widgets/menu.c. */
 void rvn_menu_item_trigger(rvn_widget_t* item);
+int rvn_menu_item_is_header(const rvn_widget_t* item);
+/** Where an entry (item or sub-menu) of an open menu is drawn, in its window; R_FALSE when its menu is not shown (widget/testing.c). */
+int rvn_menu_entry_bounds(const rvn_widget_t* entry, rvn_rect_t* rect);
+int rvn_table_multi_select(const rvn_widget_t* table);
+/** R_FALSE for a table whose selection mode is none. */
+int rvn_table_selectable(const rvn_widget_t* table);
+/** The row the keyboard is on (the selected row, or in multiple selection the current one), or -1. */
+int rvn_table_cursor_row(const rvn_widget_t* table);
+/** The text a screen reader is given for a cell: a check box and a progress bar are said in words. */
+const char* rvn_table_accessible_cell(rvn_widget_t* table, int row, int column);
+rvn_rect_t rvn_table_accessible_rect(rvn_widget_t* table, int row);
+int rvn_table_accessible_row_at(rvn_widget_t* table, float x, float y);
 /** Destroys the native child windows of the viewports inside a subtree leaving the window. */
 void rvn_window_release_natives(rvn_window_t* window, rvn_widget_t* subtree);
 /** Native viewports (widgets/viewport.c): release the child window / apply its state after a paint. */
 void rvn_viewport_native_release(rvn_widget_t* widget, rvn_window_t* window);
 void rvn_viewport_native_sync(rvn_widget_t* widget, uint64_t frame);
+/* The same for the view of a SystemWebView (widgets/system_web_view.c), kept in the same list of the window. */
+void rvn_system_web_view_native_release(rvn_widget_t* widget, rvn_window_t* window);
+void rvn_system_web_view_native_sync(rvn_widget_t* widget, uint64_t frame);
 
 /** Enabled menu item bound to a shortcut anywhere below `root`, or NULL. Implemented in widgets/menu.c. */
 rvn_widget_t* rvn_menu_find_shortcut(rvn_widget_t* root, RKey key, uint32_t modifiers);
@@ -1077,6 +1180,19 @@ void rvn_tray_update(void);
 int  rvn_tray_count(void);
 void rvn_tray_on_event(const struct rvn_pevent_t* event);
 void rvn_tray_shutdown(void);
+/** The notifications (platform/notify.c): what is remembered of them goes. */
+void rvn_notify_shutdown(void);
+
+/* ---- widgets/toast.c: the fallback of the notifications (Rnotification_set_fallback_toast) ---- */
+struct rvn_notification_t;
+/**
+ * Shows a notification as a message of the toast, with its title, icon and
+ * buttons; a message of the same tag still there is replaced. What the user
+ * does with it goes to rvn_notification_event. R_FALSE: not a toast.
+ */
+int  rvn_toast_show_notification(Rid toast, const struct rvn_notification_t* notification);
+/** Takes away the message of that tag, without reporting anything. */
+void rvn_toast_close_notification(Rid toast, const char* tag);
 
 /* ---- widget/inspector.c (Rwindow_set_inspector) ---- */
 /** Once a frame: the inspectors follow the windows they inspect. */
@@ -1089,6 +1205,29 @@ void rvn_inspector_paint(rvn_window_t* window, RPainter* painter);
 int  rvn_inspector_pick_move(rvn_window_t* window, float x, float y);
 int  rvn_inspector_pick_button(rvn_window_t* window, int pressed);
 void rvn_inspector_shutdown(void);
+
+/* ---- widget/testing.c and widget/headless.c (raven_testing.h, RAVEN_HEADLESS) ---- */
+/** The pixels of a window, or of the rectangle of a widget in its window (Rpixels_free); NULL (and an error naming `function`) when it cannot be captured. */
+uint8_t* rvn_test_capture(Rid id, const char* function, int* width, int* height);
+/** Writes RGBA8 pixels as a PNG file, making the folders above it. */
+int rvn_test_write_png(const char* path, const uint8_t* rgba, int width, int height);
+/**
+ * Reads the RAVEN_HEADLESS... environment variables before Rinit_ex starts
+ * anything: no window system when asked, the backend, the scale. R_TRUE
+ * when the run is driven by them.
+ */
+int  rvn_headless_configure(RInitDesc* desc);
+/** Rinit_ex could not start the backend asked for: R_TRUE when the run may go on with the null backend. */
+int  rvn_headless_allows_null_fallback(void);
+/** Rinit_ex succeeded: the run starts being driven at the next frame. */
+void rvn_headless_start(void);
+/** Once a frame, at the end of rvn_update: the next steps of the run. */
+void rvn_headless_frame(void);
+/** R_TRUE while a run is driven: Rwait_events must not sleep. */
+int  rvn_headless_busy(void);
+/** Rshutdown: frees what the runs held. Returns the exit code of a failed run driven by the environment, else 0. */
+int  rvn_headless_shutdown(void);
+
 /** The same for a window: its menu bars, then the menus that belong to no tree (Rmenu_open, context menus). */
 rvn_widget_t* rvn_menu_find_window_shortcut(rvn_window_t* window, RKey key, uint32_t modifiers);
 /** Parses "Ctrl+Shift+S". Implemented in widgets/menu.c. */
@@ -1108,6 +1247,8 @@ int  rvn_tree_view_row_count(rvn_widget_t* widget);
 Rid  rvn_tree_view_row_item(rvn_widget_t* widget, int row);
 int  rvn_tree_view_row_box(rvn_widget_t* widget, int row, int reveal, rvn_rect_t* box);
 int  rvn_tab_view_tab_box(rvn_widget_t* widget, int index, rvn_rect_t* box);
+/** A label's tooltip was set or cleared: whether it takes the mouse follows (label.c). */
+void rvn_label_tooltip_changed(rvn_widget_t* widget);
 
 /* ---------------------------------------------------------------------------
  *  Attribute parsing (xml/xml_attributes.c), shared by all set_attribute functions
@@ -1127,5 +1268,7 @@ int rvn_parse_orientation(const char* text, ROrientation* orientation);
 int rvn_widget_set_base_attribute(rvn_widget_t* widget, const char* name, const char* value);
 /** Sets any attribute: the ones of the widget class first, then the base ones. */
 int rvn_widget_set_attribute(rvn_widget_t* widget, const char* name, const char* value);
+/** The name of an action as an XML attribute gives it: "app.quit()" is "app.quit" (a reference, never a call). Free with rvn_free. */
+char* rvn_action_name_normalize(const char* value);
 
 #endif /* RVN_WIDGET_INTERNAL_H */

@@ -729,6 +729,7 @@ static const char* schema_sample(const RXmlAttributeInfo* info, char* buffer, si
 			/* texts with a form of their own */
 			if (strcmp(info->name, "Date") == 0 || strcmp(info->name, "Min") == 0 || strcmp(info->name, "Max") == 0) return "2026-11-03";
 			if (strcmp(info->name, "Time") == 0) return "09:30";
+			if (strcmp(info->name, "TimeZone") == 0) return "UTC";
 			return "x";
 	}
 }
@@ -785,8 +786,8 @@ static void test_schema(void) {
 				continue;
 			}
 			value = schema_sample(&info, buffer, sizeof(buffer));
-			/* (the formats of the labels of a Plot are printf formats of one number) */
-			if (strlen(info.name) > 6 && strcmp(info.name + strlen(info.name) - 6, "Format") == 0 && strcmp(name, "Plot") == 0) value = "%g";
+			/* (the formats of the labels of a Plot and of the values of a Chart are printf formats of one number) */
+			if (strlen(info.name) >= 6 && strcmp(info.name + strlen(info.name) - 6, "Format") == 0 && (strcmp(name, "Plot") == 0 || strcmp(name, "Chart") == 0)) value = "%g";
 			/* (some take a share below 1, some two numbers, some four) */
 			if (!Rwidget_set_attribute(widget, info.name, value) &&
 				!(info.type == R_XML_NUMBER && Rwidget_set_attribute(widget, info.name, "0.5")) &&
@@ -820,7 +821,7 @@ static void test_schema(void) {
 		int length = snprintf(xml, sizeof(xml), "<Window");
 		Rid window;
 		int count = Rxml_get_attribute_count("Window");
-		CHECK(count >= 20 && count < 30);
+		CHECK(count >= 20 && count < 32);
 		for (index = 0; index < count; index++) {
 			int touch;
 			CHECK(Rxml_get_attribute_info("window", index, &info));

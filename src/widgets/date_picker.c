@@ -83,6 +83,17 @@ const char* rvn_date_day_name(int weekday) {
 	return rvn_date_text(key, g_day_names[weekday]);
 }
 
+/* The first `count` characters of a name (code points, not bytes: a name may
+ * be translated into any script), as much of them as `out` holds. */
+static void rvn_date_short_name(const char* name, int count, char* out, size_t size) {
+	int length = (int)strlen(name), end = 0;
+	if (size == 0) return;
+	while (count-- > 0 && end < length) end = rvn_utf8_next(name, length, end);
+	while (end > 0 && (size_t)end >= size) end = rvn_utf8_prev(name, end);
+	memcpy(out, name, (size_t)end);
+	out[end] = '\0';
+}
+
 static int rvn_date_key(int year, int month, int day) {
 	return year * 10000 + month * 100 + day;
 }
@@ -130,7 +141,7 @@ static void rvn_date_format(const char* format, int year, int month, int day, ch
 			text = rvn_date_month_name(month);
 			format += 4;
 		} else if (strncmp(format, "MMM", 3) == 0) {
-			snprintf(piece, sizeof(piece), "%.3s", rvn_date_month_name(month));
+			rvn_date_short_name(rvn_date_month_name(month), 3, piece, sizeof(piece));
 			format += 3;
 		} else if (strncmp(format, "MM", 2) == 0) {
 			snprintf(piece, sizeof(piece), "%02d", month);
@@ -142,7 +153,7 @@ static void rvn_date_format(const char* format, int year, int month, int day, ch
 			text = rvn_date_day_name(rvn_date_weekday(year, month, day));
 			format += 4;
 		} else if (strncmp(format, "ddd", 3) == 0) {
-			snprintf(piece, sizeof(piece), "%.3s", rvn_date_day_name(rvn_date_weekday(year, month, day)));
+			rvn_date_short_name(rvn_date_day_name(rvn_date_weekday(year, month, day)), 3, piece, sizeof(piece));
 			format += 3;
 		} else if (strncmp(format, "DD", 2) == 0) {
 			snprintf(piece, sizeof(piece), "%02d", day);
@@ -163,7 +174,7 @@ static void rvn_date_format(const char* format, int year, int month, int day, ch
 }
 
 /* "2026-11-03" */
-static int rvn_date_parse(const char* text, int* year, int* month, int* day) {
+int rvn_date_parse(const char* text, int* year, int* month, int* day) {
 	int y = 0, m = 0, d = 0;
 	if (sscanf(text, "%d-%d-%d", &y, &m, &d) != 3 || !rvn_date_valid(y, m, d)) return R_FALSE;
 	*year = y;
@@ -183,6 +194,8 @@ typedef struct rvn_date_picker_t {
 	int min_key, max_key;
 	int first_weekday;
 	char* format;
+	/** The time zone of the instants (NULL: the system's). */
+	char* zone;
 	rvn_widget_t* calendar;
 	RDateChangedCallback callback;
 	void* user_data;
@@ -227,6 +240,18 @@ static void rvn_date_picker_set(rvn_widget_t* widget, int year, int month, int d
 	if (!notify) return;
 	if (picker->callback) picker->callback(widget->id, year, month, day, picker->user_data);
 	if (rvn_widget_alive(widget)) rvn_widget_fire_action(widget);
+}
+
+/* After the range changed: the date moves inside it (without calling back, as for Rdate_picker_set_date). */
+static void rvn_date_picker_clamp(rvn_widget_t* widget) {
+	rvn_date_picker_t* picker = (rvn_date_picker_t*)widget;
+	int key = rvn_date_key(picker->year, picker->month, picker->day);
+	if (picker->min_key && key < picker->min_key) key = picker->min_key;
+	if (picker->max_key && key > picker->max_key) key = picker->max_key;
+	picker->year = key / 10000;
+	picker->month = key / 100 % 100;
+	picker->day = key % 100;
+	rvn_widget_invalidate_layout(widget);
 }
 
 /* ---- the calendar ---- */
@@ -310,8 +335,8 @@ static void rvn_calendar_paint(rvn_widget_t* widget, RPainter* painter) {
 
 	/* the days of the week */
 	for (cell = 0; cell < 7; cell++) {
-		char name[8];
-		snprintf(name, sizeof(name), "%.2s", rvn_date_day_name(picker->first_weekday + cell));
+		char name[16];
+		rvn_date_short_name(rvn_date_day_name(picker->first_weekday + cell), 2, name, sizeof(name));
 		rvn_paint_text_in(painter, R_INVALID_ID, font * 0.85f,
 			rvn_rect(RVN_CAL_PAD + RVN_CAL_CELL * (float)cell, RVN_CAL_PAD + header, RVN_CAL_CELL, RVN_CAL_WEEKDAYS), 0.5f, name, -1, dim);
 	}
@@ -457,6 +482,7 @@ static void rvn_date_picker_destroy(rvn_widget_t* widget) {
 	rvn_date_picker_t* picker = (rvn_date_picker_t*)widget;
 	if (picker->calendar) rvn_widget_destroy(picker->calendar);
 	rvn_free(picker->format);
+	rvn_free(picker->zone);
 }
 
 static int rvn_date_picker_is_open(const rvn_widget_t* widget) {
@@ -591,6 +617,13 @@ static int rvn_date_picker_event(rvn_widget_t* widget, const REvent* event) {
 	}
 }
 
+static int rvn_date_picker_set_zone(rvn_widget_t* widget, const char* zone) {
+	int fields[6];
+	if (zone && zone[0] && !rvn_timezone_local(zone, 0.0, fields)) return R_FALSE;
+	rvn_str_set(&((rvn_date_picker_t*)widget)->zone, zone && zone[0] ? zone : NULL);
+	return R_TRUE;
+}
+
 static int rvn_date_picker_set_attribute(rvn_widget_t* widget, const char* name, const char* value) {
 	rvn_date_picker_t* picker = (rvn_date_picker_t*)widget;
 	int year, month, day, number;
@@ -608,6 +641,7 @@ static int rvn_date_picker_set_attribute(rvn_widget_t* widget, const char* name,
 		}
 		if (RVN_ATTR("Min")) picker->min_key = key;
 		else picker->max_key = key;
+		rvn_date_picker_clamp(widget);
 		return R_TRUE;
 	}
 	if (RVN_ATTR("FirstDayOfWeek")) {
@@ -623,6 +657,7 @@ static int rvn_date_picker_set_attribute(rvn_widget_t* widget, const char* name,
 		rvn_widget_invalidate_layout(widget);
 		return R_TRUE;
 	}
+	if (RVN_ATTR("TimeZone")) return rvn_date_picker_set_zone(widget, value);
 	return R_FALSE;
 }
 
@@ -672,18 +707,7 @@ void Rdate_picker_set_range(Rid id, int min_year, int min_month, int min_day, in
 	}
 	picker->min_key = min_year ? rvn_date_key(min_year, min_month, min_day) : 0;
 	picker->max_key = max_year ? rvn_date_key(max_year, max_month, max_day) : 0;
-	/* the date moves inside the range */
-	if (picker->min_key && rvn_date_key(picker->year, picker->month, picker->day) < picker->min_key) {
-		picker->year = min_year;
-		picker->month = min_month;
-		picker->day = min_day;
-	}
-	if (picker->max_key && rvn_date_key(picker->year, picker->month, picker->day) > picker->max_key) {
-		picker->year = max_year;
-		picker->month = max_month;
-		picker->day = max_day;
-	}
-	rvn_widget_invalidate_layout(widget);
+	rvn_date_picker_clamp(widget);
 }
 
 void Rdate_picker_set_first_day_of_week(Rid id, int day) {
@@ -720,4 +744,39 @@ void Rdate_picker_set_changed_callback(Rid id, RDateChangedCallback callback, vo
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_DATE_PICKER);
 	((rvn_date_picker_t*)widget)->callback = callback;
 	((rvn_date_picker_t*)widget)->user_data = user_data;
+}
+
+void Rdate_picker_set_time_zone(Rid id, const char* zone) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_DATE_PICKER);
+	if (!rvn_date_picker_set_zone(widget, zone))
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rdate_picker_set_time_zone: unknown time zone \"%s\"", zone);
+}
+
+const char* Rdate_picker_get_time_zone(Rid id) {
+	RVN_WIDGET(widget, id, R_WIDGET_DATE_PICKER, "");
+	return ((rvn_date_picker_t*)widget)->zone ? ((rvn_date_picker_t*)widget)->zone : "";
+}
+
+void Rdate_picker_set_instant(Rid id, double utc) {
+	int fields[6];
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_DATE_PICKER);
+	if (!rvn_timezone_local(((rvn_date_picker_t*)widget)->zone, utc, fields) || !rvn_date_valid(fields[0], fields[1], fields[2])) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rdate_picker_set_instant: invalid instant or time zone");
+		return;
+	}
+	rvn_date_picker_set(widget, fields[0], fields[1], fields[2], R_FALSE);
+}
+
+double Rdate_picker_get_instant(Rid id) {
+	rvn_date_picker_t* picker;
+	int fields[6];
+	double utc = 0.0;
+	RVN_WIDGET(widget, id, R_WIDGET_DATE_PICKER, 0.0);
+	picker = (rvn_date_picker_t*)widget;
+	fields[0] = picker->year;
+	fields[1] = picker->month;
+	fields[2] = picker->day;
+	fields[3] = fields[4] = fields[5] = 0;
+	if (rvn_timezone_instant(picker->zone, fields, &utc) < 0) return 0.0;
+	return utc;
 }

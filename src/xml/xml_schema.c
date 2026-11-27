@@ -81,6 +81,7 @@ static const rvn_schema_attribute_t g_slot[] = {
 	V("Slot.Size", "Canvas: \"width,height\"."),
 	V("Slot.Alignment", "Canvas: \"x,y\", the point of the widget placed at the position, from 0 to 1."),
 	T("Slot.Title", "Title of the tab or of the docked panel that holds the widget."),
+	F("Slot.Icon", "Icon before the title of the tab (a TabView with Documents=\"true\") or of the docked panel: an icon of Raven (\"raven:folder\") or an image file."),
 	C("Slot.Dock", "Left|Right|Top|Bottom|Tab", "DockArea: the side of the area, or of Slot.DockTo, the panel takes."),
 	T("Slot.DockTo", "DockArea: name of the panel the panel is placed against."),
 	N("Slot.DockSize", "DockArea: share of the place it is cut from, between 0 and 1."),
@@ -105,6 +106,7 @@ static const rvn_schema_attribute_t g_window_touch[] = {
 	N("Touch.Deceleration", "How fast flicked content slows down, units per second per second (default 2400)."),
 	B("Touch.Gestures", "Two fingers pinch to zoom and pan (default true)."),
 	B("Touch.PalmRejection", "Fingers are ignored while a pen is near the screen (default true)."),
+	N("Touch.MinSize", "Smallest height of what a finger presses: controls and rows are at least this high, check boxes and slider handles half of it; 0 leaves the sizes of the theme (default 44 on iOS, 48 on Android, 0 elsewhere)."),
 	B("Pen.MouseEmulation", "The pen drives the widgets as the mouse does; its barrel button is the right button (default true)."),
 	N("Pen.PressureCurve", "The pressure is the one of the pen to this power: 1 as it is, below 1 softer, above 1 harder."),
 	N("Pen.PressureThreshold", "Pressure, 0 to 1, the tip needs before it presses (default 0)."),
@@ -123,7 +125,8 @@ static const rvn_schema_attribute_t g_colors[] = {
 	K("Color.Track", ""), K("Color.Handle", ""), K("Color.HandleHovered", ""), K("Color.Separator", ""), K("Color.Header", ""),
 	K("Color.HeaderHovered", ""), K("Color.TabActive", ""), K("Color.Popup", ""), K("Color.PopupBorder", ""), K("Color.Shadow", ""),
 	K("Color.Tooltip", ""), K("Color.TooltipText", ""), K("Color.Switch", ""), K("Color.Success", ""), K("Color.Warning", ""),
-	K("Color.Danger", ""), K("Color.Link", ""), K("Color.Code", ""),
+	K("Color.Danger", ""), K("Color.Link", ""), K("Color.Code", ""), K("Color.SearchMatch", ""), K("Color.SearchCurrent", ""), K("Color.Spelling", ""),
+	K("Color.DiffAdded", ""), K("Color.DiffRemoved", ""), K("Color.DiffAddedWord", ""), K("Color.DiffRemovedWord", ""),
 };
 
 static const rvn_schema_attribute_t g_metrics[] = {
@@ -192,6 +195,15 @@ static const rvn_schema_attribute_t g_splitter[] = {
 	N("MinPaneSize", "The smallest a pane can be dragged to."),
 };
 static const rvn_schema_attribute_t g_switcher[] = { N("Index", "Which child is shown, from 0.") };
+static const rvn_schema_attribute_t g_carousel[] = {
+	N("Page", "Which page is shown, from 0."),
+	B("Loop", "After the last page comes the first one, and before the first the last."),
+	N("Autoplay", "Seconds between the pages turned by themselves; 0 (default) never. It waits while the pointer is on it."),
+	B("Indicators", "The dots of the pages along the bottom edge (default true)."),
+	B("Arrows", "The previous / next buttons shown under the pointer (default true)."),
+	C("Orientation", ORIENTATION, "Pages side by side (default) or one above the other."),
+	A("OnChanged", "Action fired when the user or the autoplay goes to another page."),
+};
 static const rvn_schema_attribute_t g_tab_view[] = { N("ActiveTab", "Which tab is shown, from 0."), A("OnChanged", "Action fired when the tab changes.") };
 static const rvn_schema_attribute_t g_expander[] = {
 	T("Title", "Text of the header."),
@@ -232,12 +244,14 @@ static const rvn_schema_attribute_t g_progress_bar[] = {
 };
 static const rvn_schema_attribute_t g_separator[] = { C("Orientation", ORIENTATION, "Horizontal is a line across.") };
 static const rvn_schema_attribute_t g_image[] = {
-	F("Source", "Image file."),
+	F("Source", "Image file, or an icon of Raven: \"raven:search\" (drawn in the color of the text)."),
 	C("Stretch", STRETCH, "How the image fills its place."),
-	K("Tint", "Color the image is multiplied by."),
+	K("Tint", "Color the image is multiplied by; the color of an icon in currentColor (the text color by default)."),
 	N("CornerRadius", "Rounds the corners."),
 	V("Region", "Part of the image shown: \"minu,minv,maxu,maxv\" from 0 to 1."),
 	B("TintText", "Tinted with the color of the text around it: white icons that follow the theme."),
+	B("Animate", "An animated GIF or APNG plays (default); false: it stays on its first frame."),
+	N("Loop", "Times an animation plays, 0 for forever. Default: what the file says."),
 };
 static const rvn_schema_attribute_t g_text_input[] = {
 	T("Text", "The text."),
@@ -245,6 +259,10 @@ static const rvn_schema_attribute_t g_text_input[] = {
 	B("Password", "Shows dots."),
 	B("ReadOnly", "Can be selected and copied, not changed."),
 	N("MaxLength", "Most characters accepted; 0 for no limit."),
+	C("InputType", "Text|Email|Number|Decimal|Phone|Url|Search", "What it holds: picks the on-screen keyboard on mobile."),
+	C("ReturnKey", "Default|Done|Go|Next|Search|Send", "The return key of the on-screen keyboard."),
+	B("SpellCheck", "Underlines the misspelled words, with corrections on a right click (off by default)."),
+	T("SpellLanguage", "Language of the spell checking (\"en_US\", \"fr\"...); none: the language of the application."),
 	A("OnChanged", "Action fired at each change."),
 	A("OnCommitted", "Action fired by Enter."),
 };
@@ -259,6 +277,9 @@ static const rvn_schema_attribute_t g_spin_box[] = {
 static const rvn_schema_attribute_t g_combo_box[] = {
 	L("Items", "The choices, separated by '|'."),
 	N("Selected", "Which one is chosen, from 0; -1 for none."),
+	B("Editable", "A text field: any text can be typed, not only the items."),
+	B("Searchable", "Typing filters the list to the items that contain the text, without regard to case or accents."),
+	T("Text", "The text of an editable combo box (the item equal to it is selected)."),
 	A("OnChanged", "Action fired when the choice changes."),
 };
 static const rvn_schema_attribute_t g_list_view[] = {
@@ -268,7 +289,10 @@ static const rvn_schema_attribute_t g_list_view[] = {
 	A("OnActivated", "Action fired by a double click or Enter."),
 };
 static const rvn_schema_attribute_t g_table[] = {
-	L("Columns", "The headers of the columns, separated by '|' (or Column elements: Header, Width, Fill, Sortable, Align)."),
+	L("Columns", "The headers of the columns, separated by '|' (or Column elements: Header, Width, Fill, Sortable, Align, Editable, Kind=\"Text|Check|Progress\")."),
+	N("FrozenColumns", "The first columns that stay in place when the table scrolls sideways."),
+	B("MultiSelect", "Ctrl/Cmd-click toggles rows; Shift selects an anchored range."),
+	C("SelectionMode", "Single|Multiple|None", "One row at a time (default), any number of rows (Ctrl/Cmd+click, Shift+click, Shift+arrows, Space, Ctrl/Cmd+A), or none."),
 	N("Selected", "Which row is selected, from 0; -1 for none."),
 	N("SortColumn", "The column the rows are sorted by, from 0; -1 for none."),
 	B("SortDescending", "Sorted from the largest to the smallest."),
@@ -283,12 +307,17 @@ static const rvn_schema_attribute_t g_date_picker[] = {
 	T("Max", "The latest date that can be chosen, \"YYYY-MM-DD\"."),
 	C("FirstDayOfWeek", "Sunday|Monday|Saturday", "The day the weeks of the calendar start with (or 0 to 6)."),
 	T("Format", "How the date is written: YYYY, MM, M, DD, D, MMMM, MMM, dddd, ddd; default YYYY-MM-DD."),
+	T("TimeZone", "The time zone of the date for Rdate_picker_get_instant: \"Europe/Paris\"; empty: the zone of the system."),
 	A("OnChanged", "Action fired when the user chooses a date."),
 };
 static const rvn_schema_attribute_t g_time_picker[] = {
 	T("Time", "The time, \"HH:MM\" or \"HH:MM:SS\"."),
 	B("ShowSeconds", "Shows the seconds."),
 	N("MinuteStep", "Step of the minutes for the arrows and the wheel."),
+	C("Clock", "Auto|12|24", "12 hours with AM and PM, or 24 hours; Auto: as the locale does."),
+	T("TimeZone", "The time zone of the time: \"America/New_York\", \"Europe/Paris\"; empty: the zone of the system."),
+	B("ShowTimeZone", "Writes the time zone after the time (\"EST\", \"CET\", \"UTC+3\")."),
+	T("Date", "The day of the time, for its time zone: \"YYYY-MM-DD\" or Today (default)."),
 	A("OnChanged", "Action fired when the user changes the time."),
 };
 static const rvn_schema_attribute_t g_toast[] = {
@@ -341,6 +370,47 @@ static const rvn_schema_attribute_t g_plot[] = {
 	C("Y2Scale", "Linear|Log|SymLog", "How the right axis spreads its values."),
 	A("OnChanged", "Action fired while the user drags a drag line."),
 };
+static const rvn_schema_attribute_t g_pdf_view[] = {
+	F("Source", "The PDF file shown."),
+	T("Password", "The password of the document, when it has one."),
+	C("Fit", "Width|Page|None", "How the pages are sized: the widest fills the width, the largest fits whole, or the Zoom."),
+	N("Zoom", "A zoom of its own (1: the printed size); the fit becomes None."),
+	N("Page", "The page shown at the top, counted from 1."),
+	A("OnChanged", "Action fired when the current page changes as the user scrolls."),
+};
+static const rvn_schema_attribute_t g_chart[] = {
+	C("Kind", "Pie|Donut|Gauge|Heatmap|Sparkline", "What the chart draws."),
+	T("Title", "The title over a pie, a donut or a heatmap, under the value of a gauge."),
+	T("Format", "A printf format for the values, with their unit: \"%.0f%%\", \"$%.2f\"."),
+	K("Color", "The arc of a gauge outside the bands, the line of a sparkline (default: the accent)."),
+	B("Legend", "The slices beside a pie or a donut, the scale under a heatmap."),
+	N("Hole", "The hole of a donut, as a part of its radius (0.2 to 0.9)."),
+	T("CenterText", "What the middle of a donut shows (default: the total)."),
+	T("CenterCaption", "A small text under it."),
+	N("Selected", "The slice lifted as selected, from 0 (-1: none)."),
+	N("Min", "The lowest value of a gauge (default 0); a fixed lowest value for a heatmap or a sparkline."),
+	N("Max", "The highest value of a gauge (default 100); a fixed highest value for a heatmap or a sparkline."),
+	N("Value", "The value of a gauge."),
+	V("Values", "The values of a sparkline."),
+	B("Fill", "Shades the area under the line of a sparkline."),
+	B("Marker", "A dot on the last value of a sparkline."),
+	L("RowLabels", "The names of the rows of a heatmap, separated by '|' (or the Label of its Row elements)."),
+	L("ColumnLabels", "The names of the columns of a heatmap, separated by '|'."),
+	K("LowColor", "The color of the lowest values of a heatmap."),
+	K("HighColor", "The color of the highest values of a heatmap."),
+	A("OnClicked", "Action fired when the user clicks a slice or a cell."),
+};
+static const rvn_schema_attribute_t g_map_view[] = {
+	N("Latitude", "Latitude of the center, in degrees (held within +/-85.0511)."),
+	N("Longitude", "Longitude of the center, in degrees."),
+	N("Zoom", "The zoom: 0 shows the whole world in one tile, each step doubles the scale."),
+	N("MinZoom", "The smallest zoom the user can reach (default 0)."),
+	N("MaxZoom", "The largest zoom the user can reach, and of the tiles asked for (default 19, at most 24)."),
+	T("TilePath", "Reads the tiles from files: a path with {z}, {x} and {y} ({-y}: the row counted from the south, TMS)."),
+	N("TileSize", "Logical size of a tile at a whole zoom (default 256, held within 16 .. 1024)."),
+	T("Attribution", "The credit of the tiles, written in the bottom right corner."),
+	A("OnChanged", "Action fired when the user moves or zooms the map."),
+};
 static const rvn_schema_attribute_t g_tree_view[] = {
 	A("OnChanged", "Action fired when the selection changes."),
 	A("OnActivated", "Action fired by a double click or Enter."),
@@ -350,6 +420,8 @@ static const rvn_schema_attribute_t g_tile_view[] = {
 	C("Layout", "Tiles|Rows", "Tiles: a grid. Rows: one item per line, as wide as the view, the icon on the left."),
 	N("TileHeight", "Height of a tile, name included."),
 	N("IconSize", "Size of the icon of a tile."),
+	N("IconWidth", "Rows layout: width of the box of the icon (0: square)."),
+	N("HeaderHeight", "Height of the header of a section (Rtile_view_set_sections)."),
 	N("Spacing", "Space between the tiles."),
 	T("EmptyText", "Text shown when there is no tile."),
 	T("DragType", "Type given to Rdrag_begin when tiles are dragged; empty: no drag."),
@@ -362,10 +434,19 @@ static const rvn_schema_attribute_t g_menu[] = { T("Title", "Text of the menu in
 static const rvn_schema_attribute_t g_menu_item[] = {
 	T("Text", "Text of the item."),
 	T("Shortcut", "Keys shown beside it and that fire it: \"Ctrl+S\"."),
+	T("ShortcutText", "Display-only hint; overrides shortcut text without changing its binding."),
 	B("Checkable", "Clicking it checks and unchecks it."),
 	B("Checked", "Its state."),
 	B("Separator", "A line instead of an item."),
+	F("Icon", "Icon before the text: an icon of Raven (\"raven:save\") or an image file."),
 	A("OnClicked", "Action fired by the item."),
+};
+static const rvn_schema_attribute_t g_system_web_view[] = {
+	T("Url", "Address of the page shown (\"https://...\", \"file:///...\")."),
+	F("Source", "A page of the computer (an .html file), found next to the document."),
+	T("Html", "HTML shown as the page."),
+	T("BaseUrl", "Where the relative addresses of Html are looked for."),
+	A("OnChanged", "Action fired when the view shows another address."),
 };
 static const rvn_schema_attribute_t g_viewport[] = {
 	C("Stretch", STRETCH, "How the picture fills its place."),
@@ -389,7 +470,30 @@ static const rvn_schema_attribute_t g_text_editor[] = {
 	B("Zoomable", "Ctrl + wheel, Ctrl + '+' / '-' / 0 zoom the text (on by default)."),
 	F("Font", "Font file, or \"monospace\"."),
 	B("Markdown", "The text is Markdown, styled where it is typed (the same as Language=\"Markdown\")."),
+	B("FindBar", "The find bar (Ctrl+F, Ctrl+H) and its keys (on by default)."),
+	T("Search", "Text searched for: its matches are highlighted."),
+	B("Folding", "Regions of the text can be folded: markers beside the line numbers, Ctrl+Shift+[ and ] (on by default)."),
+	B("SpellCheck", "Underlines the misspelled words, with corrections on a right click (off by default)."),
+	T("SpellLanguage", "Language of the spell checking (\"en_US\", \"fr\"...); none: the language of the application."),
 	A("OnChanged", "Action fired at each change."),
+};
+static const rvn_schema_attribute_t g_diff_view[] = {
+	F("LeftSource", "The file before, compared with RightSource; its path is the name shown unless LeftName is given."),
+	F("RightSource", "The file after."),
+	T("Left", "The text before (or a <Left> element holding it)."),
+	T("Right", "The text after (or a <Right> element holding it)."),
+	T("LeftName", "Name shown over the text before (its extension chooses the colors of the code)."),
+	T("RightName", "Name shown over the text after."),
+	T("Patch", "A unified diff (git diff, diff -u) to show instead of two texts (or a <Patch> element holding it)."),
+	F("PatchSource", "A file holding a unified diff."),
+	C("Mode", "Unified|Split", "One column, or the two texts side by side (Split)."),
+	N("Context", "Unchanged lines shown around each change (3); the others are folded. All, or -1: every line."),
+	C("IgnoreWhitespace", "None|Trailing|All", "Spaces that do not count: none, those at the end of the lines, all of them."),
+	B("IgnoreCase", "Upper and lower case letters are the same."),
+	B("WordDiff", "Marks the words that changed inside a changed line (default true)."),
+	B("LineNumbers", "The numbers of the lines of both sides (default true)."),
+	C("Language", "None|C|C++|C#|Java|JavaScript|TypeScript|Python|Rust|GLSL|JSON|CSS|XML|HTML", "Colors the code; by default guessed from the extension of the names."),
+	A("OnClicked", "Action fired when a line or its number is clicked."),
 };
 static const rvn_schema_attribute_t g_header_bar[] = {
 	T("Title", "Text of the bar."),
@@ -410,6 +514,7 @@ static const rvn_schema_attribute_t g_file_browser[] = {
 	B("Places", "false hides the list of places."),
 };
 static const rvn_schema_attribute_t g_dock_area[] = {
+	C("FloatMode", "Window|InWindow", "Future floats use an OS window or a card inside the containing window."),
 	B("Movable", "false keeps the panels where they are."),
 	T("Layout", "An arrangement saved with Rdock_area_save_layout."),
 	B("CloseHides", "The close button of a tab hides its panel (Rdock_area_open_panel brings it back) instead of deleting it."),
@@ -517,6 +622,7 @@ static const rvn_schema_tag_t g_tags[] = {
 	TAG_PLAIN("Canvas", "Places its children freely (Slot.Position, Slot.Size, Slot.Anchors)."),
 	TAG("Switcher", g_switcher, "Shows one of its children."),
 	TAG("TabView", g_tab_view, "Its children as tabs (Slot.Title)."),
+	TAG("Carousel", g_carousel, "Its children as pages shown one at a time, swiped, with dots and arrows."),
 	TAG("Expander", g_expander, "A header that shows and hides one child."),
 	TAG("Label", g_label, "Text."),
 	TAG("Button", g_button, "A button, with a text or with one child."),
@@ -535,8 +641,10 @@ static const rvn_schema_tag_t g_tags[] = {
 	TAG("Menu", g_menu, "A menu: MenuItem, Separator and Menu elements."),
 	TAG("MenuItem", g_menu_item, "An item of a menu."),
 	TAG("Viewport", g_viewport, "A place the application draws in with its own renderer."),
+	TAG("SystemWebView", g_system_web_view, "A web page shown by the engine of the system (WKWebView on macOS and iOS) over the widget; elsewhere a message."),
 	TAG_PLAIN("Custom", "A widget painted and measured by the application."),
 	TAG("TextEditor", g_text_editor, "Text of several lines: notes, code."),
+	TAG("DiffView", g_diff_view, "The differences between two texts or files, or a patch: one column or side by side, unchanged lines folded, the words that changed marked."),
 	TAG("HeaderBar", g_header_bar, "The title bar of a window with a custom header; holds any widgets."),
 	TAG("FileBrowser", g_file_browser, "Folders and files to choose from."),
 	TAG("DockArea", g_dock_area, "Panels the user arranges by dragging their tabs."),
@@ -552,6 +660,9 @@ static const rvn_schema_tag_t g_tags[] = {
 	TAG("Breadcrumb", g_breadcrumb, "The path to the current place: links separated by chevrons."),
 	TAG("Rating", g_rating, "A score shown and chosen with stars."),
 	TAG("Pagination", g_pagination, "Page numbers with previous and next."),
+	TAG("MapView", g_map_view, "A map of slippy-map tiles (Web Mercator z/x/y) given by the application or read from files: dragged, zoomed, with Marker elements (Latitude, Longitude, Label, Color)."),
+	TAG("PdfView", g_pdf_view, "The pages of a PDF document, scrolled and zoomed (drawn by PDFium, loaded at run time)."),
+	TAG("Chart", g_chart, "The charts of dashboards: a pie or a donut of Slice elements (Label, Value, Color), a gauge with Band elements (From, To, Color), a heatmap of Row elements (Label, Values), a sparkline of Values."),
 	TAG("Plot", g_plot, "Curves of X / Y data: Series elements (Name, Color, Line, LineWidth, Marker, MarkerSize, MarkerFilled, Step, Fill, XAxis, Axis, MaxPoints, X and Y lists or Points \"x,y x,y\"), Scatter elements, and DragLine elements (Axis, Value, Label, Color)."),
 	TAG("NodeGraph", g_node_graph, "Nodes linked by wires: Node elements (Input, Output, any widget), Link and Type elements."),
 };

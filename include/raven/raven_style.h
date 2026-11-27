@@ -216,6 +216,18 @@ typedef enum RColorRole{
 	R_COLOR_LINK,
 	/** Background of code in formatted text. */
 	R_COLOR_CODE,
+	/** The matches of a search in a text editor (usually see-through). */
+	R_COLOR_SEARCH_MATCH,
+	/** The selected match of a search in a text editor. */
+	R_COLOR_SEARCH_CURRENT,
+	/** Wavy underline of the misspelled words of a TextInput or a TextEditor (spell checking). */
+	R_COLOR_SPELLING,
+	/** Diff view: the background of an added line and of a removed line (see-through: the background shows). */
+	R_COLOR_DIFF_ADDED,
+	R_COLOR_DIFF_REMOVED,
+	/** Diff view: the words that changed inside an added line and inside a removed line, over the color of the line. */
+	R_COLOR_DIFF_ADDED_WORD,
+	R_COLOR_DIFF_REMOVED_WORD,
 	R_COLOR_LAST_
 }RColorRole;
 
@@ -291,6 +303,11 @@ extern "C" {
 	RAVEN_API void Rtheme_set_color(RColorRole role, float r, float g, float b, float a);
 	RAVEN_API void Rtheme_get_color(RColorRole role, float* r, float* g, float* b, float* a);
 
+	/**
+	 * @brief Changes a size of the theme in use. It lasts until the look or
+	 * the theme is chosen again (Rlook_set, Rtheme_use), but not through a
+	 * switch between light and dark made by Rtheme_follow_system.
+	 */
 	RAVEN_API void Rtheme_set_metric(RMetric metric, float value);
 	RAVEN_API float Rtheme_get_metric(RMetric metric);
 
@@ -318,6 +335,21 @@ extern "C" {
 	 * use. Rtheme_apply and the theme files set it.
 	 */
 	RAVEN_API void Rtheme_set_dark(int dark);
+	/** @brief R_TRUE when the system is in dark mode, R_FALSE in light mode, -1 when the platform does not tell (desktop today). */
+	RAVEN_API int Rtheme_get_system_dark(void);
+	/**
+	 * @brief Follows the dark or light mode of the system with the Raven look
+	 * (R_LOOK_RAVEN_DARK / R_LOOK_RAVEN_LIGHT), now and when it changes.
+	 * Off by default. Does nothing where the platform does not tell (desktop today).
+	 *
+	 * A switch is Rlook_set, except that the sizes given with
+	 * Rtheme_set_metric stay. Colors and styles set with Rtheme_set_... are
+	 * those of one mode and are lost; to keep colors, sizes and styles of
+	 * the application through the switch, put them in a theme that names no
+	 * look (Rtheme_load_from_memory, then Rtheme_use): it is laid over the
+	 * new look.
+	 */
+	RAVEN_API void Rtheme_follow_system(int enabled);
 	RAVEN_API int Rtheme_is_dark(void);
 
 	/**

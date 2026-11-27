@@ -16,17 +16,31 @@ typedef struct rvn_text_input_t {
 	void* committed_user;
 	/* room kept at the start and the end of the text, for icons laid over the field (Rtext_input_set_insets) */
 	float inset_start, inset_end;
+	RTextInputType input_type;
+	RReturnKey return_key;
+	/** Room kept free at the right of the text (rvn_text_input_set_inset). */
+	float inset;
+	/** Spell checking (off by default) and the misspelled words of the text. */
+	rvn_spelling_t spelling;
+	rvn_spell_line_t spell_line;
 } rvn_text_input_t;
+
+static void rvn_text_input_spell_replace(rvn_widget_t* widget, int line, int from, int to, const char* word, const char* text);
 
 static void rvn_text_input_init(rvn_widget_t* widget) {
 	rvn_textedit_init(&((rvn_text_input_t*)widget)->edit);
+	((rvn_text_input_t*)widget)->input_type = R_TEXT_INPUT_TYPE_TEXT;
+	((rvn_text_input_t*)widget)->return_key = R_RETURN_KEY_DEFAULT;
 	widget->cursor = R_CURSOR_IBEAM;
+	((rvn_text_input_t*)widget)->spelling.replace = rvn_text_input_spell_replace;
 }
 
 static void rvn_text_input_destroy(rvn_widget_t* widget) {
 	rvn_text_input_t* input = (rvn_text_input_t*)widget;
 	rvn_textedit_free(&input->edit);
 	rvn_free(input->placeholder);
+	rvn_spelling_free(&input->spelling);
+	rvn_spell_line_free(&input->spell_line);
 }
 
 /* Where the text is: inside the look's margin, and the insets, the start on the right in right-to-left. */
@@ -38,7 +52,8 @@ static rvn_rect_t rvn_text_input_area(const rvn_widget_t* widget) {
 		rvn_widget_metric(widget, R_METRIC_PADDING_X) * 0.7f;
 	int rtl = rvn_widget_is_rtl(widget);
 	float left = px + (rtl ? input->inset_end : input->inset_start);
-	float right = px + (rtl ? input->inset_start : input->inset_end);
+	/* (rvn_text_input_set_inset keeps room at the right, whatever the direction) */
+	float right = px + (rtl ? input->inset_start : input->inset_end) + input->inset;
 	return rvn_rect(left, 0.0f, rvn_maxf(0.0f, widget->rect.w - left - right), widget->rect.h);
 }
 
@@ -52,7 +67,8 @@ static void rvn_text_input_paint(rvn_widget_t* widget, RPainter* painter) {
 	rvn_text_input_t* input = (rvn_text_input_t*)widget;
 	rvn_rect_t rect = rvn_rect(0.0f, 0.0f, widget->rect.w, widget->rect.h);
 	rvn_rect_t area = rvn_text_input_area(widget);
-	int focused = (widget->flags & RVN_WF_FOCUSED) != 0;
+	/* (a window in the background keeps its focused widget, but shows no focus or caret) */
+	int focused = (widget->flags & RVN_WF_FOCUSED) != 0 && (!widget->window || widget->window->active);
 	rvn_color_t fill = rvn_widget_color(widget, R_COLOR_INPUT);
 	/* the focus ring closes in on the field instead of just appearing */
 	float focus = rvn_paint_spring(painter, &widget->press, focused ? 1.0f : 0.0f, R_MOTION_BOUNCY);
@@ -97,13 +113,20 @@ static void rvn_text_input_paint(rvn_widget_t* widget, RPainter* painter) {
 				rvn_color_fade(rvn_widget_color(widget, R_COLOR_FOCUS), lit * (1.0f - lit) * 2.0f));
 		}
 	}
-	if (input->edit.length == 0 && input->placeholder && (!focused || rvn_widget_family(widget) != RVN_FAMILY_RAVEN)) {
+	if (input->edit.length == 0 && input->placeholder && (!focused || rvn_widget_family(widget) != RVN_FAMILY_RAVEN) &&
+		!(focused && rvn_widget_composition(widget, NULL, NULL))) {
 		rvn_paint_push_clip(painter, area);
 		rvn_paint_text_in(painter, R_INVALID_ID, rvn_widget_font_size(widget, 0.0f), area, 0.0f, input->placeholder, -1,
 			rvn_widget_color(widget, R_COLOR_TEXT_PLACEHOLDER));
 		rvn_paint_pop_clip(painter);
 		/* (Windows keeps the placeholder while the caret blinks in the empty field) */
 		if (!focused) return;
+	}
+	/* (a line of a field is short: it is checked again whenever it changed) */
+	input->edit.spelling = NULL;
+	if (rvn_spelling_active(&input->spelling) && !input->edit.password) {
+		rvn_spell_line_update(&input->spell_line, &input->spelling, input->edit.text, input->edit.length);
+		input->edit.spelling = &input->spell_line;
 	}
 	rvn_textedit_paint(&input->edit, widget, painter, area, R_INVALID_ID, 0.0f,
 		rvn_widget_text_color(widget, painter), focused);
@@ -121,6 +144,31 @@ static void rvn_text_input_notify(rvn_widget_t* widget, int flags) {
 		if (rvn_widget_alive(widget)) rvn_widget_fire_action(widget);
 	}
 	rvn_free(text);
+}
+
+/* A right click on a misspelled word: the menu of its corrections. */
+static int rvn_text_input_spell_menu(rvn_widget_t* widget, float x) {
+	rvn_text_input_t* input = (rvn_text_input_t*)widget;
+	int from, to;
+	if (!rvn_spelling_active(&input->spelling) || input->edit.password) return R_FALSE;
+	rvn_spell_line_update(&input->spell_line, &input->spelling, input->edit.text, input->edit.length);
+	if (!rvn_spell_line_hit(&input->spell_line, rvn_textedit_offset_at(&input->edit, widget, R_INVALID_ID, 0.0f, x), &from, &to)) {
+		return R_FALSE;
+	}
+	input->spelling.read_only = input->edit.read_only;
+	return rvn_spelling_open_menu(&input->spelling, widget, input->edit.text, 0, from, to);
+}
+
+static void rvn_text_input_spell_replace(rvn_widget_t* widget, int line, int from, int to, const char* word, const char* text) {
+	rvn_text_input_t* input = (rvn_text_input_t*)widget;
+	RVN_UNUSED(line);
+	/* (only if the word is still where the menu was opened) */
+	if (input->edit.read_only || to > input->edit.length || (int)strlen(word) != to - from ||
+		memcmp(input->edit.text + from, word, (size_t)(to - from)) != 0) {
+		return;
+	}
+	rvn_widget_invalidate_paint(widget);
+	if (rvn_textedit_replace(&input->edit, from, to, text)) rvn_text_input_notify(widget, RVN_TEXTEDIT_CHANGED);
 }
 
 static int rvn_text_input_event(rvn_widget_t* widget, const REvent* event) {
@@ -150,6 +198,7 @@ static int rvn_text_input_event(rvn_widget_t* widget, const REvent* event) {
 			rvn_widget_invalidate_paint(widget);
 			return R_TRUE;
 		case R_EVENT_MOUSE_UP:
+			if (event->button == R_MOUSE_RIGHT) return rvn_text_input_spell_menu(widget, event->local_x - area.x);
 			if (event->button != R_MOUSE_LEFT) return R_FALSE;
 			input->edit.mouse_selecting = R_FALSE;
 			rvn_widget_release_mouse(widget);
@@ -171,6 +220,31 @@ static int rvn_text_input_event(rvn_widget_t* widget, const REvent* event) {
 	}
 }
 
+static int rvn_parse_text_input_type(const char* value, RTextInputType* type) {
+	static const struct { const char* name; RTextInputType type; } names[] = {
+		{ "Text", R_TEXT_INPUT_TYPE_TEXT }, { "Email", R_TEXT_INPUT_TYPE_EMAIL }, { "Number", R_TEXT_INPUT_TYPE_NUMBER },
+		{ "Decimal", R_TEXT_INPUT_TYPE_DECIMAL }, { "Phone", R_TEXT_INPUT_TYPE_PHONE }, { "Url", R_TEXT_INPUT_TYPE_URL },
+		{ "Search", R_TEXT_INPUT_TYPE_SEARCH }
+	};
+	size_t i;
+	for (i = 0; i < RVN_COUNT_OF(names); i++) {
+		if (rvn_stricmp(value, names[i].name) == 0) { *type = names[i].type; return R_TRUE; }
+	}
+	return R_FALSE;
+}
+
+static int rvn_parse_return_key(const char* value, RReturnKey* key) {
+	static const struct { const char* name; RReturnKey key; } names[] = {
+		{ "Default", R_RETURN_KEY_DEFAULT }, { "Done", R_RETURN_KEY_DONE }, { "Go", R_RETURN_KEY_GO },
+		{ "Next", R_RETURN_KEY_NEXT }, { "Search", R_RETURN_KEY_SEARCH }, { "Send", R_RETURN_KEY_SEND }
+	};
+	size_t i;
+	for (i = 0; i < RVN_COUNT_OF(names); i++) {
+		if (rvn_stricmp(value, names[i].name) == 0) { *key = names[i].key; return R_TRUE; }
+	}
+	return R_FALSE;
+}
+
 static int rvn_text_input_set_attribute(rvn_widget_t* widget, const char* name, const char* value) {
 	rvn_text_input_t* input = (rvn_text_input_t*)widget;
 	if (RVN_ATTR("Text")) {
@@ -181,8 +255,16 @@ static int rvn_text_input_set_attribute(rvn_widget_t* widget, const char* name, 
 		if (!rvn_parse_bool(value, &input->edit.password)) return R_FALSE;
 	} else if (RVN_ATTR("ReadOnly")) {
 		if (!rvn_parse_bool(value, &input->edit.read_only)) return R_FALSE;
+	} else if (RVN_ATTR("InputType")) {
+		if (!rvn_parse_text_input_type(value, &input->input_type)) return R_FALSE;
+	} else if (RVN_ATTR("ReturnKey")) {
+		if (!rvn_parse_return_key(value, &input->return_key)) return R_FALSE;
 	} else if (RVN_ATTR("MaxLength")) {
 		if (!rvn_parse_int(value, &input->edit.max_chars)) return R_FALSE;
+	} else if (RVN_ATTR("SpellCheck")) {
+		if (!rvn_parse_bool(value, &input->spelling.enabled)) return R_FALSE;
+	} else if (RVN_ATTR("SpellLanguage")) {
+		rvn_spelling_set_language(&input->spelling, value);
 	} else {
 		return R_FALSE;
 	}
@@ -251,6 +333,22 @@ void Rtext_input_select_all(Rid id) {
 	rvn_widget_invalidate_paint(widget);
 }
 
+void Rtext_input_set_spell_check(Rid id, int enabled) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
+	((rvn_text_input_t*)widget)->spelling.enabled = enabled != 0;
+	rvn_widget_invalidate_paint(widget);
+}
+
+int Rtext_input_get_spell_check(Rid id) {
+	RVN_WIDGET(widget, id, R_WIDGET_TEXT_INPUT, R_FALSE);
+	return ((rvn_text_input_t*)widget)->spelling.enabled != 0;
+}
+
+void Rtext_input_set_spell_language(Rid id, const char* language) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
+	if (rvn_spelling_set_language(&((rvn_text_input_t*)widget)->spelling, language)) rvn_widget_invalidate_paint(widget);
+}
+
 void Rtext_input_set_changed_callback(Rid id, RTextChangedCallback callback, void* user_data) {
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
 	((rvn_text_input_t*)widget)->changed = callback;
@@ -285,4 +383,101 @@ void Rtext_input_set_committed_callback(Rid id, RTextChangedCallback callback, v
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
 	((rvn_text_input_t*)widget)->committed = callback;
 	((rvn_text_input_t*)widget)->committed_user = user_data;
+}
+
+void Rtext_input_set_input_type(Rid id, RTextInputType type) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
+	if (type < R_TEXT_INPUT_TYPE_TEXT || type > R_TEXT_INPUT_TYPE_SEARCH) {
+		rvn_error(R_ERROR_INVALID_ENUM, R_SEVERITY_ERROR, "Rtext_input_set_input_type: invalid type");
+		return;
+	}
+	((rvn_text_input_t*)widget)->input_type = type;
+}
+
+RTextInputType Rtext_input_get_input_type(Rid id) {
+	RVN_WIDGET(widget, id, R_WIDGET_TEXT_INPUT, R_TEXT_INPUT_TYPE_TEXT);
+	return ((rvn_text_input_t*)widget)->input_type;
+}
+
+void Rtext_input_set_return_key(Rid id, RReturnKey key) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TEXT_INPUT);
+	if (key < R_RETURN_KEY_DEFAULT || key > R_RETURN_KEY_SEND) {
+		rvn_error(R_ERROR_INVALID_ENUM, R_SEVERITY_ERROR, "Rtext_input_set_return_key: invalid key");
+		return;
+	}
+	((rvn_text_input_t*)widget)->return_key = key;
+}
+
+RReturnKey Rtext_input_get_return_key(Rid id) {
+	RVN_WIDGET(widget, id, R_WIDGET_TEXT_INPUT, R_RETURN_KEY_DEFAULT);
+	return ((rvn_text_input_t*)widget)->return_key;
+}
+
+void rvn_text_input_set_selection(rvn_widget_t* widget, int start, int end) {
+	rvn_textedit_set_selection(&((rvn_text_input_t*)widget)->edit, start, end);
+	rvn_widget_invalidate_paint(widget);
+}
+
+void rvn_text_input_set_inset(rvn_widget_t* widget, float right) {
+	((rvn_text_input_t*)widget)->inset = rvn_maxf(0.0f, right);
+	rvn_widget_invalidate_paint(widget);
+}
+
+/* ---------------------------------------------------------------------------
+ *  The focused text input, for the text services of the system
+ * ------------------------------------------------------------------------- */
+
+static rvn_text_input_t* rvn_text_input_focused(Rid window_id, const char* function) {
+	rvn_window_t* window = rvn_window_check(window_id, function);
+	rvn_widget_t* focus;
+	if (!window) return NULL;
+	focus = window->focus;
+	if (!focus || (focus->flags & RVN_WF_DEAD) || focus->cls->type != R_WIDGET_TEXT_INPUT) return NULL;
+	return (rvn_text_input_t*)focus;
+}
+
+int Rwindow_get_text_input_info(Rid window, RTextInputInfo* info) {
+	rvn_text_input_t* input;
+	if (info) memset(info, 0, sizeof(*info));
+	input = rvn_text_input_focused(window, __func__);
+	if (!input) return R_FALSE;
+	if (info) {
+		info->type = input->input_type;
+		info->return_key = input->return_key;
+		info->password = input->edit.password != 0;
+		info->read_only = input->edit.read_only != 0;
+		info->max_length = input->edit.max_chars;
+	}
+	return R_TRUE;
+}
+
+const char* Rwindow_get_text_input_text(Rid window) {
+	rvn_text_input_t* input = rvn_text_input_focused(window, __func__);
+	return input ? input->edit.text : NULL;
+}
+
+int Rwindow_get_text_input_selection(Rid window, int* start, int* end) {
+	rvn_text_input_t* input = rvn_text_input_focused(window, __func__);
+	if (start) *start = 0;
+	if (end) *end = 0;
+	if (!input) return R_FALSE;
+	if (start) *start = rvn_mini(input->edit.anchor, input->edit.caret);
+	if (end) *end = rvn_maxi(input->edit.anchor, input->edit.caret);
+	return R_TRUE;
+}
+
+int Rwindow_set_text_input_selection(Rid window, int start, int end) {
+	rvn_text_input_t* input = rvn_text_input_focused(window, __func__);
+	if (!input) return R_FALSE;
+	rvn_textedit_set_selection(&input->edit, start, end);
+	rvn_widget_invalidate_paint(&input->base);
+	return R_TRUE;
+}
+
+int Rwindow_replace_text_input(Rid window, int start, int end, const char* text) {
+	rvn_text_input_t* input = rvn_text_input_focused(window, __func__);
+	if (!input || input->edit.read_only) return R_FALSE;
+	rvn_widget_invalidate_paint(&input->base);
+	if (rvn_textedit_replace(&input->edit, start, end, text)) rvn_text_input_notify(&input->base, RVN_TEXTEDIT_CHANGED);
+	return R_TRUE;
 }

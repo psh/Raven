@@ -602,7 +602,7 @@ static void test_map_widget(void) {
 	Rmap_set_camera_changed_callback(map, on_camera, NULL);
 
 	/* a tile before a style is dropped as it lands; a style that isn't JSON is refused */
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6089, bytes, length));
 	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.prepared_tiles == 0);
@@ -611,12 +611,12 @@ static void test_map_widget(void) {
 	EXPECT_ERRORS_END(1);
 
 	CHECK(Rmap_set_style_json(map, g_style, -1, NULL));
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6089, bytes, length));
 	EXPECT_ERRORS_BEGIN();
-	CHECK(!Rmap_tile_loaded(map, 14, 1 << 14, 0, bytes, length));
+	CHECK(!Rmap_set_tile_data(map, 14, 1 << 14, 0, bytes, length));
 	EXPECT_ERRORS_END(1);
 	/* a tile that can't be decoded counts as failed when it lands */
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6090, bytes, length - 3));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6090, bytes, length - 3));
 	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.failed_tiles == 1);
@@ -637,7 +637,7 @@ static void test_map_widget(void) {
 	CHECK(stats.prepared_tiles == 1);
 
 	/* a tile not held is drawn from its nearest ancestor that is (handed in gzipped, as servers send them) */
-	CHECK(Rmap_tile_loaded(map, 13, 4203 / 2, 6089 / 2, g_water_gzip, sizeof(g_water_gzip)));
+	CHECK(Rmap_set_tile_data(map, 13, 4203 / 2, 6089 / 2, g_water_gzip, sizeof(g_water_gzip)));
 	wait_for_tiles(map);
 	tile_center(14, 4202, 6089, &latitude, &longitude);
 	Rmap_set_center(map, latitude, longitude);
@@ -754,12 +754,12 @@ static void test_tile_asked_for_once(void) {
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.pending_tiles == 3 && stats.requested_tiles == 3 && stats.tiles == 0);
 	/* the ancestor lands first, and stands in */
-	CHECK(Rmap_tile_loaded(map, 12, 1050, 1522, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 12, 1050, 1522, bytes, length));
 	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.prepared_tiles == 1 && stats.tiles == 1);
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
-	CHECK(Rmap_tile_loaded(map, 13, 2101, 3044, NULL, 0));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 13, 2101, 3044, NULL, 0));
 	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.prepared_tiles == 3 && stats.pending_tiles == 0);
@@ -813,8 +813,8 @@ static void test_world_repeats_past_the_antimeridian(void) {
 	CHECK(g_source.requests == 2);
 	CHECK(was_asked(g_source.requested, g_source.requests, 14, 16383, 200));
 	CHECK(was_asked(g_source.requested, g_source.requests, 14, 0, 200));
-	CHECK(Rmap_tile_loaded(map, 14, 16383, 200, bytes, length));
-	CHECK(Rmap_tile_loaded(map, 14, 0, 200, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 16383, 200, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 0, 200, bytes, length));
 	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.tiles == 2 && stats.triangles == 4);
@@ -848,7 +848,7 @@ static void test_tiles_used_least_recently_go(void) {
 		look_at(map, 100 + i * 4, 200);
 		Rdraw_frame();
 		Rdraw_frame();
-		CHECK(Rmap_tile_loaded(map, 14, 100 + i * 4, 200, bytes, length));
+		CHECK(Rmap_set_tile_data(map, 14, 100 + i * 4, 200, bytes, length));
 		wait_for_tiles(map);
 		Rwidget_invalidate(map);
 		Rdraw_frame();
@@ -876,7 +876,7 @@ static void test_tile_failed_waits(void) {
 	Rdraw_frame();
 	Rdraw_frame();
 	CHECK(g_source.requests == 1);
-	Rmap_tile_failed(map, 14, 4203, 6089);
+	Rmap_set_tile_failed(map, 14, 4203, 6089);
 	wait_for_tiles(map);
 	Rwidget_invalidate(map);
 	Rdraw_frame();
@@ -895,13 +895,13 @@ static void test_tile_for_an_old_style(void) {
 	RMapStats stats;
 	/* handed in, then the style changes before it lands: it is dropped, and the map destroyed
 	   with a tile on its way frees it as it lands */
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6089, bytes, length));
 	Rdraw_frame();
 	CHECK(Rmap_set_style_json(map, g_style, -1, NULL));
 	wait_for_tiles(map);
 	Rmap_get_stats(map, &stats);
 	CHECK(stats.prepared_tiles == 0);
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6089, bytes, length));
 	Rwindow_set_content(g_window, R_INVALID_ID);
 	Rdraw_frame();
 }
@@ -1052,7 +1052,7 @@ static void test_labels(void) {
 	tile_center(14, 4203, 6089, &latitude, &longitude);
 	Rmap_set_center(map, latitude, longitude);
 	Rmap_set_zoom(map, 14.0);
-	CHECK(Rmap_tile_loaded(map, 14, 4203, 6089, bytes, length));
+	CHECK(Rmap_set_tile_data(map, 14, 4203, 6089, bytes, length));
 	wait_for_tiles(map);
 	Rwidget_invalidate(map);
 	Rdraw_frame();

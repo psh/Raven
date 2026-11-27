@@ -185,7 +185,7 @@ static void test_raster(void) {
 	};
 	const Recorded* mask;
 	Rid texture;
-	CHECK(Rimage_save_png(rgba, 2, 2, "test_mask_raster.png"));
+	CHECK(Rimage_save_png("test_mask_raster.png", rgba, 2, 2));
 	texture = Rtexture_create_mask_from_file_async("test_mask_raster.png");
 	wait_uploaded(texture);
 	mask = last_upload(texture);

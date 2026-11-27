@@ -1,5 +1,6 @@
 #include "../platform.h"
 #include "../../core/accessibility.h"
+#include "../../core/context.h"
 #include <emscripten.h>
 
 EM_JS(void, rvn_web_access_begin, (Rid window), {
@@ -28,7 +29,8 @@ EM_JS(void, rvn_web_access_node, (uint32_t lo, uint32_t hi,
         const char* name, const char* description, const char* value,
         uint32_t states, double number, double minimum, double maximum), {
     const id = 'raven-node-' + hi + '-' + lo;
-    const roleName = states & 8192 ? 'textbox' : UTF8ToString(role);
+    const rawRole = UTF8ToString(role);
+    const roleName = states & 262144 ? 'row' : states & 8192 ? 'textbox' : rawRole === 'table' ? 'grid' : rawRole;
     const tag = roleName === 'textbox' ? (states & 512 ? 'textarea' : 'input') : 'div';
     let node = document.getElementById(id);
     if (node && node.tagName !== tag.toUpperCase()) {
@@ -99,16 +101,18 @@ EM_JS(void, rvn_web_access_node, (uint32_t lo, uint32_t hi,
         node.readOnly = !!(states & 1024);
         node.disabled = !!(states & 4);
     }
-    for (const name of ['aria-disabled','aria-checked','aria-expanded',
-        'aria-selected','aria-readonly','aria-multiline','aria-modal',
+    for (const name of ['aria-disabled','aria-checked','aria-pressed','aria-expanded',
+        'aria-selected','aria-readonly','aria-multiline','aria-modal','aria-multiselectable',
         'aria-valuenow','aria-valuemin','aria-valuemax']) node.removeAttribute(name);
     if (states & 4) node.setAttribute('aria-disabled', 'true');
-    if (states & 16) node.setAttribute('aria-checked', states & 8 ? 'true' : 'false');
+    if (states & 16) node.setAttribute(roleName === 'button' ? 'aria-pressed' : 'aria-checked',
+        states & 8 ? 'true' : 'false');
     if (states & 64) node.setAttribute('aria-expanded', states & 32 ? 'true' : 'false');
     if (states & 256) node.setAttribute('aria-selected', states & 128 ? 'true' : 'false');
     if (states & 1024) node.setAttribute('aria-readonly', 'true');
     if (states & 512) node.setAttribute('aria-multiline', 'true');
     if (states & 65536) node.setAttribute('aria-modal', 'true');
+    if (states & 131072) node.setAttribute('aria-multiselectable', 'true');
     if (states & 4096) {
         node.setAttribute('aria-valuenow', number);
         node.setAttribute('aria-valuemin', minimum);
@@ -134,10 +138,12 @@ EM_JS(void, rvn_web_access_end, (void), {
 
 EMSCRIPTEN_KEEPALIVE int rvn_web_access_value(uint32_t lo, uint32_t hi,
                                              const char* text) {
+    rvn_web_loop_poke();
     return rvn_a11y_set_value(((uint64_t)hi << 32) | lo, text);
 }
 EMSCRIPTEN_KEEPALIVE int rvn_web_access_number(uint32_t lo, uint32_t hi,
                                               double value) {
+    rvn_web_loop_poke();
     return rvn_a11y_set_number(((uint64_t)hi << 32) | lo, value);
 }
 
@@ -145,6 +151,7 @@ void rvn_web_access_focus_window(Rid window);
 EMSCRIPTEN_KEEPALIVE int rvn_web_access_act(uint32_t lo, uint32_t hi,
                                             int action) {
     rvn_a11y_id_t id = ((uint64_t)hi << 32) | lo;
+    rvn_web_loop_poke();
     if (action == RVN_A11Y_FOCUS) rvn_web_access_focus_window(rvn_a11y_window(id));
     return rvn_a11y_act(id, (rvn_a11y_action_t)action);
 }

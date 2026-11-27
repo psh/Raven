@@ -76,7 +76,7 @@ static int load_tile(Rid map, const char* data, int z, int x, int y) {
 	snprintf(path, sizeof(path), "%s/tiles/%d-%d-%d.pbf", data, z, x, y);
 	bytes = read_file(path, &size);
 	if (!bytes) return 0;
-	ok = Rmap_tile_loaded(map, z, x, y, bytes, size);
+	ok = Rmap_set_tile_data(map, z, x, y, bytes, size);
 	free(bytes);
 	return ok;
 }

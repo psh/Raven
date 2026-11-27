@@ -15,4 +15,4 @@ Split out of [Listing Raven's actions](archive/0167-listing-ravens-actions.md), 
 
 ## Deliverables
 
-- [ ] One pull request to Raven's `main`, carrying `Raction_get_count`, `Raction_get_name`, `Raction_set_description`/`Raction_get_description`, `Raction_set_list_callback`, the change that keeps unbinding in bind order, `tests/test_actions.c`, and the bindings regenerated against upstream's headers.
+- [ ] One pull request to Raven's `main`, carrying `Raction_get_count`, `Raction_get_name_at`, `Raction_set_description`/`Raction_get_description`, `Raction_set_list_callback`, the change that keeps unbinding in bind order, `tests/test_actions.c`, and the bindings regenerated against upstream's headers.

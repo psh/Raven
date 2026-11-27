@@ -11,6 +11,7 @@
  */
 
 #include "common.h"
+#include "../render/renderer.h"
 
 typedef struct rvn_tab_view_t {
 	rvn_widget_t base;
@@ -170,18 +171,36 @@ int rvn_tab_view_tab_box(rvn_widget_t* widget, int index, rvn_rect_t* box) {
 	return R_TRUE;
 }
 
+/* The user changed the active tab: the changed callback, then the action. */
+static void rvn_tab_view_notify(rvn_widget_t* widget) {
+	rvn_tab_view_t* tabs = (rvn_tab_view_t*)widget;
+	if (tabs->callback) tabs->callback(widget->id, tabs->active, tabs->user_data);
+	if (rvn_widget_alive(widget)) rvn_widget_fire_action(widget);
+}
+
+static Rid rvn_tab_view_active_id(const rvn_tab_view_t* tabs) {
+	return tabs->active_page ? tabs->active_page->id : R_INVALID_ID;
+}
+
 /* The user closes a tab : the application may keep it (R_FALSE), else the page is deleted. */
 static void rvn_tab_request_close(rvn_widget_t* widget, int index) {
 	rvn_tab_view_t* tabs = (rvn_tab_view_t*)widget;
 	rvn_widget_t* page;
-	Rid content;
+	Rid content, shown;
+	int active;
 	if (index < 0 || index >= (int)widget->child_count) return;
 	page = widget->children[index];
 	if (!rvn_tab_closable(widget, page)) return;
 	content = page->id;
 	if (tabs->close_callback && !tabs->close_callback(widget->id, index, content, tabs->close_user)) return;
 	if (!rvn_widget_alive(widget)) return;
-	if (Rwidget_is_valid(content) && Rwidget_get_parent(content) == widget->id) Rwidget_destroy(content);
+	if (!Rwidget_is_valid(content) || Rwidget_get_parent(content) != widget->id) return;
+	shown = rvn_tab_view_active_id(tabs);
+	active = tabs->active;
+	Rwidget_destroy(content);
+	/* another page shown, or the same one at another index: told as a click on its tab would be */
+	if (rvn_widget_alive(widget) && tabs->active >= 0 && (rvn_tab_view_active_id(tabs) != shown || tabs->active != active))
+		rvn_tab_view_notify(widget);
 }
 
 static void rvn_tab_view_activate(rvn_widget_t* widget, int index, int notify) {
@@ -198,10 +217,7 @@ static void rvn_tab_view_activate(rvn_widget_t* widget, int index, int notify) {
 	tabs->active = index;
 	tabs->active_page = widget->children[index];
 	rvn_widget_invalidate_layout(widget);
-	if (notify) {
-		if (tabs->callback) tabs->callback(widget->id, index, tabs->user_data);
-		if (rvn_widget_alive(widget)) rvn_widget_fire_action(widget);
-	}
+	if (notify) rvn_tab_view_notify(widget);
 }
 
 static int rvn_tab_view_event(rvn_widget_t* widget, const REvent* event) {
@@ -330,7 +346,7 @@ static void rvn_tab_view_paint_fluent(rvn_widget_t* widget, RPainter* painter, f
 			tx = tab.x + 12.0f;
 			rvn_paint_push_clip(painter, rvn_rect(tab.x, tab.y, rvn_maxf(0.0f, tab.w - (closable ? RVN_TAB_CLOSE + 10.0f : 6.0f)), tab.h));
 			if (page->slot.has_icon) {
-				rvn_color_t tint = page->slot.icon_tint ? look.foreground : rvn_rgba(1.0f, 1.0f, 1.0f, 1.0f);
+				rvn_color_t tint = rvn_icon_tint(page->slot.icon, page->slot.icon_tint, look.foreground, rvn_rgba(1.0f, 1.0f, 1.0f, 1.0f));
 				rvn_paint_image(painter, rvn_rect(tx, floorf(tab.y + (tab.h - RVN_TAB_ICON) * 0.5f), RVN_TAB_ICON, RVN_TAB_ICON),
 					page->slot.icon, page->slot.icon_uv, tint, 0.0f);
 				tx += RVN_TAB_ICON + RVN_TAB_ICON_GAP;
@@ -445,7 +461,7 @@ static void rvn_tab_view_paint_other(rvn_widget_t* widget, RPainter* painter, fl
 			rvn_paint_part(painter, tab, &look);
 			rvn_paint_push_clip(painter, rvn_rect(tab.x, tab.y, rvn_maxf(0.0f, tab.w - (closable ? RVN_TAB_CLOSE + 8.0f : 4.0f)), tab.h));
 			if (page->slot.has_icon) {
-				rvn_color_t tint = page->slot.icon_tint ? look.foreground : rvn_rgba(1.0f, 1.0f, 1.0f, 1.0f);
+				rvn_color_t tint = rvn_icon_tint(page->slot.icon, page->slot.icon_tint, look.foreground, rvn_rgba(1.0f, 1.0f, 1.0f, 1.0f));
 				rvn_paint_image(painter, rvn_rect(tx, floorf(tab.y + (tab.h - RVN_TAB_ICON) * 0.5f), RVN_TAB_ICON, RVN_TAB_ICON),
 					page->slot.icon, page->slot.icon_uv, tint, 0.0f);
 				tx += RVN_TAB_ICON + RVN_TAB_ICON_GAP;
@@ -555,7 +571,7 @@ static void rvn_tab_view_paint(rvn_widget_t* widget, RPainter* painter) {
 			}
 			rvn_paint_push_clip(painter, rvn_rect(tab.x, tab.y, rvn_maxf(0.0f, tab.w - (closable ? RVN_TAB_CLOSE + 8.0f : 4.0f)), tab.h));
 			if (page->slot.has_icon) {
-				rvn_color_t tint = page->slot.icon_tint ? color : rvn_rgba(1.0f, 1.0f, 1.0f, is_active ? 1.0f : 0.75f);
+				rvn_color_t tint = rvn_icon_tint(page->slot.icon, page->slot.icon_tint, color, rvn_rgba(1.0f, 1.0f, 1.0f, is_active ? 1.0f : 0.75f));
 				rvn_paint_image(painter, rvn_rect(tx, floorf(tab.y + (tab.h - RVN_TAB_ICON) * 0.5f), RVN_TAB_ICON, RVN_TAB_ICON),
 					page->slot.icon, page->slot.icon_uv, tint, 0.0f);
 				tx += RVN_TAB_ICON + RVN_TAB_ICON_GAP;

@@ -1,8 +1,9 @@
 """Odin, the idiomatic layer (bindings/odin/raven_odin): the part that is mechanical.
 
 The enumerations of the C API become Odin enums, and the flag groups become
-bit_sets. Everything else of raven_odin is written by hand and calls the
-generated package `raven` (imported there as `raw`).
+bit_sets (enums.odin). The functions that map by fixed rules are wrapped by
+odin_functions.py (functions.odin). Everything else of raven_odin is written
+by hand and calls the generated package `raven` (imported there as `raw`).
 """
 
 import os
@@ -14,8 +15,10 @@ from gen_odin import emit_doc
 # does not say it). The check below fails when an enumeration that looks like a
 # flag group is in neither list, so a new one is looked at once.
 FLAGS = {"RWindowFlags", "RModifier", "RPenButton", "RLanguageFlags", "RHeaderButtons", "RFileDialogFlags",
-         "RShaderFlags", "RAccessibleState"}
-NOT_FLAGS = set()
+         "RShaderFlags", "RPdfPaint", "RPdfTextStyle", "RPdfPrintFlags", "RDragOperation", "RSearchFlags",
+         "RDiffFlags", "RAccessibleState"}
+# (one value at a time: Rnotification_supports asks for one feature)
+NOT_FLAGS = {"RNotificationFeature"}
 
 
 def ada_case(name):
@@ -131,4 +134,6 @@ def generate(api):
                 emit_doc(out, doc)
                 w("%s_%s :: %s{%s}" % (set_name, member(item), set_name, ", ".join("." + m for m in members)))
         w("")
-    return {"odin/raven_odin/enums.odin": "\n".join(out)}
+    import odin_functions
+    return {"odin/raven_odin/enums.odin": "\n".join(out),
+            "odin/raven_odin/functions.odin": odin_functions.generate(api)}

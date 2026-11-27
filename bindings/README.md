@@ -1,7 +1,7 @@
 # Raven from other languages
 
 Raven is a C library, so any language that can call C can use it. This folder
-holds ready-made bindings for eleven of them. They are written by a script,
+holds ready-made bindings for fourteen of them. They are written by a script,
 `tools/bindgen`, that reads the public headers: every binding has the whole
 API (937 functions, 56 enumerations, 22 structures, 59 kinds of callback),
 under the same names, with the same documentation comments.
@@ -15,10 +15,15 @@ under the same names, with the same documentation comments.
 | C# | `csharp/Raven.cs` | P/Invoke declarations: `Raven.R.Rwindow_create(...)`, delegates, structures. | yes (tested on Windows, macOS and Linux) |
 | Zig | `zig/raven.zig` | `extern` declarations and `extern struct`s. | yes (tested on Windows, macOS and Linux) |
 | LuaJIT | `luajit/raven.lua` | The declarations for the FFI of LuaJIT. | yes (tested on Windows, macOS and Linux) |
+| Lua (5.1–5.5) | `lua/` | A C module for standard Lua, which has no FFI (and for LuaJIT too), with the names of the LuaJIT binding: Lua functions as callbacks (kept and released by the module), tables for structures, strings for texts and bytes, values written through pointers returned. `raven_lua.h` gives it to a program that embeds Lua. See `lua/README.md`. | yes (`binding_lua`, `binding_lua_embedded`; Lua 5.1 and 5.4 on Linux) |
 | Java | `java/` | One class, `raven.R`, over the Foreign Function & Memory API (Java 22+): no dependency, no JNI. Texts are `String`, callbacks are lambdas, structures are classes with an accessor per field. | yes (`binding_java`) |
 | Odin | `odin/raven/raven.odin`, `odin/raven_odin/` | A package of `foreign` declarations; structures have the layout of C. `raven_odin` is an optional layer over it: Odin strings, booleans and enums, callbacks without `proc "c"`. See `odin/README.md`. | yes (`binding_odin`, `binding_odin_wrapper`, `binding_odin_wrapper_test`) |
 | Bun | `bun/src/raven.ts` | One TypeScript module, `bun:ffi`, no dependency. Texts are strings, callbacks are functions, values written through pointers are returned. See `bun/README.md` for threads and the event loop. | yes (`binding_bun`) |
 | Node.js | `node/` | A Node-API addon in C and an ES module with typings, the same surface as Bun's. One `.node` per platform runs on any Node.js, and on Bun and Deno. See `node/README.md`. | yes (`binding_node`, `binding_node_bun`) |
+| D | `d/` | A dub package, `raven-gui`: `raven.c` is the C API as `extern(C)` declarations under the same names (enumerations as `int` constants, structures that start zeroed), and `raven` adds `text` and delegates for `actionBind`, `timerStart`, `errorSetCallback`. See `d/README.md`. | yes (`binding_d`; macOS and Linux, LDC) |
+| Nim | `nim/` | A nimble package, `raven_gui`: `raven_gui/c` is the C API as `importc` declarations under the same names (enumerations as `cint` constants, structures as `{.bycopy.}` objects), and `raven_gui` adds `text`, `fileRead` and closures for `actionBind`, `timerStart`, `errorSetCallback`. See `nim/README.md`. | yes (`binding_nim`; macOS and Linux, Nim 2) |
+| Swift | `swift/` | A Swift package: `import Raven` gives the C API as Swift reads it from the headers (Swift strings for texts, `inout` for pointers), plus `text`, and closures for `actionBind`, `timerStart`, `errorSetCallback`. See `swift/README.md`. | yes (`binding_swift`; macOS and Linux) |
+| Haskell | `haskell/` | A cabal package, `raven-gui`: `Raven.C` is the C API through the FFI (functions with their first letter lowered, `rwindow_create`; enumerations as patterns with the names of C; structures as `Storable` records; `mkRXxxCallback` for callbacks), and `Raven` adds `text`/`withText` and Haskell functions for `actionBind`, `timerStart`, `errorSetCallback`. See `haskell/README.md`. | yes (`binding_haskell`; macOS and Linux) |
 | C3 | `c3/raven.c3l/` | A library: `raven::c` is the C API, `raven` adds typed handles with methods (`button.set_text(...)`), faults and Optionals. See `c3/raven.c3l/README.md`. | no |
 
 "Tested" means that the example of the binding, started with `--test`, runs
@@ -44,8 +49,9 @@ from C: `raven_backend.h` (writing a rendering backend) and `raven_vulkan.h`
 | C# | `dotnet add package Raven.Gui` | the library is included |
 | Rust | `raven-gui = "0.1"` (used as `raven`) | the library from a release, `RAVEN_LIB_DIR` |
 | LuaJIT | `luarocks install raven-gui` | the library from a release, `RAVEN_LIBRARY` |
+| Lua 5.1–5.5 | `luarocks install raven-gui-lua` | compiled by LuaRocks; the library from a release, `RAVEN_LIBRARY` |
 | Java | `io.github.oscar-soirey:raven-gui` (Maven Central) | the library is included |
-| C++, Go, Zig, Odin | the files of this folder | see below |
+| C++, Go, Zig, Odin, D, Nim, Swift, Haskell | the files of this folder | see below |
 
 How these packages are made and published: [PUBLISHING.md](PUBLISHING.md).
 
@@ -94,7 +100,7 @@ fire, and bind the actions:
 ```python
 import raven as r
 
-r.Rinit(r.R_BACKEND_VULKAN)
+r.Rinit(r.R_BACKEND_DEFAULT)
 window = r.Rwindow_create_from_xml("""
     <Window Title="Hello" Width="320" Height="160">
         <VBox Spacing="10" Slot.Padding="16">
@@ -111,7 +117,7 @@ r.Rshutdown()
 
 The same program is in each folder (`example.py`, `example.cpp`,
 `examples/hello.rs`, `example/main.go`, `example/Example.java`,
-`example/main.odin`, `src/example.mjs`), and the designer (`raven_designer`) edits the XML.
+`example/main.odin`, `src/example.mjs`, `lua/example.lua`, `example/app.d`, `example/hello.nim`, `Examples/hello/main.swift`, `example/Main.hs`), and the designer (`raven_designer`) edits the XML.
 
 The XML can also stay in a file of its own, loaded when the program starts
 (`Rwindow_create_from_xml_file("main.xml")`): save it while the program runs
@@ -165,12 +171,21 @@ Zig can also read the C header itself: `@cImport(@cInclude("Raven.h"))`.
 
     local r = require("raven")
 
+**Lua** (5.1 to 5.5)
+
+    luarocks install raven-gui-lua
+    RAVEN_LIBRARY=/path/to/libraven.so lua app.lua
+
+`require("raven")` loads the C module of `lua/`. A program that embeds Lua
+compiles it in and registers `luaopen_raven` (`lua/raven_lua.h`). See
+`lua/README.md`, with what changes from LuaJIT.
+
 **Java** (22 or later)
 
     <dependency>
       <groupId>io.github.oscar-soirey</groupId>
       <artifactId>raven-gui</artifactId>
-      <version>0.2.3</version>
+      <version>0.3.0</version>
     </dependency>
 
     java --enable-native-access=ALL-UNNAMED -cp app.jar:raven-gui.jar app.Main
@@ -196,6 +211,44 @@ after building the addon (`bindings/node/README.md`). Use `await r.runLoop()`.
 
 or put the library beside `raven.ts`. Use `await r.runLoop()` rather than
 `Rwait_frame(-1)`, which stops timers and promises while it sleeps.
+
+**D** (LDC or DMD, with dub)
+
+    "dependencies": { "raven-gui": { "path": "<raven>/bindings/d" } },
+    "lflags-posix": ["-L/path/to/lib", "-rpath", "/path/to/lib"]
+
+`import raven;` and the C API is there under its own names: a string literal
+goes where C takes a text, `text` reads one back. See `d/README.md`.
+
+**Nim** (Nim 2)
+
+    nim c --path:<raven>/bindings/nim/src --passL:-L/path/to/lib --passL:-Wl,-rpath,/path/to/lib app.nim
+
+`import raven_gui` and the C API is there under its own names: a string goes
+where C takes a text, `text` reads one back. See `nim/README.md`.
+
+**Swift** (5.9 or later; macOS and Linux)
+
+    // Package.swift
+    .package(path: "<raven>/bindings/swift")
+    // and the product: .product(name: "Raven", package: "swift")
+
+    RAVEN_LIB_DIR=/path/to/lib swift run
+
+`import Raven`, and the C API is there under its own names: a `String` goes
+where C takes a text, `text(pointer)` reads one back. See `swift/README.md`.
+
+**Haskell** (GHC 9.6 or later; macOS and Linux)
+
+    -- cabal.project
+    packages: . <raven>/bindings/haskell
+    -- and in the .cabal file: build-depends: raven-gui
+
+    cabal run app --extra-lib-dirs=/path/to/lib
+
+`import Raven`, and the C API is there, each name with its first letter
+lowered (`rwindow_create`); `withText` and `text` make and read texts. See
+`haskell/README.md`.
 
 ## Regenerating
 

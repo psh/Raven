@@ -44,7 +44,7 @@ class FolderTiles:
     def request(self, map_, z, x, y, user_data):
         self.asked += 1
         data = read(os.path.join(self.folder, "tiles", "%d-%d-%d.pbf" % (z, x, y)))
-        r.Rmap_tile_loaded(map_, z, x, y, data, len(data) if data else 0)
+        r.Rmap_set_tile_data(map_, z, x, y, data, len(data) if data else 0)
 
 
 def wait_for_tiles(map_, seconds=5.0):
@@ -138,7 +138,7 @@ def run_test():
 
     def request(m, z, x, y, user_data):
         asked.append((z, x, y))
-        r.Rmap_tile_loaded(m, z, x, y, tile, len(tile))
+        r.Rmap_set_tile_data(m, z, x, y, tile, len(tile))
 
     checks = [r.Rmap_set_style_json(map_, TEST_STYLE, -1, None) == 1]
     r.Rmap_set_tile_source(map_, 14, 14, request, None)

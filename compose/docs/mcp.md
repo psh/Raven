@@ -713,7 +713,7 @@ actions and scripting. It doesn't mention MCP:
 
 ```c
 RAVEN_API int         Raction_get_count(void);
-RAVEN_API const char* Raction_get_name(int index);
+RAVEN_API const char* Raction_get_name_at(int index);
 /* On a bound action; unbinding drops it. */
 RAVEN_API void        Raction_set_description(const char* name, const char* description);
 RAVEN_API const char* Raction_get_description(const char* name);       /* NULL when none */

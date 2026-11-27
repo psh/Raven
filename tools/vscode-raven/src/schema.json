@@ -317,6 +317,11 @@
 				"description": "Title of the tab or of the docked panel that holds the widget."
 			},
 			{
+				"name": "Slot.Icon",
+				"kind": "file",
+				"description": "Icon before the title of the tab (a TabView with Documents=\"true\") or of the docked panel: an icon of Raven (\"raven:folder\") or an image file."
+			},
+			{
 				"name": "Slot.Dock",
 				"kind": "choice",
 				"choices": [
@@ -547,6 +552,41 @@
 				"name": "Color.Code",
 				"kind": "color",
 				"description": ""
+			},
+			{
+				"name": "Color.SearchMatch",
+				"kind": "color",
+				"description": ""
+			},
+			{
+				"name": "Color.SearchCurrent",
+				"kind": "color",
+				"description": ""
+			},
+			{
+				"name": "Color.Spelling",
+				"kind": "color",
+				"description": ""
+			},
+			{
+				"name": "Color.DiffAdded",
+				"kind": "color",
+				"description": ""
+			},
+			{
+				"name": "Color.DiffRemoved",
+				"kind": "color",
+				"description": ""
+			},
+			{
+				"name": "Color.DiffAddedWord",
+				"kind": "color",
+				"description": ""
+			},
+			{
+				"name": "Color.DiffRemovedWord",
+				"kind": "color",
+				"description": ""
 			}
 		],
 		"Metrics": [
@@ -687,6 +727,11 @@
 			"name": "Touch.PalmRejection",
 			"kind": "bool",
 			"description": "Fingers are ignored while a pen is near the screen (default true)."
+		},
+		{
+			"name": "Touch.MinSize",
+			"kind": "number",
+			"description": "Smallest height of what a finger presses: controls and rows are at least this high, check boxes and slider handles half of it; 0 leaves the sizes of the theme (default 44 on iOS, 48 on Android, 0 elsewhere)."
 		},
 		{
 			"name": "Pen.MouseEmulation",
@@ -1099,6 +1144,53 @@
 			]
 		},
 		{
+			"name": "Carousel",
+			"description": "Its children as pages shown one at a time, swiped, with dots and arrows.",
+			"children": "many",
+			"attributes": [
+				{
+					"name": "Page",
+					"kind": "number",
+					"description": "Which page is shown, from 0."
+				},
+				{
+					"name": "Loop",
+					"kind": "bool",
+					"description": "After the last page comes the first one, and before the first the last."
+				},
+				{
+					"name": "Autoplay",
+					"kind": "number",
+					"description": "Seconds between the pages turned by themselves; 0 (default) never. It waits while the pointer is on it."
+				},
+				{
+					"name": "Indicators",
+					"kind": "bool",
+					"description": "The dots of the pages along the bottom edge (default true)."
+				},
+				{
+					"name": "Arrows",
+					"kind": "bool",
+					"description": "The previous / next buttons shown under the pointer (default true)."
+				},
+				{
+					"name": "Orientation",
+					"kind": "choice",
+					"choices": [
+						"Horizontal",
+						"Vertical"
+					],
+					"description": "Pages side by side (default) or one above the other."
+				},
+				{
+					"name": "OnChanged",
+					"kind": "action",
+					"description": "Action fired when the user or the autoplay goes to another page."
+				}
+			],
+			"accepted": []
+		},
+		{
 			"name": "Expander",
 			"description": "A header that shows and hides one child.",
 			"children": "single",
@@ -1303,7 +1395,7 @@
 				{
 					"name": "Source",
 					"kind": "file",
-					"description": "Image file."
+					"description": "Image file, or an icon of Raven: \"raven:search\" (drawn in the color of the text)."
 				},
 				{
 					"name": "Stretch",
@@ -1319,7 +1411,7 @@
 				{
 					"name": "Tint",
 					"kind": "color",
-					"description": "Color the image is multiplied by."
+					"description": "Color the image is multiplied by; the color of an icon in currentColor (the text color by default)."
 				},
 				{
 					"name": "CornerRadius",
@@ -1335,6 +1427,16 @@
 					"name": "TintText",
 					"kind": "bool",
 					"description": "Tinted with the color of the text around it: white icons that follow the theme."
+				},
+				{
+					"name": "Animate",
+					"kind": "bool",
+					"description": "An animated GIF or APNG plays (default); false: it stays on its first frame."
+				},
+				{
+					"name": "Loop",
+					"kind": "number",
+					"description": "Times an animation plays, 0 for forever. Default: what the file says."
 				}
 			],
 			"accepted": []
@@ -1368,6 +1470,43 @@
 					"name": "MaxLength",
 					"kind": "number",
 					"description": "Most characters accepted; 0 for no limit."
+				},
+				{
+					"name": "InputType",
+					"kind": "choice",
+					"choices": [
+						"Text",
+						"Email",
+						"Number",
+						"Decimal",
+						"Phone",
+						"Url",
+						"Search"
+					],
+					"description": "What it holds: picks the on-screen keyboard on mobile."
+				},
+				{
+					"name": "ReturnKey",
+					"kind": "choice",
+					"choices": [
+						"Default",
+						"Done",
+						"Go",
+						"Next",
+						"Search",
+						"Send"
+					],
+					"description": "The return key of the on-screen keyboard."
+				},
+				{
+					"name": "SpellCheck",
+					"kind": "bool",
+					"description": "Underlines the misspelled words, with corrections on a right click (off by default)."
+				},
+				{
+					"name": "SpellLanguage",
+					"kind": "text",
+					"description": "Language of the spell checking (\"en_US\", \"fr\"...); none: the language of the application."
 				},
 				{
 					"name": "OnChanged",
@@ -1418,7 +1557,9 @@
 					"description": "Action fired when the value changes."
 				}
 			],
-			"accepted": []
+			"accepted": [
+				"Buttons"
+			]
 		},
 		{
 			"name": "ComboBox",
@@ -1434,6 +1575,21 @@
 					"name": "Selected",
 					"kind": "number",
 					"description": "Which one is chosen, from 0; -1 for none."
+				},
+				{
+					"name": "Editable",
+					"kind": "bool",
+					"description": "A text field: any text can be typed, not only the items."
+				},
+				{
+					"name": "Searchable",
+					"kind": "bool",
+					"description": "Typing filters the list to the items that contain the text, without regard to case or accents."
+				},
+				{
+					"name": "Text",
+					"kind": "text",
+					"description": "The text of an editable combo box (the item equal to it is selected)."
 				},
 				{
 					"name": "OnChanged",
@@ -1536,6 +1692,16 @@
 					"description": "Size of the icon of a tile."
 				},
 				{
+					"name": "IconWidth",
+					"kind": "number",
+					"description": "Rows layout: width of the box of the icon (0: square)."
+				},
+				{
+					"name": "HeaderHeight",
+					"kind": "number",
+					"description": "Height of the header of a section (Rtile_view_set_sections)."
+				},
+				{
 					"name": "Spacing",
 					"kind": "number",
 					"description": "Space between the tiles."
@@ -1602,6 +1768,11 @@
 					"description": "Keys shown beside it and that fire it: \"Ctrl+S\"."
 				},
 				{
+					"name": "ShortcutText",
+					"kind": "text",
+					"description": "Display-only hint; overrides shortcut text without changing its binding."
+				},
+				{
 					"name": "Checkable",
 					"kind": "bool",
 					"description": "Clicking it checks and unchecks it."
@@ -1615,6 +1786,11 @@
 					"name": "Separator",
 					"kind": "bool",
 					"description": "A line instead of an item."
+				},
+				{
+					"name": "Icon",
+					"kind": "file",
+					"description": "Icon before the text: an icon of Raven (\"raven:save\") or an image file."
 				},
 				{
 					"name": "OnClicked",
@@ -1654,6 +1830,39 @@
 					"name": "Source",
 					"kind": "file",
 					"description": "Image shown until the application draws."
+				}
+			],
+			"accepted": []
+		},
+		{
+			"name": "SystemWebView",
+			"description": "A web page shown by the engine of the system (WKWebView on macOS and iOS) over the widget; elsewhere a message.",
+			"children": "none",
+			"attributes": [
+				{
+					"name": "Url",
+					"kind": "text",
+					"description": "Address of the page shown (\"https://...\", \"file:///...\")."
+				},
+				{
+					"name": "Source",
+					"kind": "file",
+					"description": "A page of the computer (an .html file), found next to the document."
+				},
+				{
+					"name": "Html",
+					"kind": "text",
+					"description": "HTML shown as the page."
+				},
+				{
+					"name": "BaseUrl",
+					"kind": "text",
+					"description": "Where the relative addresses of Html are looked for."
+				},
+				{
+					"name": "OnChanged",
+					"kind": "action",
+					"description": "Action fired when the view shows another address."
 				}
 			],
 			"accepted": []
@@ -1762,6 +1971,31 @@
 					"description": "The text is Markdown, styled where it is typed (the same as Language=\"Markdown\")."
 				},
 				{
+					"name": "FindBar",
+					"kind": "bool",
+					"description": "The find bar (Ctrl+F, Ctrl+H) and its keys (on by default)."
+				},
+				{
+					"name": "Search",
+					"kind": "text",
+					"description": "Text searched for: its matches are highlighted."
+				},
+				{
+					"name": "Folding",
+					"kind": "bool",
+					"description": "Regions of the text can be folded: markers beside the line numbers, Ctrl+Shift+[ and ] (on by default)."
+				},
+				{
+					"name": "SpellCheck",
+					"kind": "bool",
+					"description": "Underlines the misspelled words, with corrections on a right click (off by default)."
+				},
+				{
+					"name": "SpellLanguage",
+					"kind": "text",
+					"description": "Language of the spell checking (\"en_US\", \"fr\"...); none: the language of the application."
+				},
+				{
 					"name": "OnChanged",
 					"kind": "action",
 					"description": "Action fired at each change."
@@ -1772,6 +2006,119 @@
 				"Syntax",
 				"FontSize"
 			]
+		},
+		{
+			"name": "DiffView",
+			"description": "The differences between two texts or files, or a patch: one column or side by side, unchanged lines folded, the words that changed marked.",
+			"children": "none",
+			"attributes": [
+				{
+					"name": "LeftSource",
+					"kind": "file",
+					"description": "The file before, compared with RightSource; its path is the name shown unless LeftName is given."
+				},
+				{
+					"name": "RightSource",
+					"kind": "file",
+					"description": "The file after."
+				},
+				{
+					"name": "Left",
+					"kind": "text",
+					"description": "The text before (or a <Left> element holding it)."
+				},
+				{
+					"name": "Right",
+					"kind": "text",
+					"description": "The text after (or a <Right> element holding it)."
+				},
+				{
+					"name": "LeftName",
+					"kind": "text",
+					"description": "Name shown over the text before (its extension chooses the colors of the code)."
+				},
+				{
+					"name": "RightName",
+					"kind": "text",
+					"description": "Name shown over the text after."
+				},
+				{
+					"name": "Patch",
+					"kind": "text",
+					"description": "A unified diff (git diff, diff -u) to show instead of two texts (or a <Patch> element holding it)."
+				},
+				{
+					"name": "PatchSource",
+					"kind": "file",
+					"description": "A file holding a unified diff."
+				},
+				{
+					"name": "Mode",
+					"kind": "choice",
+					"choices": [
+						"Unified",
+						"Split"
+					],
+					"description": "One column, or the two texts side by side (Split)."
+				},
+				{
+					"name": "Context",
+					"kind": "number",
+					"description": "Unchanged lines shown around each change (3); the others are folded. All, or -1: every line."
+				},
+				{
+					"name": "IgnoreWhitespace",
+					"kind": "choice",
+					"choices": [
+						"None",
+						"Trailing",
+						"All"
+					],
+					"description": "Spaces that do not count: none, those at the end of the lines, all of them."
+				},
+				{
+					"name": "IgnoreCase",
+					"kind": "bool",
+					"description": "Upper and lower case letters are the same."
+				},
+				{
+					"name": "WordDiff",
+					"kind": "bool",
+					"description": "Marks the words that changed inside a changed line (default true)."
+				},
+				{
+					"name": "LineNumbers",
+					"kind": "bool",
+					"description": "The numbers of the lines of both sides (default true)."
+				},
+				{
+					"name": "Language",
+					"kind": "choice",
+					"choices": [
+						"None",
+						"C",
+						"C++",
+						"C#",
+						"Java",
+						"JavaScript",
+						"TypeScript",
+						"Python",
+						"Rust",
+						"GLSL",
+						"JSON",
+						"CSS",
+						"XML",
+						"HTML"
+					],
+					"description": "Colors the code; by default guessed from the extension of the names."
+				},
+				{
+					"name": "OnClicked",
+					"kind": "action",
+					"description": "Action fired when a line or its number is clicked."
+				}
+			],
+			"accepted": []
 		},
 		{
 			"name": "HeaderBar",
@@ -1889,6 +2236,15 @@
 			"description": "Panels the user arranges by dragging their tabs.",
 			"children": "many",
 			"attributes": [
+				{
+					"name": "FloatMode",
+					"kind": "choice",
+					"choices": [
+						"Window",
+						"InWindow"
+					],
+					"description": "Future floats use an OS window or a card inside the containing window."
+				},
 				{
 					"name": "Movable",
 					"kind": "bool",
@@ -2225,7 +2581,27 @@
 				{
 					"name": "Columns",
 					"kind": "list",
-					"description": "The headers of the columns, separated by '|' (or Column elements: Header, Width, Fill, Sortable, Align)."
+					"description": "The headers of the columns, separated by '|' (or Column elements: Header, Width, Fill, Sortable, Align, Editable, Kind=\"Text|Check|Progress\")."
+				},
+				{
+					"name": "FrozenColumns",
+					"kind": "number",
+					"description": "The first columns that stay in place when the table scrolls sideways."
+				},
+				{
+					"name": "MultiSelect",
+					"kind": "bool",
+					"description": "Ctrl/Cmd-click toggles rows; Shift selects an anchored range."
+				},
+				{
+					"name": "SelectionMode",
+					"kind": "choice",
+					"choices": [
+						"Single",
+						"Multiple",
+						"None"
+					],
+					"description": "One row at a time (default), any number of rows (Ctrl/Cmd+click, Shift+click, Shift+arrows, Space, Ctrl/Cmd+A), or none."
 				},
 				{
 					"name": "Selected",
@@ -2301,6 +2677,11 @@
 					"description": "How the date is written: YYYY, MM, M, DD, D, MMMM, MMM, dddd, ddd; default YYYY-MM-DD."
 				},
 				{
+					"name": "TimeZone",
+					"kind": "text",
+					"description": "The time zone of the date for Rdate_picker_get_instant: \"Europe/Paris\"; empty: the zone of the system."
+				},
+				{
 					"name": "OnChanged",
 					"kind": "action",
 					"description": "Action fired when the user chooses a date."
@@ -2327,6 +2708,31 @@
 					"name": "MinuteStep",
 					"kind": "number",
 					"description": "Step of the minutes for the arrows and the wheel."
+				},
+				{
+					"name": "Clock",
+					"kind": "choice",
+					"choices": [
+						"Auto",
+						"12",
+						"24"
+					],
+					"description": "12 hours with AM and PM, or 24 hours; Auto: as the locale does."
+				},
+				{
+					"name": "TimeZone",
+					"kind": "text",
+					"description": "The time zone of the time: \"America/New_York\", \"Europe/Paris\"; empty: the zone of the system."
+				},
+				{
+					"name": "ShowTimeZone",
+					"kind": "bool",
+					"description": "Writes the time zone after the time (\"EST\", \"CET\", \"UTC+3\")."
+				},
+				{
+					"name": "Date",
+					"kind": "text",
+					"description": "The day of the time, for its time zone: \"YYYY-MM-DD\" or Today (default)."
 				},
 				{
 					"name": "OnChanged",
@@ -2473,6 +2879,223 @@
 				}
 			],
 			"accepted": []
+		},
+		{
+			"name": "MapView",
+			"description": "A map of slippy-map tiles (Web Mercator z/x/y) given by the application or read from files: dragged, zoomed, with Marker elements (Latitude, Longitude, Label, Color).",
+			"children": "none",
+			"attributes": [
+				{
+					"name": "Latitude",
+					"kind": "number",
+					"description": "Latitude of the center, in degrees (held within +/-85.0511)."
+				},
+				{
+					"name": "Longitude",
+					"kind": "number",
+					"description": "Longitude of the center, in degrees."
+				},
+				{
+					"name": "Zoom",
+					"kind": "number",
+					"description": "The zoom: 0 shows the whole world in one tile, each step doubles the scale."
+				},
+				{
+					"name": "MinZoom",
+					"kind": "number",
+					"description": "The smallest zoom the user can reach (default 0)."
+				},
+				{
+					"name": "MaxZoom",
+					"kind": "number",
+					"description": "The largest zoom the user can reach, and of the tiles asked for (default 19, at most 24)."
+				},
+				{
+					"name": "TilePath",
+					"kind": "text",
+					"description": "Reads the tiles from files: a path with {z}, {x} and {y} ({-y}: the row counted from the south, TMS)."
+				},
+				{
+					"name": "TileSize",
+					"kind": "number",
+					"description": "Logical size of a tile at a whole zoom (default 256, held within 16 .. 1024)."
+				},
+				{
+					"name": "Attribution",
+					"kind": "text",
+					"description": "The credit of the tiles, written in the bottom right corner."
+				},
+				{
+					"name": "OnChanged",
+					"kind": "action",
+					"description": "Action fired when the user moves or zooms the map."
+				}
+			],
+			"accepted": [
+				"Lat",
+				"Lon",
+				"Lng"
+			]
+		},
+		{
+			"name": "PdfView",
+			"description": "The pages of a PDF document, scrolled and zoomed (drawn by PDFium, loaded at run time).",
+			"children": "none",
+			"attributes": [
+				{
+					"name": "Source",
+					"kind": "file",
+					"description": "The PDF file shown."
+				},
+				{
+					"name": "Password",
+					"kind": "text",
+					"description": "The password of the document, when it has one."
+				},
+				{
+					"name": "Fit",
+					"kind": "choice",
+					"choices": [
+						"Width",
+						"Page",
+						"None"
+					],
+					"description": "How the pages are sized: the widest fills the width, the largest fits whole, or the Zoom."
+				},
+				{
+					"name": "Zoom",
+					"kind": "number",
+					"description": "A zoom of its own (1: the printed size); the fit becomes None."
+				},
+				{
+					"name": "Page",
+					"kind": "number",
+					"description": "The page shown at the top, counted from 1."
+				},
+				{
+					"name": "OnChanged",
+					"kind": "action",
+					"description": "Action fired when the current page changes as the user scrolls."
+				}
+			],
+			"accepted": []
+		},
+		{
+			"name": "Chart",
+			"description": "The charts of dashboards: a pie or a donut of Slice elements (Label, Value, Color), a gauge with Band elements (From, To, Color), a heatmap of Row elements (Label, Values), a sparkline of Values.",
+			"children": "none",
+			"attributes": [
+				{
+					"name": "Kind",
+					"kind": "choice",
+					"choices": [
+						"Pie",
+						"Donut",
+						"Gauge",
+						"Heatmap",
+						"Sparkline"
+					],
+					"description": "What the chart draws."
+				},
+				{
+					"name": "Title",
+					"kind": "text",
+					"description": "The title over a pie, a donut or a heatmap, under the value of a gauge."
+				},
+				{
+					"name": "Format",
+					"kind": "text",
+					"description": "A printf format for the values, with their unit: \"%.0f%%\", \"$%.2f\"."
+				},
+				{
+					"name": "Color",
+					"kind": "color",
+					"description": "The arc of a gauge outside the bands, the line of a sparkline (default: the accent)."
+				},
+				{
+					"name": "Legend",
+					"kind": "bool",
+					"description": "The slices beside a pie or a donut, the scale under a heatmap."
+				},
+				{
+					"name": "Hole",
+					"kind": "number",
+					"description": "The hole of a donut, as a part of its radius (0.2 to 0.9)."
+				},
+				{
+					"name": "CenterText",
+					"kind": "text",
+					"description": "What the middle of a donut shows (default: the total)."
+				},
+				{
+					"name": "CenterCaption",
+					"kind": "text",
+					"description": "A small text under it."
+				},
+				{
+					"name": "Selected",
+					"kind": "number",
+					"description": "The slice lifted as selected, from 0 (-1: none)."
+				},
+				{
+					"name": "Min",
+					"kind": "number",
+					"description": "The lowest value of a gauge (default 0); a fixed lowest value for a heatmap or a sparkline."
+				},
+				{
+					"name": "Max",
+					"kind": "number",
+					"description": "The highest value of a gauge (default 100); a fixed highest value for a heatmap or a sparkline."
+				},
+				{
+					"name": "Value",
+					"kind": "number",
+					"description": "The value of a gauge."
+				},
+				{
+					"name": "Values",
+					"kind": "numbers",
+					"description": "The values of a sparkline."
+				},
+				{
+					"name": "Fill",
+					"kind": "bool",
+					"description": "Shades the area under the line of a sparkline."
+				},
+				{
+					"name": "Marker",
+					"kind": "bool",
+					"description": "A dot on the last value of a sparkline."
+				},
+				{
+					"name": "RowLabels",
+					"kind": "list",
+					"description": "The names of the rows of a heatmap, separated by '|' (or the Label of its Row elements)."
+				},
+				{
+					"name": "ColumnLabels",
+					"kind": "list",
+					"description": "The names of the columns of a heatmap, separated by '|'."
+				},
+				{
+					"name": "LowColor",
+					"kind": "color",
+					"description": "The color of the lowest values of a heatmap."
+				},
+				{
+					"name": "HighColor",
+					"kind": "color",
+					"description": "The color of the highest values of a heatmap."
+				},
+				{
+					"name": "OnClicked",
+					"kind": "action",
+					"description": "Action fired when the user clicks a slice or a cell."
+				}
+			],
+			"accepted": [
+				"Type"
+			]
 		},
 		{
 			"name": "Plot",
@@ -2783,8 +3406,14 @@
 		"DataGrid": "Table",
 		"TableView": "Table",
 		"Snackbar": "Toast",
-		"Chart": "Plot",
 		"LinePlot": "Plot",
-		"XYPlot": "Plot"
+		"XYPlot": "Plot",
+		"PdfViewer": "PdfView",
+		"PDFView": "PdfView",
+		"Map": "MapView",
+		"TileMap": "MapView",
+		"PageView": "Carousel",
+		"Slideshow": "Carousel",
+		"DiffViewer": "DiffView"
 	}
 }

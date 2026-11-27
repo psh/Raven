@@ -912,7 +912,14 @@ static napi_value rn_w__open(napi_env env, napi_callback_info info) {
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &path) || !path.p) goto fail;
 #ifdef _WIN32
-	handle = LoadLibraryA(path.p);
+	{
+		/* the path is UTF-8: LoadLibraryA would read it in the ANSI code page */
+		int count = MultiByteToWideChar(CP_UTF8, 0, path.p, -1, NULL, 0);
+		wchar_t* wide = count > 0 ? (wchar_t*)malloc(sizeof(wchar_t) * (size_t)count) : NULL;
+		handle = NULL;
+		if (wide && MultiByteToWideChar(CP_UTF8, 0, path.p, -1, wide, count) > 0) handle = (void*)LoadLibraryW(wide);
+		free(wide);
+	}
 #else
 	handle = dlopen(path.p, RTLD_NOW | RTLD_LOCAL);
 #endif
@@ -1101,10 +1108,15 @@ def plan_function(api, f):
     return items, signature, outs
 
 
+# Functions whose callback is called once, later, on the UI thread, like Rtask_post (raven_device.h).
+ANSWERED_ONCE = ("Rpermission_request", "Rfile_open_async", "Rfile_save_async", "Rfile_export_async",
+                 "Rfile_select_folder_async", "Rcamera_take_photo", "Rphoto_pick", "Rshare_show")
+
+
 def callback_rule(api, f):
     """Who keeps the callback of a function, and until when. A new shape of setter must be added here."""
     n = f.name
-    if n in ("Rtask_post", "Rtask_run_async"):
+    if n in ("Rtask_post", "Rtask_run_async") or n in ANSWERED_ONCE:
         return "task"
     if n == "Rerror_set_callback":
         return "error"
@@ -1114,7 +1126,7 @@ def callback_rule(api, f):
         return "timer"
     if n == "Rdialog_open":
         return "dialog"
-    if n in ("Raction_bind", "Rxml_register_tag"):
+    if n in ("Raction_bind", "Raction_bind_with_parameters", "Rxml_register_tag"):
         return "name"
     first = f.params[0] if f.params else None
     if first is not None and classify(first.ctype, api) == ("scalar", "id"):
@@ -1433,7 +1445,7 @@ def emit_callback_binding(api, f, callback_items, native_index, exprs, decls, re
         after.append("\t}")
         after.append("}")
     elif rule == "task":
-        if f.name == "Rtask_post":
+        if f.name == "Rtask_post" or f.name in ANSWERED_ONCE:
             after.append("if (cb_) {")
             after.append("\tcb_->once = 1;")
             after.append("\trn_tasks_add(cb_);")
@@ -1503,6 +1515,9 @@ def c_add_after(lines_text, f, slots):
     if n in ("Raction_unbind", "Rxml_unregister_tag"):
         bound = "Raction_bind" if n == "Raction_unbind" else "Rxml_register_tag"
         code = "if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, %d, a0.p, NULL);" % slots[bound]
+        if n == "Raction_unbind" and "Raction_bind_with_parameters" in slots:
+            # (one name, bound one way or the other: both are released)
+            code += " if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, %d, a0.p, NULL);" % slots["Raction_bind_with_parameters"]
     elif n in AFTER_CALL:
         code = AFTER_CALL[n]
     else:

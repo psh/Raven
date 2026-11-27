@@ -7,6 +7,13 @@
  *
  * nanosvg draws paths, fills, strokes and gradients; it does not draw text,
  * filters, masks, nor images inside the SVG. That is what icons are made of.
+ *
+ * currentColor (flagged by a small change to nanosvg, see THIRD_PARTY.md):
+ * an SVG painted only in currentColor is drawn in white, as a mask, and the
+ * widgets that show it multiply it by the color of their text at draw time,
+ * so it follows the theme and the states without being drawn again. In an
+ * SVG that mixes currentColor with other colors, currentColor is black, as
+ * in an SVG shown on its own.
  */
 
 #include "renderer.h"
@@ -64,6 +71,9 @@
 
 /* Largest side of a rasterized SVG, in pixels. */
 #define RVN_SVG_MAX_SIDE 8192
+/* Farthest that a shape may lie, and widest that a stroke may be, in pixels: nanosvg turns them into ints of 1/256 pixel. */
+#define RVN_SVG_MAX_REACH 1048576.0f
+#define RVN_SVG_MAX_STROKE 131072.0f
 
 int rvn_svg_detect(const uint8_t* data, size_t size) {
 	size_t i, limit = size < 1024 ? size : 1024;
@@ -79,10 +89,12 @@ int rvn_svg_detect(const uint8_t* data, size_t size) {
  * What nanosvg would take forever to draw, from a damaged or hostile file:
  * shapes far outside the picture (a coordinate of 2e10), dashes much smaller
  * than a pixel along a long path. They are left out; the rest is drawn.
+ * A stroke many times wider than the largest picture (1e30) is drawn at that width.
  */
 static void rvn_svg_tame(NSVGimage* image, float scale) {
 	float limit = (image->width > image->height ? image->width : image->height) * 4.0f + 1024.0f;
 	NSVGshape* shape;
+	if (limit * scale > RVN_SVG_MAX_REACH) limit = RVN_SVG_MAX_REACH / scale;
 	for (shape = image->shapes; shape; shape = shape->next) {
 		float period = 0.0f, width = shape->bounds[2] - shape->bounds[0], height = shape->bounds[3] - shape->bounds[1];
 		int i;
@@ -90,6 +102,7 @@ static void rvn_svg_tame(NSVGimage* image, float scale) {
 			shape->flags &= (unsigned char)~NSVG_FLAGS_VISIBLE;
 			continue;
 		}
+		if (!(shape->strokeWidth * scale <= RVN_SVG_MAX_STROKE)) shape->strokeWidth = RVN_SVG_MAX_STROKE / scale;
 		for (i = 0; i < shape->strokeDashCount; i++) period += fabsf(shape->strokeDashArray[i]);
 		/* (the length of a path is not known here; its box and its points tell enough) */
 		if (shape->strokeDashCount > 0 && period * scale < 0.25f) shape->strokeDashCount = 0;
@@ -97,12 +110,40 @@ static void rvn_svg_tame(NSVGimage* image, float scale) {
 	}
 }
 
-uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* width, int* height) {
+/*
+ * R_TRUE when every visible fill and stroke is currentColor (and there is
+ * one): those are then made white, keeping their opacity.
+ */
+static int rvn_svg_current_color_mask(NSVGimage* image) {
+	NSVGshape* shape;
+	int any = R_FALSE;
+	for (shape = image->shapes; shape; shape = shape->next) {
+		if (!(shape->flags & NSVG_FLAGS_VISIBLE)) continue;
+		if (shape->fill.type != NSVG_PAINT_NONE) {
+			if (shape->fill.type != NSVG_PAINT_COLOR || !(shape->flags & NSVG_FLAGS_FILL_CURRENT_COLOR)) return R_FALSE;
+			any = R_TRUE;
+		}
+		if (shape->stroke.type != NSVG_PAINT_NONE && shape->strokeWidth > 0.0f) {
+			if (shape->stroke.type != NSVG_PAINT_COLOR || !(shape->flags & NSVG_FLAGS_STROKE_CURRENT_COLOR)) return R_FALSE;
+			any = R_TRUE;
+		}
+	}
+	if (!any) return R_FALSE;
+	for (shape = image->shapes; shape; shape = shape->next) {
+		if (shape->fill.type == NSVG_PAINT_COLOR) shape->fill.color |= 0x00FFFFFFu;
+		if (shape->stroke.type == NSVG_PAINT_COLOR) shape->stroke.color |= 0x00FFFFFFu;
+	}
+	return R_TRUE;
+}
+
+uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* width, int* height, int* current_color) {
 	NSVGimage* image;
 	NSVGrasterizer* rasterizer;
 	char* text;
 	uint8_t* pixels = NULL;
-	int w, h;
+	float fw, fh;
+	int w, h, mask;
+	if (current_color) *current_color = R_FALSE;
 	if (!data || size == 0 || size > 0x7FFFFFFFu || !(scale > 0.0f)) return NULL;
 	/* nanosvg writes into the text it parses */
 	text = (char*)rvn_alloc(size + 1);
@@ -111,10 +152,14 @@ uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* widt
 	image = nsvgParse(text, "px", 96.0f);
 	rvn_free(text);
 	if (!image) return NULL;
-	w = (int)ceilf(image->width * scale);
-	h = (int)ceilf(image->height * scale);
-	rvn_svg_tame(image, scale);
-	if (w > 0 && h > 0 && w <= RVN_SVG_MAX_SIDE && h <= RVN_SVG_MAX_SIDE) {
+	fw = ceilf(image->width * scale);
+	fh = ceilf(image->height * scale);
+	/* (compared as floats: a size of 1e30 is no int) */
+	if (fw > 0.0f && fh > 0.0f && fw <= (float)RVN_SVG_MAX_SIDE && fh <= (float)RVN_SVG_MAX_SIDE) {
+		w = (int)fw;
+		h = (int)fh;
+		rvn_svg_tame(image, scale);
+		mask = rvn_svg_current_color_mask(image);
 		rasterizer = nsvgCreateRasterizer();
 		if (rasterizer) {
 			pixels = (uint8_t*)rvn_calloc((size_t)w * (size_t)h * 4);
@@ -122,6 +167,7 @@ uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* widt
 			nsvgDeleteRasterizer(rasterizer);
 			*width = w;
 			*height = h;
+			if (current_color) *current_color = mask;
 		}
 	}
 	nsvgDelete(image);
@@ -136,7 +182,8 @@ int rvn_svg_detect(const uint8_t* data, size_t size) {
 	return R_FALSE;
 }
 
-uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* width, int* height) {
+uint8_t* rvn_svg_decode(const uint8_t* data, size_t size, float scale, int* width, int* height, int* current_color) {
+	if (current_color) *current_color = R_FALSE;
 	RVN_UNUSED(data);
 	RVN_UNUSED(size);
 	RVN_UNUSED(scale);

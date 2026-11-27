@@ -108,6 +108,8 @@ fun ravenLibraryToLinkerOpt(library: String, isApple: Boolean): String? {
     val name = library.substringAfterLast('/')
     return when {
         name.endsWith(".framework") -> "-framework ${name.removeSuffix(".framework")}"
+        // (CMake may also name a framework as the linker option itself)
+        library.startsWith("-framework ") -> "-framework ${library.removePrefix("-framework ").trim()}"
         library == "Threads::Threads" -> if (isApple) null else "-lpthread"
         isApple && library in setOf("m", "dl", "pthread") -> null // part of libSystem
         name.startsWith("lib") && (name.contains(".so") || name.endsWith(".a") || name.endsWith(".dylib")) ->

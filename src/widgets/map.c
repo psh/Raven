@@ -19,7 +19,7 @@
  * those of the last two frames; a tile that failed is asked for again after
  * a while.
  *
- * A tile's bytes go through two tasks: from any thread, Rmap_tile_loaded
+ * A tile's bytes go through two tasks: from any thread, Rmap_set_tile_data
  * posts them to the thread of the interface, which starts their preparation
  * on a worker with the style of the moment (held by a reference); the
  * worker posts the prepared tile back. Either task finds the map by its
@@ -747,7 +747,7 @@ static int rvn_map_zoom(rvn_widget_t* widget, float factor, float x, float y) {
 
 const rvn_widget_class_t rvn_class_map = {
 	.type = R_WIDGET_MAP,
-	.name = "Map",
+	.name = "VectorMap",
 	.size = sizeof(rvn_map_t),
 	/* (the paint asks for tiles and cuts lines: on the thread of the interface) */
 	.flags = RVN_CF_NO_CHILDREN | RVN_CF_UI_PAINT,
@@ -861,11 +861,11 @@ static int rvn_map_post_arrival(const char* function, Rid id, int z, int x, int 
 	return R_TRUE;
 }
 
-int Rmap_tile_loaded(Rid id, int z, int x, int y, const void* bytes, size_t length) {
+int Rmap_set_tile_data(Rid id, int z, int x, int y, const void* bytes, size_t length) {
 	return rvn_map_post_arrival(__func__, id, z, x, y, bytes, length, R_FALSE);
 }
 
-void Rmap_tile_failed(Rid id, int z, int x, int y) {
+void Rmap_set_tile_failed(Rid id, int z, int x, int y) {
 	rvn_map_post_arrival(__func__, id, z, x, y, NULL, 0, R_TRUE);
 }
 
@@ -981,12 +981,12 @@ void Rmap_set_tile_source(Rid id, int min_zoom, int max_zoom, RMapTileRequestCal
 	RVN_UNUSED(id); RVN_UNUSED(min_zoom); RVN_UNUSED(max_zoom); RVN_UNUSED(request); RVN_UNUSED(cancel); RVN_UNUSED(user_data);
 	rvn_map_missing(__func__);
 }
-int Rmap_tile_loaded(Rid id, int z, int x, int y, const void* bytes, size_t length) {
+int Rmap_set_tile_data(Rid id, int z, int x, int y, const void* bytes, size_t length) {
 	RVN_UNUSED(id); RVN_UNUSED(z); RVN_UNUSED(x); RVN_UNUSED(y); RVN_UNUSED(bytes); RVN_UNUSED(length);
 	rvn_map_missing(__func__);
 	return R_FALSE;
 }
-void Rmap_tile_failed(Rid id, int z, int x, int y) {
+void Rmap_set_tile_failed(Rid id, int z, int x, int y) {
 	RVN_UNUSED(id); RVN_UNUSED(z); RVN_UNUSED(x); RVN_UNUSED(y);
 	rvn_map_missing(__func__);
 }

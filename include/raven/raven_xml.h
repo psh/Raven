@@ -155,7 +155,11 @@ extern "C" {
 	 *    3. the current folder;
 	 *    4. the folders of the PATH environment variable, in their order.
 	 *  The first place that holds the file wins; a file of
-	 *  Rfile_register_memory counts. An absolute path or a URL is used as it is.
+	 *  Rfile_register_memory counts, and on Android and iOS a file of the
+	 *  app's package (Rfile_read). An absolute path or a URL is used as it is.
+	 *  With a package, a relative folder (the folder of a document of the
+	 *  package, a relative base path, the current folder) is not listed: no
+	 *  search in its subfolders and no auto-loading from it.
 	 *
 	 *  Auto-loading, on by default, also takes from these places what a
 	 *  document may need before it is read, without any register call:
@@ -208,9 +212,10 @@ extern "C" {
 	 * --------------------------------------------------------------------- */
 
 	/**
-	 * @brief Turns live reload on or off. It is on by default; the
-	 * environment variable RAVEN_LIVE_RELOAD=0 turns it off without
-	 * rebuilding. When off, files are never looked at again.
+	 * @brief Turns live reload on or off. It is on by default, except in
+	 * the browser (Emscripten), where watching files would keep the page
+	 * drawing; the environment variable RAVEN_LIVE_RELOAD=0 or 1 changes the
+	 * default without rebuilding. When off, files are never looked at again.
 	 */
 	RAVEN_API void Rxml_set_live_reload(int enabled);
 	RAVEN_API int Rxml_get_live_reload(void);

@@ -1,7 +1,7 @@
 """
 Raven for Python.
 
-Generated from the C headers by tools/bindgen (Raven 0.2): do not edit.
+Generated from the C headers by tools/bindgen (Raven 0.3): do not edit.
 Every function of the C API is here under its own name, with a few
 conveniences:
 
@@ -21,7 +21,7 @@ The library itself (raven.dll, libraven.so, libraven.dylib: build Raven with
 variable, then beside this file, then where the system looks.
 
     import raven as r
-    r.Rinit(r.R_BACKEND_VULKAN)
+    r.Rinit(r.R_BACKEND_DEFAULT)
     window = r.Rwindow_create_from_xml('<Window Title="Hi"><Button Text="Quit" OnClicked="quit"/></Window>')
     r.Raction_bind("quit", lambda sender, action, user: r.Rquit(0))
     while r.Rwait_frame(-1.0):
@@ -106,24 +106,28 @@ def _callback(ctype, adapt, function):
 Rid = ctypes.c_uint32
 
 RAVEN_VERSION_MAJOR = 0
-RAVEN_VERSION_MINOR = 2
-RAVEN_VERSION_PATCH = 3
-RAVEN_API_VERSION = "0.2"
+RAVEN_VERSION_MINOR = 3
+RAVEN_VERSION_PATCH = 0
+RAVEN_API_VERSION = "0.3"
 R_FALSE = 0
 R_TRUE = 1
 R_INVALID_ID = 0xffffffff
 
 
 class RBackend(enum.IntEnum):
+    R_BACKEND_DEFAULT = 0
     R_BACKEND_VULKAN = 1
     R_BACKEND_NULL = 2
     R_BACKEND_CUSTOM = 3
     R_BACKEND_WEBGL = 4
+    R_BACKEND_METAL = 5
 
+R_BACKEND_DEFAULT = RBackend.R_BACKEND_DEFAULT
 R_BACKEND_VULKAN = RBackend.R_BACKEND_VULKAN
 R_BACKEND_NULL = RBackend.R_BACKEND_NULL
 R_BACKEND_CUSTOM = RBackend.R_BACKEND_CUSTOM
 R_BACKEND_WEBGL = RBackend.R_BACKEND_WEBGL
+R_BACKEND_METAL = RBackend.R_BACKEND_METAL
 
 class RError(enum.IntEnum):
     R_NO_ERROR = 0x0070
@@ -138,7 +142,7 @@ class RError(enum.IntEnum):
     R_ERROR_FILE_NOT_FOUND = 0x0079
     R_ERROR_XML = 0x007A
     R_ERROR_WRONG_THREAD = 0x007B
-    R_ERROR_IO = 0x007C
+    R_ERROR_SCRIPT = 0x007C
 
 R_NO_ERROR = RError.R_NO_ERROR
 R_ERROR_INVALID_ID = RError.R_ERROR_INVALID_ID
@@ -152,7 +156,7 @@ R_ERROR_INVALID_FILE_FORMAT = RError.R_ERROR_INVALID_FILE_FORMAT
 R_ERROR_FILE_NOT_FOUND = RError.R_ERROR_FILE_NOT_FOUND
 R_ERROR_XML = RError.R_ERROR_XML
 R_ERROR_WRONG_THREAD = RError.R_ERROR_WRONG_THREAD
-R_ERROR_IO = RError.R_ERROR_IO
+R_ERROR_SCRIPT = RError.R_ERROR_SCRIPT
 
 class RSeverity(enum.IntEnum):
     R_SEVERITY_WEAK_WARNING = 0x0080
@@ -164,6 +168,31 @@ R_SEVERITY_WEAK_WARNING = RSeverity.R_SEVERITY_WEAK_WARNING
 R_SEVERITY_WARNING = RSeverity.R_SEVERITY_WARNING
 R_SEVERITY_ERROR = RSeverity.R_SEVERITY_ERROR
 R_SEVERITY_FATAL = RSeverity.R_SEVERITY_FATAL
+
+class RAppEvent(enum.IntEnum):
+    """What the system does with the application, on iOS and Android (desktop
+    systems send none of these). A pause is not always followed by
+    R_APP_DID_PAUSE: pulling down the notifications (iOS) or a dialog of the
+    system in front (Android) gives R_APP_WILL_PAUSE, then R_APP_DID_RESUME.
+    At the start, R_APP_WILL_RESUME and R_APP_DID_RESUME may come too.
+    
+      leaving the front   R_APP_WILL_PAUSE    still seen: save what must not be lost
+      in the background   R_APP_DID_PAUSE     not seen, no GPU work: Raven stops drawing
+      coming back         R_APP_WILL_RESUME   Raven draws again
+      in front again      R_APP_DID_RESUME    takes input again"""
+    R_APP_WILL_PAUSE = 0x0B80
+    R_APP_DID_PAUSE = 0x0B81
+    R_APP_WILL_RESUME = 0x0B82
+    R_APP_DID_RESUME = 0x0B83
+    R_APP_LOW_MEMORY = 0x0B84
+    R_APP_WILL_TERMINATE = 0x0B85
+
+R_APP_WILL_PAUSE = RAppEvent.R_APP_WILL_PAUSE
+R_APP_DID_PAUSE = RAppEvent.R_APP_DID_PAUSE
+R_APP_WILL_RESUME = RAppEvent.R_APP_WILL_RESUME
+R_APP_DID_RESUME = RAppEvent.R_APP_DID_RESUME
+R_APP_LOW_MEMORY = RAppEvent.R_APP_LOW_MEMORY
+R_APP_WILL_TERMINATE = RAppEvent.R_APP_WILL_TERMINATE
 
 class RWindowFlags(enum.IntFlag):
     R_WINDOW_DEFAULT = 0
@@ -226,6 +255,8 @@ class RWindowSystem(enum.IntEnum):
     R_WINDOW_SYSTEM_WAYLAND = 0x0093
     R_WINDOW_SYSTEM_COCOA = 0x0094
     R_WINDOW_SYSTEM_EMSCRIPTEN = 0x0095
+    R_WINDOW_SYSTEM_ANDROID = 0x0096
+    R_WINDOW_SYSTEM_UIKIT = 0x0097
 
 R_WINDOW_SYSTEM_NONE = RWindowSystem.R_WINDOW_SYSTEM_NONE
 R_WINDOW_SYSTEM_WIN32 = RWindowSystem.R_WINDOW_SYSTEM_WIN32
@@ -233,6 +264,42 @@ R_WINDOW_SYSTEM_X11 = RWindowSystem.R_WINDOW_SYSTEM_X11
 R_WINDOW_SYSTEM_WAYLAND = RWindowSystem.R_WINDOW_SYSTEM_WAYLAND
 R_WINDOW_SYSTEM_COCOA = RWindowSystem.R_WINDOW_SYSTEM_COCOA
 R_WINDOW_SYSTEM_EMSCRIPTEN = RWindowSystem.R_WINDOW_SYSTEM_EMSCRIPTEN
+R_WINDOW_SYSTEM_ANDROID = RWindowSystem.R_WINDOW_SYSTEM_ANDROID
+R_WINDOW_SYSTEM_UIKIT = RWindowSystem.R_WINDOW_SYSTEM_UIKIT
+
+class RTextInputType(enum.IntEnum):
+    """What a text input holds: on mobile it picks the on-screen keyboard (letters, @, digits...)."""
+    R_TEXT_INPUT_TYPE_TEXT = 0x0B60
+    R_TEXT_INPUT_TYPE_EMAIL = 0x0B61
+    R_TEXT_INPUT_TYPE_NUMBER = 0x0B62
+    R_TEXT_INPUT_TYPE_DECIMAL = 0x0B63
+    R_TEXT_INPUT_TYPE_PHONE = 0x0B64
+    R_TEXT_INPUT_TYPE_URL = 0x0B65
+    R_TEXT_INPUT_TYPE_SEARCH = 0x0B66
+
+R_TEXT_INPUT_TYPE_TEXT = RTextInputType.R_TEXT_INPUT_TYPE_TEXT
+R_TEXT_INPUT_TYPE_EMAIL = RTextInputType.R_TEXT_INPUT_TYPE_EMAIL
+R_TEXT_INPUT_TYPE_NUMBER = RTextInputType.R_TEXT_INPUT_TYPE_NUMBER
+R_TEXT_INPUT_TYPE_DECIMAL = RTextInputType.R_TEXT_INPUT_TYPE_DECIMAL
+R_TEXT_INPUT_TYPE_PHONE = RTextInputType.R_TEXT_INPUT_TYPE_PHONE
+R_TEXT_INPUT_TYPE_URL = RTextInputType.R_TEXT_INPUT_TYPE_URL
+R_TEXT_INPUT_TYPE_SEARCH = RTextInputType.R_TEXT_INPUT_TYPE_SEARCH
+
+class RReturnKey(enum.IntEnum):
+    """The label and meaning of the return key of the on-screen keyboard. Enter does the same on every key."""
+    R_RETURN_KEY_DEFAULT = 0x0B70
+    R_RETURN_KEY_DONE = 0x0B71
+    R_RETURN_KEY_GO = 0x0B72
+    R_RETURN_KEY_NEXT = 0x0B73
+    R_RETURN_KEY_SEARCH = 0x0B74
+    R_RETURN_KEY_SEND = 0x0B75
+
+R_RETURN_KEY_DEFAULT = RReturnKey.R_RETURN_KEY_DEFAULT
+R_RETURN_KEY_DONE = RReturnKey.R_RETURN_KEY_DONE
+R_RETURN_KEY_GO = RReturnKey.R_RETURN_KEY_GO
+R_RETURN_KEY_NEXT = RReturnKey.R_RETURN_KEY_NEXT
+R_RETURN_KEY_SEARCH = RReturnKey.R_RETURN_KEY_SEARCH
+R_RETURN_KEY_SEND = RReturnKey.R_RETURN_KEY_SEND
 
 class RWindowEdge(enum.IntEnum):
     """Edges and corners of a window, for Rwindow_begin_resize."""
@@ -554,6 +621,18 @@ R_DROP_MOVE = RDropPhase.R_DROP_MOVE
 R_DROP_LEAVE = RDropPhase.R_DROP_LEAVE
 R_DROP_DROPPED = RDropPhase.R_DROP_DROPPED
 
+class RDragOperation(enum.IntFlag):
+    """What the application that takes a drag does with it (Rdrag_begin_external): a bitmask of what is allowed, or the one done."""
+    R_DRAG_OPERATION_NONE = 0
+    R_DRAG_OPERATION_COPY = 1
+    R_DRAG_OPERATION_MOVE = 2
+    R_DRAG_OPERATION_LINK = 4
+
+R_DRAG_OPERATION_NONE = RDragOperation.R_DRAG_OPERATION_NONE
+R_DRAG_OPERATION_COPY = RDragOperation.R_DRAG_OPERATION_COPY
+R_DRAG_OPERATION_MOVE = RDragOperation.R_DRAG_OPERATION_MOVE
+R_DRAG_OPERATION_LINK = RDragOperation.R_DRAG_OPERATION_LINK
+
 class RTouchMode(enum.IntEnum):
     """What a finger does on a widget (Rwidget_set_touch_mode)."""
     R_TOUCH_MODE_AUTO = 0x0480
@@ -744,6 +823,13 @@ class RColorRole(enum.IntEnum):
     R_COLOR_DANGER = 0x0121
     R_COLOR_LINK = 0x0122
     R_COLOR_CODE = 0x0123
+    R_COLOR_SEARCH_MATCH = 0x0124
+    R_COLOR_SEARCH_CURRENT = 0x0125
+    R_COLOR_SPELLING = 0x0126
+    R_COLOR_DIFF_ADDED = 0x0127
+    R_COLOR_DIFF_REMOVED = 0x0128
+    R_COLOR_DIFF_ADDED_WORD = 0x0129
+    R_COLOR_DIFF_REMOVED_WORD = 0x012A
 
 R_COLOR_WINDOW = RColorRole.R_COLOR_WINDOW
 R_COLOR_PANEL = RColorRole.R_COLOR_PANEL
@@ -781,6 +867,13 @@ R_COLOR_WARNING = RColorRole.R_COLOR_WARNING
 R_COLOR_DANGER = RColorRole.R_COLOR_DANGER
 R_COLOR_LINK = RColorRole.R_COLOR_LINK
 R_COLOR_CODE = RColorRole.R_COLOR_CODE
+R_COLOR_SEARCH_MATCH = RColorRole.R_COLOR_SEARCH_MATCH
+R_COLOR_SEARCH_CURRENT = RColorRole.R_COLOR_SEARCH_CURRENT
+R_COLOR_SPELLING = RColorRole.R_COLOR_SPELLING
+R_COLOR_DIFF_ADDED = RColorRole.R_COLOR_DIFF_ADDED
+R_COLOR_DIFF_REMOVED = RColorRole.R_COLOR_DIFF_REMOVED
+R_COLOR_DIFF_ADDED_WORD = RColorRole.R_COLOR_DIFF_ADDED_WORD
+R_COLOR_DIFF_REMOVED_WORD = RColorRole.R_COLOR_DIFF_REMOVED_WORD
 
 class RMetric(enum.IntEnum):
     """Sizes, in logical units."""
@@ -899,7 +992,13 @@ class RWidgetType(enum.IntEnum):
     R_WIDGET_RATING = 0x0230
     R_WIDGET_PAGINATION = 0x0231
     R_WIDGET_PLOT = 0x0232
-    R_WIDGET_MAP = 0x0233
+    R_WIDGET_PDF_VIEW = 0x0233
+    R_WIDGET_CHART = 0x0234
+    R_WIDGET_MAP_VIEW = 0x0235
+    R_WIDGET_CAROUSEL = 0x0236
+    R_WIDGET_SYSTEM_WEB_VIEW = 0x0237
+    R_WIDGET_DIFF_VIEW = 0x0238
+    R_WIDGET_MAP = 0x0239
 
 R_WIDGET_VBOX = RWidgetType.R_WIDGET_VBOX
 R_WIDGET_HBOX = RWidgetType.R_WIDGET_HBOX
@@ -952,6 +1051,12 @@ R_WIDGET_BREADCRUMB = RWidgetType.R_WIDGET_BREADCRUMB
 R_WIDGET_RATING = RWidgetType.R_WIDGET_RATING
 R_WIDGET_PAGINATION = RWidgetType.R_WIDGET_PAGINATION
 R_WIDGET_PLOT = RWidgetType.R_WIDGET_PLOT
+R_WIDGET_PDF_VIEW = RWidgetType.R_WIDGET_PDF_VIEW
+R_WIDGET_CHART = RWidgetType.R_WIDGET_CHART
+R_WIDGET_MAP_VIEW = RWidgetType.R_WIDGET_MAP_VIEW
+R_WIDGET_CAROUSEL = RWidgetType.R_WIDGET_CAROUSEL
+R_WIDGET_SYSTEM_WEB_VIEW = RWidgetType.R_WIDGET_SYSTEM_WEB_VIEW
+R_WIDGET_DIFF_VIEW = RWidgetType.R_WIDGET_DIFF_VIEW
 R_WIDGET_MAP = RWidgetType.R_WIDGET_MAP
 
 class RHAlign(enum.IntEnum):
@@ -1116,6 +1221,73 @@ R_PLOT_Y = RPlotAxis.R_PLOT_Y
 R_PLOT_X2 = RPlotAxis.R_PLOT_X2
 R_PLOT_Y2 = RPlotAxis.R_PLOT_Y2
 
+class RPdfFit(enum.IntEnum):
+    """How a PdfView sizes its pages."""
+    R_PDF_FIT_WIDTH = 0x05C0
+    R_PDF_FIT_PAGE = 0x05C1
+    R_PDF_FIT_NONE = 0x05C2
+
+R_PDF_FIT_WIDTH = RPdfFit.R_PDF_FIT_WIDTH
+R_PDF_FIT_PAGE = RPdfFit.R_PDF_FIT_PAGE
+R_PDF_FIT_NONE = RPdfFit.R_PDF_FIT_NONE
+
+class RPdfStatus(enum.IntEnum):
+    """What a PdfView holds."""
+    R_PDF_EMPTY = 0x05D0
+    R_PDF_LOADED = 0x05D1
+    R_PDF_NEEDS_PASSWORD = 0x05D2
+    R_PDF_ERROR = 0x05D3
+    R_PDF_UNAVAILABLE = 0x05D4
+
+R_PDF_EMPTY = RPdfStatus.R_PDF_EMPTY
+R_PDF_LOADED = RPdfStatus.R_PDF_LOADED
+R_PDF_NEEDS_PASSWORD = RPdfStatus.R_PDF_NEEDS_PASSWORD
+R_PDF_ERROR = RPdfStatus.R_PDF_ERROR
+R_PDF_UNAVAILABLE = RPdfStatus.R_PDF_UNAVAILABLE
+
+class RPdfFont(enum.IntEnum):
+    """The fonts of a PDF document (Rpdf_document_set_font): those of Raven, then the ones added (2, 3...)."""
+    R_PDF_FONT_SANS = 0
+    R_PDF_FONT_MONO = 1
+
+R_PDF_FONT_SANS = RPdfFont.R_PDF_FONT_SANS
+R_PDF_FONT_MONO = RPdfFont.R_PDF_FONT_MONO
+
+class RPdfPaint(enum.IntFlag):
+    """How a shape of a PDF document is painted: a bitmask."""
+    R_PDF_FILL = 1
+    R_PDF_STROKE = 2
+
+R_PDF_FILL = RPdfPaint.R_PDF_FILL
+R_PDF_STROKE = RPdfPaint.R_PDF_STROKE
+
+class RPdfTextStyle(enum.IntFlag):
+    """A bitmask of styles of the text of a PDF document."""
+    R_PDF_TEXT_BOLD = 1
+    R_PDF_TEXT_ITALIC = 2
+    R_PDF_TEXT_UNDERLINE = 4
+
+R_PDF_TEXT_BOLD = RPdfTextStyle.R_PDF_TEXT_BOLD
+R_PDF_TEXT_ITALIC = RPdfTextStyle.R_PDF_TEXT_ITALIC
+R_PDF_TEXT_UNDERLINE = RPdfTextStyle.R_PDF_TEXT_UNDERLINE
+
+class RPdfPrintFlags(enum.IntEnum):
+    R_PDF_PRINT_NO_DIALOG = 1
+
+R_PDF_PRINT_NO_DIALOG = RPdfPrintFlags.R_PDF_PRINT_NO_DIALOG
+
+class RMapTileState(enum.IntEnum):
+    """Where a tile of a MapView stands (Rmap_view_get_tile_state)."""
+    R_MAP_TILE_NONE = 0x0600
+    R_MAP_TILE_PENDING = 0x0601
+    R_MAP_TILE_LOADED = 0x0602
+    R_MAP_TILE_FAILED = 0x0603
+
+R_MAP_TILE_NONE = RMapTileState.R_MAP_TILE_NONE
+R_MAP_TILE_PENDING = RMapTileState.R_MAP_TILE_PENDING
+R_MAP_TILE_LOADED = RMapTileState.R_MAP_TILE_LOADED
+R_MAP_TILE_FAILED = RMapTileState.R_MAP_TILE_FAILED
+
 class RPlotScale(enum.IntEnum):
     """How an axis of a Plot spreads its values."""
     R_PLOT_SCALE_LINEAR = 0x0530
@@ -1186,6 +1358,54 @@ R_PLOT_LEGEND_BOTTOM_LEFT = RPlotLegend.R_PLOT_LEGEND_BOTTOM_LEFT
 R_PLOT_LEGEND_LEFT = RPlotLegend.R_PLOT_LEGEND_LEFT
 R_PLOT_LEGEND_OUTSIDE = RPlotLegend.R_PLOT_LEGEND_OUTSIDE
 
+class RChartKind(enum.IntEnum):
+    """What a Chart draws."""
+    R_CHART_PIE = 0x0590
+    R_CHART_DONUT = 0x0591
+    R_CHART_GAUGE = 0x0592
+    R_CHART_HEATMAP = 0x0593
+    R_CHART_SPARKLINE = 0x0594
+
+R_CHART_PIE = RChartKind.R_CHART_PIE
+R_CHART_DONUT = RChartKind.R_CHART_DONUT
+R_CHART_GAUGE = RChartKind.R_CHART_GAUGE
+R_CHART_HEATMAP = RChartKind.R_CHART_HEATMAP
+R_CHART_SPARKLINE = RChartKind.R_CHART_SPARKLINE
+
+class RSystemWebViewEvent(enum.IntEnum):
+    """What happens in a SystemWebView (Rsystem_web_view_set_event_callback)."""
+    R_SYSTEM_WEB_VIEW_NAVIGATED = 0x0B90
+    R_SYSTEM_WEB_VIEW_TITLE = 0x0B91
+    R_SYSTEM_WEB_VIEW_LOADING = 0x0B92
+    R_SYSTEM_WEB_VIEW_LOADED = 0x0B93
+    R_SYSTEM_WEB_VIEW_FAILED = 0x0B94
+
+R_SYSTEM_WEB_VIEW_NAVIGATED = RSystemWebViewEvent.R_SYSTEM_WEB_VIEW_NAVIGATED
+R_SYSTEM_WEB_VIEW_TITLE = RSystemWebViewEvent.R_SYSTEM_WEB_VIEW_TITLE
+R_SYSTEM_WEB_VIEW_LOADING = RSystemWebViewEvent.R_SYSTEM_WEB_VIEW_LOADING
+R_SYSTEM_WEB_VIEW_LOADED = RSystemWebViewEvent.R_SYSTEM_WEB_VIEW_LOADED
+R_SYSTEM_WEB_VIEW_FAILED = RSystemWebViewEvent.R_SYSTEM_WEB_VIEW_FAILED
+
+class RTableSelectionMode(enum.IntEnum):
+    """How the rows of a Table are selected (Rtable_set_selection_mode)."""
+    R_TABLE_SELECTION_SINGLE = 0x0BC0
+    R_TABLE_SELECTION_MULTIPLE = 0x0BC1
+    R_TABLE_SELECTION_NONE = 0x0BC2
+
+R_TABLE_SELECTION_SINGLE = RTableSelectionMode.R_TABLE_SELECTION_SINGLE
+R_TABLE_SELECTION_MULTIPLE = RTableSelectionMode.R_TABLE_SELECTION_MULTIPLE
+R_TABLE_SELECTION_NONE = RTableSelectionMode.R_TABLE_SELECTION_NONE
+
+class RTableColumnKind(enum.IntEnum):
+    """What the cells of a column show (Rtable_set_column_kind)."""
+    R_TABLE_COLUMN_TEXT = 0x0BD0
+    R_TABLE_COLUMN_CHECK = 0x0BD1
+    R_TABLE_COLUMN_PROGRESS = 0x0BD2
+
+R_TABLE_COLUMN_TEXT = RTableColumnKind.R_TABLE_COLUMN_TEXT
+R_TABLE_COLUMN_CHECK = RTableColumnKind.R_TABLE_COLUMN_CHECK
+R_TABLE_COLUMN_PROGRESS = RTableColumnKind.R_TABLE_COLUMN_PROGRESS
+
 class RSyntax(enum.IntEnum):
     """Shorthands of Rtext_editor_set_language for two languages."""
     R_SYNTAX_NONE = 0x0340
@@ -1249,6 +1469,14 @@ R_TOKEN_STRONG = RToken.R_TOKEN_STRONG
 R_TOKEN_EMPHASIS = RToken.R_TOKEN_EMPHASIS
 R_TOKEN_LINK = RToken.R_TOKEN_LINK
 
+class RSearchFlags(enum.IntFlag):
+    """Options of a search (Rtext_editor_set_search), a bitmask."""
+    R_SEARCH_MATCH_CASE = 1
+    R_SEARCH_WHOLE_WORD = 2
+
+R_SEARCH_MATCH_CASE = RSearchFlags.R_SEARCH_MATCH_CASE
+R_SEARCH_WHOLE_WORD = RSearchFlags.R_SEARCH_WHOLE_WORD
+
 class RMarkerKind(enum.IntEnum):
     """What a marker says about the text it underlines."""
     R_MARKER_ERROR = 0x0350
@@ -1301,6 +1529,13 @@ R_DOCK_TOP = RDockSide.R_DOCK_TOP
 R_DOCK_BOTTOM = RDockSide.R_DOCK_BOTTOM
 R_DOCK_TAB = RDockSide.R_DOCK_TAB
 
+class RDockFloatMode(enum.IntEnum):
+    R_DOCK_FLOAT_WINDOW = 0
+    R_DOCK_FLOAT_IN_WINDOW = 1
+
+R_DOCK_FLOAT_WINDOW = RDockFloatMode.R_DOCK_FLOAT_WINDOW
+R_DOCK_FLOAT_IN_WINDOW = RDockFloatMode.R_DOCK_FLOAT_IN_WINDOW
+
 class RVisualPreset(enum.IntEnum):
     R_PRESET_AUTO = 0x0510
     R_PRESET_MODERN = 0x0511
@@ -1350,6 +1585,49 @@ R_BLOCK_NEXT = RBlockPlace.R_BLOCK_NEXT
 R_BLOCK_BODY = RBlockPlace.R_BLOCK_BODY
 R_BLOCK_INPUT = RBlockPlace.R_BLOCK_INPUT
 
+class RDiffViewMode(enum.IntEnum):
+    R_DIFF_VIEW_UNIFIED = 0x0C50
+    R_DIFF_VIEW_SPLIT = 0x0C51
+
+R_DIFF_VIEW_UNIFIED = RDiffViewMode.R_DIFF_VIEW_UNIFIED
+R_DIFF_VIEW_SPLIT = RDiffViewMode.R_DIFF_VIEW_SPLIT
+
+class RDiffSide(enum.IntEnum):
+    R_DIFF_LEFT = 0x0C54
+    R_DIFF_RIGHT = 0x0C55
+
+R_DIFF_LEFT = RDiffSide.R_DIFF_LEFT
+R_DIFF_RIGHT = RDiffSide.R_DIFF_RIGHT
+
+class RDiffRowKind(enum.IntEnum):
+    R_DIFF_ROW_SAME = 0x0C58
+    R_DIFF_ROW_REMOVED = 0x0C59
+    R_DIFF_ROW_ADDED = 0x0C5A
+    R_DIFF_ROW_CHANGED = 0x0C5B
+    R_DIFF_ROW_FOLD = 0x0C5C
+    R_DIFF_ROW_HUNK = 0x0C5D
+    R_DIFF_ROW_FILE = 0x0C5E
+    R_DIFF_ROW_NOTE = 0x0C5F
+
+R_DIFF_ROW_SAME = RDiffRowKind.R_DIFF_ROW_SAME
+R_DIFF_ROW_REMOVED = RDiffRowKind.R_DIFF_ROW_REMOVED
+R_DIFF_ROW_ADDED = RDiffRowKind.R_DIFF_ROW_ADDED
+R_DIFF_ROW_CHANGED = RDiffRowKind.R_DIFF_ROW_CHANGED
+R_DIFF_ROW_FOLD = RDiffRowKind.R_DIFF_ROW_FOLD
+R_DIFF_ROW_HUNK = RDiffRowKind.R_DIFF_ROW_HUNK
+R_DIFF_ROW_FILE = RDiffRowKind.R_DIFF_ROW_FILE
+R_DIFF_ROW_NOTE = RDiffRowKind.R_DIFF_ROW_NOTE
+
+class RDiffFlags(enum.IntFlag):
+    """How lines are compared (Rdiff_view_set_flags, Rdiff_unified)."""
+    R_DIFF_IGNORE_TRAILING_SPACE = 1
+    R_DIFF_IGNORE_SPACE = 2
+    R_DIFF_IGNORE_CASE = 4
+
+R_DIFF_IGNORE_TRAILING_SPACE = RDiffFlags.R_DIFF_IGNORE_TRAILING_SPACE
+R_DIFF_IGNORE_SPACE = RDiffFlags.R_DIFF_IGNORE_SPACE
+R_DIFF_IGNORE_CASE = RDiffFlags.R_DIFF_IGNORE_CASE
+
 class RNotificationUrgency(enum.IntEnum):
     """How much a notification of the system asks for attention (Rnotification_show)."""
     R_NOTIFICATION_LOW = 0x04F0
@@ -1359,6 +1637,32 @@ class RNotificationUrgency(enum.IntEnum):
 R_NOTIFICATION_LOW = RNotificationUrgency.R_NOTIFICATION_LOW
 R_NOTIFICATION_NORMAL = RNotificationUrgency.R_NOTIFICATION_NORMAL
 R_NOTIFICATION_CRITICAL = RNotificationUrgency.R_NOTIFICATION_CRITICAL
+
+class RNotificationEvent(enum.IntEnum):
+    """What happened to a notification (Rnotification_set_callback)."""
+    R_NOTIFICATION_ACTIVATED = 0x0C20
+    R_NOTIFICATION_ACTION_INVOKED = 0x0C21
+    R_NOTIFICATION_DISMISSED = 0x0C22
+
+R_NOTIFICATION_ACTIVATED = RNotificationEvent.R_NOTIFICATION_ACTIVATED
+R_NOTIFICATION_ACTION_INVOKED = RNotificationEvent.R_NOTIFICATION_ACTION_INVOKED
+R_NOTIFICATION_DISMISSED = RNotificationEvent.R_NOTIFICATION_DISMISSED
+
+class RNotificationFeature(enum.IntFlag):
+    """What the notifications of the system can do here (Rnotification_supports)."""
+    R_NOTIFICATION_FEATURE_ACTIONS = 1
+    R_NOTIFICATION_FEATURE_REPLACE = 2
+    R_NOTIFICATION_FEATURE_CLOSE = 4
+    R_NOTIFICATION_FEATURE_ICON = 8
+    R_NOTIFICATION_FEATURE_ACTIVATED = 0x0010
+    R_NOTIFICATION_FEATURE_DISMISSED = 0x0020
+
+R_NOTIFICATION_FEATURE_ACTIONS = RNotificationFeature.R_NOTIFICATION_FEATURE_ACTIONS
+R_NOTIFICATION_FEATURE_REPLACE = RNotificationFeature.R_NOTIFICATION_FEATURE_REPLACE
+R_NOTIFICATION_FEATURE_CLOSE = RNotificationFeature.R_NOTIFICATION_FEATURE_CLOSE
+R_NOTIFICATION_FEATURE_ICON = RNotificationFeature.R_NOTIFICATION_FEATURE_ICON
+R_NOTIFICATION_FEATURE_ACTIVATED = RNotificationFeature.R_NOTIFICATION_FEATURE_ACTIVATED
+R_NOTIFICATION_FEATURE_DISMISSED = RNotificationFeature.R_NOTIFICATION_FEATURE_DISMISSED
 
 class RFileDialogFlags(enum.IntFlag):
     R_FILE_DIALOG_MULTIPLE = 1
@@ -1399,6 +1703,70 @@ R_MESSAGE_RESULT_CANCEL = RMessageResult.R_MESSAGE_RESULT_CANCEL
 R_MESSAGE_RESULT_OK = RMessageResult.R_MESSAGE_RESULT_OK
 R_MESSAGE_RESULT_YES = RMessageResult.R_MESSAGE_RESULT_YES
 R_MESSAGE_RESULT_NO = RMessageResult.R_MESSAGE_RESULT_NO
+
+class RPermission(enum.IntEnum):
+    """What the application may be allowed to use (Rpermission_request)."""
+    R_PERMISSION_CAMERA = 0x0C00
+    R_PERMISSION_NOTIFICATIONS = 0x0C01
+    R_PERMISSION_PHOTOS = 0x0C02
+    R_PERMISSION_MICROPHONE = 0x0C03
+    R_PERMISSION_LOCATION = 0x0C04
+
+R_PERMISSION_CAMERA = RPermission.R_PERMISSION_CAMERA
+R_PERMISSION_NOTIFICATIONS = RPermission.R_PERMISSION_NOTIFICATIONS
+R_PERMISSION_PHOTOS = RPermission.R_PERMISSION_PHOTOS
+R_PERMISSION_MICROPHONE = RPermission.R_PERMISSION_MICROPHONE
+R_PERMISSION_LOCATION = RPermission.R_PERMISSION_LOCATION
+
+class RPermissionStatus(enum.IntEnum):
+    """What the user answered, or would be asked (Rpermission_get_status)."""
+    R_PERMISSION_UNSUPPORTED = 0x0C10
+    R_PERMISSION_NOT_ASKED = 0x0C11
+    R_PERMISSION_GRANTED = 0x0C12
+    R_PERMISSION_LIMITED = 0x0C13
+    R_PERMISSION_DENIED = 0x0C14
+    R_PERMISSION_BLOCKED = 0x0C15
+
+R_PERMISSION_UNSUPPORTED = RPermissionStatus.R_PERMISSION_UNSUPPORTED
+R_PERMISSION_NOT_ASKED = RPermissionStatus.R_PERMISSION_NOT_ASKED
+R_PERMISSION_GRANTED = RPermissionStatus.R_PERMISSION_GRANTED
+R_PERMISSION_LIMITED = RPermissionStatus.R_PERMISSION_LIMITED
+R_PERMISSION_DENIED = RPermissionStatus.R_PERMISSION_DENIED
+R_PERMISSION_BLOCKED = RPermissionStatus.R_PERMISSION_BLOCKED
+
+class RDeviceResult(enum.IntEnum):
+    """How a request of a picker, the camera or a share sheet ended."""
+    R_DEVICE_DONE = 0x0C20
+    R_DEVICE_CANCELLED = 0x0C21
+    R_DEVICE_DENIED = 0x0C22
+    R_DEVICE_UNSUPPORTED = 0x0C23
+    R_DEVICE_BUSY = 0x0C24
+    R_DEVICE_FAILED = 0x0C25
+
+R_DEVICE_DONE = RDeviceResult.R_DEVICE_DONE
+R_DEVICE_CANCELLED = RDeviceResult.R_DEVICE_CANCELLED
+R_DEVICE_DENIED = RDeviceResult.R_DEVICE_DENIED
+R_DEVICE_UNSUPPORTED = RDeviceResult.R_DEVICE_UNSUPPORTED
+R_DEVICE_BUSY = RDeviceResult.R_DEVICE_BUSY
+R_DEVICE_FAILED = RDeviceResult.R_DEVICE_FAILED
+
+class RHaptic(enum.IntEnum):
+    """A short vibration that answers a touch (Rhaptic_play)."""
+    R_HAPTIC_LIGHT = 0x0C30
+    R_HAPTIC_MEDIUM = 0x0C31
+    R_HAPTIC_HEAVY = 0x0C32
+    R_HAPTIC_SELECTION = 0x0C33
+    R_HAPTIC_SUCCESS = 0x0C34
+    R_HAPTIC_WARNING = 0x0C35
+    R_HAPTIC_ERROR = 0x0C36
+
+R_HAPTIC_LIGHT = RHaptic.R_HAPTIC_LIGHT
+R_HAPTIC_MEDIUM = RHaptic.R_HAPTIC_MEDIUM
+R_HAPTIC_HEAVY = RHaptic.R_HAPTIC_HEAVY
+R_HAPTIC_SELECTION = RHaptic.R_HAPTIC_SELECTION
+R_HAPTIC_SUCCESS = RHaptic.R_HAPTIC_SUCCESS
+R_HAPTIC_WARNING = RHaptic.R_HAPTIC_WARNING
+R_HAPTIC_ERROR = RHaptic.R_HAPTIC_ERROR
 
 class RMotion(enum.IntEnum):
     """How a spring moves. Animations in Raven are springs, as on iOS: a value is
@@ -1473,6 +1841,16 @@ R_XML_ACTION = RXmlValueType.R_XML_ACTION
 R_XML_FILE = RXmlValueType.R_XML_FILE
 R_XML_NUMBERS = RXmlValueType.R_XML_NUMBERS
 R_XML_LIST = RXmlValueType.R_XML_LIST
+
+class RClock(enum.IntEnum):
+    """How the hours of a time are shown."""
+    R_CLOCK_AUTO = 0x0C30
+    R_CLOCK_12_HOUR = 0x0C31
+    R_CLOCK_24_HOUR = 0x0C32
+
+R_CLOCK_AUTO = RClock.R_CLOCK_AUTO
+R_CLOCK_12_HOUR = RClock.R_CLOCK_12_HOUR
+R_CLOCK_24_HOUR = RClock.R_CLOCK_24_HOUR
 
 class RColorFilter(enum.IntEnum):
     R_COLOR_FILTER_NONE = 0x0740
@@ -1624,6 +2002,37 @@ R_ACCESSIBLE_COLLAPSE = RAccessibleAction.R_ACCESSIBLE_COLLAPSE
 R_ACCESSIBLE_SELECT = RAccessibleAction.R_ACCESSIBLE_SELECT
 R_ACCESSIBLE_FOCUS = RAccessibleAction.R_ACCESSIBLE_FOCUS
 
+class RHostService(enum.IntEnum):
+    """What a request of a service of the device asks the application for (RHostServiceRequest)."""
+    R_HOST_SERVICE_OPEN_FILES = 0x0C40
+    R_HOST_SERVICE_SAVE_FILE = 0x0C41
+    R_HOST_SERVICE_SELECT_FOLDER = 0x0C42
+    R_HOST_SERVICE_TAKE_PHOTO = 0x0C43
+    R_HOST_SERVICE_PICK_PHOTOS = 0x0C44
+    R_HOST_SERVICE_SHARE = 0x0C45
+
+R_HOST_SERVICE_OPEN_FILES = RHostService.R_HOST_SERVICE_OPEN_FILES
+R_HOST_SERVICE_SAVE_FILE = RHostService.R_HOST_SERVICE_SAVE_FILE
+R_HOST_SERVICE_SELECT_FOLDER = RHostService.R_HOST_SERVICE_SELECT_FOLDER
+R_HOST_SERVICE_TAKE_PHOTO = RHostService.R_HOST_SERVICE_TAKE_PHOTO
+R_HOST_SERVICE_PICK_PHOTOS = RHostService.R_HOST_SERVICE_PICK_PHOTOS
+R_HOST_SERVICE_SHARE = RHostService.R_HOST_SERVICE_SHARE
+
+class RGoldenStatus(enum.IntEnum):
+    R_GOLDEN_MATCH = 0x0BA0
+    R_GOLDEN_UPDATED = 0x0BA1
+    R_GOLDEN_MISMATCH = 0x0BA2
+    R_GOLDEN_SIZE_MISMATCH = 0x0BA3
+    R_GOLDEN_MISSING = 0x0BA4
+    R_GOLDEN_FAILED = 0x0BA5
+
+R_GOLDEN_MATCH = RGoldenStatus.R_GOLDEN_MATCH
+R_GOLDEN_UPDATED = RGoldenStatus.R_GOLDEN_UPDATED
+R_GOLDEN_MISMATCH = RGoldenStatus.R_GOLDEN_MISMATCH
+R_GOLDEN_SIZE_MISMATCH = RGoldenStatus.R_GOLDEN_SIZE_MISMATCH
+R_GOLDEN_MISSING = RGoldenStatus.R_GOLDEN_MISSING
+R_GOLDEN_FAILED = RGoldenStatus.R_GOLDEN_FAILED
+
 
 class RInitDesc(ctypes.Structure):
     """Optional settings for Rinit_ex. A zero-initialized structure selects the
@@ -1676,6 +2085,56 @@ class RFrameStats(ctypes.Structure):
     ]
 
 
+class RDataItem(ctypes.Structure):
+    """One format of something given to the other applications: put on
+    the clipboard (Rclipboard_set_data) or dragged out of a window
+    (Rdrag_begin_external). The program that receives it takes the format
+    it prefers.
+    
+    `mime` names the format. Raven gives these their native names on each
+    system (and converts them), so that every program understands them:
+    
+      text/plain      UTF-8 text
+      text/html       HTML (UTF-8)
+      image/png       a PNG file (Rimage_encode_png); on Windows it is also
+                      given as a bitmap (CF_DIBV5), on macOS also as TIFF
+      text/uri-list   files, as file:// URLs, one per line: the file
+                      manager copies or moves them, the other programs
+                      open them
+      text/rtf, image/jpeg, image/tiff, image/gif, application/pdf,
+      application/json, text/csv, image/svg+xml
+    
+    Any other name is a format of the application ("application/x-myapp-node"):
+    passed as it is, and read back by the programs that know it (other
+    instances of the application)."""
+    _fields_ = [
+        ("mime", ctypes.c_char_p),
+        ("data", ctypes.c_void_p),
+        ("size", ctypes.c_size_t),
+    ]
+
+
+class RInsets(ctypes.Structure):
+    """Distances from the edges of a window, in logical units."""
+    _fields_ = [
+        ("top", ctypes.c_float),
+        ("right", ctypes.c_float),
+        ("bottom", ctypes.c_float),
+        ("left", ctypes.c_float),
+    ]
+
+
+class RTextInputInfo(ctypes.Structure):
+    """What the platform needs to know of the focused text input to set up the on-screen keyboard."""
+    _fields_ = [
+        ("type", ctypes.c_int),
+        ("return_key", ctypes.c_int),
+        ("password", ctypes.c_int),
+        ("read_only", ctypes.c_int),
+        ("max_length", ctypes.c_int),
+    ]
+
+
 class RNativeWindow(ctypes.Structure):
     """Native handles of a window or of a native viewport.
       Win32 : display = HINSTANCE, window = HWND
@@ -1683,7 +2142,9 @@ class RNativeWindow(ctypes.Structure):
       Wayland: display = wl_display*, window = wl_surface* (Linux and BSD choose
               Wayland or X11 when Rinit runs: check `system`)
       Cocoa : display = NSWindow*, window = CAMetalLayer* for Vulkan presentation
-      Emscripten: window = opaque browser surface token (no OS window handle)"""
+      Emscripten: window = opaque browser surface token (no OS window handle)
+      Android: window = ANativeWindow*
+      UIKit : display = UIWindow*, window = CAMetalLayer* for Vulkan presentation (iOS, iPadOS)"""
     _fields_ = [
         ("system", ctypes.c_int),
         ("display", ctypes.c_void_p),
@@ -1752,6 +2213,7 @@ class RTouchSettings(ctypes.Structure):
         ("trackpad_gestures", ctypes.c_int),
         ("swipe_navigation", ctypes.c_int),
         ("swipe_distance", ctypes.c_float),
+        ("min_touch_size", ctypes.c_float),
     ]
 
 
@@ -1817,6 +2279,19 @@ class RGestureEvent(ctypes.Structure):
     ]
 
 
+class RPdfPrintDesc(ctypes.Structure):
+    """How a PDF document is printed. Every field may be left to zero."""
+    _fields_ = [
+        ("window", ctypes.c_uint32),
+        ("title", ctypes.c_char_p),
+        ("printer", ctypes.c_char_p),
+        ("copies", ctypes.c_int),
+        ("flags", ctypes.c_uint32),
+        ("output", ctypes.c_char_p),
+        ("password", ctypes.c_char_p),
+    ]
+
+
 class RTileItem(ctypes.Structure):
     """What a tile shows, filled by the application when the tile is drawn."""
     _fields_ = [
@@ -1828,6 +2303,17 @@ class RTileItem(ctypes.Structure):
         ("tint", ctypes.c_float * 4),
         ("icon_radius", ctypes.c_float),
         ("text_color", ctypes.c_float * 4),
+        ("note", ctypes.c_char_p),
+        ("detail_color", ctypes.c_float * 4),
+    ]
+
+
+class RTileSection(ctypes.Structure):
+    """A section of a tile view: its first tile, and what its header shows."""
+    _fields_ = [
+        ("first", ctypes.c_int),
+        ("text", ctypes.c_char_p),
+        ("detail", ctypes.c_char_p),
     ]
 
 
@@ -1886,6 +2372,32 @@ class RJumpTask(ctypes.Structure):
     ]
 
 
+class RNotificationAction(ctypes.Structure):
+    """A button of a notification."""
+    _fields_ = [
+        ("id", ctypes.c_char_p),
+        ("label", ctypes.c_char_p),
+    ]
+
+
+class RNotificationDesc(ctypes.Structure):
+    """A notification for Rnotification_show_desc. `size` must be
+    sizeof(RNotificationDesc): the fields that later versions of Raven add
+    come after the others, and a smaller size tells Raven they were not
+    given. The other fields may be left to zero."""
+    _fields_ = [
+        ("size", ctypes.c_uint32),
+        ("tag", ctypes.c_char_p),
+        ("title", ctypes.c_char_p),
+        ("body", ctypes.c_char_p),
+        ("urgency", ctypes.c_int),
+        ("icon", ctypes.c_char_p),
+        ("actions", ctypes.POINTER(RNotificationAction)),
+        ("action_count", ctypes.c_int),
+        ("window", ctypes.c_uint32),
+    ]
+
+
 class RFileFilter(ctypes.Structure):
     """A kind of file in a file dialog."""
     _fields_ = [
@@ -1905,6 +2417,29 @@ class RFileDialogDesc(ctypes.Structure):
         ("filter_count", ctypes.c_int),
         ("default_extension", ctypes.c_char_p),
         ("flags", ctypes.c_uint32),
+    ]
+
+
+class RPickedFile(ctypes.Structure):
+    """A file given by a service of the device. Valid during the callback only: copy what you keep."""
+    _fields_ = [
+        ("path", ctypes.c_char_p),
+        ("name", ctypes.c_char_p),
+        ("mime_type", ctypes.c_char_p),
+        ("size", ctypes.c_uint64),
+        ("width", ctypes.c_int),
+        ("height", ctypes.c_int),
+    ]
+
+
+class RShareDesc(ctypes.Structure):
+    """What a share sheet offers to the other applications (Rshare_show). Every field may be left to zero, but not all of them."""
+    _fields_ = [
+        ("text", ctypes.c_char_p),
+        ("path", ctypes.c_char_p),
+        ("mime_type", ctypes.c_char_p),
+        ("title", ctypes.c_char_p),
+        ("anchor", ctypes.c_uint32),
     ]
 
 
@@ -1928,6 +2463,9 @@ class RViewportDrawInfo(ctypes.Structure):
         ("command_buffer", ctypes.c_void_p),
         ("render_pass", ctypes.c_void_p),
         ("color_format", ctypes.c_uint32),
+        ("metal_encoder", ctypes.c_void_p),
+        ("metal_command_buffer", ctypes.c_void_p),
+        ("metal_device", ctypes.c_void_p),
     ]
 
 
@@ -2006,6 +2544,32 @@ class RAccessibleInfo(ctypes.Structure):
     ]
 
 
+class RHostServiceRequest(ctypes.Structure):
+    """A request of a service of the device, valid during the call only. Fields that do not concern the service are zero."""
+    _fields_ = [
+        ("id", ctypes.c_uint32),
+        ("service", ctypes.c_int),
+        ("window", ctypes.c_uint32),
+        ("anchor_x", ctypes.c_float),
+        ("anchor_y", ctypes.c_float),
+        ("anchor_width", ctypes.c_float),
+        ("anchor_height", ctypes.c_float),
+        ("title", ctypes.c_char_p),
+        ("filters", ctypes.POINTER(RFileFilter)),
+        ("filter_count", ctypes.c_int),
+        ("flags", ctypes.c_uint32),
+        ("file_name", ctypes.c_char_p),
+        ("default_extension", ctypes.c_char_p),
+        ("data", ctypes.c_void_p),
+        ("size", ctypes.c_size_t),
+        ("path", ctypes.c_char_p),
+        ("max_count", ctypes.c_int),
+        ("text", ctypes.c_char_p),
+        ("mime_type", ctypes.c_char_p),
+        ("share_title", ctypes.c_char_p),
+    ]
+
+
 class RHostPlatformDesc(ctypes.Structure):
     _fields_ = [
         ("set_cursor", ctypes.c_void_p),
@@ -2013,6 +2577,36 @@ class RHostPlatformDesc(ctypes.Structure):
         ("clipboard_get", ctypes.c_void_p),
         ("wake", ctypes.c_void_p),
         ("user_data", ctypes.c_void_p),
+        ("permission_status", ctypes.c_void_p),
+        ("permission_request", ctypes.c_void_p),
+        ("service_request", ctypes.c_void_p),
+        ("has_camera", ctypes.c_int),
+        ("open_url", ctypes.c_void_p),
+        ("haptic", ctypes.c_void_p),
+        ("download", ctypes.c_void_p),
+    ]
+
+
+class RGoldenOptions(ctypes.Structure):
+    """How Rtest_expect_golden compares. NULL options: a tolerance of 2 per channel and no different pixel."""
+    _fields_ = [
+        ("channel_tolerance", ctypes.c_int),
+        ("max_diff_ratio", ctypes.c_float),
+        ("per_platform", ctypes.c_int),
+        ("output_directory", ctypes.c_char_p),
+    ]
+
+
+class RGoldenResult(ctypes.Structure):
+    """What Rtest_expect_golden found."""
+    _fields_ = [
+        ("status", ctypes.c_int),
+        ("width", ctypes.c_int),
+        ("height", ctypes.c_int),
+        ("differing_pixels", ctypes.c_int),
+        ("max_channel_difference", ctypes.c_int),
+        ("golden_path", ctypes.c_char_p),
+        ("message", ctypes.c_char_p),
     ]
 
 
@@ -2022,6 +2616,14 @@ RFrameCallback = ctypes.CFUNCTYPE(None, ctypes.c_double, ctypes.c_void_p)
 def _adapt_RFrameCallback(function):
     def call(delta_seconds, user_data):
         function(delta_seconds, user_data)
+    return call
+
+RAppEventCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RAppEventCallback(function):
+    def call(event, user_data):
+        function(_e(RAppEvent, event), user_data)
     return call
 
 RTaskCallback = ctypes.CFUNCTYPE(None, ctypes.c_void_p)
@@ -2064,6 +2666,14 @@ def _adapt_RActionListCallback(function):
         function(_r(name), bound, user_data)
     return call
 
+RActionParametersCallback = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p)
+
+
+def _adapt_RActionParametersCallback(function):
+    def call(context, user_data):
+        function(context, user_data)
+    return call
+
 RErrorCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.c_char_p)
 
 
@@ -2080,12 +2690,36 @@ def _adapt_RDeviceResetCallback(function):
         function(user_data)
     return call
 
+RKeyboardCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_float, ctypes.c_void_p)
+
+
+def _adapt_RKeyboardCallback(function):
+    def call(window, visible, height, user_data):
+        function(window, visible, height, user_data)
+    return call
+
 RDropCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.POINTER(RDropEvent), ctypes.c_void_p)
 
 
 def _adapt_RDropCallback(function):
     def call(target, event, user_data):
         return function(target, event.contents if event else None, user_data) or 0
+    return call
+
+RDragFinishedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RDragFinishedCallback(function):
+    def call(source, operation, user_data):
+        function(source, _e(RDragOperation, operation), user_data)
+    return call
+
+RBackCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_void_p)
+
+
+def _adapt_RBackCallback(function):
+    def call(window, user_data):
+        return function(window, user_data) or 0
     return call
 
 RWindowCloseCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_void_p)
@@ -2208,6 +2842,14 @@ def _adapt_RSliderChangedCallback(function):
         function(slider, value, user_data)
     return call
 
+RImageFinishedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void_p)
+
+
+def _adapt_RImageFinishedCallback(function):
+    def call(image, user_data):
+        function(image, user_data)
+    return call
+
 RTextChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_void_p)
 
 
@@ -2232,6 +2874,14 @@ def _adapt_RComboBoxChangedCallback(function):
         function(combo_box, index, user_data)
     return call
 
+RComboBoxTextCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RComboBoxTextCallback(function):
+    def call(combo_box, text, user_data):
+        function(combo_box, _r(text), user_data)
+    return call
+
 RListItemTextCallback = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
 
 
@@ -2240,6 +2890,14 @@ def _adapt_RListItemTextCallback(function):
         text = ctypes.create_string_buffer(_s(function(list_view, index, user_data)) or b"")
         call.text = text
         return ctypes.cast(text, ctypes.c_void_p).value
+    return call
+
+RListItemColorCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_void_p)
+
+
+def _adapt_RListItemColorCallback(function):
+    def call(list_view, index, r, g, b, a, user_data):
+        return function(list_view, index, r, g, b, a, user_data) or 0
     return call
 
 RListEventCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
@@ -2272,6 +2930,14 @@ RMenuItemClickedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void
 def _adapt_RMenuItemClickedCallback(function):
     def call(item, user_data):
         function(item, user_data)
+    return call
+
+RTileSectionCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(RTileSection), ctypes.c_void_p)
+
+
+def _adapt_RTileSectionCallback(function):
+    def call(tile_view, section, out, user_data):
+        function(tile_view, section, out.contents if out else None, user_data)
     return call
 
 RTileItemCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(RTileItem), ctypes.c_void_p)
@@ -2318,6 +2984,14 @@ def _adapt_RTableCellTextCallback(function):
         return ctypes.cast(text, ctypes.c_void_p).value
     return call
 
+RTableCellColorCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_void_p)
+
+
+def _adapt_RTableCellColorCallback(function):
+    def call(table, row, column, r, g, b, a, user_data):
+        return function(table, row, column, r, g, b, a, user_data) or 0
+    return call
+
 RTableEventCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
 
 
@@ -2332,6 +3006,14 @@ RTableSortCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctype
 def _adapt_RTableSortCallback(function):
     def call(table, column, descending, user_data):
         function(table, column, descending, user_data)
+    return call
+
+RTableCellEditedCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RTableCellEditedCallback(function):
+    def call(table, row, column, text, user_data):
+        return function(table, row, column, _r(text), user_data) or 0
     return call
 
 RDateChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
@@ -2430,6 +3112,86 @@ def _adapt_RMapCameraCallback(function):
         function(map, user_data)
     return call
 
+RChartSliceCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RChartSliceCallback(function):
+    def call(chart, slice, selected, user_data):
+        function(chart, slice, selected, user_data)
+    return call
+
+RChartCellCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_float, ctypes.c_void_p)
+
+
+def _adapt_RChartCellCallback(function):
+    def call(chart, row, column, value, user_data):
+        function(chart, row, column, value, user_data)
+    return call
+
+RPdfPageChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RPdfPageChangedCallback(function):
+    def call(view, page, user_data):
+        function(view, page, user_data)
+    return call
+
+RCarouselPageChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RCarouselPageChangedCallback(function):
+    def call(carousel, page, user_data):
+        function(carousel, page, user_data)
+    return call
+
+RMapTileCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RMapTileCallback(function):
+    def call(map, z, x, y, user_data):
+        function(map, z, x, y, user_data)
+    return call
+
+RMapMarkerCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RMapMarkerCallback(function):
+    def call(map, marker, user_data):
+        function(map, marker, user_data)
+    return call
+
+RMapViewCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p)
+
+
+def _adapt_RMapViewCallback(function):
+    def call(map, latitude, longitude, zoom, user_data):
+        function(map, latitude, longitude, zoom, user_data)
+    return call
+
+RSystemWebViewResultCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RSystemWebViewResultCallback(function):
+    def call(view, result, error, user_data):
+        function(view, _r(result), _r(error), user_data)
+    return call
+
+RSystemWebViewMessageCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RSystemWebViewMessageCallback(function):
+    def call(view, message, user_data):
+        function(view, _r(message), user_data)
+    return call
+
+RSystemWebViewEventCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RSystemWebViewEventCallback(function):
+    def call(view, event, user_data):
+        function(view, _e(RSystemWebViewEvent, event), user_data)
+    return call
+
 RTextEditorZoomCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_float, ctypes.c_void_p)
 
 
@@ -2444,6 +3206,16 @@ RCompletionCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_char_p, c
 def _adapt_RCompletionCallback(function):
     def call(editor, prefix, user_data):
         function(editor, _r(prefix), user_data)
+    return call
+
+RTextEditorHoverCallback = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RTextEditorHoverCallback(function):
+    def call(editor, line, column, user_data):
+        text = ctypes.create_string_buffer(_s(function(editor, line, column, user_data)) or b"")
+        call.text = text
+        return ctypes.cast(text, ctypes.c_void_p).value
     return call
 
 RTextEditorChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void_p)
@@ -2468,6 +3240,14 @@ RDockCloseCallback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_uint32, ctypes.c_ui
 def _adapt_RDockCloseCallback(function):
     def call(area, panel, user_data):
         return function(area, panel, user_data) or 0
+    return call
+
+RDockFloatWindowCallback = ctypes.CFUNCTYPE(ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p)
+
+
+def _adapt_RDockFloatWindowCallback(function):
+    def call(area, panel, window, floating_area, user_data):
+        return function(area, panel, window, floating_area, user_data) or 0
     return call
 
 RDockChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void_p)
@@ -2558,6 +3338,14 @@ def _adapt_RBlockEditorContextCallback(function):
         function(editor, block, x, y, user_data)
     return call
 
+RDiffViewLineCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RDiffViewLineCallback(function):
+    def call(diff_view, side, line, in_gutter, user_data):
+        function(diff_view, _e(RDiffSide, side), line, in_gutter, user_data)
+    return call
+
 RDialogClosedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
 
 
@@ -2596,6 +3384,30 @@ RNotificationClickedCallback = ctypes.CFUNCTYPE(None, ctypes.c_void_p)
 def _adapt_RNotificationClickedCallback(function):
     def call(user_data):
         function(user_data)
+    return call
+
+RNotificationCallback = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RNotificationCallback(function):
+    def call(tag, event, action, user_data):
+        function(_r(tag), _e(RNotificationEvent, event), _r(action), user_data)
+    return call
+
+RPermissionCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RPermissionCallback(function):
+    def call(permission, status, user_data):
+        function(_e(RPermission, permission), _e(RPermissionStatus, status), user_data)
+    return call
+
+RDeviceCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.POINTER(RPickedFile), ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RDeviceCallback(function):
+    def call(result, files, count, user_data):
+        function(_e(RDeviceResult, result), files.contents if files else None, count, user_data)
     return call
 
 RViewportDrawCallback = ctypes.CFUNCTYPE(None, ctypes.POINTER(RViewportDrawInfo), ctypes.c_void_p)
@@ -2654,12 +3466,36 @@ def _adapt_RXmlTagAttributeCallback(function):
         return function(widget, _r(name), _r(value), user_data) or 0
     return call
 
+RScriptLogCallback = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RScriptLogCallback(function):
+    def call(message, user_data):
+        function(_r(message), user_data)
+    return call
+
+RScriptDiagnosticCallback = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p)
+
+
+def _adapt_RScriptDiagnosticCallback(function):
+    def call(severity, code, file, line, column, text, user_data):
+        function(_e(RSeverity, severity), _r(code), _r(file), line, column, _r(text), user_data)
+    return call
+
 RLocaleChangedCallback = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_void_p)
 
 
 def _adapt_RLocaleChangedCallback(function):
     def call(language, user_data):
         function(_r(language), user_data)
+    return call
+
+RAccessiblePressCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_void_p)
+
+
+def _adapt_RAccessiblePressCallback(function):
+    def call(widget, user_data):
+        function(widget, user_data)
     return call
 
 
@@ -2922,6 +3758,34 @@ def Rget_time():
     return _lib.Rget_time()
 
 
+_lib.Rset_app_event_callback.argtypes = [RAppEventCallback, ctypes.c_void_p]
+_lib.Rset_app_event_callback.restype = None
+
+
+def Rset_app_event_callback(callback, user_data=None):
+    _lib.Rset_app_event_callback(_callback(RAppEventCallback, _adapt_RAppEventCallback, callback), user_data)
+
+
+_lib.Ris_app_paused.argtypes = []
+_lib.Ris_app_paused.restype = ctypes.c_int
+
+
+def Ris_app_paused():
+    """Returns: R_TRUE between R_APP_DID_PAUSE and R_APP_WILL_RESUME: the application is in the background."""
+    return _lib.Ris_app_paused()
+
+
+_lib.Rinject_app_event.argtypes = [ctypes.c_int]
+_lib.Rinject_app_event.restype = None
+
+
+def Rinject_app_event(event):
+    """Handles an RAppEvent as if the system had sent it: for tests,
+    and for a host application (raven_host.h) that knows the lifecycle.
+    UI thread."""
+    _lib.Rinject_app_event(int(event))
+
+
 _lib.Rset_ui_scale.argtypes = [ctypes.c_float]
 _lib.Rset_ui_scale.restype = None
 
@@ -3115,16 +3979,16 @@ def Raction_get_count():
     return _lib.Raction_get_count()
 
 
-_lib.Raction_get_name.argtypes = [ctypes.c_int]
-_lib.Raction_get_name.restype = ctypes.c_char_p
+_lib.Raction_get_name_at.argtypes = [ctypes.c_int]
+_lib.Raction_get_name_at.restype = ctypes.c_char_p
 
 
-def Raction_get_name(index):
+def Raction_get_name_at(index):
     """Returns: The name of a bound action, from 0 to Raction_get_count() - 1, in
     the order they were bound; NULL out of range. The text lives until the
     action is unbound. For a command palette, a menu built from the actions,
     or a script that lists what it can do."""
-    return _r(_lib.Raction_get_name(index))
+    return _r(_lib.Raction_get_name_at(index))
 
 
 _lib.Raction_set_description.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
@@ -3178,6 +4042,101 @@ def Raction_set_default_handler(callback, user_data=None):
     _lib.Raction_set_default_handler(_callback(RActionCallback, _adapt_RActionCallback, callback), user_data)
 
 
+_lib.Raction_bind_with_parameters.argtypes = [ctypes.c_char_p, ctypes.c_char_p, RActionParametersCallback, ctypes.c_void_p]
+_lib.Raction_bind_with_parameters.restype = ctypes.c_int
+
+
+def Raction_bind_with_parameters(name, signature, callback, user_data=None):
+    return _lib.Raction_bind_with_parameters(_s(name), _s(signature), _callback(RActionParametersCallback, _adapt_RActionParametersCallback, callback), user_data)
+
+
+_lib.Raction_get_sender.argtypes = [ctypes.c_void_p]
+_lib.Raction_get_sender.restype = ctypes.c_uint32
+
+
+def Raction_get_sender(context):
+    """Returns: The widget whose event fired the action, R_INVALID_ID when a script calls it."""
+    return _lib.Raction_get_sender(context)
+
+
+_lib.Raction_get_name.argtypes = [ctypes.c_void_p]
+_lib.Raction_get_name.restype = ctypes.c_char_p
+
+
+def Raction_get_name(context):
+    return _r(_lib.Raction_get_name(context))
+
+
+_lib.Raction_get_argument_count.argtypes = [ctypes.c_void_p]
+_lib.Raction_get_argument_count.restype = ctypes.c_int
+
+
+def Raction_get_argument_count(context):
+    """Returns: The number of arguments given: the parameters of the signature, fewer when an event gives fewer... never more."""
+    return _lib.Raction_get_argument_count(context)
+
+
+_lib.Raction_get_number.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.Raction_get_number.restype = ctypes.c_double
+
+
+def Raction_get_number(context, index):
+    """The arguments, by position from 0. A wrong index or type reports an error and gives 0, "" or R_FALSE."""
+    return _lib.Raction_get_number(context, index)
+
+
+_lib.Raction_get_string.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.Raction_get_string.restype = ctypes.c_char_p
+
+
+def Raction_get_string(context, index):
+    """Returns: Valid until the function returns."""
+    return _r(_lib.Raction_get_string(context, index))
+
+
+_lib.Raction_get_bool.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.Raction_get_bool.restype = ctypes.c_int
+
+
+def Raction_get_bool(context, index):
+    return _lib.Raction_get_bool(context, index)
+
+
+_lib.Raction_return_number.argtypes = [ctypes.c_void_p, ctypes.c_double]
+_lib.Raction_return_number.restype = None
+
+
+def Raction_return_number(context, value):
+    """The value returned to the script; of the type of the signature (what is set last counts)."""
+    _lib.Raction_return_number(context, value)
+
+
+_lib.Raction_return_string.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+_lib.Raction_return_string.restype = None
+
+
+def Raction_return_string(context, value):
+    _lib.Raction_return_string(context, _s(value))
+
+
+_lib.Raction_return_bool.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.Raction_return_bool.restype = None
+
+
+def Raction_return_bool(context, value):
+    _lib.Raction_return_bool(context, value)
+
+
+_lib.Raction_fail.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+_lib.Raction_fail.restype = None
+
+
+def Raction_fail(context, message):
+    """The function failed: the script that called it stops with error
+    RS205 and this message (the application goes on; so does the next event)."""
+    _lib.Raction_fail(context, _s(message))
+
+
 _lib.Raction_set_builtins.argtypes = [ctypes.c_int]
 _lib.Raction_set_builtins.restype = None
 
@@ -3227,7 +4186,9 @@ _lib.Ropen_url.restype = ctypes.c_int
 def Ropen_url(url):
     """Opens an address with the program the user has for it: a web
     page in the browser, a mailto: in the mail program, a file in its
-    application. Returns at once.
+    application. Returns at once. On iOS and Android the system opens it
+    (a web page, a tel:, a mailto:; not a file: share it with Rshare_show),
+    and Raven must be initialized and this be called on the UI thread.
     Returns: R_FALSE when the OS could not be asked (nothing tells whether
     a program then really opened it)."""
     return _lib.Ropen_url(_s(url))
@@ -3249,8 +4210,8 @@ def Rclipboard_set_html(text, html):
     """Copies one content in two formats: `html` for the programs that
     paste formatting (word processors, chat, mail) and `text` for the
     others (editors, terminals). Each program takes the format it prefers.
-    Where the window system has no clipboard formats (Win32 and macOS for
-    now), or `html` is NULL, it is Rclipboard_set_text(text)."""
+    Where the window system has no clipboard formats, or `html` is NULL,
+    it is Rclipboard_set_text(text)."""
     _lib.Rclipboard_set_html(_s(text), _s(html))
 
 
@@ -3259,8 +4220,100 @@ _lib.Rclipboard_get_text.restype = ctypes.c_char_p
 
 
 def Rclipboard_get_text():
-    """Returns: The clipboard text, or "" when empty. Valid until the next call."""
+    """Returns: The clipboard text, or "" when empty. Valid until the next call.
+    On iOS a read that does not follow a paste of the user (the Paste of a
+    menu, a button, Command-V) shows the system's question "Allow Paste?",
+    and on Android 12+ the system says that the application pasted: read it
+    when the user pastes, not to look at it. Android lets only the
+    application in front read it."""
     return _r(_lib.Rclipboard_get_text())
+
+
+_lib.Rclipboard_has_text.argtypes = []
+_lib.Rclipboard_has_text.restype = ctypes.c_int
+
+
+def Rclipboard_has_text():
+    """Returns: R_TRUE when the clipboard holds text, without reading it (no
+    question of the system on iOS): to enable a Paste button."""
+    return _lib.Rclipboard_has_text()
+
+
+_lib.Rclipboard_set_data.argtypes = [ctypes.POINTER(RDataItem), ctypes.c_int]
+_lib.Rclipboard_set_data.restype = ctypes.c_int
+
+
+def Rclipboard_set_data(items, count):
+    """Replaces what the clipboard holds with one content in several
+    formats (RDataItem): each program pastes the one it prefers.
+    Returns: R_TRUE when every format was put on the clipboard; R_FALSE when
+    some could not be (a window system that only takes text: X11 and
+    Wayland for now, where the text/plain item, if any, still is)."""
+    return _lib.Rclipboard_set_data(_p(items), count)
+
+
+_lib.Rclipboard_has_data.argtypes = [ctypes.c_char_p]
+_lib.Rclipboard_has_data.restype = ctypes.c_int
+
+
+def Rclipboard_has_data(mime):
+    """Returns: R_TRUE when the clipboard holds this format (Rclipboard_set_data), or one Raven converts to it."""
+    return _lib.Rclipboard_has_data(_s(mime))
+
+
+_lib.Rclipboard_get_data.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_size_t)]
+_lib.Rclipboard_get_data.restype = ctypes.c_void_p
+
+
+def Rclipboard_get_data(mime):
+    """What the clipboard holds in one format, converted from the
+    native one when needed (a bitmap given as image/png...).
+    Returns: The bytes, followed by a '\\0' that `size` does not count, to
+    release with Rmemory_free; NULL when the clipboard does not hold it."""
+    size_ = ctypes.c_size_t()
+    address = _lib.Rclipboard_get_data(_s(mime), ctypes.byref(size_))
+    if not address:
+        return None
+    data = ctypes.string_at(address, size_.value)
+    _lib.Rmemory_free(address)
+    return data
+
+
+_lib.Rclipboard_set_image.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rclipboard_set_image.restype = ctypes.c_int
+
+
+def Rclipboard_set_image(rgba, width, height, stride):
+    """Copies a picture: RGBA8 pixels, straight alpha, rows `stride`
+    bytes apart (0: width * 4). It goes on the clipboard as image/png
+    (and as the bitmaps of the system), so that image editors, documents
+    and mail paste it.
+    Returns: R_FALSE when it could not be put there."""
+    return _lib.Rclipboard_set_image(rgba, width, height, stride)
+
+
+_lib.Rclipboard_has_image.argtypes = []
+_lib.Rclipboard_has_image.restype = ctypes.c_int
+
+
+def Rclipboard_has_image():
+    """Returns: R_TRUE when the clipboard holds a picture Rclipboard_get_image can read."""
+    return _lib.Rclipboard_has_image()
+
+
+_lib.Rclipboard_get_image.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rclipboard_get_image.restype = ctypes.c_void_p
+
+
+def Rclipboard_get_image():
+    """The picture on the clipboard (copied from any program: PNG,
+    TIFF, a bitmap...), as tightly packed RGBA8 pixels, straight alpha.
+    Returns: The pixels, to release with Rpixels_free; NULL when there is
+    none (or no decoder: RAVEN_WITH_STB_IMAGE off)."""
+    width_ = ctypes.c_int()
+    height_ = ctypes.c_int()
+    result = _lib.Rclipboard_get_image(ctypes.byref(width_), ctypes.byref(height_))
+    return (result, width_.value, height_.value)
 
 
 _lib.Rerror_get_last.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_int)]
@@ -3418,6 +4471,81 @@ def Rwindow_get_size(window):
     height_ = ctypes.c_int()
     _lib.Rwindow_get_size(window, ctypes.byref(width_), ctypes.byref(height_))
     return (width_.value, height_.value)
+
+
+_lib.Rwindow_get_safe_area.argtypes = [ctypes.c_uint32, ctypes.POINTER(RInsets)]
+_lib.Rwindow_get_safe_area.restype = None
+
+
+def Rwindow_get_safe_area(window, insets):
+    """The part of the window the system covers (status bar, notch,
+    home indicator, navigation bar), in logical units. The content of the
+    window is laid out inside it already. All 0 on desktop."""
+    _lib.Rwindow_get_safe_area(window, _p(insets))
+
+
+_lib.Rwindow_get_keyboard_area.argtypes = [ctypes.c_uint32, ctypes.POINTER(RInsets)]
+_lib.Rwindow_get_keyboard_area.restype = None
+
+
+def Rwindow_get_keyboard_area(window, insets):
+    """The part of the window the on-screen keyboard covers (only
+    `bottom` is set), in logical units; 0 when it is hidden or there is
+    none (desktop). The content is laid out above it already, and the
+    field that has the focus is scrolled into view above it, by the
+    ScrollBoxes that hold it, when the keyboard comes or changes height,
+    when the window turns, and when another field takes the focus."""
+    _lib.Rwindow_get_keyboard_area(window, _p(insets))
+
+
+_lib.Rwindow_set_keyboard_callback.argtypes = [ctypes.c_uint32, RKeyboardCallback, ctypes.c_void_p]
+_lib.Rwindow_set_keyboard_callback.restype = None
+
+
+def Rwindow_set_keyboard_callback(window, callback, user_data=None):
+    """Called when the on-screen keyboard appears, changes height or goes away (mobile). NULL removes it."""
+    _lib.Rwindow_set_keyboard_callback(window, _callback(RKeyboardCallback, _adapt_RKeyboardCallback, callback), user_data)
+
+
+_lib.Rwindow_clear_focus.argtypes = [ctypes.c_uint32]
+_lib.Rwindow_clear_focus.restype = None
+
+
+def Rwindow_clear_focus(window):
+    """Leaves the window with no focused widget, as a click on an empty
+    place does: the widget that had the focus loses it (and is told), and
+    keys go to the window until something takes the focus again. On mobile,
+    the on-screen keyboard goes away."""
+    _lib.Rwindow_clear_focus(window)
+
+
+_lib.Rwindow_set_back_callback.argtypes = [ctypes.c_uint32, RBackCallback, ctypes.c_void_p]
+_lib.Rwindow_set_back_callback.restype = None
+
+
+def Rwindow_set_back_callback(window, callback, user_data=None):
+    _lib.Rwindow_set_back_callback(window, _callback(RBackCallback, _adapt_RBackCallback, callback), user_data)
+
+
+_lib.Rwindow_set_back_enabled.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rwindow_set_back_enabled.restype = None
+
+
+def Rwindow_set_back_enabled(window, enabled):
+    """R_TRUE while the application has somewhere to go back to (a page
+    under the one shown). Android 13 and later ask for Back only while the
+    window wants it (predictive back): at the root page the system handles
+    Back itself and animates back to the home screen. Default R_FALSE."""
+    _lib.Rwindow_set_back_enabled(window, enabled)
+
+
+_lib.Rwindow_wants_back.argtypes = [ctypes.c_uint32]
+_lib.Rwindow_wants_back.restype = ctypes.c_int
+
+
+def Rwindow_wants_back(window):
+    """Returns: R_TRUE while Back would be taken: a popup or dialog is open, or Rwindow_set_back_enabled said so."""
+    return _lib.Rwindow_wants_back(window)
 
 
 _lib.Rwindow_set_min_size.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
@@ -3693,6 +4821,32 @@ def Rwindow_set_topmost(window, topmost):
     return _lib.Rwindow_set_topmost(window, topmost)
 
 
+_lib.Rwindow_set_owner.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
+_lib.Rwindow_set_owner.restype = ctypes.c_int
+
+
+def Rwindow_set_owner(window, owner):
+    """Gives the window an owner (a tool window or an inspector of the
+    main window): it stays above its owner, has no button of its own in the
+    taskbar, is minimized and restored with it (where the window system
+    does it: Windows, X11), and is destroyed with it (everywhere: Raven
+    destroys the windows a window owns before the window). R_INVALID_ID
+    gives the window back its independence.
+    Returns: R_FALSE when the window system cannot keep the window with its
+    owner (it is still destroyed with it), or when the owner is not valid
+    or is owned by the window (nothing is changed then)."""
+    return _lib.Rwindow_set_owner(window, owner)
+
+
+_lib.Rwindow_get_owner.argtypes = [ctypes.c_uint32]
+_lib.Rwindow_get_owner.restype = ctypes.c_uint32
+
+
+def Rwindow_get_owner(window):
+    """Returns: The owner of the window (Rwindow_set_owner), or R_INVALID_ID."""
+    return _lib.Rwindow_get_owner(window)
+
+
 _lib.Rwindow_set_picture_in_picture.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rwindow_set_picture_in_picture.restype = ctypes.c_int
 
@@ -3830,6 +4984,19 @@ def Rwindow_set_drop_callback(window, callback, user_data=None):
     _lib.Rwindow_set_drop_callback(window, _callback(RDropCallback, _adapt_RDropCallback, callback), user_data)
 
 
+_lib.Rdrop_set_highlight_rect.argtypes = [ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdrop_set_highlight_rect.restype = None
+
+
+def Rdrop_set_highlight_rect(x, y, width, height):
+    """During R_DROP_ENTER / R_DROP_MOVE only: choose Raven's highlight
+    in target-local logical units (window-local for a window callback).
+    Clipped to the target; zero width or height hides it without refusing
+    the drop. Each callback starts with the default highlight again.
+    Dimensions must be finite and nonnegative; coordinates must be finite."""
+    _lib.Rdrop_set_highlight_rect(x, y, width, height)
+
+
 _lib.Rwindow_set_user_handle.argtypes = [ctypes.c_uint32, ctypes.c_void_p]
 _lib.Rwindow_set_user_handle.restype = None
 
@@ -3888,7 +5055,7 @@ def Rwindow_save_preview(window, png_path, scale):
     and drawn at it (Rset_ui_scale, restored afterwards, which closes its
     popups), so text stays crisp: not resampled.
     Returns: R_FALSE, reported, when the backend can't capture (the null
-    backend) or the file can't be written (R_ERROR_IO)."""
+    backend) or the file can't be written (R_ERROR_FILE_NOT_FOUND)."""
     return _lib.Rwindow_save_preview(window, _s(png_path), scale)
 
 
@@ -3899,17 +5066,6 @@ _lib.Rwindow_get_focused_widget.restype = ctypes.c_uint32
 def Rwindow_get_focused_widget(window):
     """Widget that has the keyboard focus in the window, or R_INVALID_ID."""
     return _lib.Rwindow_get_focused_widget(window)
-
-
-_lib.Rwindow_clear_focus.argtypes = [ctypes.c_uint32]
-_lib.Rwindow_clear_focus.restype = None
-
-
-def Rwindow_clear_focus(window):
-    """Leaves the window with no focused widget, as a click on an empty
-    place does: the widget that had the focus loses it (and is told), and
-    keys go to the window until something takes the focus again."""
-    _lib.Rwindow_clear_focus(window)
 
 
 _lib.Rwindow_get_hovered_widget.argtypes = [ctypes.c_uint32]
@@ -3975,6 +5131,24 @@ def Rwindow_inject_text(window, text):
     _lib.Rwindow_inject_text(window, _s(text))
 
 
+_lib.Rwindow_inject_composition.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+_lib.Rwindow_inject_composition.restype = None
+
+
+def Rwindow_inject_composition(window, text, selection_start, selection_end):
+    """The text an input method is composing (preedit: Chinese,
+    Japanese, Korean, dead keys), as the platforms send it. The focused
+    TextInput, SpinBox or TextEditor shows it at its caret, underlined, in
+    place of its selection, but it is not in its text and no changed
+    callback runs. [selection_start, selection_end) are bytes of `text`:
+    the part the input method works on (underlined thicker), or the caret
+    when they are equal; -1 is the end of `text`. NULL or "" ends the
+    composition without typing anything (cancel). The committed text comes
+    through Rwindow_inject_text, which ends the composition too, and so
+    does a change of focus. Ignored when the focus takes no text."""
+    _lib.Rwindow_inject_composition(window, _s(text), selection_start, selection_end)
+
+
 _lib.Rwindow_inject_drag.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_int]
 _lib.Rwindow_inject_drag.restype = ctypes.c_int
 
@@ -3995,6 +5169,27 @@ def Rwindow_inject_drop(window, x, y, paths, text):
     paths_ = [_s(item_) for item_ in (paths or [])]
     paths_array = (ctypes.c_char_p * len(paths_))(*paths_)
     return _lib.Rwindow_inject_drop(window, x, y, paths_array, len(paths_), _s(text))
+
+
+_lib.Rwindow_inject_drag_end.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rwindow_inject_drag_end.restype = ctypes.c_int
+
+
+def Rwindow_inject_drag_end(window, operation):
+    """The end of the drag out of the window that the window system
+    holds (Rdrag_begin_external), as it reports it: `operation` is what the
+    target did (an RDragOperation). Returns R_FALSE when no such drag is in
+    progress."""
+    return _lib.Rwindow_inject_drag_end(window, int(operation))
+
+
+_lib.Rwindow_inject_back.argtypes = [ctypes.c_uint32]
+_lib.Rwindow_inject_back.restype = ctypes.c_int
+
+
+def Rwindow_inject_back(window):
+    """Back, as the system sends it (Rwindow_set_back_callback). Returns R_TRUE when something took it."""
+    return _lib.Rwindow_inject_back(window)
 
 
 _lib.Rwindow_is_key_down.argtypes = [ctypes.c_uint32, ctypes.c_int]
@@ -4042,6 +5237,70 @@ def Rwindow_wants_text_input(window):
     return _lib.Rwindow_wants_text_input(window)
 
 
+_lib.Rwindow_get_text_input_info.argtypes = [ctypes.c_uint32, ctypes.POINTER(RTextInputInfo)]
+_lib.Rwindow_get_text_input_info.restype = ctypes.c_int
+
+
+def Rwindow_get_text_input_info(window, info):
+    """The kind of the focused text input; R_FALSE when there is none."""
+    return _lib.Rwindow_get_text_input_info(window, _p(info))
+
+
+_lib.Rwindow_get_text_input_text.argtypes = [ctypes.c_uint32]
+_lib.Rwindow_get_text_input_text.restype = ctypes.c_char_p
+
+
+def Rwindow_get_text_input_text(window):
+    """Its text (UTF-8), valid until it changes; NULL when there is none."""
+    return _r(_lib.Rwindow_get_text_input_text(window))
+
+
+_lib.Rwindow_get_text_input_selection.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rwindow_get_text_input_selection.restype = ctypes.c_int
+
+
+def Rwindow_get_text_input_selection(window):
+    """Its selection: start == end is the caret. R_FALSE when there is none."""
+    start_ = ctypes.c_int()
+    end_ = ctypes.c_int()
+    result = _lib.Rwindow_get_text_input_selection(window, ctypes.byref(start_), ctypes.byref(end_))
+    return (result, start_.value, end_.value)
+
+
+_lib.Rwindow_set_text_input_selection.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rwindow_set_text_input_selection.restype = ctypes.c_int
+
+
+def Rwindow_set_text_input_selection(window, start, end):
+    """Selects bytes [start, end) of it (end before start puts the caret at end)."""
+    return _lib.Rwindow_set_text_input_selection(window, start, end)
+
+
+_lib.Rwindow_replace_text_input.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+_lib.Rwindow_replace_text_input.restype = ctypes.c_int
+
+
+def Rwindow_replace_text_input(window, start, end, text):
+    """Replaces bytes [start, end) of it with `text` and puts the caret
+    after it, as typing would (the changed callback runs; MaxLength
+    applies). R_FALSE when there is none or it is read-only."""
+    return _lib.Rwindow_replace_text_input(window, start, end, _s(text))
+
+
+_lib.Rwindow_get_text_composition.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rwindow_get_text_composition.restype = ctypes.c_char_p
+
+
+def Rwindow_get_text_composition(window):
+    """The composition of the input method in progress (UTF-8, valid
+    until it changes) and its selection in bytes; NULL when there is none.
+    Any output pointer may be NULL."""
+    selection_start_ = ctypes.c_int()
+    selection_end_ = ctypes.c_int()
+    result = _r(_lib.Rwindow_get_text_composition(window, ctypes.byref(selection_start_), ctypes.byref(selection_end_)))
+    return (result, selection_start_.value, selection_end_.value)
+
+
 _lib.Rwindow_has_popup.argtypes = [ctypes.c_uint32]
 _lib.Rwindow_has_popup.restype = ctypes.c_int
 
@@ -4059,7 +5318,9 @@ def Rwindow_get_text_input_rect(window):
     """Last painted caret in window pixels (x, y, width, height), including scrolling and scale.
     Call after Rdraw_frame. Independent of the blink phase. Returns R_FALSE and zeros the
     outputs when there is no visible editable caret, the window is inactive, or focus changed
-    since painting. Any output pointer may be NULL."""
+    since painting. Any output pointer may be NULL. While an input method
+    composes, it is the caret inside the composition: where its candidate
+    window goes."""
     x_ = ctypes.c_int()
     y_ = ctypes.c_int()
     width_ = ctypes.c_int()
@@ -4153,6 +5414,70 @@ _lib.Rdrag_cancel.restype = None
 def Rdrag_cancel(window):
     """Ends the drag in progress without dropping (the target receives R_DROP_LEAVE)."""
     _lib.Rdrag_cancel(window)
+
+
+_lib.Rdrag_begin_external.argtypes = [ctypes.c_uint32, ctypes.POINTER(RDataItem), ctypes.c_int, ctypes.c_uint32, RDragFinishedCallback, ctypes.c_void_p]
+_lib.Rdrag_begin_external.restype = ctypes.c_int
+
+
+def Rdrag_begin_external(source, items, count, operations, callback, user_data=None):
+    """Lets the user drag data out of the window, to another
+    application: a picture into a document, files into the file manager,
+    text into an editor. `items` is one content in several formats
+    (RDataItem, copied): the target takes the one it prefers.
+    `operations` is a bitmask of RDragOperation the target may do (0:
+    R_DRAG_OPERATION_COPY).
+    
+    Call it as Rdrag_begin, while the mouse button is held (from a mouse
+    move once the pointer has moved a few units). The window system then
+    takes the drag at the next move of the pointer: it shows the picture
+    that follows the pointer (Rdrag_set_image) and the cursor that tells
+    what a drop there does; the button released, `callback` (may be NULL)
+    is told what the target did.
+    
+    Called while a drag inside the application (Rdrag_begin) is in progress
+    in the window of `source`, it gives that drag the data for outside:
+    the drag stays inside the window, to its drop targets, and becomes a
+    drag of the window system only when the pointer leaves the window.
+    Brought back over a window of the application, it still comes to the
+    drop targets with the type and data given to Rdrag_begin.
+    
+    Implemented on macOS and Windows; elsewhere it returns R_FALSE
+    (Rdrag_external_supported).
+    Returns: R_FALSE when the widget is not in a window or the window
+    system cannot drag out of its windows."""
+    return _lib.Rdrag_begin_external(source, _p(items), count, operations, _callback(RDragFinishedCallback, _adapt_RDragFinishedCallback, callback), user_data)
+
+
+_lib.Rdrag_set_image.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_lib.Rdrag_set_image.restype = None
+
+
+def Rdrag_set_image(rgba, width, height):
+    """The picture that follows the pointer during the drag given by
+    Rdrag_begin_external (RGBA8 pixels, straight alpha, tightly packed,
+    copied), held by the pointer at its center. Call it right after
+    Rdrag_begin_external. Without it the system chooses: the picture
+    dragged, the icons of the files, or a generic one."""
+    _lib.Rdrag_set_image(rgba, width, height)
+
+
+_lib.Rdrag_external_supported.argtypes = []
+_lib.Rdrag_external_supported.restype = ctypes.c_int
+
+
+def Rdrag_external_supported():
+    """R_TRUE when the window system lets Raven drag data out of its windows (Rdrag_begin_external)."""
+    return _lib.Rdrag_external_supported()
+
+
+_lib.Rdrag_external_is_active.argtypes = []
+_lib.Rdrag_external_is_active.restype = ctypes.c_int
+
+
+def Rdrag_external_is_active():
+    """R_TRUE from Rdrag_begin_external until its callback was called."""
+    return _lib.Rdrag_external_is_active()
 
 
 _lib.Rwindow_register_shortcut.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32, ctypes.c_char_p]
@@ -4441,6 +5766,9 @@ _lib.Rtheme_set_metric.restype = None
 
 
 def Rtheme_set_metric(metric, value):
+    """Changes a size of the theme in use. It lasts until the look or
+    the theme is chosen again (Rlook_set, Rtheme_use), but not through a
+    switch between light and dark made by Rtheme_follow_system."""
     _lib.Rtheme_set_metric(int(metric), value)
 
 
@@ -4507,6 +5835,33 @@ def Rtheme_set_dark(dark):
     the glass, the colors of the code and which wallpaper the glass themes
     use. Rtheme_apply and the theme files set it."""
     _lib.Rtheme_set_dark(dark)
+
+
+_lib.Rtheme_get_system_dark.argtypes = []
+_lib.Rtheme_get_system_dark.restype = ctypes.c_int
+
+
+def Rtheme_get_system_dark():
+    """R_TRUE when the system is in dark mode, R_FALSE in light mode, -1 when the platform does not tell (desktop today)."""
+    return _lib.Rtheme_get_system_dark()
+
+
+_lib.Rtheme_follow_system.argtypes = [ctypes.c_int]
+_lib.Rtheme_follow_system.restype = None
+
+
+def Rtheme_follow_system(enabled):
+    """Follows the dark or light mode of the system with the Raven look
+    (R_LOOK_RAVEN_DARK / R_LOOK_RAVEN_LIGHT), now and when it changes.
+    Off by default. Does nothing where the platform does not tell (desktop today).
+    
+    A switch is Rlook_set, except that the sizes given with
+    Rtheme_set_metric stay. Colors and styles set with Rtheme_set_... are
+    those of one mode and are lost; to keep colors, sizes and styles of
+    the application through the switch, put them in a theme that names no
+    look (Rtheme_load_from_memory, then Rtheme_use): it is laid over the
+    new look."""
+    _lib.Rtheme_follow_system(enabled)
 
 
 _lib.Rtheme_is_dark.argtypes = []
@@ -4770,7 +6125,8 @@ _lib.Rtexture_create.restype = ctypes.c_uint32
 
 def Rtexture_create(data):
     """Creates a texture from the content of an image file (PNG, JPEG,
-    BMP, TGA, GIF, PSD, SVG). Decoding happens on the calling thread.
+    BMP, TGA, GIF, PSD, SVG). Decoding happens on the calling thread. An
+    animated GIF or APNG keeps its frames: an Image showing it plays them.
     Returns: R_INVALID_ID on failure."""
     data = _s(data)
     return _lib.Rtexture_create(data, len(data) if data is not None else 0)
@@ -4806,8 +6162,28 @@ def Rtexture_create_from_svg(svg, svg_size, scale):
     in pixels (Rtexture_get_size) change then; its size in logical units
     does not. Rtexture_create, Rtexture_create_from_file and the asynchronous
     ones read SVG files this way. Paths, fills, strokes and gradients are
-    drawn; text, filters and masks are not."""
+    drawn; text, filters and masks are not.
+    
+    currentColor: an SVG painted only in currentColor (fill="currentColor",
+    stroke="currentColor") is drawn in white, keeping its shape and its
+    opacity, and the widgets that show it (Image, the icons of menu items,
+    tabs, tree items, dock panels, tiles, nodes) tint it with the color of
+    their text at draw time: it follows the theme, hover, pressed and
+    disabled without being drawn again. Rdraw_image draws it in its tint
+    color. In an SVG that also uses other colors, currentColor is black.
+    See Rtexture_uses_current_color."""
     return _lib.Rtexture_create_from_svg(_s(svg), svg_size, scale)
+
+
+_lib.Rtexture_uses_current_color.argtypes = [ctypes.c_uint32]
+_lib.Rtexture_uses_current_color.restype = ctypes.c_int
+
+
+def Rtexture_uses_current_color(texture):
+    """R_TRUE when the texture is an SVG painted only in currentColor:
+    white where it is painted, tinted with the color of the text by the
+    widgets that show it (see Rtexture_create_from_svg)."""
+    return _lib.Rtexture_uses_current_color(texture)
 
 
 _lib.Rtexture_get_density.argtypes = [ctypes.c_uint32]
@@ -4857,6 +6233,22 @@ def Rtexture_create_mask_from_file_async(path):
     return _lib.Rtexture_create_mask_from_file_async(_s(path))
 
 
+_lib.Rtexture_create_from_url_async.argtypes = [ctypes.c_char_p]
+_lib.Rtexture_create_from_url_async.restype = ctypes.c_uint32
+
+
+def Rtexture_create_from_url_async(url):
+    """Downloads an http:// or https:// image and decodes it on a worker
+    thread, as an Image whose Source is a URL does. The handle is usable at
+    once: widgets showing it draw nothing until it is ready (Rtexture_is_ready;
+    a texture that could not be downloaded is ready with a size of 0, and the
+    failure is reported as a warning). Desktops download with WinHTTP or
+    `curl`; iOS and Android through their platform. Android needs the INTERNET
+    permission in the manifest; iOS refuses http:// unless Info.plist allows
+    it (App Transport Security). Up to 32 MiB."""
+    return _lib.Rtexture_create_from_url_async(_s(url))
+
+
 _lib.Rtexture_create_from_pixels.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
 _lib.Rtexture_create_from_pixels.restype = ctypes.c_uint32
 
@@ -4894,29 +6286,41 @@ def Rimage_decode(data):
     return (result, width_.value, height_.value)
 
 
-_lib.Rimage_encode_png.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t)]
-_lib.Rimage_encode_png.restype = ctypes.c_void_p
+_lib.Rimage_decode_info.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rimage_decode_info.restype = ctypes.c_int
 
 
-def Rimage_encode_png(rgba, width, height):
-    """Encodes tightly packed RGBA8 pixels, straight alpha (as
-    Rimage_decode gives them), as PNG. Thread-safe.
-    Returns: The PNG bytes, to release with Rpixels_free; NULL, reported, on
-    failure (and always when Raven is built without RAVEN_WITH_STB_IMAGE)."""
-    png_size_ = ctypes.c_size_t()
-    result = _lib.Rimage_encode_png(rgba, width, height, ctypes.byref(png_size_))
-    return (result, png_size_.value)
+def Rimage_decode_info(data):
+    """Reads what an image file in memory holds without keeping its
+    pixels: its size, its frames (1 for a still image, more for an animated
+    GIF or APNG) and how many times it plays (0: forever). Thread-safe.
+    Each pointer may be NULL.
+    Returns: R_FALSE when the data is not an image Raven can read."""
+    data = bytes(data) if data is not None else None
+    width_ = ctypes.c_int()
+    height_ = ctypes.c_int()
+    frame_count_ = ctypes.c_int()
+    loop_count_ = ctypes.c_int()
+    result = _lib.Rimage_decode_info(data, len(data) if data is not None else 0, ctypes.byref(width_), ctypes.byref(height_), ctypes.byref(frame_count_), ctypes.byref(loop_count_))
+    return (result, width_.value, height_.value, frame_count_.value, loop_count_.value)
 
 
-_lib.Rimage_save_png.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
-_lib.Rimage_save_png.restype = ctypes.c_int
+_lib.Rimage_decode_frame.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_double)]
+_lib.Rimage_decode_frame.restype = ctypes.c_void_p
 
 
-def Rimage_save_png(rgba, width, height, path):
-    """Writes tightly packed RGBA8 pixels, straight alpha, to a PNG file
-    (a UTF-8 path). Thread-safe.
-    Returns: R_FALSE, reported (R_ERROR_IO when the file can't be written), on failure."""
-    return _lib.Rimage_save_png(rgba, width, height, _s(path))
+def Rimage_decode_frame(data, frame):
+    """Decodes one frame of an animated GIF or APNG into tightly packed
+    RGBA8 pixels, composed as it is shown (the frames before it drawn and
+    disposed of). Frame 0 of a still image is the image. Thread-safe.
+    delay Receives the seconds the frame is shown (0 for a still image); may be NULL.
+    Returns: The pixels, to release with Rpixels_free; NULL when the frame does not exist."""
+    data = bytes(data) if data is not None else None
+    width_ = ctypes.c_int()
+    height_ = ctypes.c_int()
+    delay_ = ctypes.c_double()
+    result = _lib.Rimage_decode_frame(data, len(data) if data is not None else 0, frame, ctypes.byref(width_), ctypes.byref(height_), ctypes.byref(delay_))
+    return (result, width_.value, height_.value, delay_.value)
 
 
 _lib.Rpixels_free.argtypes = [ctypes.c_void_p]
@@ -4924,8 +6328,34 @@ _lib.Rpixels_free.restype = None
 
 
 def Rpixels_free(pixels):
-    """Releases pixels returned by Raven (Rimage_decode, Rimage_encode_png, Rwindow_capture). Thread-safe."""
+    """Releases pixels returned by Raven (Rimage_decode, Rimage_decode_frame, Rimage_encode_png, Rwindow_capture). Thread-safe."""
     _lib.Rpixels_free(pixels)
+
+
+_lib.Rimage_encode_png.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t)]
+_lib.Rimage_encode_png.restype = ctypes.c_void_p
+
+
+def Rimage_encode_png(rgba, width, height):
+    """Encodes tightly packed RGBA8 pixels (what Rwindow_capture
+    returns) as a PNG file in memory. Thread-safe.
+    size Receives the number of bytes.
+    Returns: The bytes of the file, to release with Rpixels_free; NULL when
+    there are no pixels."""
+    size_ = ctypes.c_size_t()
+    result = _lib.Rimage_encode_png(rgba, width, height, ctypes.byref(size_))
+    return (result, size_.value)
+
+
+_lib.Rimage_save_png.argtypes = [ctypes.c_char_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_lib.Rimage_save_png.restype = ctypes.c_int
+
+
+def Rimage_save_png(path, rgba, width, height):
+    """Writes tightly packed RGBA8 pixels to a PNG file: a screenshot
+    of Rwindow_capture, a picture made by the application. Thread-safe.
+    Returns: R_FALSE when the file cannot be written."""
+    return _lib.Rimage_save_png(_s(path), rgba, width, height)
 
 
 _lib.Rtexture_is_ready.argtypes = [ctypes.c_uint32]
@@ -4984,6 +6414,42 @@ def Rtexture_set_filter(texture, filter_):
     _lib.Rtexture_set_filter(texture, int(filter_))
 
 
+_lib.Ricon_get.argtypes = [ctypes.c_char_p]
+_lib.Ricon_get.restype = ctypes.c_uint32
+
+
+def Ricon_get(name):
+    """An icon shipped with Raven, by its name: "search", "settings",
+    "close"... (Ricon_get_name lists them; "raven:search" works too, as in
+    XML: Source="raven:search"). The icons are the ones of Lucide (ISC
+    License), 24 x 24 logical units, drawn with lines in currentColor: the
+    widgets that show them tint them with the color of their text, so they
+    follow the theme and the states (Rtexture_create_from_svg). Drawn at
+    the density they are shown with, sharp on every screen.
+    Returns: A texture owned by Raven, made on first use and then shared
+    (do not destroy it; if it was, the next call makes it again);
+    R_INVALID_ID, with an error, when there is no icon of that name."""
+    return _lib.Ricon_get(_s(name))
+
+
+_lib.Ricon_get_count.argtypes = []
+_lib.Ricon_get_count.restype = ctypes.c_int
+
+
+def Ricon_get_count():
+    """Returns: The number of icons shipped with Raven."""
+    return _lib.Ricon_get_count()
+
+
+_lib.Ricon_get_name.argtypes = [ctypes.c_int]
+_lib.Ricon_get_name.restype = ctypes.c_char_p
+
+
+def Ricon_get_name(index):
+    """Returns: The name of an icon, from 0 to Ricon_get_count() - 1, in alphabetical order; NULL out of range."""
+    return _r(_lib.Ricon_get_name(index))
+
+
 _lib.Rwidget_create.argtypes = [ctypes.c_int]
 _lib.Rwidget_create.restype = ctypes.c_uint32
 
@@ -5027,7 +6493,10 @@ def Rwidget_add_child(parent, child):
     """Appends a child to a panel. The parent takes ownership.
     A widget that already has a parent is moved.
     Returns: `child`, so calls can be nested:
-            Rid ok = Rwidget_add_child(row, Rbutton_create("OK"));"""
+            Rid ok = Rwidget_add_child(row, Rbutton_create("OK"));
+            R_INVALID_ID when the child replaced in a single-child container
+            had a destroy callback that destroyed the container or `child`;
+            `child`, when it is still there, is then not added."""
     return _lib.Rwidget_add_child(parent, child)
 
 
@@ -5342,7 +6811,8 @@ _lib.Rwidget_set_tooltip.restype = None
 
 
 def Rwidget_set_tooltip(widget, text):
-    """Text shown when the cursor rests on the widget. NULL removes it."""
+    """Text shown when the cursor rests on the widget. NULL removes it. A label, which otherwise
+     lets the mouse through, takes the hover while it has a tooltip (events it does not use still bubble)."""
     _lib.Rwidget_set_tooltip(widget, _s(text))
 
 
@@ -5457,7 +6927,7 @@ _lib.Rwidget_focus.restype = None
 
 
 def Rwidget_focus(widget):
-    """Gives the keyboard focus to the widget."""
+    """Gives the keyboard focus to the widget, and scrolls it into view (Rwidget_scroll_into_view)."""
     _lib.Rwidget_focus(widget)
 
 
@@ -5659,7 +7129,9 @@ _lib.Rwidget_get_metric.restype = ctypes.c_float
 
 
 def Rwidget_get_metric(widget, metric):
-    """Returns: The metric the widget uses: its own, else the one of a style, else the one of its theme."""
+    """Returns: The metric the widget uses: its own, else the one of a style,
+    else the one of its theme; grown for larger text
+    (Raccessibility_set_text_scale) and for a finger (RTouchSettings::min_touch_size)."""
     return _lib.Rwidget_get_metric(widget, int(metric))
 
 
@@ -5975,7 +7447,10 @@ _lib.Rwidget_scroll_into_view.restype = None
 
 
 def Rwidget_scroll_into_view(widget):
-    """Scrolls every ScrollBox above the widget so that the widget is visible."""
+    """Scrolls every ScrollBox above the widget so that the widget is
+    visible. The library does it by itself for the focused widget when the
+    focus comes from Tab or Rwidget_focus, and for a text field above the
+    on-screen keyboard (Rwindow_get_keyboard_area)."""
     _lib.Rwidget_scroll_into_view(widget)
 
 
@@ -6215,7 +7690,7 @@ _lib.Rtab_view_set_tab_icon.restype = None
 
 
 def Rtab_view_set_tab_icon(tab_view, content, texture, u0, v0, u1, v1, tint):
-    """Icon before the title (documents). R_INVALID_ID removes it; tint: a mask in the text color."""
+    """Icon before the title (documents). R_INVALID_ID removes it; tint: a mask in the text color (always, for an SVG in currentColor). XML: Slot.Icon."""
     _lib.Rtab_view_set_tab_icon(tab_view, content, texture, u0, v0, u1, v1, tint)
 
 
@@ -6682,6 +8157,9 @@ _lib.Rimage_set_tint_color.restype = None
 
 
 def Rimage_set_tint_color(image, r, g, b, a):
+    """Color the image is multiplied by (white by default). An SVG in
+    currentColor (Ricon_get, Rtexture_create_from_svg) is drawn in the color of
+    the text around it until a tint is given; then in the tint. XML: Tint."""
     _lib.Rimage_set_tint_color(image, r, g, b, a)
 
 
@@ -6717,6 +8195,124 @@ _lib.Rimage_set_corner_radius.restype = None
 
 def Rimage_set_corner_radius(image, radius):
     _lib.Rimage_set_corner_radius(image, radius)
+
+
+_lib.Rimage_is_animated.argtypes = [ctypes.c_uint32]
+_lib.Rimage_is_animated.restype = ctypes.c_int
+
+
+def Rimage_is_animated(image):
+    """R_TRUE when the texture of the image is an animated GIF or APNG (two frames or more)."""
+    return _lib.Rimage_is_animated(image)
+
+
+_lib.Rimage_get_frame_count.argtypes = [ctypes.c_uint32]
+_lib.Rimage_get_frame_count.restype = ctypes.c_int
+
+
+def Rimage_get_frame_count(image):
+    """Returns: The frames of its animation; 1 for a still image, 0 without a texture."""
+    return _lib.Rimage_get_frame_count(image)
+
+
+_lib.Rimage_get_duration.argtypes = [ctypes.c_uint32]
+_lib.Rimage_get_duration.restype = ctypes.c_double
+
+
+def Rimage_get_duration(image):
+    """Returns: The seconds one play of its animation lasts (0 for a still image)."""
+    return _lib.Rimage_get_duration(image)
+
+
+_lib.Rimage_get_frame_delay.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rimage_get_frame_delay.restype = ctypes.c_double
+
+
+def Rimage_get_frame_delay(image, frame):
+    """Returns: The seconds a frame of its animation is shown (0 for a frame that does not exist)."""
+    return _lib.Rimage_get_frame_delay(image, frame)
+
+
+_lib.Rimage_play.argtypes = [ctypes.c_uint32]
+_lib.Rimage_play.restype = None
+
+
+def Rimage_play(image):
+    """Plays the animation from the frame it is on (from the first
+    again when it had finished). An Image plays as soon as it is given an
+    animated texture, unless XML says Animate="false"."""
+    _lib.Rimage_play(image)
+
+
+_lib.Rimage_pause.argtypes = [ctypes.c_uint32]
+_lib.Rimage_pause.restype = None
+
+
+def Rimage_pause(image):
+    """Stops the animation on the frame it is on."""
+    _lib.Rimage_pause(image)
+
+
+_lib.Rimage_stop.argtypes = [ctypes.c_uint32]
+_lib.Rimage_stop.restype = None
+
+
+def Rimage_stop(image):
+    """Stops the animation and shows its first frame."""
+    _lib.Rimage_stop(image)
+
+
+_lib.Rimage_is_playing.argtypes = [ctypes.c_uint32]
+_lib.Rimage_is_playing.restype = ctypes.c_int
+
+
+def Rimage_is_playing(image):
+    return _lib.Rimage_is_playing(image)
+
+
+_lib.Rimage_set_frame.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rimage_set_frame.restype = None
+
+
+def Rimage_set_frame(image, frame):
+    """Shows a frame (from 0), playing on from it if it plays."""
+    _lib.Rimage_set_frame(image, frame)
+
+
+_lib.Rimage_get_frame.argtypes = [ctypes.c_uint32]
+_lib.Rimage_get_frame.restype = ctypes.c_int
+
+
+def Rimage_get_frame(image):
+    return _lib.Rimage_get_frame(image)
+
+
+_lib.Rimage_set_loop_count.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rimage_set_loop_count.restype = None
+
+
+def Rimage_set_loop_count(image, count):
+    """How many times the animation plays before it stops on its last
+    frame: 0 forever, -1 what the file says (the default). XML: Loop
+    (a number; also Forever, Once)."""
+    _lib.Rimage_set_loop_count(image, count)
+
+
+_lib.Rimage_get_loop_count.argtypes = [ctypes.c_uint32]
+_lib.Rimage_get_loop_count.restype = ctypes.c_int
+
+
+def Rimage_get_loop_count(image):
+    """Returns: The plays of the animation (0: forever), the file's unless it was set."""
+    return _lib.Rimage_get_loop_count(image)
+
+
+_lib.Rimage_set_finished_callback.argtypes = [ctypes.c_uint32, RImageFinishedCallback, ctypes.c_void_p]
+_lib.Rimage_set_finished_callback.restype = None
+
+
+def Rimage_set_finished_callback(image, callback, user_data=None):
+    _lib.Rimage_set_finished_callback(image, _callback(RImageFinishedCallback, _adapt_RImageFinishedCallback, callback), user_data)
 
 
 _lib.Rtext_input_set_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
@@ -6819,6 +8415,40 @@ def Rtext_input_select_all(text_input):
     _lib.Rtext_input_select_all(text_input)
 
 
+_lib.Rtext_input_set_input_type.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_input_set_input_type.restype = None
+
+
+def Rtext_input_set_input_type(text_input, type_):
+    """What it holds: picks the on-screen keyboard on mobile. Default: R_TEXT_INPUT_TYPE_TEXT."""
+    _lib.Rtext_input_set_input_type(text_input, int(type_))
+
+
+_lib.Rtext_input_get_input_type.argtypes = [ctypes.c_uint32]
+_lib.Rtext_input_get_input_type.restype = ctypes.c_int
+
+
+def Rtext_input_get_input_type(text_input):
+    return _e(RTextInputType, _lib.Rtext_input_get_input_type(text_input))
+
+
+_lib.Rtext_input_set_return_key.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_input_set_return_key.restype = None
+
+
+def Rtext_input_set_return_key(text_input, key):
+    """The return key of the on-screen keyboard (Done, Next, Search...). Default: R_RETURN_KEY_DEFAULT."""
+    _lib.Rtext_input_set_return_key(text_input, int(key))
+
+
+_lib.Rtext_input_get_return_key.argtypes = [ctypes.c_uint32]
+_lib.Rtext_input_get_return_key.restype = ctypes.c_int
+
+
+def Rtext_input_get_return_key(text_input):
+    return _e(RReturnKey, _lib.Rtext_input_get_return_key(text_input))
+
+
 _lib.Rtext_input_set_changed_callback.argtypes = [ctypes.c_uint32, RTextChangedCallback, ctypes.c_void_p]
 _lib.Rtext_input_set_changed_callback.restype = None
 
@@ -6835,6 +8465,139 @@ _lib.Rtext_input_set_committed_callback.restype = None
 def Rtext_input_set_committed_callback(text_input, callback, user_data=None):
     """Called when Enter is pressed. This also fires the action of the widget."""
     _lib.Rtext_input_set_committed_callback(text_input, _callback(RTextChangedCallback, _adapt_RTextChangedCallback, callback), user_data)
+
+
+_lib.Rtext_input_set_spell_check.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_input_set_spell_check.restype = None
+
+
+def Rtext_input_set_spell_check(text_input, enabled):
+    """Underlines the misspelled words with a wavy line (R_COLOR_SPELLING);
+    a right click on one offers corrections (see SPELL CHECKING). Off by
+    default. A password is never checked."""
+    _lib.Rtext_input_set_spell_check(text_input, enabled)
+
+
+_lib.Rtext_input_get_spell_check.argtypes = [ctypes.c_uint32]
+_lib.Rtext_input_get_spell_check.restype = ctypes.c_int
+
+
+def Rtext_input_get_spell_check(text_input):
+    return _lib.Rtext_input_get_spell_check(text_input)
+
+
+_lib.Rtext_input_set_spell_language.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtext_input_set_spell_language.restype = None
+
+
+def Rtext_input_set_spell_language(text_input, language):
+    """Language of the spell checking ("en_US", "fr"...). NULL: the default (Rspell_set_language)."""
+    _lib.Rtext_input_set_spell_language(text_input, _s(language))
+
+
+_lib.Rspell_is_supported.argtypes = []
+_lib.Rspell_is_supported.restype = ctypes.c_int
+
+
+def Rspell_is_supported():
+    """R_TRUE when the system has a spell checker that Raven can use."""
+    return _lib.Rspell_is_supported()
+
+
+_lib.Rspell_get_language_count.argtypes = []
+_lib.Rspell_get_language_count.restype = ctypes.c_int
+
+
+def Rspell_get_language_count():
+    """The languages the checker has dictionaries for."""
+    return _lib.Rspell_get_language_count()
+
+
+_lib.Rspell_get_language_at.argtypes = [ctypes.c_int]
+_lib.Rspell_get_language_at.restype = ctypes.c_char_p
+
+
+def Rspell_get_language_at(index):
+    return _r(_lib.Rspell_get_language_at(index))
+
+
+_lib.Rspell_set_language.argtypes = [ctypes.c_char_p]
+_lib.Rspell_set_language.restype = ctypes.c_int
+
+
+def Rspell_set_language(language):
+    """The language used when a widget or a call gives none. NULL
+    follows the locale again.
+    Returns: R_FALSE when the checker has no dictionary for it (the default
+    of the system is then used)."""
+    return _lib.Rspell_set_language(_s(language))
+
+
+_lib.Rspell_get_language.argtypes = []
+_lib.Rspell_get_language.restype = ctypes.c_char_p
+
+
+def Rspell_get_language():
+    """The code of the language used by default, as the checker names it; "" when there is no checker."""
+    return _r(_lib.Rspell_get_language())
+
+
+_lib.Rspell_check.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rspell_check.restype = ctypes.c_int
+
+
+def Rspell_check(text, language):
+    """Checks a text. `language` NULL: the default.
+    Returns: The number of misspelled words, read with Rspell_get_misspelling."""
+    return _lib.Rspell_check(_s(text), _s(language))
+
+
+_lib.Rspell_get_misspelling.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rspell_get_misspelling.restype = ctypes.c_int
+
+
+def Rspell_get_misspelling(index):
+    """A misspelled word found by the last Rspell_check: bytes [start, end) of its text."""
+    start_ = ctypes.c_int()
+    end_ = ctypes.c_int()
+    result = _lib.Rspell_get_misspelling(index, ctypes.byref(start_), ctypes.byref(end_))
+    return (result, start_.value, end_.value)
+
+
+_lib.Rspell_suggest.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rspell_suggest.restype = ctypes.c_int
+
+
+def Rspell_suggest(word, language):
+    """Returns: The number of corrections for a word (best first), read with Rspell_get_suggestion."""
+    return _lib.Rspell_suggest(_s(word), _s(language))
+
+
+_lib.Rspell_get_suggestion.argtypes = [ctypes.c_int]
+_lib.Rspell_get_suggestion.restype = ctypes.c_char_p
+
+
+def Rspell_get_suggestion(index):
+    """A correction found by the last Rspell_suggest; valid until the next call."""
+    return _r(_lib.Rspell_get_suggestion(index))
+
+
+_lib.Rspell_learn.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rspell_learn.restype = None
+
+
+def Rspell_learn(word, language):
+    """Adds a word to the dictionary of the user, which the system keeps (with Hunspell alone: for the session)."""
+    _lib.Rspell_learn(_s(word), _s(language))
+
+
+_lib.Rspell_ignore.argtypes = [ctypes.c_char_p]
+_lib.Rspell_ignore.restype = None
+
+
+def Rspell_ignore(word):
+    """The word is no longer a misspelling, in every language, until the application quits."""
+    _lib.Rspell_ignore(_s(word))
 
 
 _lib.Rspin_box_set_range.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]
@@ -6889,6 +8652,27 @@ _lib.Rspin_box_set_decimals.restype = None
 def Rspin_box_set_decimals(spin_box, decimals):
     """Digits shown after the decimal point. Default: 2."""
     _lib.Rspin_box_set_decimals(spin_box, decimals)
+
+
+_lib.Rspin_box_set_buttons.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rspin_box_set_buttons.restype = None
+
+
+def Rspin_box_set_buttons(spin_box, buttons):
+    """Step buttons in the looks of Raven too: a down button at the left
+    end and an up button at the right end, the value between them (XML
+    `Buttons="True"`). A click steps once; holding a button repeats its step.
+    The platform looks (Windows, GNOME, macOS) always draw their own buttons.
+    Default: R_FALSE (drag to scrub, arrows / wheel to step)."""
+    _lib.Rspin_box_set_buttons(spin_box, buttons)
+
+
+_lib.Rspin_box_get_buttons.argtypes = [ctypes.c_uint32]
+_lib.Rspin_box_get_buttons.restype = ctypes.c_int
+
+
+def Rspin_box_get_buttons(spin_box):
+    return _lib.Rspin_box_get_buttons(spin_box)
 
 
 _lib.Rspin_box_set_changed_callback.argtypes = [ctypes.c_uint32, RSpinBoxChangedCallback, ctypes.c_void_p]
@@ -6957,6 +8741,91 @@ def Rcombo_box_set_changed_callback(combo_box, callback, user_data=None):
     _lib.Rcombo_box_set_changed_callback(combo_box, _callback(RComboBoxChangedCallback, _adapt_RComboBoxChangedCallback, callback), user_data)
 
 
+_lib.Rcombo_box_set_editable.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcombo_box_set_editable.restype = None
+
+
+def Rcombo_box_set_editable(combo_box, editable):
+    """R_TRUE: the combo box is a text field with its list: the user
+    may type a text that is not one of the items (Editable="true"). The text
+    is Rcombo_box_get_text; choosing an item puts its text there. A typed
+    text equal to an item selects it, any other selects nothing (-1)."""
+    _lib.Rcombo_box_set_editable(combo_box, editable)
+
+
+_lib.Rcombo_box_is_editable.argtypes = [ctypes.c_uint32]
+_lib.Rcombo_box_is_editable.restype = ctypes.c_int
+
+
+def Rcombo_box_is_editable(combo_box):
+    return _lib.Rcombo_box_is_editable(combo_box)
+
+
+_lib.Rcombo_box_set_searchable.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcombo_box_set_searchable.restype = None
+
+
+def Rcombo_box_set_searchable(combo_box, searchable):
+    """R_TRUE: typing in the combo box filters its list (Searchable="true"):
+    the items that contain what was typed, without regard to case or
+    accents ("zoe" finds "Zoë", "sao" finds "São Paulo"), or a row saying that nothing
+    matches. Up and Down move in the list, Enter chooses, Escape closes it.
+    A searchable combo box that is not editable comes back to the item
+    chosen when nothing is."""
+    _lib.Rcombo_box_set_searchable(combo_box, searchable)
+
+
+_lib.Rcombo_box_is_searchable.argtypes = [ctypes.c_uint32]
+_lib.Rcombo_box_is_searchable.restype = ctypes.c_int
+
+
+def Rcombo_box_is_searchable(combo_box):
+    return _lib.Rcombo_box_is_searchable(combo_box)
+
+
+_lib.Rcombo_box_get_text.argtypes = [ctypes.c_uint32]
+_lib.Rcombo_box_get_text.restype = ctypes.c_char_p
+
+
+def Rcombo_box_get_text(combo_box):
+    """The text shown: what was typed in an editable combo box, else the text of the selected item ("" for none)."""
+    return _r(_lib.Rcombo_box_get_text(combo_box))
+
+
+_lib.Rcombo_box_set_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rcombo_box_set_text.restype = None
+
+
+def Rcombo_box_set_text(combo_box, text):
+    """Editable combo box: sets the text of the field (the item equal to it is selected); otherwise selects the item with this text."""
+    _lib.Rcombo_box_set_text(combo_box, _s(text))
+
+
+_lib.Rcombo_box_set_text_changed_callback.argtypes = [ctypes.c_uint32, RComboBoxTextCallback, ctypes.c_void_p]
+_lib.Rcombo_box_set_text_changed_callback.restype = None
+
+
+def Rcombo_box_set_text_changed_callback(combo_box, callback, user_data=None):
+    _lib.Rcombo_box_set_text_changed_callback(combo_box, _callback(RComboBoxTextCallback, _adapt_RComboBoxTextCallback, callback), user_data)
+
+
+_lib.Rcombo_box_set_open.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcombo_box_set_open.restype = None
+
+
+def Rcombo_box_set_open(combo_box, open):
+    """Opens (R_TRUE) or closes the list."""
+    _lib.Rcombo_box_set_open(combo_box, open)
+
+
+_lib.Rcombo_box_is_open.argtypes = [ctypes.c_uint32]
+_lib.Rcombo_box_is_open.restype = ctypes.c_int
+
+
+def Rcombo_box_is_open(combo_box):
+    return _lib.Rcombo_box_is_open(combo_box)
+
+
 _lib.Rseparator_set_orientation.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rseparator_set_orientation.restype = None
 
@@ -7021,6 +8890,14 @@ _lib.Rlist_view_set_virtual_items.restype = None
 
 def Rlist_view_set_virtual_items(list_view, count, callback, user_data=None):
     _lib.Rlist_view_set_virtual_items(list_view, count, _callback(RListItemTextCallback, _adapt_RListItemTextCallback, callback), user_data)
+
+
+_lib.Rlist_view_set_item_color_callback.argtypes = [ctypes.c_uint32, RListItemColorCallback, ctypes.c_void_p]
+_lib.Rlist_view_set_item_color_callback.restype = None
+
+
+def Rlist_view_set_item_color_callback(list_view, callback, user_data=None):
+    _lib.Rlist_view_set_item_color_callback(list_view, _callback(RListItemColorCallback, _adapt_RListItemColorCallback, callback), user_data)
 
 
 _lib.Rlist_view_set_selected.argtypes = [ctypes.c_uint32, ctypes.c_int]
@@ -7230,7 +9107,8 @@ _lib.Rtree_item_set_icon.restype = None
 
 
 def Rtree_item_set_icon(item, texture, u0, v0, u1, v1):
-    """Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it."""
+    """Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.
+    An SVG in currentColor (Ricon_get) takes the color of the text. XML: Icon on an Item."""
     _lib.Rtree_item_set_icon(item, texture, u0, v0, u1, v1)
 
 
@@ -7397,6 +9275,33 @@ def Rmenu_add_separator(menu):
     return _lib.Rmenu_add_separator(menu)
 
 
+_lib.Rmenu_add_header.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rmenu_add_header.restype = ctypes.c_uint32
+
+
+def Rmenu_add_header(menu, text):
+    """A noninteractive caption row, skipped by keyboard navigation."""
+    return _lib.Rmenu_add_header(menu, _s(text))
+
+
+_lib.Rmenu_bar_add_divider.argtypes = [ctypes.c_uint32]
+_lib.Rmenu_bar_add_divider.restype = ctypes.c_uint32
+
+
+def Rmenu_bar_add_divider(menu_bar):
+    """A vertical divider between titles of an in-window MenuBar. Ignored by native macOS bars."""
+    return _lib.Rmenu_bar_add_divider(menu_bar)
+
+
+_lib.Rmenu_set_title_color.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rmenu_set_title_color.restype = None
+
+
+def Rmenu_set_title_color(menu, r, g, b, a):
+    """Title color in an in-window bar; alpha 0 restores the theme. Ignored by native macOS bars."""
+    _lib.Rmenu_set_title_color(menu, r, g, b, a)
+
+
 _lib.Rmenu_item_set_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
 _lib.Rmenu_item_set_text.restype = None
 
@@ -7423,6 +9328,17 @@ def Rmenu_item_set_shortcut(item, key, modifiers):
     _lib.Rmenu_item_set_shortcut(item, int(key), modifiers)
 
 
+_lib.Rmenu_item_set_shortcut_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rmenu_item_set_shortcut_text.restype = None
+
+
+def Rmenu_item_set_shortcut_text(item, text):
+    """Display-only shortcut hint; copied, never binds a key. Overrides
+    the formatted shortcut without changing its binding. NULL restores the
+    formatted shortcut; an empty string hides it. XML: ShortcutText."""
+    _lib.Rmenu_item_set_shortcut_text(item, _s(text))
+
+
 _lib.Rmenu_item_set_checkable.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rmenu_item_set_checkable.restype = None
 
@@ -7446,7 +9362,8 @@ _lib.Rmenu_item_set_icon.restype = None
 def Rmenu_item_set_icon(item, texture, u0, v0, u1, v1, tint):
     """Icon drawn before the text of a menu item (after the check mark column).
     texture R_INVALID_ID removes it. u0, v0, u1, v1 : region of the texture.
-    tint    R_TRUE: the texture is a mask drawn in the text color (monochrome icons)."""
+    tint    R_TRUE: the texture is a mask drawn in the text color (monochrome icons).
+                   An SVG in currentColor (Ricon_get) always is. XML: Icon."""
     _lib.Rmenu_item_set_icon(item, texture, u0, v0, u1, v1, tint)
 
 
@@ -7525,6 +9442,77 @@ _lib.Rtile_view_set_empty_text.restype = None
 
 def Rtile_view_set_empty_text(tile_view, text):
     _lib.Rtile_view_set_empty_text(tile_view, _s(text))
+
+
+_lib.Rtile_view_set_icon_width.argtypes = [ctypes.c_uint32, ctypes.c_float]
+_lib.Rtile_view_set_icon_width.restype = None
+
+
+def Rtile_view_set_icon_width(tile_view, width):
+    """Layout="Rows": width of the box the icon is drawn in (its height is the
+    icon size), for icons that are not square; 0 = square (default). XML: IconWidth."""
+    _lib.Rtile_view_set_icon_width(tile_view, width)
+
+
+_lib.Rtile_view_set_sections.argtypes = [ctypes.c_uint32, ctypes.c_int, RTileSectionCallback, ctypes.c_void_p]
+_lib.Rtile_view_set_sections.restype = None
+
+
+def Rtile_view_set_sections(tile_view, count, callback, user_data=None):
+    """`count` sections, described by `callback`, all unfolded. Rtile_view_set_items removes them: give them after the tiles."""
+    _lib.Rtile_view_set_sections(tile_view, count, _callback(RTileSectionCallback, _adapt_RTileSectionCallback, callback), user_data)
+
+
+_lib.Rtile_view_get_section_count.argtypes = [ctypes.c_uint32]
+_lib.Rtile_view_get_section_count.restype = ctypes.c_int
+
+
+def Rtile_view_get_section_count(tile_view):
+    return _lib.Rtile_view_get_section_count(tile_view)
+
+
+_lib.Rtile_view_get_section_of.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtile_view_get_section_of.restype = ctypes.c_int
+
+
+def Rtile_view_get_section_of(tile_view, index):
+    """The section of a tile, or -1 (before the first section)."""
+    return _lib.Rtile_view_get_section_of(tile_view, index)
+
+
+_lib.Rtile_view_set_section_folded.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtile_view_set_section_folded.restype = None
+
+
+def Rtile_view_set_section_folded(tile_view, section, folded):
+    """Folds or unfolds a section (the toggled callback is not called)."""
+    _lib.Rtile_view_set_section_folded(tile_view, section, folded)
+
+
+_lib.Rtile_view_is_section_folded.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtile_view_is_section_folded.restype = ctypes.c_int
+
+
+def Rtile_view_is_section_folded(tile_view, section):
+    return _lib.Rtile_view_is_section_folded(tile_view, section)
+
+
+_lib.Rtile_view_get_section_at.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rtile_view_get_section_at.restype = ctypes.c_int
+
+
+def Rtile_view_get_section_at(tile_view, local_x, local_y):
+    """The section whose header is at a point relative to the widget, or -1."""
+    return _lib.Rtile_view_get_section_at(tile_view, local_x, local_y)
+
+
+_lib.Rtile_view_set_section_toggled_callback.argtypes = [ctypes.c_uint32, RTileEventCallback, ctypes.c_void_p]
+_lib.Rtile_view_set_section_toggled_callback.restype = None
+
+
+def Rtile_view_set_section_toggled_callback(tile_view, callback, user_data=None):
+    """Called when the user folds or unfolds a section (`index`: the section)."""
+    _lib.Rtile_view_set_section_toggled_callback(tile_view, _callback(RTileEventCallback, _adapt_RTileEventCallback, callback), user_data)
 
 
 _lib.Rtile_view_set_selected.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
@@ -7627,6 +9615,21 @@ _lib.Rtile_view_set_drag_data_callback.restype = None
 
 def Rtile_view_set_drag_data_callback(tile_view, callback, user_data=None):
     _lib.Rtile_view_set_drag_data_callback(tile_view, _callback(RTileDragDataCallback, _adapt_RTileDragDataCallback, callback), user_data)
+
+
+_lib.Rtile_view_set_drag_out_callback.argtypes = [ctypes.c_uint32, RTileEventCallback, ctypes.c_void_p]
+_lib.Rtile_view_set_drag_out_callback.restype = None
+
+
+def Rtile_view_set_drag_out_callback(tile_view, callback, user_data=None):
+    """Tiles can be dragged out of the window, to other applications:
+    when the user starts dragging the selected tiles (`index` is the one
+    under the pointer), the callback gives their data by calling
+    Rdrag_begin_external (the pictures, the files they stand for...), and
+    Rdrag_set_image. With a drag type too (Rtile_view_set_drag_type), the
+    drag first goes to the drop targets of the window and only leaves it
+    with the pointer. NULL: the tiles stay in the application (default)."""
+    _lib.Rtile_view_set_drag_out_callback(tile_view, _callback(RTileEventCallback, _adapt_RTileEventCallback, callback), user_data)
 
 
 _lib.Rtile_view_set_selection_changed_callback.argtypes = [ctypes.c_uint32, RTileEventCallback, ctypes.c_void_p]
@@ -7801,12 +9804,141 @@ def Rtable_set_virtual_rows(table, count, callback, user_data=None):
     _lib.Rtable_set_virtual_rows(table, count, _callback(RTableCellTextCallback, _adapt_RTableCellTextCallback, callback), user_data)
 
 
+_lib.Rtable_set_cell_color_callback.argtypes = [ctypes.c_uint32, RTableCellColorCallback, ctypes.c_void_p]
+_lib.Rtable_set_cell_color_callback.restype = None
+
+
+def Rtable_set_cell_color_callback(table, callback, user_data=None):
+    _lib.Rtable_set_cell_color_callback(table, _callback(RTableCellColorCallback, _adapt_RTableCellColorCallback, callback), user_data)
+
+
+_lib.Rtable_set_cell_text_color.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rtable_set_cell_text_color.restype = None
+
+
+def Rtable_set_cell_text_color(table, row, column, r, g, b, a):
+    """Stored rows: a fixed text color; column -1 colors the row; cells override it.
+    Alpha 0 restores the inherited/theme color. A color from the cell color callback wins over it."""
+    _lib.Rtable_set_cell_text_color(table, row, column, r, g, b, a)
+
+
+_lib.Rtable_set_multi_select.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_set_multi_select.restype = None
+
+
+def Rtable_set_multi_select(table, enabled):
+    """Opt into Ctrl/Cmd toggles and Shift ranges; single selection is the default. Same as Rtable_set_selection_mode(MULTIPLE or SINGLE)."""
+    _lib.Rtable_set_multi_select(table, enabled)
+
+
+_lib.Rtable_set_selection_mode.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_set_selection_mode.restype = None
+
+
+def Rtable_set_selection_mode(table, mode):
+    """Single (default), multiple or no selection (SelectionMode="Multiple" in XML).
+    Going to single keeps the selected row, going to none clears the selection."""
+    _lib.Rtable_set_selection_mode(table, int(mode))
+
+
+_lib.Rtable_get_selection_mode.argtypes = [ctypes.c_uint32]
+_lib.Rtable_get_selection_mode.restype = ctypes.c_int
+
+
+def Rtable_get_selection_mode(table):
+    return _e(RTableSelectionMode, _lib.Rtable_get_selection_mode(table))
+
+
+_lib.Rtable_set_row_selected.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_set_row_selected.restype = None
+
+
+def Rtable_set_row_selected(table, row, selected):
+    _lib.Rtable_set_row_selected(table, row, selected)
+
+
+_lib.Rtable_is_row_selected.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_is_row_selected.restype = ctypes.c_int
+
+
+def Rtable_is_row_selected(table, row):
+    return _lib.Rtable_is_row_selected(table, row)
+
+
+_lib.Rtable_select_range.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_select_range.restype = None
+
+
+def Rtable_select_range(table, first, last, selected):
+    """Selects (`selected` R_TRUE) or deselects the rows first..last, both
+    included, keeping the others: multiple selection only (in single
+    selection, selecting a range selects `last`)."""
+    _lib.Rtable_select_range(table, first, last, selected)
+
+
+_lib.Rtable_select_all.argtypes = [ctypes.c_uint32]
+_lib.Rtable_select_all.restype = None
+
+
+def Rtable_select_all(table):
+    """Multiple selection: selects every row (Ctrl/Cmd+A). Nothing in the other modes."""
+    _lib.Rtable_select_all(table)
+
+
+_lib.Rtable_clear_selection.argtypes = [ctypes.c_uint32]
+_lib.Rtable_clear_selection.restype = None
+
+
+def Rtable_clear_selection(table):
+    _lib.Rtable_clear_selection(table)
+
+
+_lib.Rtable_get_selection_count.argtypes = [ctypes.c_uint32]
+_lib.Rtable_get_selection_count.restype = ctypes.c_int
+
+
+def Rtable_get_selection_count(table):
+    return _lib.Rtable_get_selection_count(table)
+
+
+_lib.Rtable_get_selection.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_get_selection.restype = ctypes.c_int
+
+
+def Rtable_get_selection(table, index):
+    """Selected row at index, top to bottom; -1 outside the selection."""
+    return _lib.Rtable_get_selection(table, index)
+
+
+_lib.Rtable_get_selection_range_count.argtypes = [ctypes.c_uint32]
+_lib.Rtable_get_selection_range_count.restype = ctypes.c_int
+
+
+def Rtable_get_selection_range_count(table):
+    """The selection as runs of consecutive rows, top to bottom: the
+    fast way to go through a large selection (select all of a million rows
+    is one range)."""
+    return _lib.Rtable_get_selection_range_count(table)
+
+
+_lib.Rtable_get_selection_range.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rtable_get_selection_range.restype = ctypes.c_int
+
+
+def Rtable_get_selection_range(table, index):
+    """The rows first..last (both included) of a range of the selection. Returns: R_FALSE outside the ranges."""
+    first_ = ctypes.c_int()
+    last_ = ctypes.c_int()
+    result = _lib.Rtable_get_selection_range(table, index, ctypes.byref(first_), ctypes.byref(last_))
+    return (result, first_.value, last_.value)
+
+
 _lib.Rtable_set_selected.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rtable_set_selected.restype = None
 
 
 def Rtable_set_selected(table, row):
-    """Selects a row. -1 selects nothing."""
+    """Replaces the selection with one row. -1 selects nothing, including in multi-select mode."""
     _lib.Rtable_set_selected(table, row)
 
 
@@ -7815,7 +9947,21 @@ _lib.Rtable_get_selected.restype = ctypes.c_int
 
 
 def Rtable_get_selected(table):
+    """The selected row (-1: none). In multiple selection, the one
+    selected last, or else the first one; the selection changed callback
+    receives it."""
     return _lib.Rtable_get_selected(table)
+
+
+_lib.Rtable_get_current_row.argtypes = [ctypes.c_uint32]
+_lib.Rtable_get_current_row.restype = ctypes.c_int
+
+
+def Rtable_get_current_row(table):
+    """The row the keyboard is on: the selected row in single
+    selection; in multiple selection the row last clicked or reached with
+    the arrows, which Space toggles (it may be unselected). -1: none."""
+    return _lib.Rtable_get_current_row(table)
 
 
 _lib.Rtable_scroll_to_row.argtypes = [ctypes.c_uint32, ctypes.c_int]
@@ -7899,6 +10045,119 @@ _lib.Rtable_set_sort_callback.restype = None
 
 def Rtable_set_sort_callback(table, callback, user_data=None):
     _lib.Rtable_set_sort_callback(table, _callback(RTableSortCallback, _adapt_RTableSortCallback, callback), user_data)
+
+
+_lib.Rtable_set_column_editable.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_set_column_editable.restype = None
+
+
+def Rtable_set_column_editable(table, column, editable):
+    """R_TRUE: the cells of the column are edited in place by the user (default R_FALSE)."""
+    _lib.Rtable_set_column_editable(table, column, editable)
+
+
+_lib.Rtable_is_column_editable.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_is_column_editable.restype = ctypes.c_int
+
+
+def Rtable_is_column_editable(table, column):
+    return _lib.Rtable_is_column_editable(table, column)
+
+
+_lib.Rtable_set_cell_edited_callback.argtypes = [ctypes.c_uint32, RTableCellEditedCallback, ctypes.c_void_p]
+_lib.Rtable_set_cell_edited_callback.restype = None
+
+
+def Rtable_set_cell_edited_callback(table, callback, user_data=None):
+    _lib.Rtable_set_cell_edited_callback(table, _callback(RTableCellEditedCallback, _adapt_RTableCellEditedCallback, callback), user_data)
+
+
+_lib.Rtable_edit_cell.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_edit_cell.restype = ctypes.c_int
+
+
+def Rtable_edit_cell(table, row, column):
+    """Opens the editor on a cell, its text selected, as F2 does (the
+    row is selected and scrolled into view). Any column can be edited this
+    way, editable or not. Returns: R_TRUE when the editor is open."""
+    return _lib.Rtable_edit_cell(table, row, column)
+
+
+_lib.Rtable_is_editing.argtypes = [ctypes.c_uint32]
+_lib.Rtable_is_editing.restype = ctypes.c_int
+
+
+def Rtable_is_editing(table):
+    return _lib.Rtable_is_editing(table)
+
+
+_lib.Rtable_end_edit.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_end_edit.restype = ctypes.c_int
+
+
+def Rtable_end_edit(table, commit):
+    """Closes the editor: `commit` R_TRUE keeps the text (through the
+    cell edited callback), R_FALSE forgets it. Returns: R_FALSE when the text
+    was refused (the editor then stays open), R_TRUE otherwise."""
+    return _lib.Rtable_end_edit(table, commit)
+
+
+_lib.Rtable_set_frozen_columns.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_set_frozen_columns.restype = None
+
+
+def Rtable_set_frozen_columns(table, count):
+    """The first `count` columns stay in place when the table scrolls
+    sideways; a thin shadow marks where the others pass under them. 0 (the
+    default): every column scrolls."""
+    _lib.Rtable_set_frozen_columns(table, count)
+
+
+_lib.Rtable_get_frozen_columns.argtypes = [ctypes.c_uint32]
+_lib.Rtable_get_frozen_columns.restype = ctypes.c_int
+
+
+def Rtable_get_frozen_columns(table):
+    return _lib.Rtable_get_frozen_columns(table)
+
+
+_lib.Rtable_set_column_kind.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_set_column_kind.restype = None
+
+
+def Rtable_set_column_kind(table, column, kind):
+    """Text (default), check box or progress bar: how the cells of the
+    column are drawn from their texts. A check column is made editable (the
+    user toggles it; Rtable_set_column_editable(R_FALSE) after this shows it
+    only) and centered. For anything else, a cell color callback and the
+    texts are what the table offers: it draws no other widget in its cells."""
+    _lib.Rtable_set_column_kind(table, column, int(kind))
+
+
+_lib.Rtable_get_column_kind.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtable_get_column_kind.restype = ctypes.c_int
+
+
+def Rtable_get_column_kind(table, column):
+    return _e(RTableColumnKind, _lib.Rtable_get_column_kind(table, column))
+
+
+_lib.Rtable_is_cell_checked.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_is_cell_checked.restype = ctypes.c_int
+
+
+def Rtable_is_cell_checked(table, row, column):
+    """A cell of a check column: R_TRUE when its text is "1", "true" or "yes". Any cell can be asked."""
+    return _lib.Rtable_is_cell_checked(table, row, column)
+
+
+_lib.Rtable_set_cell_checked.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rtable_set_cell_checked.restype = None
+
+
+def Rtable_set_cell_checked(table, row, column, checked):
+    """Stored rows: writes "1" or "0" in the cell (no callback is called)."""
+    _lib.Rtable_set_cell_checked(table, row, column, checked)
 
 
 _lib.Rdate_picker_set_date.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
@@ -7985,6 +10244,41 @@ def Rdate_picker_set_changed_callback(date_picker, callback, user_data=None):
     _lib.Rdate_picker_set_changed_callback(date_picker, _callback(RDateChangedCallback, _adapt_RDateChangedCallback, callback), user_data)
 
 
+_lib.Rdate_picker_set_time_zone.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rdate_picker_set_time_zone.restype = None
+
+
+def Rdate_picker_set_time_zone(date_picker, zone):
+    """The time zone of the date, for the instants below; NULL or "" (default): the zone of the system. TimeZone="..." in XML."""
+    _lib.Rdate_picker_set_time_zone(date_picker, _s(zone))
+
+
+_lib.Rdate_picker_get_time_zone.argtypes = [ctypes.c_uint32]
+_lib.Rdate_picker_get_time_zone.restype = ctypes.c_char_p
+
+
+def Rdate_picker_get_time_zone(date_picker):
+    return _r(_lib.Rdate_picker_get_time_zone(date_picker))
+
+
+_lib.Rdate_picker_set_instant.argtypes = [ctypes.c_uint32, ctypes.c_double]
+_lib.Rdate_picker_set_instant.restype = None
+
+
+def Rdate_picker_set_instant(date_picker, utc):
+    """Shows the date an instant (seconds since 1970, UTC) has in the zone of the picker."""
+    _lib.Rdate_picker_set_instant(date_picker, utc)
+
+
+_lib.Rdate_picker_get_instant.argtypes = [ctypes.c_uint32]
+_lib.Rdate_picker_get_instant.restype = ctypes.c_double
+
+
+def Rdate_picker_get_instant(date_picker):
+    """The first instant of the date in the zone: its midnight (or, where the clocks skip midnight, the time they go to)."""
+    return _lib.Rdate_picker_get_instant(date_picker)
+
+
 _lib.Rtime_picker_set_time.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
 _lib.Rtime_picker_set_time.restype = None
 
@@ -8028,6 +10322,102 @@ _lib.Rtime_picker_set_changed_callback.restype = None
 
 def Rtime_picker_set_changed_callback(time_picker, callback, user_data=None):
     _lib.Rtime_picker_set_changed_callback(time_picker, _callback(RTimeChangedCallback, _adapt_RTimeChangedCallback, callback), user_data)
+
+
+_lib.Rtime_picker_set_clock.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtime_picker_set_clock.restype = None
+
+
+def Rtime_picker_set_clock(time_picker, clock):
+    """12 or 24 hours for this picker; R_CLOCK_AUTO (default): the clock of the locale. Clock="Auto|12|24" in XML."""
+    _lib.Rtime_picker_set_clock(time_picker, int(clock))
+
+
+_lib.Rtime_picker_get_clock.argtypes = [ctypes.c_uint32]
+_lib.Rtime_picker_get_clock.restype = ctypes.c_int
+
+
+def Rtime_picker_get_clock(time_picker):
+    return _e(RClock, _lib.Rtime_picker_get_clock(time_picker))
+
+
+_lib.Rtime_picker_get_text.argtypes = [ctypes.c_uint32]
+_lib.Rtime_picker_get_text.restype = ctypes.c_char_p
+
+
+def Rtime_picker_get_text(time_picker):
+    """The time as the field shows it: "3:05 PM", "15:05", with the zone when it is shown (valid until the next call)."""
+    return _r(_lib.Rtime_picker_get_text(time_picker))
+
+
+_lib.Rtime_picker_set_time_zone.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtime_picker_set_time_zone.restype = None
+
+
+def Rtime_picker_set_time_zone(time_picker, zone):
+    """The time zone of the time ("America/New_York", see
+    Rtimezone_is_valid); NULL or "" (default): the zone of the system. An
+    unknown zone is refused. TimeZone="..." in XML."""
+    _lib.Rtime_picker_set_time_zone(time_picker, _s(zone))
+
+
+_lib.Rtime_picker_get_time_zone.argtypes = [ctypes.c_uint32]
+_lib.Rtime_picker_get_time_zone.restype = ctypes.c_char_p
+
+
+def Rtime_picker_get_time_zone(time_picker):
+    """The zone set, "" for none."""
+    return _r(_lib.Rtime_picker_get_time_zone(time_picker))
+
+
+_lib.Rtime_picker_set_time_zone_visible.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtime_picker_set_time_zone_visible.restype = None
+
+
+def Rtime_picker_set_time_zone_visible(time_picker, visible):
+    """Writes the zone after the time ("EST", "CET", "UTC+3"). ShowTimeZone="true" in XML."""
+    _lib.Rtime_picker_set_time_zone_visible(time_picker, visible)
+
+
+_lib.Rtime_picker_set_date.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rtime_picker_set_date.restype = None
+
+
+def Rtime_picker_set_date(time_picker, year, month, day):
+    """The day of the time, for its zone (month 1 to 12); year 0: today (default). Date="YYYY-MM-DD" in XML."""
+    _lib.Rtime_picker_set_date(time_picker, year, month, day)
+
+
+_lib.Rtime_picker_get_date.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rtime_picker_get_date.restype = None
+
+
+def Rtime_picker_get_date(time_picker):
+    year_ = ctypes.c_int()
+    month_ = ctypes.c_int()
+    day_ = ctypes.c_int()
+    _lib.Rtime_picker_get_date(time_picker, ctypes.byref(year_), ctypes.byref(month_), ctypes.byref(day_))
+    return (year_.value, month_.value, day_.value)
+
+
+_lib.Rtime_picker_set_instant.argtypes = [ctypes.c_uint32, ctypes.c_double]
+_lib.Rtime_picker_set_instant.restype = None
+
+
+def Rtime_picker_set_instant(time_picker, utc):
+    """Shows an instant (seconds since 1970, UTC) in the zone of the picker: its day and its time."""
+    _lib.Rtime_picker_set_instant(time_picker, utc)
+
+
+_lib.Rtime_picker_get_instant.argtypes = [ctypes.c_uint32]
+_lib.Rtime_picker_get_instant.restype = ctypes.c_double
+
+
+def Rtime_picker_get_instant(time_picker):
+    """The instant the day and the time are in the zone. A time the
+    clocks skipped is moved forward, a time they repeated is the first
+    (see Rtimezone_from_local)."""
+    return _lib.Rtime_picker_get_instant(time_picker)
 
 
 _lib.Rtoast_show.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_double]
@@ -8853,26 +11243,26 @@ def Rmap_set_tile_source(map, min_zoom, max_zoom, request, cancel, user_data=Non
     _lib.Rmap_set_tile_source(map, min_zoom, max_zoom, _callback(RMapTileRequestCallback, _adapt_RMapTileRequestCallback, request), _callback(RMapTileCancelCallback, _adapt_RMapTileCancelCallback, cancel), user_data)
 
 
-_lib.Rmap_tile_loaded.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
-_lib.Rmap_tile_loaded.restype = ctypes.c_int
+_lib.Rmap_set_tile_data.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
+_lib.Rmap_set_tile_data.restype = ctypes.c_int
 
 
-def Rmap_tile_loaded(map, z, x, y, bytes, length):
+def Rmap_set_tile_data(map, z, x, y, bytes, length):
     """Hands the map the bytes of tile @p z / @p x / @p y (a Mapbox Vector
     Tile, gzip or zlib compressed or not; NULL and 0: there is no tile there), asked for or
     not. Thread-safe: the bytes are copied, then decoded and prepared on a
     worker thread. A tile that can't be decoded counts as failed.
     Returns R_FALSE for a tile outside the world."""
-    return _lib.Rmap_tile_loaded(map, z, x, y, bytes, length)
+    return _lib.Rmap_set_tile_data(map, z, x, y, bytes, length)
 
 
-_lib.Rmap_tile_failed.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
-_lib.Rmap_tile_failed.restype = None
+_lib.Rmap_set_tile_failed.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rmap_set_tile_failed.restype = None
 
 
-def Rmap_tile_failed(map, z, x, y):
+def Rmap_set_tile_failed(map, z, x, y):
     """Says a tile asked for could not be had: asked for again after 10 seconds. Thread-safe."""
-    _lib.Rmap_tile_failed(map, z, x, y)
+    _lib.Rmap_set_tile_failed(map, z, x, y)
 
 
 _lib.Rmap_set_tile_capacity.argtypes = [ctypes.c_uint32, ctypes.c_int]
@@ -8955,6 +11345,1475 @@ def Rmap_set_camera_changed_callback(map, callback, user_data=None):
     _lib.Rmap_set_camera_changed_callback(map, _callback(RMapCameraCallback, _adapt_RMapCameraCallback, callback), user_data)
 
 
+_lib.Rchart_create.argtypes = [ctypes.c_int]
+_lib.Rchart_create.restype = ctypes.c_uint32
+
+
+def Rchart_create(kind):
+    """A chart of a kind (Rwidget_create(R_WIDGET_CHART) makes a pie)."""
+    return _lib.Rchart_create(int(kind))
+
+
+_lib.Rchart_set_kind.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_set_kind.restype = None
+
+
+def Rchart_set_kind(chart, kind):
+    _lib.Rchart_set_kind(chart, int(kind))
+
+
+_lib.Rchart_get_kind.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_kind.restype = ctypes.c_int
+
+
+def Rchart_get_kind(chart):
+    return _e(RChartKind, _lib.Rchart_get_kind(chart))
+
+
+_lib.Rchart_set_title.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rchart_set_title.restype = None
+
+
+def Rchart_set_title(chart, title):
+    """The title over a pie, a donut or a heatmap, under the value of a gauge (a sparkline only tells it to screen readers)."""
+    _lib.Rchart_set_title(chart, _s(title))
+
+
+_lib.Rchart_get_title.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_title.restype = ctypes.c_char_p
+
+
+def Rchart_get_title(chart):
+    return _r(_lib.Rchart_get_title(chart))
+
+
+_lib.Rchart_set_format.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rchart_set_format.restype = None
+
+
+def Rchart_set_format(chart, format_):
+    """How the values are written (the gauge, the middle of a donut, what
+    the pointer shows): a printf format for one double with its unit, "%.0f%%",
+    "$%.2f". NULL: whole numbers as they are, others with up to two decimals."""
+    _lib.Rchart_set_format(chart, _s(format_))
+
+
+_lib.Rchart_set_color.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rchart_set_color.restype = None
+
+
+def Rchart_set_color(chart, r, g, b, a):
+    """The color of the arc of a gauge outside any band, and of the line of a sparkline (default: the accent)."""
+    _lib.Rchart_set_color(chart, r, g, b, a)
+
+
+_lib.Rchart_set_legend.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_set_legend.restype = None
+
+
+def Rchart_set_legend(chart, shown):
+    """The legend: the slices beside a pie or a donut, the scale of colors under a heatmap (shown by default)."""
+    _lib.Rchart_set_legend(chart, shown)
+
+
+_lib.Rchart_clear.argtypes = [ctypes.c_uint32]
+_lib.Rchart_clear.restype = None
+
+
+def Rchart_clear(chart):
+    """Removes the slices, the bands, the grid and the values."""
+    _lib.Rchart_clear(chart)
+
+
+_lib.Rchart_get_hovered.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_hovered.restype = ctypes.c_int
+
+
+def Rchart_get_hovered(chart):
+    """What is under the pointer: a slice, a point of a sparkline, or a
+    cell of a heatmap as row * columns + column; -1 for nothing."""
+    return _lib.Rchart_get_hovered(chart)
+
+
+_lib.Rchart_add_slice.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_double]
+_lib.Rchart_add_slice.restype = ctypes.c_int
+
+
+def Rchart_add_slice(chart, label, value):
+    """Adds a slice (a value of 0 or more). Returns its index, -1 when the value is not valid."""
+    return _lib.Rchart_add_slice(chart, _s(label), value)
+
+
+_lib.Rchart_remove_slice.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_remove_slice.restype = None
+
+
+def Rchart_remove_slice(chart, slice):
+    _lib.Rchart_remove_slice(chart, slice)
+
+
+_lib.Rchart_get_slice_count.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_slice_count.restype = ctypes.c_int
+
+
+def Rchart_get_slice_count(chart):
+    return _lib.Rchart_get_slice_count(chart)
+
+
+_lib.Rchart_set_slice_value.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_double]
+_lib.Rchart_set_slice_value.restype = None
+
+
+def Rchart_set_slice_value(chart, slice, value):
+    _lib.Rchart_set_slice_value(chart, slice, value)
+
+
+_lib.Rchart_get_slice_value.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_get_slice_value.restype = ctypes.c_double
+
+
+def Rchart_get_slice_value(chart, slice):
+    return _lib.Rchart_get_slice_value(chart, slice)
+
+
+_lib.Rchart_set_slice_label.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_char_p]
+_lib.Rchart_set_slice_label.restype = None
+
+
+def Rchart_set_slice_label(chart, slice, label):
+    _lib.Rchart_set_slice_label(chart, slice, _s(label))
+
+
+_lib.Rchart_get_slice_label.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_get_slice_label.restype = ctypes.c_char_p
+
+
+def Rchart_get_slice_label(chart, slice):
+    return _r(_lib.Rchart_get_slice_label(chart, slice))
+
+
+_lib.Rchart_set_slice_color.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rchart_set_slice_color.restype = None
+
+
+def Rchart_set_slice_color(chart, slice, r, g, b, a):
+    """The color of a slice; an alpha of 0 gives it back its color of the palette."""
+    _lib.Rchart_set_slice_color(chart, slice, r, g, b, a)
+
+
+_lib.Rchart_get_total.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_total.restype = ctypes.c_double
+
+
+def Rchart_get_total(chart):
+    """The sum of the values of the slices."""
+    return _lib.Rchart_get_total(chart)
+
+
+_lib.Rchart_set_selected.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_set_selected.restype = None
+
+
+def Rchart_set_selected(chart, slice):
+    """The slice lifted as selected, or -1 for none (the user selects one with a click)."""
+    _lib.Rchart_set_selected(chart, slice)
+
+
+_lib.Rchart_get_selected.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_selected.restype = ctypes.c_int
+
+
+def Rchart_get_selected(chart):
+    return _lib.Rchart_get_selected(chart)
+
+
+_lib.Rchart_set_hole.argtypes = [ctypes.c_uint32, ctypes.c_float]
+_lib.Rchart_set_hole.restype = None
+
+
+def Rchart_set_hole(chart, ratio):
+    """The hole of a donut, as a part of its radius, from 0.2 to 0.9 (default 0.62)."""
+    _lib.Rchart_set_hole(chart, ratio)
+
+
+_lib.Rchart_set_center_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rchart_set_center_text.restype = None
+
+
+def Rchart_set_center_text(chart, text, caption):
+    """What the middle of a donut shows when the pointer is not over a
+    slice: `text` in large (NULL or "": the total) over `caption` in small
+    (NULL or "": none)."""
+    _lib.Rchart_set_center_text(chart, _s(text), _s(caption))
+
+
+_lib.Rchart_set_slice_clicked_callback.argtypes = [ctypes.c_uint32, RChartSliceCallback, ctypes.c_void_p]
+_lib.Rchart_set_slice_clicked_callback.restype = None
+
+
+def Rchart_set_slice_clicked_callback(chart, callback, user_data=None):
+    _lib.Rchart_set_slice_clicked_callback(chart, _callback(RChartSliceCallback, _adapt_RChartSliceCallback, callback), user_data)
+
+
+_lib.Rchart_set_range.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]
+_lib.Rchart_set_range.restype = None
+
+
+def Rchart_set_range(chart, min, max):
+    """The range of a gauge (default 0 to 100), and a fixed range for the
+    colors of a heatmap and the height of a sparkline, which otherwise follow
+    their values. min == max goes back to these defaults."""
+    _lib.Rchart_set_range(chart, min, max)
+
+
+_lib.Rchart_get_range.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
+_lib.Rchart_get_range.restype = None
+
+
+def Rchart_get_range(chart):
+    """The range in use now (a gauge's, or the one of the values of a heatmap or a sparkline)."""
+    min_ = ctypes.c_double()
+    max_ = ctypes.c_double()
+    _lib.Rchart_get_range(chart, ctypes.byref(min_), ctypes.byref(max_))
+    return (min_.value, max_.value)
+
+
+_lib.Rchart_set_value.argtypes = [ctypes.c_uint32, ctypes.c_double]
+_lib.Rchart_set_value.restype = None
+
+
+def Rchart_set_value(chart, value):
+    """The value of a gauge, kept within its range when drawn."""
+    _lib.Rchart_set_value(chart, value)
+
+
+_lib.Rchart_get_value.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_value.restype = ctypes.c_double
+
+
+def Rchart_get_value(chart):
+    return _lib.Rchart_get_value(chart)
+
+
+_lib.Rchart_add_band.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rchart_add_band.restype = ctypes.c_int
+
+
+def Rchart_add_band(chart, from_, to, r, g, b, a):
+    """Colors a part of the range of a gauge (an alpha of 0: the success,
+    warning and danger colors of the theme, one after the other). The arc
+    takes the color of the band its value is in. Returns the index of the band."""
+    return _lib.Rchart_add_band(chart, from_, to, r, g, b, a)
+
+
+_lib.Rchart_clear_bands.argtypes = [ctypes.c_uint32]
+_lib.Rchart_clear_bands.restype = None
+
+
+def Rchart_clear_bands(chart):
+    _lib.Rchart_clear_bands(chart)
+
+
+_lib.Rchart_get_band_count.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_band_count.restype = ctypes.c_int
+
+
+def Rchart_get_band_count(chart):
+    return _lib.Rchart_get_band_count(chart)
+
+
+_lib.Rchart_set_grid.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
+_lib.Rchart_set_grid.restype = None
+
+
+def Rchart_set_grid(chart, rows, columns, values):
+    """The cells of a heatmap: `rows` x `columns` values, row after row,
+    copied (NULL: all 0). NaN leaves a cell empty."""
+    _lib.Rchart_set_grid(chart, rows, columns, _a(ctypes.c_float, values))
+
+
+_lib.Rchart_get_row_count.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_row_count.restype = ctypes.c_int
+
+
+def Rchart_get_row_count(chart):
+    return _lib.Rchart_get_row_count(chart)
+
+
+_lib.Rchart_get_column_count.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_column_count.restype = ctypes.c_int
+
+
+def Rchart_get_column_count(chart):
+    return _lib.Rchart_get_column_count(chart)
+
+
+_lib.Rchart_set_cell.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_float]
+_lib.Rchart_set_cell.restype = None
+
+
+def Rchart_set_cell(chart, row, column, value):
+    _lib.Rchart_set_cell(chart, row, column, value)
+
+
+_lib.Rchart_get_cell.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rchart_get_cell.restype = ctypes.c_float
+
+
+def Rchart_get_cell(chart, row, column):
+    return _lib.Rchart_get_cell(chart, row, column)
+
+
+_lib.Rchart_set_row_labels.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rchart_set_row_labels.restype = None
+
+
+def Rchart_set_row_labels(chart, labels):
+    """The names of the rows, separated by '|': "Mon|Tue|Wed" (shown at their left)."""
+    _lib.Rchart_set_row_labels(chart, _s(labels))
+
+
+_lib.Rchart_set_column_labels.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rchart_set_column_labels.restype = None
+
+
+def Rchart_set_column_labels(chart, labels):
+    """The names of the columns, separated by '|' (shown over them, as many as fit)."""
+    _lib.Rchart_set_column_labels(chart, _s(labels))
+
+
+_lib.Rchart_get_row_label.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_get_row_label.restype = ctypes.c_char_p
+
+
+def Rchart_get_row_label(chart, row):
+    """The name of a row or of a column, "" when it has none."""
+    return _r(_lib.Rchart_get_row_label(chart, row))
+
+
+_lib.Rchart_get_column_label.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_get_column_label.restype = ctypes.c_char_p
+
+
+def Rchart_get_column_label(chart, column):
+    return _r(_lib.Rchart_get_column_label(chart, column))
+
+
+_lib.Rchart_set_color_scale.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rchart_set_color_scale.restype = None
+
+
+def Rchart_set_color_scale(chart, low_r, low_g, low_b, low_a, high_r, high_g, high_b, high_a):
+    """The colors of the lowest and of the highest values of a heatmap (default: a tint of the accent, the accent)."""
+    _lib.Rchart_set_color_scale(chart, low_r, low_g, low_b, low_a, high_r, high_g, high_b, high_a)
+
+
+_lib.Rchart_set_cell_clicked_callback.argtypes = [ctypes.c_uint32, RChartCellCallback, ctypes.c_void_p]
+_lib.Rchart_set_cell_clicked_callback.restype = None
+
+
+def Rchart_set_cell_clicked_callback(chart, callback, user_data=None):
+    _lib.Rchart_set_cell_clicked_callback(chart, _callback(RChartCellCallback, _adapt_RChartCellCallback, callback), user_data)
+
+
+_lib.Rchart_set_values.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+_lib.Rchart_set_values.restype = None
+
+
+def Rchart_set_values(chart, values, count):
+    """The values of a sparkline, copied. NaN leaves a gap."""
+    _lib.Rchart_set_values(chart, _a(ctypes.c_float, values), count)
+
+
+_lib.Rchart_push_value.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_int]
+_lib.Rchart_push_value.restype = None
+
+
+def Rchart_push_value(chart, value, max_count):
+    """Adds a value after the others, for live data; only the last `max_count` are kept (0: all of them)."""
+    _lib.Rchart_push_value(chart, value, max_count)
+
+
+_lib.Rchart_get_value_count.argtypes = [ctypes.c_uint32]
+_lib.Rchart_get_value_count.restype = ctypes.c_int
+
+
+def Rchart_get_value_count(chart):
+    return _lib.Rchart_get_value_count(chart)
+
+
+_lib.Rchart_get_value_at.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_get_value_at.restype = ctypes.c_float
+
+
+def Rchart_get_value_at(chart, index):
+    return _lib.Rchart_get_value_at(chart, index)
+
+
+_lib.Rchart_set_fill.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_set_fill.restype = None
+
+
+def Rchart_set_fill(chart, fill):
+    """Shades the area under the line of a sparkline (on by default)."""
+    _lib.Rchart_set_fill(chart, fill)
+
+
+_lib.Rchart_set_marker.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rchart_set_marker.restype = None
+
+
+def Rchart_set_marker(chart, shown):
+    """A dot on the last value of a sparkline (on by default)."""
+    _lib.Rchart_set_marker(chart, shown)
+
+
+_lib.Rpdf_is_available.argtypes = []
+_lib.Rpdf_is_available.restype = ctypes.c_int
+
+
+def Rpdf_is_available():
+    """R_TRUE when PDFium can be loaded (it is, the first time this is asked)."""
+    return _lib.Rpdf_is_available()
+
+
+_lib.Rpdf_view_load_file.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rpdf_view_load_file.restype = ctypes.c_int
+
+
+def Rpdf_view_load_file(view, path, password):
+    """Shows a PDF file. `password` may be NULL. Returns R_FALSE when it
+    cannot: Rpdf_view_get_status tells why (a password is needed, not a
+    PDF, no PDFium). The view then shows that instead of pages."""
+    return _lib.Rpdf_view_load_file(view, _s(path), _s(password))
+
+
+_lib.Rpdf_view_load_memory.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p]
+_lib.Rpdf_view_load_memory.restype = ctypes.c_int
+
+
+def Rpdf_view_load_memory(view, data, password):
+    """Same as Rpdf_view_load_file, from bytes in memory (copied)."""
+    data = _s(data)
+    return _lib.Rpdf_view_load_memory(view, data, len(data) if data is not None else 0, _s(password))
+
+
+_lib.Rpdf_view_close.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_close.restype = None
+
+
+def Rpdf_view_close(view):
+    """Closes the document: the view is empty."""
+    _lib.Rpdf_view_close(view)
+
+
+_lib.Rpdf_view_get_status.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_get_status.restype = ctypes.c_int
+
+
+def Rpdf_view_get_status(view):
+    return _e(RPdfStatus, _lib.Rpdf_view_get_status(view))
+
+
+_lib.Rpdf_view_get_page_count.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_get_page_count.restype = ctypes.c_int
+
+
+def Rpdf_view_get_page_count(view):
+    return _lib.Rpdf_view_get_page_count(view)
+
+
+_lib.Rpdf_view_get_page_size.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rpdf_view_get_page_size.restype = None
+
+
+def Rpdf_view_get_page_size(view, page):
+    """Size of a page in points (1/72 inch), as it is shown (its rotation applied)."""
+    width_ = ctypes.c_float()
+    height_ = ctypes.c_float()
+    _lib.Rpdf_view_get_page_size(view, page, ctypes.byref(width_), ctypes.byref(height_))
+    return (width_.value, height_.value)
+
+
+_lib.Rpdf_view_set_page.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rpdf_view_set_page.restype = None
+
+
+def Rpdf_view_set_page(view, page):
+    """Scrolls to the top of a page; it becomes the current page."""
+    _lib.Rpdf_view_set_page(view, page)
+
+
+_lib.Rpdf_view_get_page.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_get_page.restype = ctypes.c_int
+
+
+def Rpdf_view_get_page(view):
+    """The current page: the one a third down the view."""
+    return _lib.Rpdf_view_get_page(view)
+
+
+_lib.Rpdf_view_set_zoom.argtypes = [ctypes.c_uint32, ctypes.c_float]
+_lib.Rpdf_view_set_zoom.restype = None
+
+
+def Rpdf_view_set_zoom(view, zoom):
+    """A zoom of its own (1: the printed size): the fit becomes R_PDF_FIT_NONE."""
+    _lib.Rpdf_view_set_zoom(view, zoom)
+
+
+_lib.Rpdf_view_get_zoom.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_get_zoom.restype = ctypes.c_float
+
+
+def Rpdf_view_get_zoom(view):
+    """The zoom the pages show at, the one a fit gives included."""
+    return _lib.Rpdf_view_get_zoom(view)
+
+
+_lib.Rpdf_view_set_fit.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rpdf_view_set_fit.restype = None
+
+
+def Rpdf_view_set_fit(view, fit):
+    _lib.Rpdf_view_set_fit(view, int(fit))
+
+
+_lib.Rpdf_view_get_fit.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_get_fit.restype = ctypes.c_int
+
+
+def Rpdf_view_get_fit(view):
+    return _e(RPdfFit, _lib.Rpdf_view_get_fit(view))
+
+
+_lib.Rpdf_view_get_title.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_view_get_title.restype = ctypes.c_char_p
+
+
+def Rpdf_view_get_title(view):
+    """The title of the document (its information), "" when it has none."""
+    return _r(_lib.Rpdf_view_get_title(view))
+
+
+_lib.Rpdf_view_get_page_text.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rpdf_view_get_page_text.restype = ctypes.c_char_p
+
+
+def Rpdf_view_get_page_text(view, page):
+    """The text of a page (UTF-8), to search it or copy it. Valid until
+    the next call for this view."""
+    return _r(_lib.Rpdf_view_get_page_text(view, page))
+
+
+_lib.Rpdf_view_set_page_changed_callback.argtypes = [ctypes.c_uint32, RPdfPageChangedCallback, ctypes.c_void_p]
+_lib.Rpdf_view_set_page_changed_callback.restype = None
+
+
+def Rpdf_view_set_page_changed_callback(view, callback, user_data=None):
+    _lib.Rpdf_view_set_page_changed_callback(view, _callback(RPdfPageChangedCallback, _adapt_RPdfPageChangedCallback, callback), user_data)
+
+
+_lib.Rcarousel_create.argtypes = []
+_lib.Rcarousel_create.restype = ctypes.c_uint32
+
+
+def Rcarousel_create():
+    return _lib.Rcarousel_create()
+
+
+_lib.Rcarousel_set_page.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rcarousel_set_page.restype = None
+
+
+def Rcarousel_set_page(carousel, page, animated):
+    """Shows a page, gliding to it when `animated` (and the animations
+    are on), at once otherwise. The page changed callback is not called."""
+    _lib.Rcarousel_set_page(carousel, page, animated)
+
+
+_lib.Rcarousel_get_page.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_page.restype = ctypes.c_int
+
+
+def Rcarousel_get_page(carousel):
+    """The page shown, -1 when the carousel has none."""
+    return _lib.Rcarousel_get_page(carousel)
+
+
+_lib.Rcarousel_get_page_count.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_page_count.restype = ctypes.c_int
+
+
+def Rcarousel_get_page_count(carousel):
+    """Its children."""
+    return _lib.Rcarousel_get_page_count(carousel)
+
+
+_lib.Rcarousel_next.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_next.restype = None
+
+
+def Rcarousel_next(carousel):
+    """Glides to the next / previous page; nothing at the last / first one unless it loops."""
+    _lib.Rcarousel_next(carousel)
+
+
+_lib.Rcarousel_prev.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_prev.restype = None
+
+
+def Rcarousel_prev(carousel):
+    _lib.Rcarousel_prev(carousel)
+
+
+_lib.Rcarousel_set_loop.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcarousel_set_loop.restype = None
+
+
+def Rcarousel_set_loop(carousel, loop):
+    """R_TRUE: after the last page comes the first one, and before the first the last (default R_FALSE)."""
+    _lib.Rcarousel_set_loop(carousel, loop)
+
+
+_lib.Rcarousel_get_loop.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_loop.restype = ctypes.c_int
+
+
+def Rcarousel_get_loop(carousel):
+    return _lib.Rcarousel_get_loop(carousel)
+
+
+_lib.Rcarousel_set_autoplay.argtypes = [ctypes.c_uint32, ctypes.c_double]
+_lib.Rcarousel_set_autoplay.restype = None
+
+
+def Rcarousel_set_autoplay(carousel, seconds):
+    """Goes to the next page by itself every `seconds` (0: never, the
+    default); after the last page it comes back to the first. It waits
+    while the pointer is on the carousel, while the pages are dragged and
+    while the keyboard is in it; a page chosen by the user starts the
+    interval again."""
+    _lib.Rcarousel_set_autoplay(carousel, seconds)
+
+
+_lib.Rcarousel_get_autoplay.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_autoplay.restype = ctypes.c_double
+
+
+def Rcarousel_get_autoplay(carousel):
+    return _lib.Rcarousel_get_autoplay(carousel)
+
+
+_lib.Rcarousel_set_indicators_visible.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcarousel_set_indicators_visible.restype = None
+
+
+def Rcarousel_set_indicators_visible(carousel, visible):
+    """The dots along the bottom edge (the right edge when vertical), one per page (default R_TRUE)."""
+    _lib.Rcarousel_set_indicators_visible(carousel, visible)
+
+
+_lib.Rcarousel_get_indicators_visible.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_indicators_visible.restype = ctypes.c_int
+
+
+def Rcarousel_get_indicators_visible(carousel):
+    return _lib.Rcarousel_get_indicators_visible(carousel)
+
+
+_lib.Rcarousel_set_arrows_visible.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcarousel_set_arrows_visible.restype = None
+
+
+def Rcarousel_set_arrows_visible(carousel, visible):
+    """The previous / next buttons shown while the pointer is on the carousel (default R_TRUE)."""
+    _lib.Rcarousel_set_arrows_visible(carousel, visible)
+
+
+_lib.Rcarousel_get_arrows_visible.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_arrows_visible.restype = ctypes.c_int
+
+
+def Rcarousel_get_arrows_visible(carousel):
+    return _lib.Rcarousel_get_arrows_visible(carousel)
+
+
+_lib.Rcarousel_set_orientation.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rcarousel_set_orientation.restype = None
+
+
+def Rcarousel_set_orientation(carousel, orientation):
+    """R_HORIZONTAL: the pages side by side (default); R_VERTICAL: one above the other."""
+    _lib.Rcarousel_set_orientation(carousel, int(orientation))
+
+
+_lib.Rcarousel_get_orientation.argtypes = [ctypes.c_uint32]
+_lib.Rcarousel_get_orientation.restype = ctypes.c_int
+
+
+def Rcarousel_get_orientation(carousel):
+    return _e(ROrientation, _lib.Rcarousel_get_orientation(carousel))
+
+
+_lib.Rcarousel_set_page_changed_callback.argtypes = [ctypes.c_uint32, RCarouselPageChangedCallback, ctypes.c_void_p]
+_lib.Rcarousel_set_page_changed_callback.restype = None
+
+
+def Rcarousel_set_page_changed_callback(carousel, callback, user_data=None):
+    _lib.Rcarousel_set_page_changed_callback(carousel, _callback(RCarouselPageChangedCallback, _adapt_RCarouselPageChangedCallback, callback), user_data)
+
+
+_lib.Rpdf_view_print.argtypes = [ctypes.c_uint32, ctypes.POINTER(RPdfPrintDesc)]
+_lib.Rpdf_view_print.restype = ctypes.c_int
+
+
+def Rpdf_view_print(view, desc):
+    """Prints the document shown (see Rpdf_print); the job is named after its title."""
+    return _lib.Rpdf_view_print(view, _p(desc))
+
+
+_lib.Rmap_view_create.argtypes = []
+_lib.Rmap_view_create.restype = ctypes.c_uint32
+
+
+def Rmap_view_create():
+    return _lib.Rmap_view_create()
+
+
+_lib.Rmap_view_set_center.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]
+_lib.Rmap_view_set_center.restype = None
+
+
+def Rmap_view_set_center(map, latitude, longitude):
+    """Centers the map on a place. The latitude is held within +/-85.0511; the longitude wraps."""
+    _lib.Rmap_view_set_center(map, latitude, longitude)
+
+
+_lib.Rmap_view_get_center.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
+_lib.Rmap_view_get_center.restype = None
+
+
+def Rmap_view_get_center(map):
+    """The place at the middle of the map (longitude from -180 to 180)."""
+    latitude_ = ctypes.c_double()
+    longitude_ = ctypes.c_double()
+    _lib.Rmap_view_get_center(map, ctypes.byref(latitude_), ctypes.byref(longitude_))
+    return (latitude_.value, longitude_.value)
+
+
+_lib.Rmap_view_set_zoom.argtypes = [ctypes.c_uint32, ctypes.c_double]
+_lib.Rmap_view_set_zoom.restype = None
+
+
+def Rmap_view_set_zoom(map, zoom):
+    """The zoom: 0 shows the whole world in one tile, each step doubles the scale. Fractions are allowed."""
+    _lib.Rmap_view_set_zoom(map, zoom)
+
+
+_lib.Rmap_view_get_zoom.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_get_zoom.restype = ctypes.c_double
+
+
+def Rmap_view_get_zoom(map):
+    return _lib.Rmap_view_get_zoom(map)
+
+
+_lib.Rmap_view_set_zoom_range.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double]
+_lib.Rmap_view_set_zoom_range.restype = None
+
+
+def Rmap_view_set_zoom_range(map, min_zoom, max_zoom):
+    """The zooms the user can reach (default 0 to 19, at most 0 to 24). Tiles are asked for at whole zooms of this range."""
+    _lib.Rmap_view_set_zoom_range(map, min_zoom, max_zoom)
+
+
+_lib.Rmap_view_get_zoom_range.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
+_lib.Rmap_view_get_zoom_range.restype = None
+
+
+def Rmap_view_get_zoom_range(map):
+    min_zoom_ = ctypes.c_double()
+    max_zoom_ = ctypes.c_double()
+    _lib.Rmap_view_get_zoom_range(map, ctypes.byref(min_zoom_), ctypes.byref(max_zoom_))
+    return (min_zoom_.value, max_zoom_.value)
+
+
+_lib.Rmap_view_animate_to.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double]
+_lib.Rmap_view_animate_to.restype = None
+
+
+def Rmap_view_animate_to(map, latitude, longitude, zoom):
+    """Glides to a place and a zoom (at once when animations are off)."""
+    _lib.Rmap_view_animate_to(map, latitude, longitude, zoom)
+
+
+_lib.Rmap_view_screen_to_latlon.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
+_lib.Rmap_view_screen_to_latlon.restype = None
+
+
+def Rmap_view_screen_to_latlon(map, x, y):
+    """The place at a point of the widget."""
+    latitude_ = ctypes.c_double()
+    longitude_ = ctypes.c_double()
+    _lib.Rmap_view_screen_to_latlon(map, x, y, ctypes.byref(latitude_), ctypes.byref(longitude_))
+    return (latitude_.value, longitude_.value)
+
+
+_lib.Rmap_view_latlon_to_screen.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rmap_view_latlon_to_screen.restype = None
+
+
+def Rmap_view_latlon_to_screen(map, latitude, longitude):
+    """Where a place is in the widget (of the copies of the world side by side, the one nearest the middle)."""
+    x_ = ctypes.c_float()
+    y_ = ctypes.c_float()
+    _lib.Rmap_view_latlon_to_screen(map, latitude, longitude, ctypes.byref(x_), ctypes.byref(y_))
+    return (x_.value, y_.value)
+
+
+_lib.Rmap_view_set_tile_callback.argtypes = [ctypes.c_uint32, RMapTileCallback, ctypes.c_void_p]
+_lib.Rmap_view_set_tile_callback.restype = None
+
+
+def Rmap_view_set_tile_callback(map, callback, user_data=None):
+    """Called once for each tile the map needs. Answer with
+    Rmap_view_set_tile, Rmap_view_set_tile_data or Rmap_view_set_tile_failed,
+    at once or later. Setting it forgets the tiles of the previous source."""
+    _lib.Rmap_view_set_tile_callback(map, _callback(RMapTileCallback, _adapt_RMapTileCallback, callback), user_data)
+
+
+_lib.Rmap_view_set_tile_cancel_callback.argtypes = [ctypes.c_uint32, RMapTileCallback, ctypes.c_void_p]
+_lib.Rmap_view_set_tile_cancel_callback.restype = None
+
+
+def Rmap_view_set_tile_cancel_callback(map, callback, user_data=None):
+    """Called when a tile asked for and not answered yet is no longer wanted (the user went elsewhere). Optional."""
+    _lib.Rmap_view_set_tile_cancel_callback(map, _callback(RMapTileCallback, _adapt_RMapTileCallback, callback), user_data)
+
+
+_lib.Rmap_view_set_tile.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_lib.Rmap_view_set_tile.restype = None
+
+
+def Rmap_view_set_tile(map, z, x, y, rgba, width, height):
+    """The pixels of a tile: `width` x `height` RGBA8, tightly packed
+    (they are copied; any size, shown at the tile size). Thread-safe: from
+    another thread it is applied on the UI thread during the next frame."""
+    _lib.Rmap_view_set_tile(map, z, x, y, rgba, width, height)
+
+
+_lib.Rmap_view_set_tile_data.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
+_lib.Rmap_view_set_tile_data.restype = None
+
+
+def Rmap_view_set_tile_data(map, z, x, y, data):
+    """A tile as the bytes of an image file (PNG, JPEG...), decoded on the calling thread. Thread-safe."""
+    data = bytes(data) if data is not None else None
+    _lib.Rmap_view_set_tile_data(map, z, x, y, data, len(data) if data is not None else 0)
+
+
+_lib.Rmap_view_set_tile_failed.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rmap_view_set_tile_failed.restype = None
+
+
+def Rmap_view_set_tile_failed(map, z, x, y):
+    """There is no such tile: the coarser one stays shown in its place. Thread-safe."""
+    _lib.Rmap_view_set_tile_failed(map, z, x, y)
+
+
+_lib.Rmap_view_set_tile_path.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rmap_view_set_tile_path.restype = None
+
+
+def Rmap_view_set_tile_path(map, path_template):
+    """Reads the tiles from files instead of asking for them: a path
+    where {z}, {x} and {y} are replaced ({-y}: the row counted from the
+    south, as in TMS and MBTiles). The files are read and decoded on a
+    worker thread; a missing file is a tile that failed. NULL or "": the
+    tile callback again. Local files only."""
+    _lib.Rmap_view_set_tile_path(map, _s(path_template))
+
+
+_lib.Rmap_view_get_tile_path.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_get_tile_path.restype = ctypes.c_char_p
+
+
+def Rmap_view_get_tile_path(map):
+    return _r(_lib.Rmap_view_get_tile_path(map))
+
+
+_lib.Rmap_view_set_tile_size.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rmap_view_set_tile_size.restype = None
+
+
+def Rmap_view_set_tile_size(map, size):
+    """Logical size of a tile at a whole zoom (default 256, from 16 to 1024): larger tiles show the map larger."""
+    _lib.Rmap_view_set_tile_size(map, size)
+
+
+_lib.Rmap_view_get_tile_size.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_get_tile_size.restype = ctypes.c_int
+
+
+def Rmap_view_get_tile_size(map):
+    return _lib.Rmap_view_get_tile_size(map)
+
+
+_lib.Rmap_view_set_cache_size.argtypes = [ctypes.c_uint32, ctypes.c_size_t]
+_lib.Rmap_view_set_cache_size.restype = None
+
+
+def Rmap_view_set_cache_size(map, bytes):
+    """Memory the decoded tiles may take, in bytes (default 64 MiB). The tiles on screen are always kept."""
+    _lib.Rmap_view_set_cache_size(map, bytes)
+
+
+_lib.Rmap_view_get_cache_usage.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_get_cache_usage.restype = ctypes.c_size_t
+
+
+def Rmap_view_get_cache_usage(map):
+    """Memory the decoded tiles take now, in bytes."""
+    return _lib.Rmap_view_get_cache_usage(map)
+
+
+_lib.Rmap_view_clear_tiles.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_clear_tiles.restype = None
+
+
+def Rmap_view_clear_tiles(map):
+    """Forgets every tile (they are asked for again): the tiles of the source changed."""
+    _lib.Rmap_view_clear_tiles(map)
+
+
+_lib.Rmap_view_get_tile_state.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rmap_view_get_tile_state.restype = ctypes.c_int
+
+
+def Rmap_view_get_tile_state(map, z, x, y):
+    return _e(RMapTileState, _lib.Rmap_view_get_tile_state(map, z, x, y))
+
+
+_lib.Rmap_view_add_marker.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_char_p]
+_lib.Rmap_view_add_marker.restype = ctypes.c_int
+
+
+def Rmap_view_add_marker(map, latitude, longitude, label):
+    """Adds a pin at a place, with a label written next to it (may be NULL). Returns its id (from 1), or -1."""
+    return _lib.Rmap_view_add_marker(map, latitude, longitude, _s(label))
+
+
+_lib.Rmap_view_remove_marker.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rmap_view_remove_marker.restype = None
+
+
+def Rmap_view_remove_marker(map, marker):
+    _lib.Rmap_view_remove_marker(map, marker)
+
+
+_lib.Rmap_view_clear_markers.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_clear_markers.restype = None
+
+
+def Rmap_view_clear_markers(map):
+    _lib.Rmap_view_clear_markers(map)
+
+
+_lib.Rmap_view_get_marker_count.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_get_marker_count.restype = ctypes.c_int
+
+
+def Rmap_view_get_marker_count(map):
+    return _lib.Rmap_view_get_marker_count(map)
+
+
+_lib.Rmap_view_set_marker_position.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_double, ctypes.c_double]
+_lib.Rmap_view_set_marker_position.restype = None
+
+
+def Rmap_view_set_marker_position(map, marker, latitude, longitude):
+    _lib.Rmap_view_set_marker_position(map, marker, latitude, longitude)
+
+
+_lib.Rmap_view_set_marker_label.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_char_p]
+_lib.Rmap_view_set_marker_label.restype = None
+
+
+def Rmap_view_set_marker_label(map, marker, label):
+    _lib.Rmap_view_set_marker_label(map, marker, _s(label))
+
+
+_lib.Rmap_view_set_marker_color.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rmap_view_set_marker_color.restype = None
+
+
+def Rmap_view_set_marker_color(map, marker, r, g, b, a):
+    """The color of a pin (by default the accent of the theme)."""
+    _lib.Rmap_view_set_marker_color(map, marker, r, g, b, a)
+
+
+_lib.Rmap_view_set_marker_clicked_callback.argtypes = [ctypes.c_uint32, RMapMarkerCallback, ctypes.c_void_p]
+_lib.Rmap_view_set_marker_clicked_callback.restype = None
+
+
+def Rmap_view_set_marker_clicked_callback(map, callback, user_data=None):
+    _lib.Rmap_view_set_marker_clicked_callback(map, _callback(RMapMarkerCallback, _adapt_RMapMarkerCallback, callback), user_data)
+
+
+_lib.Rmap_view_set_view_changed_callback.argtypes = [ctypes.c_uint32, RMapViewCallback, ctypes.c_void_p]
+_lib.Rmap_view_set_view_changed_callback.restype = None
+
+
+def Rmap_view_set_view_changed_callback(map, callback, user_data=None):
+    _lib.Rmap_view_set_view_changed_callback(map, _callback(RMapViewCallback, _adapt_RMapViewCallback, callback), user_data)
+
+
+_lib.Rmap_view_set_attribution.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rmap_view_set_attribution.restype = None
+
+
+def Rmap_view_set_attribution(map, text):
+    """A line written in the bottom right corner: the credit most tile
+    licences ask for, such as "(c) OpenStreetMap contributors". NULL or "": none."""
+    _lib.Rmap_view_set_attribution(map, _s(text))
+
+
+_lib.Rmap_view_get_attribution.argtypes = [ctypes.c_uint32]
+_lib.Rmap_view_get_attribution.restype = ctypes.c_char_p
+
+
+def Rmap_view_get_attribution(map):
+    return _r(_lib.Rmap_view_get_attribution(map))
+
+
+_lib.Rsystem_web_view_is_supported.argtypes = []
+_lib.Rsystem_web_view_is_supported.restype = ctypes.c_int
+
+
+def Rsystem_web_view_is_supported():
+    """Returns: R_TRUE when web views show pages here (the system has an engine Raven can embed, and Raven runs with a window system)."""
+    return _lib.Rsystem_web_view_is_supported()
+
+
+_lib.Rsystem_web_view_create.argtypes = []
+_lib.Rsystem_web_view_create.restype = ctypes.c_uint32
+
+
+def Rsystem_web_view_create():
+    return _lib.Rsystem_web_view_create()
+
+
+_lib.Rsystem_web_view_load_url.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rsystem_web_view_load_url.restype = None
+
+
+def Rsystem_web_view_load_url(view, url):
+    """Goes to an address ("https://...", "file:///...", "about:blank"). A file: address may read the files of its folder."""
+    _lib.Rsystem_web_view_load_url(view, _s(url))
+
+
+_lib.Rsystem_web_view_load_file.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rsystem_web_view_load_file.restype = None
+
+
+def Rsystem_web_view_load_file(view, path):
+    """Shows a file of the computer (an .html file, and what it refers to in its folder)."""
+    _lib.Rsystem_web_view_load_file(view, _s(path))
+
+
+_lib.Rsystem_web_view_load_html.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rsystem_web_view_load_html.restype = None
+
+
+def Rsystem_web_view_load_html(view, html, base_url):
+    """Shows HTML given as text.
+    base_url Where the relative addresses of the text are looked
+    for ("file:///Users/me/app/pages/", "https://example.org/"), or NULL."""
+    _lib.Rsystem_web_view_load_html(view, _s(html), _s(base_url))
+
+
+_lib.Rsystem_web_view_reload.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_reload.restype = None
+
+
+def Rsystem_web_view_reload(view):
+    _lib.Rsystem_web_view_reload(view)
+
+
+_lib.Rsystem_web_view_stop.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_stop.restype = None
+
+
+def Rsystem_web_view_stop(view):
+    _lib.Rsystem_web_view_stop(view)
+
+
+_lib.Rsystem_web_view_go_back.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_go_back.restype = None
+
+
+def Rsystem_web_view_go_back(view):
+    _lib.Rsystem_web_view_go_back(view)
+
+
+_lib.Rsystem_web_view_go_forward.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_go_forward.restype = None
+
+
+def Rsystem_web_view_go_forward(view):
+    _lib.Rsystem_web_view_go_forward(view)
+
+
+_lib.Rsystem_web_view_can_go_back.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_can_go_back.restype = ctypes.c_int
+
+
+def Rsystem_web_view_can_go_back(view):
+    return _lib.Rsystem_web_view_can_go_back(view)
+
+
+_lib.Rsystem_web_view_can_go_forward.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_can_go_forward.restype = ctypes.c_int
+
+
+def Rsystem_web_view_can_go_forward(view):
+    return _lib.Rsystem_web_view_can_go_forward(view)
+
+
+_lib.Rsystem_web_view_get_url.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_get_url.restype = ctypes.c_char_p
+
+
+def Rsystem_web_view_get_url(view):
+    """Returns: The address of the page shown (the one asked for, where unsupported). Valid until it changes."""
+    return _r(_lib.Rsystem_web_view_get_url(view))
+
+
+_lib.Rsystem_web_view_get_title.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_get_title.restype = ctypes.c_char_p
+
+
+def Rsystem_web_view_get_title(view):
+    """Returns: The title of the page, "" when it has none. Valid until it changes."""
+    return _r(_lib.Rsystem_web_view_get_title(view))
+
+
+_lib.Rsystem_web_view_is_loading.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_is_loading.restype = ctypes.c_int
+
+
+def Rsystem_web_view_is_loading(view):
+    return _lib.Rsystem_web_view_is_loading(view)
+
+
+_lib.Rsystem_web_view_get_error.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_get_error.restype = ctypes.c_char_p
+
+
+def Rsystem_web_view_get_error(view):
+    """Returns: Why the last page could not be shown, or "" when all is well."""
+    return _r(_lib.Rsystem_web_view_get_error(view))
+
+
+_lib.Rsystem_web_view_run_javascript.argtypes = [ctypes.c_uint32, ctypes.c_char_p, RSystemWebViewResultCallback, ctypes.c_void_p]
+_lib.Rsystem_web_view_run_javascript.restype = None
+
+
+def Rsystem_web_view_run_javascript(view, script, callback, user_data=None):
+    """Runs JavaScript in the page; the value of its last statement is
+    the result. If it is a promise, the result is what the promise
+    resolves to. The callback (may be NULL) always comes later, never
+    during this call."""
+    _lib.Rsystem_web_view_run_javascript(view, _s(script), _callback(RSystemWebViewResultCallback, _adapt_RSystemWebViewResultCallback, callback), user_data)
+
+
+_lib.Rsystem_web_view_set_message_callback.argtypes = [ctypes.c_uint32, RSystemWebViewMessageCallback, ctypes.c_void_p]
+_lib.Rsystem_web_view_set_message_callback.restype = None
+
+
+def Rsystem_web_view_set_message_callback(view, callback, user_data=None):
+    _lib.Rsystem_web_view_set_message_callback(view, _callback(RSystemWebViewMessageCallback, _adapt_RSystemWebViewMessageCallback, callback), user_data)
+
+
+_lib.Rsystem_web_view_set_event_callback.argtypes = [ctypes.c_uint32, RSystemWebViewEventCallback, ctypes.c_void_p]
+_lib.Rsystem_web_view_set_event_callback.restype = None
+
+
+def Rsystem_web_view_set_event_callback(view, callback, user_data=None):
+    """Called when something happens in the page. The action of the
+    widget (Rwidget_set_action, OnChanged in XML) is fired as well each
+    time the address changes."""
+    _lib.Rsystem_web_view_set_event_callback(view, _callback(RSystemWebViewEventCallback, _adapt_RSystemWebViewEventCallback, callback), user_data)
+
+
+_lib.Rsystem_web_view_get_native_handle.argtypes = [ctypes.c_uint32]
+_lib.Rsystem_web_view_get_native_handle.restype = ctypes.c_void_p
+
+
+def Rsystem_web_view_get_native_handle(view):
+    """The view of the system, to go further than these functions:
+    a WKWebView* on macOS and iOS, an ICoreWebView2* on Windows (NULL
+    until WebView2 has made the view, a moment after it is created). NULL
+    where unsupported."""
+    return _lib.Rsystem_web_view_get_native_handle(view)
+
+
+_lib.Rpdf_document_create.argtypes = []
+_lib.Rpdf_document_create.restype = ctypes.c_uint32
+
+
+def Rpdf_document_create():
+    return _lib.Rpdf_document_create()
+
+
+_lib.Rpdf_document_delete.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_document_delete.restype = None
+
+
+def Rpdf_document_delete(document):
+    _lib.Rpdf_document_delete(document)
+
+
+_lib.Rpdf_document_set_title.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rpdf_document_set_title.restype = None
+
+
+def Rpdf_document_set_title(document, title):
+    """The information of the document, shown by readers (the title in their window)."""
+    _lib.Rpdf_document_set_title(document, _s(title))
+
+
+_lib.Rpdf_document_set_author.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rpdf_document_set_author.restype = None
+
+
+def Rpdf_document_set_author(document, author):
+    _lib.Rpdf_document_set_author(document, _s(author))
+
+
+_lib.Rpdf_document_set_subject.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rpdf_document_set_subject.restype = None
+
+
+def Rpdf_document_set_subject(document, subject):
+    _lib.Rpdf_document_set_subject(document, _s(subject))
+
+
+_lib.Rpdf_document_add_page.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rpdf_document_add_page.restype = ctypes.c_int
+
+
+def Rpdf_document_add_page(document, width, height):
+    """Adds a page of a size in points; drawing goes to it. Returns its index, -1 for an invalid size."""
+    return _lib.Rpdf_document_add_page(document, width, height)
+
+
+_lib.Rpdf_document_get_page_count.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_document_get_page_count.restype = ctypes.c_int
+
+
+def Rpdf_document_get_page_count(document):
+    return _lib.Rpdf_document_get_page_count(document)
+
+
+_lib.Rpdf_document_set_fill_color.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rpdf_document_set_fill_color.restype = None
+
+
+def Rpdf_document_set_fill_color(document, r, g, b, a):
+    _lib.Rpdf_document_set_fill_color(document, r, g, b, a)
+
+
+_lib.Rpdf_document_set_stroke_color.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rpdf_document_set_stroke_color.restype = None
+
+
+def Rpdf_document_set_stroke_color(document, r, g, b, a):
+    _lib.Rpdf_document_set_stroke_color(document, r, g, b, a)
+
+
+_lib.Rpdf_document_set_line_width.argtypes = [ctypes.c_uint32, ctypes.c_float]
+_lib.Rpdf_document_set_line_width.restype = None
+
+
+def Rpdf_document_set_line_width(document, width):
+    """Width of the lines and outlines, in points (default 1)."""
+    _lib.Rpdf_document_set_line_width(document, width)
+
+
+_lib.Rpdf_document_draw_rect.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint32]
+_lib.Rpdf_document_draw_rect.restype = None
+
+
+def Rpdf_document_draw_rect(document, x, y, width, height, radius, paint):
+    """A rectangle, its corners rounded by `radius`; `paint` is a bitmask of RPdfPaint."""
+    _lib.Rpdf_document_draw_rect(document, x, y, width, height, radius, paint)
+
+
+_lib.Rpdf_document_draw_ellipse.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_uint32]
+_lib.Rpdf_document_draw_ellipse.restype = None
+
+
+def Rpdf_document_draw_ellipse(document, x, y, width, height, paint):
+    """The ellipse inside a rectangle."""
+    _lib.Rpdf_document_draw_ellipse(document, x, y, width, height, paint)
+
+
+_lib.Rpdf_document_draw_line.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rpdf_document_draw_line.restype = None
+
+
+def Rpdf_document_draw_line(document, x1, y1, x2, y2):
+    """A line in the stroke color."""
+    _lib.Rpdf_document_draw_line(document, x1, y1, x2, y2)
+
+
+_lib.Rpdf_document_add_font.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t]
+_lib.Rpdf_document_add_font.restype = ctypes.c_int
+
+
+def Rpdf_document_add_font(document, data):
+    """Adds a TrueType font (.ttf) to the document (the data is
+    copied, and embedded in the file). Returns its number for
+    Rpdf_document_set_font, -1 when it is not a TrueType font."""
+    data = _s(data)
+    return _lib.Rpdf_document_add_font(document, data, len(data) if data is not None else 0)
+
+
+_lib.Rpdf_document_add_font_from_file.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rpdf_document_add_font_from_file.restype = ctypes.c_int
+
+
+def Rpdf_document_add_font_from_file(document, path):
+    return _lib.Rpdf_document_add_font_from_file(document, _s(path))
+
+
+_lib.Rpdf_document_set_font.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_float, ctypes.c_uint32]
+_lib.Rpdf_document_set_font.restype = None
+
+
+def Rpdf_document_set_font(document, font, size, style):
+    """The font of the text drawn next: an RPdfFont or a number of Rpdf_document_add_font, a size in points, a bitmask of RPdfTextStyle."""
+    _lib.Rpdf_document_set_font(document, font, size, style)
+
+
+_lib.Rpdf_document_get_line_height.argtypes = [ctypes.c_uint32]
+_lib.Rpdf_document_get_line_height.restype = ctypes.c_float
+
+
+def Rpdf_document_get_line_height(document):
+    """Distance between two lines of text in the current font."""
+    return _lib.Rpdf_document_get_line_height(document)
+
+
+_lib.Rpdf_document_measure_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rpdf_document_measure_text.restype = ctypes.c_float
+
+
+def Rpdf_document_measure_text(document, text):
+    """Width of a text in the current font, in points (of its widest line)."""
+    return _lib.Rpdf_document_measure_text(document, _s(text))
+
+
+_lib.Rpdf_document_draw_text.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_char_p]
+_lib.Rpdf_document_draw_text.restype = ctypes.c_float
+
+
+def Rpdf_document_draw_text(document, x, y, text):
+    """Text in the fill color, the top of its first line at y ('\\n'
+    starts a line below). Returns its width."""
+    return _lib.Rpdf_document_draw_text(document, x, y, _s(text))
+
+
+_lib.Rpdf_document_draw_paragraph.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_char_p, ctypes.c_int]
+_lib.Rpdf_document_draw_paragraph.restype = ctypes.c_float
+
+
+def Rpdf_document_draw_paragraph(document, x, y, width, text, align):
+    """Text wrapped at the spaces to fit `width`, each line placed by
+    `align` (R_HALIGN_LEFT, R_HALIGN_CENTER or R_HALIGN_RIGHT). Returns the
+    height it took."""
+    return _lib.Rpdf_document_draw_paragraph(document, x, y, width, _s(text), int(align))
+
+
+_lib.Rpdf_document_draw_image.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_lib.Rpdf_document_draw_image.restype = None
+
+
+def Rpdf_document_draw_image(document, x, y, width, height, rgba, pixels_width, pixels_height):
+    """A picture of RGBA8 pixels stretched over a rectangle. A width or
+    height of 0 keeps the proportions of the picture; both 0: 96 pixels per inch."""
+    _lib.Rpdf_document_draw_image(document, x, y, width, height, rgba, pixels_width, pixels_height)
+
+
+_lib.Rpdf_document_draw_window.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rpdf_document_draw_window.restype = ctypes.c_int
+
+
+def Rpdf_document_draw_window(document, window, x, y, width, height):
+    """What a window shows (Rwindow_capture), as a picture: a report of
+    the screen, a chart. A width and height of 0: the size it has on the
+    screen. Returns R_FALSE when the window cannot be captured."""
+    return _lib.Rpdf_document_draw_window(document, window, x, y, width, height)
+
+
+_lib.Rpdf_document_save.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rpdf_document_save.restype = ctypes.c_int
+
+
+def Rpdf_document_save(document, path):
+    """Writes the file. Returns R_FALSE when it cannot be written."""
+    return _lib.Rpdf_document_save(document, _s(path))
+
+
+_lib.Rpdf_document_save_memory.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_size_t)]
+_lib.Rpdf_document_save_memory.restype = ctypes.c_void_p
+
+
+def Rpdf_document_save_memory(document):
+    """The file in memory (followed by a '\\0' not counted), to release with Rmemory_free; `size` receives its length."""
+    size_ = ctypes.c_size_t()
+    address = _lib.Rpdf_document_save_memory(document, ctypes.byref(size_))
+    if not address:
+        return None
+    data = ctypes.string_at(address, size_.value)
+    _lib.Rmemory_free(address)
+    return data
+
+
+_lib.Rpdf_print.argtypes = [ctypes.POINTER(RPdfPrintDesc), ctypes.c_char_p, ctypes.c_size_t]
+_lib.Rpdf_print.restype = ctypes.c_int
+
+
+def Rpdf_print(desc, data):
+    """Prints a PDF document with the print system: on macOS the print
+    panel, on Windows the print dialog (the pages are drawn by PDFium, see
+    PDF VIEW), on Linux and the other systems CUPS (lp or lpr) after a
+    dialog of Raven that chooses the printer. It waits until the job is
+    sent. `desc` may be NULL. Returns R_FALSE when cancelled or when it
+    cannot print. Not in the browser."""
+    data = _s(data)
+    return _lib.Rpdf_print(_p(desc), data, len(data) if data is not None else 0)
+
+
+_lib.Rpdf_print_file.argtypes = [ctypes.POINTER(RPdfPrintDesc), ctypes.c_char_p]
+_lib.Rpdf_print_file.restype = ctypes.c_int
+
+
+def Rpdf_print_file(desc, path):
+    return _lib.Rpdf_print_file(_p(desc), _s(path))
+
+
+_lib.Rpdf_document_print.argtypes = [ctypes.c_uint32, ctypes.POINTER(RPdfPrintDesc)]
+_lib.Rpdf_document_print.restype = ctypes.c_int
+
+
+def Rpdf_document_print(document, desc):
+    """Prints a document written by the application."""
+    return _lib.Rpdf_document_print(document, _p(desc))
+
+
 _lib.Rtext_editor_create.argtypes = [ctypes.c_char_p]
 _lib.Rtext_editor_create.restype = ctypes.c_uint32
 
@@ -9014,7 +12873,8 @@ _lib.Rtext_editor_insert_text.restype = None
 
 def Rtext_editor_insert_text(editor, text):
     """Types a text at the cursor, replacing the selection, as the user
-    would: it can be undone and the changed callback is called."""
+    would (at every cursor when there are several): it can be undone and
+    the changed callback is called."""
     _lib.Rtext_editor_insert_text(editor, _s(text))
 
 
@@ -9084,6 +12944,181 @@ _lib.Rtext_editor_scroll_to_line.restype = None
 def Rtext_editor_scroll_to_line(editor, line):
     """Scrolls so that a line is visible."""
     _lib.Rtext_editor_scroll_to_line(editor, line)
+
+
+_lib.Rtext_editor_add_cursor.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rtext_editor_add_cursor.restype = None
+
+
+def Rtext_editor_add_cursor(editor, line, column):
+    """Adds a cursor (a caret) to the editor; the main cursor stays
+    the main one. A cursor over another one, or at the place of another
+    caret, becomes one with it. Rtext_editor_set_cursor,
+    Rtext_editor_select and Rtext_editor_set_text go back to one cursor."""
+    _lib.Rtext_editor_add_cursor(editor, line, column)
+
+
+_lib.Rtext_editor_add_selection.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rtext_editor_add_selection.restype = None
+
+
+def Rtext_editor_add_selection(editor, from_line, from_column, to_line, to_column):
+    """Adds a cursor that selects from one position to another (its caret on the second)."""
+    _lib.Rtext_editor_add_selection(editor, from_line, from_column, to_line, to_column)
+
+
+_lib.Rtext_editor_get_cursor_count.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_cursor_count.restype = ctypes.c_int
+
+
+def Rtext_editor_get_cursor_count(editor):
+    """Returns: The number of cursors, the main one included (1 at least)."""
+    return _lib.Rtext_editor_get_cursor_count(editor)
+
+
+_lib.Rtext_editor_get_cursor_at.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rtext_editor_get_cursor_at.restype = ctypes.c_int
+
+
+def Rtext_editor_get_cursor_at(editor, index):
+    """A cursor by its index, in the order of the text (0 for the
+    first): its caret and the anchor of its selection (the same position
+    when nothing is selected). Returns R_FALSE when `index` is out of range."""
+    line_ = ctypes.c_int()
+    column_ = ctypes.c_int()
+    anchor_line_ = ctypes.c_int()
+    anchor_column_ = ctypes.c_int()
+    result = _lib.Rtext_editor_get_cursor_at(editor, index, ctypes.byref(line_), ctypes.byref(column_), ctypes.byref(anchor_line_), ctypes.byref(anchor_column_))
+    return (result, line_.value, column_.value, anchor_line_.value, anchor_column_.value)
+
+
+_lib.Rtext_editor_get_main_cursor.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_main_cursor.restype = ctypes.c_int
+
+
+def Rtext_editor_get_main_cursor(editor):
+    """Returns: The index of the main cursor, in the order of Rtext_editor_get_cursor_at."""
+    return _lib.Rtext_editor_get_main_cursor(editor)
+
+
+_lib.Rtext_editor_clear_cursors.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_clear_cursors.restype = None
+
+
+def Rtext_editor_clear_cursors(editor):
+    """Back to the main cursor alone, as Escape does."""
+    _lib.Rtext_editor_clear_cursors(editor)
+
+
+_lib.Rtext_editor_add_next_occurrence.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_add_next_occurrence.restype = ctypes.c_int
+
+
+def Rtext_editor_add_next_occurrence(editor):
+    """What Ctrl+D does: with nothing selected, selects the word at
+    each caret; else adds a cursor on the next occurrence of the main
+    selection (with its case, a whole word when it was selected so) that no
+    cursor selects, going on from the start of the text. Returns R_FALSE
+    when there is none."""
+    return _lib.Rtext_editor_add_next_occurrence(editor)
+
+
+_lib.Rtext_editor_select_all_occurrences.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_select_all_occurrences.restype = ctypes.c_int
+
+
+def Rtext_editor_select_all_occurrences(editor):
+    """What Ctrl+Shift+L does: a cursor on every occurrence of the main selection (or of the word at the caret). Returns their number."""
+    return _lib.Rtext_editor_select_all_occurrences(editor)
+
+
+_lib.Rtext_editor_fold.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_fold.restype = ctypes.c_int
+
+
+def Rtext_editor_fold(editor, line):
+    """Folds the region that starts at a line: the lines after it, up
+    to the one before the bracket that closes it (or to the last one more
+    indented), are hidden. When the line starts none, or it is folded
+    already, the nearest region around the line is folded. Cursors in it
+    go to the end of its first line. Returns R_FALSE when there is none.
+    Line numbers stay those of the text. Folds follow the lines when text
+    is added or removed elsewhere; editing a hidden line (or the line break
+    of the first line) unfolds its region, and so does a match of the
+    search or a cursor that goes into it."""
+    return _lib.Rtext_editor_fold(editor, line)
+
+
+_lib.Rtext_editor_unfold.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_unfold.restype = ctypes.c_int
+
+
+def Rtext_editor_unfold(editor, line):
+    """Unfolds the region that starts at a line, or what hides it. Returns R_FALSE when nothing was folded there."""
+    return _lib.Rtext_editor_unfold(editor, line)
+
+
+_lib.Rtext_editor_fold_all.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_fold_all.restype = None
+
+
+def Rtext_editor_fold_all(editor):
+    """Folds every region, those inside others too."""
+    _lib.Rtext_editor_fold_all(editor)
+
+
+_lib.Rtext_editor_unfold_all.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_unfold_all.restype = None
+
+
+def Rtext_editor_unfold_all(editor):
+    _lib.Rtext_editor_unfold_all(editor)
+
+
+_lib.Rtext_editor_is_folded.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_is_folded.restype = ctypes.c_int
+
+
+def Rtext_editor_is_folded(editor, line):
+    """Returns: R_TRUE when a folded region starts at this line."""
+    return _lib.Rtext_editor_is_folded(editor, line)
+
+
+_lib.Rtext_editor_is_line_hidden.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_is_line_hidden.restype = ctypes.c_int
+
+
+def Rtext_editor_is_line_hidden(editor, line):
+    """Returns: R_TRUE when the line is hidden in a folded region."""
+    return _lib.Rtext_editor_is_line_hidden(editor, line)
+
+
+_lib.Rtext_editor_get_fold_end.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_get_fold_end.restype = ctypes.c_int
+
+
+def Rtext_editor_get_fold_end(editor, line):
+    """Returns: The last line of the region that starts at a line (folded or not), -1 when it starts none."""
+    return _lib.Rtext_editor_get_fold_end(editor, line)
+
+
+_lib.Rtext_editor_set_folding.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_set_folding.restype = None
+
+
+def Rtext_editor_set_folding(editor, enabled):
+    """R_FALSE unfolds everything and stops folding: no markers, and
+    Ctrl+Shift+[ / ] go to the shortcuts of the window. On by default.
+    XML: Folding="false"."""
+    _lib.Rtext_editor_set_folding(editor, enabled)
+
+
+_lib.Rtext_editor_get_folding.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_folding.restype = ctypes.c_int
+
+
+def Rtext_editor_get_folding(editor):
+    return _lib.Rtext_editor_get_folding(editor)
 
 
 _lib.Rtext_editor_undo.argtypes = [ctypes.c_uint32]
@@ -9318,6 +13353,35 @@ def Rtext_editor_get_markdown(editor):
     return _lib.Rtext_editor_get_markdown(editor)
 
 
+_lib.Rtext_editor_set_spell_check.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_set_spell_check.restype = None
+
+
+def Rtext_editor_set_spell_check(editor, enabled):
+    """Underlines the misspelled words with a wavy line (R_COLOR_SPELLING);
+    a right click on one offers corrections (see SPELL CHECKING in
+    raven_controls.h). Only the lines shown are checked, again when they
+    change. Off by default: it is meant for prose, not for code."""
+    _lib.Rtext_editor_set_spell_check(editor, enabled)
+
+
+_lib.Rtext_editor_get_spell_check.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_spell_check.restype = ctypes.c_int
+
+
+def Rtext_editor_get_spell_check(editor):
+    return _lib.Rtext_editor_get_spell_check(editor)
+
+
+_lib.Rtext_editor_set_spell_language.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtext_editor_set_spell_language.restype = None
+
+
+def Rtext_editor_set_spell_language(editor, language):
+    """Language of the spell checking ("en_US", "fr"...). NULL: the default (Rspell_set_language)."""
+    _lib.Rtext_editor_set_spell_language(editor, _s(language))
+
+
 _lib.Rtext_editor_get_token.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
 _lib.Rtext_editor_get_token.restype = ctypes.c_int
 
@@ -9374,6 +13438,29 @@ def Rtext_editor_add_completion(editor, text, detail):
     _lib.Rtext_editor_add_completion(editor, _s(text), _s(detail))
 
 
+_lib.Rtext_editor_add_completion_insert.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rtext_editor_add_completion_insert.restype = None
+
+
+def Rtext_editor_add_completion_insert(editor, text, detail, insert):
+    """Adds a proposal that writes another text than the one it shows
+    and is matched on: "Threshold", listed and filtered as such, that
+    writes "Threshold(" when chosen. Only from a completion callback.
+    insert What replaces the word being typed; NULL or "" is `text`."""
+    _lib.Rtext_editor_add_completion_insert(editor, _s(text), _s(detail), _s(insert))
+
+
+_lib.Rtext_editor_set_completion_words.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_set_completion_words.restype = None
+
+
+def Rtext_editor_set_completion_words(editor, enabled):
+    """R_FALSE leaves the words of the language and the names of the
+    text out of the proposals: only the completion callback's are listed
+    (a language server that knows better). On by default."""
+    _lib.Rtext_editor_set_completion_words(editor, enabled)
+
+
 _lib.Rtext_editor_set_auto_pairs.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rtext_editor_set_auto_pairs.restype = None
 
@@ -9411,6 +13498,175 @@ _lib.Rtext_editor_get_marker_count.restype = ctypes.c_int
 
 def Rtext_editor_get_marker_count(editor):
     return _lib.Rtext_editor_get_marker_count(editor)
+
+
+_lib.Rtext_editor_set_hover_callback.argtypes = [ctypes.c_uint32, RTextEditorHoverCallback, ctypes.c_void_p]
+_lib.Rtext_editor_set_hover_callback.restype = None
+
+
+def Rtext_editor_set_hover_callback(editor, callback, user_data=None):
+    _lib.Rtext_editor_set_hover_callback(editor, _callback(RTextEditorHoverCallback, _adapt_RTextEditorHoverCallback, callback), user_data)
+
+
+_lib.Rtext_editor_set_search.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_uint32]
+_lib.Rtext_editor_set_search.restype = None
+
+
+def Rtext_editor_set_search(editor, query, flags):
+    """Sets what is searched for, with RSearchFlags, and shows every
+    match of the visible text (theme colors R_COLOR_SEARCH_MATCH and
+    R_COLOR_SEARCH_CURRENT). A match lies on one line: a query with a line
+    break finds nothing. NULL or "" clears the search. The selection does
+    not move; Rtext_editor_find_next goes to a match."""
+    _lib.Rtext_editor_set_search(editor, _s(query), flags)
+
+
+_lib.Rtext_editor_get_search.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_search.restype = ctypes.c_char_p
+
+
+def Rtext_editor_get_search(editor):
+    """Returns: The text searched for, "" when there is none."""
+    return _r(_lib.Rtext_editor_get_search(editor))
+
+
+_lib.Rtext_editor_get_search_flags.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_search_flags.restype = ctypes.c_uint32
+
+
+def Rtext_editor_get_search_flags(editor):
+    """Returns: The RSearchFlags of the search."""
+    return _lib.Rtext_editor_get_search_flags(editor)
+
+
+_lib.Rtext_editor_find_next.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_find_next.restype = ctypes.c_int
+
+
+def Rtext_editor_find_next(editor):
+    """Selects the next match after the selection (or the cursor),
+    going on from the start of the text after its end, and scrolls to it.
+    Returns R_FALSE when the text has no match."""
+    return _lib.Rtext_editor_find_next(editor)
+
+
+_lib.Rtext_editor_find_previous.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_find_previous.restype = ctypes.c_int
+
+
+def Rtext_editor_find_previous(editor):
+    """The same, toward the start: the match before the selection, from the end of the text after its start."""
+    return _lib.Rtext_editor_find_previous(editor)
+
+
+_lib.Rtext_editor_get_match_count.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_match_count.restype = ctypes.c_int
+
+
+def Rtext_editor_get_match_count(editor):
+    """Returns: The number of matches in the whole text. Counted once per change of the text or of the search."""
+    return _lib.Rtext_editor_get_match_count(editor)
+
+
+_lib.Rtext_editor_get_match_index.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_get_match_index.restype = ctypes.c_int
+
+
+def Rtext_editor_get_match_index(editor):
+    """Returns: The index of the selected match (0 for the first in the text), -1 when the selection is not a match."""
+    return _lib.Rtext_editor_get_match_index(editor)
+
+
+_lib.Rtext_editor_get_match.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rtext_editor_get_match.restype = ctypes.c_int
+
+
+def Rtext_editor_get_match(editor, index):
+    """Where a match is: its line and the columns of its first byte and
+    of the byte after it. Returns R_FALSE when `index` is out of range."""
+    line_ = ctypes.c_int()
+    from_column_ = ctypes.c_int()
+    to_column_ = ctypes.c_int()
+    result = _lib.Rtext_editor_get_match(editor, index, ctypes.byref(line_), ctypes.byref(from_column_), ctypes.byref(to_column_))
+    return (result, line_.value, from_column_.value, to_column_.value)
+
+
+_lib.Rtext_editor_select_match.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_select_match.restype = ctypes.c_int
+
+
+def Rtext_editor_select_match(editor, index):
+    """Selects a match by its index and scrolls to it. Returns R_FALSE when `index` is out of range."""
+    return _lib.Rtext_editor_select_match(editor, index)
+
+
+_lib.Rtext_editor_replace.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtext_editor_replace.restype = ctypes.c_int
+
+
+def Rtext_editor_replace(editor, replacement):
+    """Replaces the selected match by `replacement`, as one step of
+    the history, then selects the next match. When the selection is not a
+    match, only selects the next one (the user sees what will be replaced).
+    Returns R_TRUE when something was replaced. As with
+    Rtext_editor_insert_text, the changed callback is called."""
+    return _lib.Rtext_editor_replace(editor, _s(replacement))
+
+
+_lib.Rtext_editor_replace_all.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtext_editor_replace_all.restype = ctypes.c_int
+
+
+def Rtext_editor_replace_all(editor, replacement):
+    """Replaces every match by `replacement`, as a single step of the
+    history (one undo puts them all back). Returns the number of matches
+    replaced."""
+    return _lib.Rtext_editor_replace_all(editor, _s(replacement))
+
+
+_lib.Rtext_editor_show_find.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_show_find.restype = None
+
+
+def Rtext_editor_show_find(editor, replace):
+    """Opens the find bar of the editor (Ctrl+F), with the row to
+    replace when `replace` is R_TRUE (Ctrl+H), and gives it the keyboard.
+    Text selected on one line becomes the text searched for.
+    Its texts are English unless the locale has the keys Raven.Find,
+    Raven.Replace, Raven.ReplaceAll, Raven.FindNoResults, Raven.FindCount
+    ("{0} of {1}"), Raven.FindMatchCase, Raven.FindWholeWord,
+    Raven.FindPrevious, Raven.FindNext, Raven.FindClose and
+    Raven.FindToggleReplace."""
+    _lib.Rtext_editor_show_find(editor, replace)
+
+
+_lib.Rtext_editor_hide_find.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_hide_find.restype = None
+
+
+def Rtext_editor_hide_find(editor):
+    """Closes the find bar; the matches are no longer shown, F3 still goes to the next one."""
+    _lib.Rtext_editor_hide_find(editor)
+
+
+_lib.Rtext_editor_is_find_shown.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_is_find_shown.restype = ctypes.c_int
+
+
+def Rtext_editor_is_find_shown(editor):
+    return _lib.Rtext_editor_is_find_shown(editor)
+
+
+_lib.Rtext_editor_set_find_bar.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtext_editor_set_find_bar.restype = None
+
+
+def Rtext_editor_set_find_bar(editor, enabled):
+    """R_FALSE removes the find bar and its keys (Ctrl+F, Ctrl+H, F3,
+    Cmd+G), which then go to the shortcuts of the window: for an
+    application with its own search, built on Rtext_editor_set_search. On
+    by default. XML: FindBar="false"."""
+    _lib.Rtext_editor_set_find_bar(editor, enabled)
 
 
 _lib.Rtheme_set_token_color.argtypes = [ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
@@ -9679,7 +13935,8 @@ _lib.Rdock_area_load_layout.restype = ctypes.c_int
 def Rdock_area_load_layout(area, layout):
     """Arranges the panels as a saved description says. Panels of the
     area that the description does not name keep a place; names it has
-    that match no panel are ignored.
+    that match no panel are ignored in legacy descriptions. Versioned
+    descriptions with floating cards reject unknown or duplicate names.
     Returns: R_FALSE when the text is not a layout (nothing is changed)."""
     return _lib.Rdock_area_load_layout(area, _s(layout))
 
@@ -9716,12 +13973,38 @@ def Rdock_area_is_tearable(area):
     return _lib.Rdock_area_is_tearable(area)
 
 
+_lib.Rdock_area_set_float_mode.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdock_area_set_float_mode.restype = None
+
+
+def Rdock_area_set_float_mode(area, mode):
+    """Default for future floats/tears; existing floating panels keep their mode."""
+    _lib.Rdock_area_set_float_mode(area, int(mode))
+
+
+_lib.Rdock_area_set_float_window.argtypes = [ctypes.c_uint32, ctypes.c_uint32, RDockFloatWindowCallback, ctypes.c_void_p]
+_lib.Rdock_area_set_float_window.restype = None
+
+
+def Rdock_area_set_float_window(area, flags, callback, user_data=None):
+    """How the windows of torn-off panels are made (native windows,
+    R_DOCK_FLOAT_WINDOW; in-window cards are not windows).
+    flags    RWindowFlags they are created with: R_WINDOW_NO_RESIZE,
+                    R_WINDOW_BORDERLESS, R_WINDOW_CUSTOM_HEADER and
+                    R_WINDOW_TRANSPARENT (the others are ignored).
+                    R_WINDOW_DEFAULT by default.
+    callback May be NULL: the floating area is the whole window.
+    Dragging the only tab of such a window still moves it, and closing
+    it (its header bar's close button too) docks its panels back."""
+    _lib.Rdock_area_set_float_window(area, flags, _callback(RDockFloatWindowCallback, _adapt_RDockFloatWindowCallback, callback), user_data)
+
+
 _lib.Rdock_area_float_panel.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
 _lib.Rdock_area_float_panel.restype = ctypes.c_uint32
 
 
 def Rdock_area_float_panel(area, panel, x, y):
-    """Takes a panel to a window of its own, its top left corner at (x, y) on the screen. Returns the window."""
+    """Floats a panel. Native mode: screen x/y; in-window mode: window-local logical x/y. Returns its containing window."""
     return _lib.Rdock_area_float_panel(area, panel, x, y)
 
 
@@ -10025,6 +14308,34 @@ def Rtray_set_clicked_callback(tray, callback, user_data=None):
     when there is no menu, the middle one. On macOS an icon with a menu
     opens it instead."""
     _lib.Rtray_set_clicked_callback(tray, _callback(RTrayClickedCallback, _adapt_RTrayClickedCallback, callback), user_data)
+
+
+_lib.Rtray_set_title.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtray_set_title.restype = None
+
+
+def Rtray_set_title(tray, text):
+    """A short text shown beside the icon (macOS menu bar), drawn by the
+    system in its own font and colors; the item widens to fit it. NULL or
+    "": the icon alone. Systems that show no text there ignore it (the
+    tooltip is the place for it)."""
+    _lib.Rtray_set_title(tray, _s(text))
+
+
+_lib.Rtray_get_rect.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rtray_get_rect.restype = ctypes.c_int
+
+
+def Rtray_get_rect(tray):
+    """Where the icon is on the screen, in the units and coordinates of
+    Rwindow_set_position (a window can then open just under it).
+    Returns: R_FALSE when the system does not tell (the outputs are then 0)."""
+    x_ = ctypes.c_int()
+    y_ = ctypes.c_int()
+    width_ = ctypes.c_int()
+    height_ = ctypes.c_int()
+    result = _lib.Rtray_get_rect(tray, ctypes.byref(x_), ctypes.byref(y_), ctypes.byref(width_), ctypes.byref(height_))
+    return (result, x_.value, y_.value, width_.value, height_.value)
 
 
 _lib.Rcolor_picker_create.argtypes = []
@@ -11474,6 +15785,53 @@ def Rnode_graph_set_pin_emphasis(graph, pin, emphasis):
     _lib.Rnode_graph_set_pin_emphasis(graph, pin, emphasis)
 
 
+_lib.Rnode_graph_get_tag_at.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rnode_graph_get_tag_at.restype = ctypes.c_int
+
+
+def Rnode_graph_get_tag_at(graph, x, y):
+    """The pin whose tag (Rnode_graph_set_pin_tag) is under a point of the widget, or 0: the chip only, not the pin."""
+    return _lib.Rnode_graph_get_tag_at(graph, x, y)
+
+
+_lib.Rnode_graph_set_pin_tag_lit.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rnode_graph_set_pin_tag_lit.restype = None
+
+
+def Rnode_graph_set_pin_tag_lit(graph, pin, lit):
+    """R_TRUE: the pin's tag is drawn as under the pointer (a stronger fill, a
+    thicker edge) — every tag of one net lit while the pointer is on one of them."""
+    _lib.Rnode_graph_set_pin_tag_lit(graph, pin, lit)
+
+
+_lib.Rnode_graph_set_pin_label_width.argtypes = [ctypes.c_uint32, ctypes.c_float]
+_lib.Rnode_graph_set_pin_label_width.restype = None
+
+
+def Rnode_graph_set_pin_label_width(graph, width):
+    """Pin labels wider than `width` (logical units) are cut short with an
+    ellipsis and the nodes are laid out with them so (compact ports); 0, the
+    default, shows every label whole."""
+    _lib.Rnode_graph_set_pin_label_width(graph, width)
+
+
+_lib.Rnode_graph_get_pin_label_width.argtypes = [ctypes.c_uint32]
+_lib.Rnode_graph_get_pin_label_width.restype = ctypes.c_float
+
+
+def Rnode_graph_get_pin_label_width(graph):
+    return _lib.Rnode_graph_get_pin_label_width(graph)
+
+
+_lib.Rnode_graph_set_node_badge_color.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rnode_graph_set_node_badge_color.restype = None
+
+
+def Rnode_graph_set_node_badge_color(graph, node, r, g, b):
+    """Color of the badge pill of one node (Rnode_graph_set_node_badge); its text turns dark or light to suit it. A negative component restores the look's color."""
+    _lib.Rnode_graph_set_node_badge_color(graph, node, r, g, b)
+
+
 _lib.Rblock_editor_create.argtypes = []
 _lib.Rblock_editor_create.restype = ctypes.c_uint32
 
@@ -11794,6 +16152,322 @@ def Rblock_editor_set_view(editor, x, y, zoom):
     _lib.Rblock_editor_set_view(editor, x, y, zoom)
 
 
+_lib.Rdiff_unified.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_uint32, ctypes.POINTER(ctypes.c_size_t)]
+_lib.Rdiff_unified.restype = ctypes.c_void_p
+
+
+def Rdiff_unified(left, right, left_name, right_name, context, flags):
+    """The differences between two texts as a unified diff (the format
+    of `diff -u` and `git diff`), with `context` unchanged lines around each
+    change (3 is usual). `left_name` and `right_name` follow `---` and `+++`
+    (NULL: "a" and "b"). `flags`: RDiffFlags. It touches nothing else of
+    the library: it may be called from any thread.
+    Returns: The patch followed by a '\\0' (an empty text when the texts are
+    the same), to release with Rmemory_free; NULL when a text is NULL.
+    `size` receives its length in bytes, and may be NULL."""
+    size_ = ctypes.c_size_t()
+    address = _lib.Rdiff_unified(_s(left), _s(right), _s(left_name), _s(right_name), context, flags, ctypes.byref(size_))
+    if not address:
+        return None
+    data = ctypes.string_at(address, size_.value)
+    _lib.Rmemory_free(address)
+    return data
+
+
+_lib.Rdiff_count_changes.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint32]
+_lib.Rdiff_count_changes.restype = ctypes.c_int
+
+
+def Rdiff_count_changes(left, right, flags):
+    """The number of changes (runs of lines removed and / or added) between two texts. Any thread."""
+    return _lib.Rdiff_count_changes(_s(left), _s(right), flags)
+
+
+_lib.Rdiff_view_create.argtypes = []
+_lib.Rdiff_view_create.restype = ctypes.c_uint32
+
+
+def Rdiff_view_create():
+    return _lib.Rdiff_view_create()
+
+
+_lib.Rdiff_view_set_texts.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rdiff_view_set_texts.restype = None
+
+
+def Rdiff_view_set_texts(diff_view, left, right):
+    """The two texts to compare (NULL: empty). Lines end with "\\n" or "\\r\\n"."""
+    _lib.Rdiff_view_set_texts(diff_view, _s(left), _s(right))
+
+
+_lib.Rdiff_view_set_names.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rdiff_view_set_names.restype = None
+
+
+def Rdiff_view_set_names(diff_view, left_name, right_name):
+    """Names shown over the two sides (file names, "Before" / "After"); NULL: none. Their extension chooses the colors of the code."""
+    _lib.Rdiff_view_set_names(diff_view, _s(left_name), _s(right_name))
+
+
+_lib.Rdiff_view_load_files.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rdiff_view_load_files.restype = ctypes.c_int
+
+
+def Rdiff_view_load_files(diff_view, left_path, right_path):
+    """Compares two files. Their paths become the names unless names
+    were given. Returns: R_FALSE when a file cannot be read (it is compared
+    as empty)."""
+    return _lib.Rdiff_view_load_files(diff_view, _s(left_path), _s(right_path))
+
+
+_lib.Rdiff_view_set_patch.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rdiff_view_set_patch.restype = ctypes.c_int
+
+
+def Rdiff_view_set_patch(diff_view, patch):
+    """Shows a patch (unified diff: the output of `git diff`, `diff -u`)
+    instead of two texts: each file with its name, each hunk with its header.
+    Returns: R_FALSE when the text holds no hunk (nothing is shown)."""
+    return _lib.Rdiff_view_set_patch(diff_view, _s(patch))
+
+
+_lib.Rdiff_view_set_mode.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_set_mode.restype = None
+
+
+def Rdiff_view_set_mode(diff_view, mode):
+    _lib.Rdiff_view_set_mode(diff_view, int(mode))
+
+
+_lib.Rdiff_view_get_mode.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_mode.restype = ctypes.c_int
+
+
+def Rdiff_view_get_mode(diff_view):
+    return _e(RDiffViewMode, _lib.Rdiff_view_get_mode(diff_view))
+
+
+_lib.Rdiff_view_set_context.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_set_context.restype = None
+
+
+def Rdiff_view_set_context(diff_view, lines):
+    """Unchanged lines shown around each change (3 by default); the
+    others are folded. A negative number shows every line."""
+    _lib.Rdiff_view_set_context(diff_view, lines)
+
+
+_lib.Rdiff_view_get_context.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_context.restype = ctypes.c_int
+
+
+def Rdiff_view_get_context(diff_view):
+    return _lib.Rdiff_view_get_context(diff_view)
+
+
+_lib.Rdiff_view_set_flags.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
+_lib.Rdiff_view_set_flags.restype = None
+
+
+def Rdiff_view_set_flags(diff_view, flags):
+    """How lines are compared: RDiffFlags (0 by default). Not used by a patch."""
+    _lib.Rdiff_view_set_flags(diff_view, flags)
+
+
+_lib.Rdiff_view_get_flags.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_flags.restype = ctypes.c_uint32
+
+
+def Rdiff_view_get_flags(diff_view):
+    return _lib.Rdiff_view_get_flags(diff_view)
+
+
+_lib.Rdiff_view_set_word_diff.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_set_word_diff.restype = None
+
+
+def Rdiff_view_set_word_diff(diff_view, enabled):
+    """Marks the words that changed inside a changed line (default R_TRUE)."""
+    _lib.Rdiff_view_set_word_diff(diff_view, enabled)
+
+
+_lib.Rdiff_view_set_line_numbers.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_set_line_numbers.restype = None
+
+
+def Rdiff_view_set_line_numbers(diff_view, visible):
+    """Shows the numbers of the lines (default R_TRUE)."""
+    _lib.Rdiff_view_set_line_numbers(diff_view, visible)
+
+
+_lib.Rdiff_view_set_language.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rdiff_view_set_language.restype = None
+
+
+def Rdiff_view_set_language(diff_view, language):
+    """Colors the code as the text editor does: a language name of
+    Rlanguage_register ("C", "Python", "JSON"...), "None" for plain text,
+    NULL (default) to guess it from the extension of the names."""
+    _lib.Rdiff_view_set_language(diff_view, _s(language))
+
+
+_lib.Rdiff_view_get_change_count.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_change_count.restype = ctypes.c_int
+
+
+def Rdiff_view_get_change_count(diff_view):
+    """The number of changes: runs of lines removed and / or added."""
+    return _lib.Rdiff_view_get_change_count(diff_view)
+
+
+_lib.Rdiff_view_get_change.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rdiff_view_get_change.restype = ctypes.c_int
+
+
+def Rdiff_view_get_change(diff_view, change):
+    """Where a change is: its first line and its number of lines on
+    each side (a count of 0: nothing on that side; the line is then the one
+    after which the other side's lines go). Returns: R_FALSE when there is
+    no such change."""
+    left_line_ = ctypes.c_int()
+    left_count_ = ctypes.c_int()
+    right_line_ = ctypes.c_int()
+    right_count_ = ctypes.c_int()
+    result = _lib.Rdiff_view_get_change(diff_view, change, ctypes.byref(left_line_), ctypes.byref(left_count_), ctypes.byref(right_line_), ctypes.byref(right_count_))
+    return (result, left_line_.value, left_count_.value, right_line_.value, right_count_.value)
+
+
+_lib.Rdiff_view_go_to_change.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_go_to_change.restype = None
+
+
+def Rdiff_view_go_to_change(diff_view, change):
+    """Scrolls to a change (from 0) and marks it as the current one."""
+    _lib.Rdiff_view_go_to_change(diff_view, change)
+
+
+_lib.Rdiff_view_get_current_change.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_current_change.restype = ctypes.c_int
+
+
+def Rdiff_view_get_current_change(diff_view):
+    """The current change, -1 before the first one is gone to."""
+    return _lib.Rdiff_view_get_current_change(diff_view)
+
+
+_lib.Rdiff_view_next_change.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_next_change.restype = ctypes.c_int
+
+
+def Rdiff_view_next_change(diff_view):
+    """Goes to the next / previous change. Returns: Its index, -1 when there is none."""
+    return _lib.Rdiff_view_next_change(diff_view)
+
+
+_lib.Rdiff_view_prev_change.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_prev_change.restype = ctypes.c_int
+
+
+def Rdiff_view_prev_change(diff_view):
+    return _lib.Rdiff_view_prev_change(diff_view)
+
+
+_lib.Rdiff_view_get_row_count.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_row_count.restype = ctypes.c_int
+
+
+def Rdiff_view_get_row_count(diff_view):
+    """The rows shown, folds, hunk headers and notes included."""
+    return _lib.Rdiff_view_get_row_count(diff_view)
+
+
+_lib.Rdiff_view_get_row.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rdiff_view_get_row.restype = ctypes.c_int
+
+
+def Rdiff_view_get_row(diff_view, row):
+    """What a row shows, and the numbers of its lines (0 for a side it
+    has no line of). A fold gives the first line it hides on each side."""
+    left_line_ = ctypes.c_int()
+    right_line_ = ctypes.c_int()
+    result = _e(RDiffRowKind, _lib.Rdiff_view_get_row(diff_view, row, ctypes.byref(left_line_), ctypes.byref(right_line_)))
+    return (result, left_line_.value, right_line_.value)
+
+
+_lib.Rdiff_view_get_row_text.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int]
+_lib.Rdiff_view_get_row_text.restype = ctypes.c_char_p
+
+
+def Rdiff_view_get_row_text(diff_view, row, side):
+    """The text of a row on one side (in unified mode the side does not
+    matter for a line); a fold, a hunk, a file or a note give their label.
+    Valid until the next call. "" when there is none."""
+    return _r(_lib.Rdiff_view_get_row_text(diff_view, row, int(side)))
+
+
+_lib.Rdiff_view_expand.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_expand.restype = ctypes.c_int
+
+
+def Rdiff_view_expand(diff_view, row):
+    """Shows the lines of a fold. Returns: R_FALSE when the row is not a fold."""
+    return _lib.Rdiff_view_expand(diff_view, row)
+
+
+_lib.Rdiff_view_get_first_visible_row.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_first_visible_row.restype = ctypes.c_int
+
+
+def Rdiff_view_get_first_visible_row(diff_view):
+    """The first row at the top of the view; Rdiff_view_scroll_to_row brings one there."""
+    return _lib.Rdiff_view_get_first_visible_row(diff_view)
+
+
+_lib.Rdiff_view_scroll_to_row.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rdiff_view_scroll_to_row.restype = None
+
+
+def Rdiff_view_scroll_to_row(diff_view, row):
+    _lib.Rdiff_view_scroll_to_row(diff_view, row)
+
+
+_lib.Rdiff_view_add_annotation.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+_lib.Rdiff_view_add_annotation.restype = None
+
+
+def Rdiff_view_add_annotation(diff_view, side, line, text):
+    """Attaches a short note to a line (a review comment, an error): a
+    mark in the gutter and the text in a row under the line, which is never
+    folded away. Several notes may go to one line."""
+    _lib.Rdiff_view_add_annotation(diff_view, int(side), line, _s(text))
+
+
+_lib.Rdiff_view_clear_annotations.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_clear_annotations.restype = None
+
+
+def Rdiff_view_clear_annotations(diff_view):
+    _lib.Rdiff_view_clear_annotations(diff_view)
+
+
+_lib.Rdiff_view_get_selected_text.argtypes = [ctypes.c_uint32]
+_lib.Rdiff_view_get_selected_text.restype = ctypes.c_char_p
+
+
+def Rdiff_view_get_selected_text(diff_view):
+    """The text selected by the user ("" when none), one line after another."""
+    return _r(_lib.Rdiff_view_get_selected_text(diff_view))
+
+
+_lib.Rdiff_view_set_line_clicked_callback.argtypes = [ctypes.c_uint32, RDiffViewLineCallback, ctypes.c_void_p]
+_lib.Rdiff_view_set_line_clicked_callback.restype = None
+
+
+def Rdiff_view_set_line_clicked_callback(diff_view, callback, user_data=None):
+    """Called when a line or its number is clicked (the action of the widget is fired too)."""
+    _lib.Rdiff_view_set_line_clicked_callback(diff_view, _callback(RDiffViewLineCallback, _adapt_RDiffViewLineCallback, callback), user_data)
+
+
 _lib.Rdialog_open.argtypes = [ctypes.c_uint32, ctypes.c_uint32, RDialogClosedCallback, ctypes.c_void_p]
 _lib.Rdialog_open.restype = None
 
@@ -11979,6 +16653,9 @@ _lib.Rfile_read.restype = ctypes.c_void_p
 
 def Rfile_read(path):
     """Whole files, with UTF-8 paths on every platform.
+    On Android and iOS, a relative path that names no file held in memory
+    and no file on disk is read from the app's package (the APK's assets/,
+    the bundle's resources), and so is every file Raven reads by its path.
     Returns: Rfile_read: the content followed by a '\\0', to release with
     Rmemory_free; NULL when the file cannot be read. `size` may be NULL."""
     size_ = ctypes.c_size_t()
@@ -12170,7 +16847,9 @@ _lib.Rnotification_is_supported.restype = ctypes.c_int
 
 
 def Rnotification_is_supported():
-    """R_FALSE when the platform has no notifications (Rnotification_show then always uses the fallback)."""
+    """R_FALSE when the system shows no notifications here (Rnotification_show then always uses
+    the fallback): the null platform, no notification server on Linux, an executable outside of a
+    bundle on macOS."""
     return _lib.Rnotification_is_supported()
 
 
@@ -12189,11 +16868,227 @@ _lib.Rnotification_set_clicked_callback.restype = None
 
 def Rnotification_set_clicked_callback(callback, user_data=None):
     """Called when the user clicks a notification of Rnotification_show
-    (on the UI thread; the application may then bring its window to the
-    front: the system lets it). It is the last one shown that was clicked:
-    the application remembers what it was about. NULL: none.
-    Windows only for now (elsewhere it is never called)."""
+    (on the UI thread), as R_NOTIFICATION_ACTIVATED of
+    Rnotification_set_callback, which also tells which one. NULL: none."""
     _lib.Rnotification_set_clicked_callback(_callback(RNotificationClickedCallback, _adapt_RNotificationClickedCallback, callback), user_data)
+
+
+_lib.Rnotification_show_desc.argtypes = [ctypes.POINTER(RNotificationDesc)]
+_lib.Rnotification_show_desc.restype = ctypes.c_int
+
+
+def Rnotification_show_desc(desc):
+    """Shows a notification described by `desc` (see RNotificationDesc).
+    Returns: R_TRUE when the system took it; R_FALSE when it went to the fallback (or nowhere)."""
+    return _lib.Rnotification_show_desc(_p(desc))
+
+
+_lib.Rnotification_close.argtypes = [ctypes.c_char_p]
+_lib.Rnotification_close.restype = None
+
+
+def Rnotification_close(tag):
+    """Takes away the notification of that tag, shown by the system or by the fallback toast. The callback is not called."""
+    _lib.Rnotification_close(_s(tag))
+
+
+_lib.Rnotification_set_callback.argtypes = [RNotificationCallback, ctypes.c_void_p]
+_lib.Rnotification_set_callback.restype = None
+
+
+def Rnotification_set_callback(callback, user_data=None):
+    _lib.Rnotification_set_callback(_callback(RNotificationCallback, _adapt_RNotificationCallback, callback), user_data)
+
+
+_lib.Rnotification_set_bring_to_front.argtypes = [ctypes.c_int]
+_lib.Rnotification_set_bring_to_front.restype = None
+
+
+def Rnotification_set_bring_to_front(enabled):
+    """R_TRUE (the default): a click on a notification (not on one of
+    its buttons) brings its window back before the callback is called:
+    shown again if it was hidden or minimized, in front, with the keyboard.
+    R_FALSE: the application does what it wants in the callback."""
+    _lib.Rnotification_set_bring_to_front(enabled)
+
+
+_lib.Rnotification_set_fallback_toast.argtypes = [ctypes.c_uint32]
+_lib.Rnotification_set_fallback_toast.restype = None
+
+
+def Rnotification_set_fallback_toast(toast):
+    """A Toast that shows the notifications the system could not show,
+    with their title, icon and buttons; a click on one, or on a button, is
+    reported to Rnotification_set_callback as for the system's. Put it in
+    an Overlay (Queue="Stack" shows several at once). It takes the place
+    of the fallback callback (Rnotification_set_fallback). R_INVALID_ID: none."""
+    _lib.Rnotification_set_fallback_toast(toast)
+
+
+_lib.Rnotification_supports.argtypes = [ctypes.c_int]
+_lib.Rnotification_supports.restype = ctypes.c_int
+
+
+def Rnotification_supports(feature):
+    """Whether the notifications of the system have that feature here (R_FALSE where there are none)."""
+    return _lib.Rnotification_supports(int(feature))
+
+
+_lib.Rpermission_get_status.argtypes = [ctypes.c_int]
+_lib.Rpermission_get_status.restype = ctypes.c_int
+
+
+def Rpermission_get_status(permission):
+    """What the user answered, without asking. Cheap: the platform
+    remembers it. On iOS the status of notifications is known shortly after
+    the start (R_PERMISSION_NOT_ASKED until then)."""
+    return _e(RPermissionStatus, _lib.Rpermission_get_status(int(permission)))
+
+
+_lib.Rpermission_request.argtypes = [ctypes.c_int, RPermissionCallback, ctypes.c_void_p]
+_lib.Rpermission_request.restype = None
+
+
+def Rpermission_request(permission, callback, user_data=None):
+    """Asks the user, with the question of the system, when the status
+    is R_PERMISSION_NOT_ASKED or R_PERMISSION_DENIED; otherwise only answers
+    with the status. Several requests for the same permission share one
+    question. `callback` may be NULL."""
+    _lib.Rpermission_request(int(permission), _callback(RPermissionCallback, _adapt_RPermissionCallback, callback), user_data)
+
+
+_lib.Rpermission_open_settings.argtypes = []
+_lib.Rpermission_open_settings.restype = ctypes.c_int
+
+
+def Rpermission_open_settings():
+    """Opens the page of the application in the Settings of the system,
+    where the user changes what was refused for good (R_PERMISSION_BLOCKED).
+    Returns: R_FALSE when the platform has no such page."""
+    return _lib.Rpermission_open_settings()
+
+
+_lib.Rpermission_to_string.argtypes = [ctypes.c_int]
+_lib.Rpermission_to_string.restype = ctypes.c_char_p
+
+
+def Rpermission_to_string(permission):
+    """Returns: The name of a permission or a status ("camera", "granted"...), for logs."""
+    return _r(_lib.Rpermission_to_string(int(permission)))
+
+
+_lib.Rpermission_status_to_string.argtypes = [ctypes.c_int]
+_lib.Rpermission_status_to_string.restype = ctypes.c_char_p
+
+
+def Rpermission_status_to_string(status):
+    return _r(_lib.Rpermission_status_to_string(int(status)))
+
+
+_lib.Rfile_open_async.argtypes = [ctypes.POINTER(RFileDialogDesc), RDeviceCallback, ctypes.c_void_p]
+_lib.Rfile_open_async.restype = None
+
+
+def Rfile_open_async(desc, callback, user_data=None):
+    """Asks for one file to read (several with R_FILE_DIALOG_MULTIPLE). `desc` may be NULL."""
+    _lib.Rfile_open_async(_p(desc), _callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
+
+
+_lib.Rfile_save_async.argtypes = [ctypes.POINTER(RFileDialogDesc), ctypes.c_void_p, ctypes.c_size_t, RDeviceCallback, ctypes.c_void_p]
+_lib.Rfile_save_async.restype = None
+
+
+def Rfile_save_async(desc, data, callback, user_data=None):
+    """Saves `size` bytes (copied: `data` may be freed at once) as a
+    file where the user chooses, proposed under `desc->file_name`. The
+    callback gives the file as saved: its name, and its path on desktops."""
+    data = bytes(data) if data is not None else None
+    _lib.Rfile_save_async(_p(desc), data, len(data) if data is not None else 0, _callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
+
+
+_lib.Rfile_export_async.argtypes = [ctypes.POINTER(RFileDialogDesc), ctypes.c_char_p, RDeviceCallback, ctypes.c_void_p]
+_lib.Rfile_export_async.restype = None
+
+
+def Rfile_export_async(desc, path, callback, user_data=None):
+    """Same as Rfile_save_async, for a file that already exists (a path Raven can read), copied where the user chooses."""
+    _lib.Rfile_export_async(_p(desc), _s(path), _callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
+
+
+_lib.Rfile_select_folder_async.argtypes = [ctypes.POINTER(RFileDialogDesc), RDeviceCallback, ctypes.c_void_p]
+_lib.Rfile_select_folder_async.restype = None
+
+
+def Rfile_select_folder_async(desc, callback, user_data=None):
+    """Asks for a folder: desktops only for now (R_DEVICE_UNSUPPORTED on iOS and Android)."""
+    _lib.Rfile_select_folder_async(_p(desc), _callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
+
+
+_lib.Rcamera_is_available.argtypes = []
+_lib.Rcamera_is_available.restype = ctypes.c_int
+
+
+def Rcamera_is_available():
+    """Returns: R_TRUE when Rcamera_take_photo can show a camera (none on desktops, nor in the iOS Simulator)."""
+    return _lib.Rcamera_is_available()
+
+
+_lib.Rcamera_take_photo.argtypes = [RDeviceCallback, ctypes.c_void_p]
+_lib.Rcamera_take_photo.restype = None
+
+
+def Rcamera_take_photo(callback, user_data=None):
+    """Shows the camera of the system to take one photo. It asks for
+    R_PERMISSION_CAMERA first when needed (R_DEVICE_DENIED when refused).
+    The photo is a JPEG file in the cache of the application, with its
+    size in pixels, upright."""
+    _lib.Rcamera_take_photo(_callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
+
+
+_lib.Rphoto_pick.argtypes = [ctypes.c_int, RDeviceCallback, ctypes.c_void_p]
+_lib.Rphoto_pick.restype = None
+
+
+def Rphoto_pick(max_count, callback, user_data=None):
+    """Shows the photo picker of the system (desktops: a file dialog for
+    images). No permission is needed: the application only sees what the
+    user picks. Each photo is a file Raven can load (iOS: converted to JPEG
+    when it is HEIC).
+    max_count How many photos may be picked; 0: no limit."""
+    _lib.Rphoto_pick(max_count, _callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
+
+
+_lib.Rhaptic_is_supported.argtypes = []
+_lib.Rhaptic_is_supported.restype = ctypes.c_int
+
+
+def Rhaptic_is_supported():
+    """Returns: R_TRUE when the device can play haptics (a phone; never a desktop)."""
+    return _lib.Rhaptic_is_supported()
+
+
+_lib.Rhaptic_play.argtypes = [ctypes.c_int]
+_lib.Rhaptic_play.restype = ctypes.c_int
+
+
+def Rhaptic_play(haptic):
+    """A short vibration, as the controls of the system play when
+    touched. Nothing happens where there are none, or when the user turned
+    them off. Returns: R_TRUE when it was handed to the system."""
+    return _lib.Rhaptic_play(int(haptic))
+
+
+_lib.Rshare_show.argtypes = [ctypes.POINTER(RShareDesc), RDeviceCallback, ctypes.c_void_p]
+_lib.Rshare_show.restype = None
+
+
+def Rshare_show(desc, callback, user_data=None):
+    """Shows the share sheet of the system with a text and / or a file,
+    to send them to another application (mail, chat, Files...). The
+    callback says R_DEVICE_DONE once something was chosen (Android: once the
+    sheet was shown; it does not tell more), R_DEVICE_CANCELLED when it was
+    closed. R_DEVICE_UNSUPPORTED on desktops."""
+    _lib.Rshare_show(_p(desc), _callback(RDeviceCallback, _adapt_RDeviceCallback, callback), user_data)
 
 
 _lib.Rviewport_set_texture.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
@@ -12305,6 +17200,17 @@ _lib.Rdraw_rect.restype = None
 def Rdraw_rect(painter, x, y, width, height, radius, r, g, b, a):
     """Filled rectangle with rounded corners (radius 0 = sharp)."""
     _lib.Rdraw_rect(painter, x, y, width, height, radius, r, g, b, a)
+
+
+_lib.Rdraw_shadow.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rdraw_shadow.restype = None
+
+
+def Rdraw_shadow(painter, x, y, width, height, radius, blur, r, g, b, a):
+    """Soft shadow or glow: a rounded rectangle blurred by `blur` logical units.
+    Offset the rectangle for a drop shadow, or draw it under a shape for a glow.
+    Nonpositive width, height or blur draws nothing. Uses the same primitive as Border shadows."""
+    _lib.Rdraw_shadow(painter, x, y, width, height, radius, blur, r, g, b, a)
 
 
 _lib.Rdraw_rect_outline.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
@@ -12701,9 +17607,10 @@ _lib.Rxml_set_live_reload.restype = None
 
 
 def Rxml_set_live_reload(enabled):
-    """Turns live reload on or off. It is on by default; the
-    environment variable RAVEN_LIVE_RELOAD=0 turns it off without
-    rebuilding. When off, files are never looked at again."""
+    """Turns live reload on or off. It is on by default, except in
+    the browser (Emscripten), where watching files would keep the page
+    drawing; the environment variable RAVEN_LIVE_RELOAD=0 or 1 changes the
+    default without rebuilding. When off, files are never looked at again."""
     _lib.Rxml_set_live_reload(enabled)
 
 
@@ -13226,6 +18133,130 @@ def Rxml_get_attribute_info(tag, index, info):
     return _lib.Rxml_get_attribute_info(_s(tag), index, _p(info))
 
 
+_lib.Rscript_load.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p]
+_lib.Rscript_load.restype = ctypes.c_int
+
+
+def Rscript_load(source, name):
+    """Loads a script given as text (not an XML document): its
+    functions become actions, its globals are initialized.
+    name Names it in the diagnostics (a file name); may be NULL.
+    Returns: R_FALSE when it has an error (nothing of it is installed)."""
+    source = _s(source)
+    return _lib.Rscript_load(source, len(source) if source is not None else 0, _s(name))
+
+
+_lib.Rscript_load_file.argtypes = [ctypes.c_char_p]
+_lib.Rscript_load_file.restype = ctypes.c_int
+
+
+def Rscript_load_file(path):
+    """The same from a file (.rvs)."""
+    return _lib.Rscript_load_file(_s(path))
+
+
+_lib.Rscript_check.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p]
+_lib.Rscript_check.restype = ctypes.c_int
+
+
+def Rscript_check(source, name):
+    """Checks a script, or the scripts of an XML document and the
+    functions its widgets name, without running anything nor building a
+    widget. The diagnostics are reported as usual.
+    source A script, or an XML document (text that starts with '<').
+    Returns: The number of errors."""
+    source = _s(source)
+    return _lib.Rscript_check(source, len(source) if source is not None else 0, _s(name))
+
+
+_lib.Rscript_check_file.argtypes = [ctypes.c_char_p]
+_lib.Rscript_check_file.restype = ctypes.c_int
+
+
+def Rscript_check_file(path):
+    """Returns: The number of errors in the file (a .rvs or an .xml), -1 when it cannot be read."""
+    return _lib.Rscript_check_file(_s(path))
+
+
+_lib.Rscript_format.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p]
+_lib.Rscript_format.restype = ctypes.c_char_p
+
+
+def Rscript_format(source, indent):
+    """Formats a script: one statement per line, blocks indented,
+    spaces around operators; comments are kept.
+    indent One level of indentation; NULL for four spaces.
+    Returns: The text, valid until the next call; NULL when the script has a
+    syntax error (it is not changed)."""
+    source = _s(source)
+    return _r(_lib.Rscript_format(source, len(source) if source is not None else 0, _s(indent)))
+
+
+_lib.Rscript_reset.argtypes = []
+_lib.Rscript_reset.restype = None
+
+
+def Rscript_reset():
+    """Removes every script function (their actions are unbound) and every global. Not while a script runs."""
+    _lib.Rscript_reset()
+
+
+_lib.Rscript_has_function.argtypes = [ctypes.c_char_p]
+_lib.Rscript_has_function.restype = ctypes.c_int
+
+
+def Rscript_has_function(name):
+    """Returns: R_TRUE when a script function has that name."""
+    return _lib.Rscript_has_function(_s(name))
+
+
+_lib.Rscript_set_enabled.argtypes = [ctypes.c_int]
+_lib.Rscript_set_enabled.restype = None
+
+
+def Rscript_set_enabled(enabled):
+    """R_FALSE: the <Script> elements of the documents are read but not
+    compiled nor run (a design tool that shows interfaces without running
+    them). On by default."""
+    _lib.Rscript_set_enabled(enabled)
+
+
+_lib.Rscript_is_enabled.argtypes = []
+_lib.Rscript_is_enabled.restype = ctypes.c_int
+
+
+def Rscript_is_enabled():
+    return _lib.Rscript_is_enabled()
+
+
+_lib.Rscript_set_limits.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_size_t]
+_lib.Rscript_set_limits.restype = None
+
+
+def Rscript_set_limits(max_instructions, max_depth, max_memory):
+    """The limits of the scripts. 0 keeps a value.
+    max_instructions Instructions one invocation (an event) may run (10 000 000).
+    max_depth Calls nested (200).
+    max_memory Bytes of strings and arrays alive (64 MB)."""
+    _lib.Rscript_set_limits(max_instructions, max_depth, max_memory)
+
+
+_lib.Rscript_set_log_callback.argtypes = [RScriptLogCallback, ctypes.c_void_p]
+_lib.Rscript_set_log_callback.restype = None
+
+
+def Rscript_set_log_callback(callback, user_data=None):
+    _lib.Rscript_set_log_callback(_callback(RScriptLogCallback, _adapt_RScriptLogCallback, callback), user_data)
+
+
+_lib.Rscript_set_diagnostic_callback.argtypes = [RScriptDiagnosticCallback, ctypes.c_void_p]
+_lib.Rscript_set_diagnostic_callback.restype = None
+
+
+def Rscript_set_diagnostic_callback(callback, user_data=None):
+    _lib.Rscript_set_diagnostic_callback(_callback(RScriptDiagnosticCallback, _adapt_RScriptDiagnosticCallback, callback), user_data)
+
+
 _lib.Rlocale_load_csv.argtypes = [ctypes.c_char_p]
 _lib.Rlocale_load_csv.restype = ctypes.c_int
 
@@ -13399,6 +18430,166 @@ _lib.Rlocale_format_number.restype = ctypes.c_char_p
 def Rlocale_format_number(value, decimals):
     """A number written in the conventions of the language: decimal separator and digit grouping ("1 234,5" in French)."""
     return _r(_lib.Rlocale_format_number(value, decimals))
+
+
+_lib.Rlocale_set_clock.argtypes = [ctypes.c_int]
+_lib.Rlocale_set_clock.restype = None
+
+
+def Rlocale_set_clock(clock):
+    """Forces the clock of every time shown (a setting of the
+    application): R_CLOCK_12_HOUR, R_CLOCK_24_HOUR, or R_CLOCK_AUTO (default)
+    to follow the locale. A TimePicker can still choose its own (Clock="24")."""
+    _lib.Rlocale_set_clock(int(clock))
+
+
+_lib.Rlocale_get_clock.argtypes = []
+_lib.Rlocale_get_clock.restype = ctypes.c_int
+
+
+def Rlocale_get_clock():
+    return _e(RClock, _lib.Rlocale_get_clock())
+
+
+_lib.Rlocale_uses_12_hour_clock.argtypes = []
+_lib.Rlocale_uses_12_hour_clock.restype = ctypes.c_int
+
+
+def Rlocale_uses_12_hour_clock():
+    """R_TRUE when times are shown on 12 hours with AM and PM. With
+    Rlocale_set_clock, what it forces; else, when the application chose a
+    language (Rlocale_set_language), the usage of that language (from CLDR:
+    en-US, en-CA, en-AU, en-IN, hi, ar, ko, zh-TW, fil... use 12 hours, most
+    others 24); else the setting of the user on the system (Windows, macOS,
+    the LC_TIME of Linux), or the usage of the language of the system."""
+    return _lib.Rlocale_uses_12_hour_clock()
+
+
+_lib.Rlocale_get_day_period.argtypes = [ctypes.c_int]
+_lib.Rlocale_get_day_period.restype = ctypes.c_char_p
+
+
+def Rlocale_get_day_period(pm):
+    """"AM" (pm = R_FALSE) or "PM" in the language: the keys Raven.AM / Raven.PM when the tables have them. Never NULL."""
+    return _r(_lib.Rlocale_get_day_period(pm))
+
+
+_lib.Rlocale_format_time.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rlocale_format_time.restype = ctypes.c_char_p
+
+
+def Rlocale_format_time(hour, minute, second, show_seconds):
+    """A time of the day (hour 0 to 23) as the locale writes it: "3:05 PM", "15:05", "오후 3:05"."""
+    return _r(_lib.Rlocale_format_time(hour, minute, second, show_seconds))
+
+
+_lib.Rtimezone_get_system.argtypes = []
+_lib.Rtimezone_get_system.restype = ctypes.c_char_p
+
+
+def Rtimezone_get_system():
+    """The zone of the system ("Europe/Paris"): the TZ variable, the
+    link /etc/localtime, else what the system says; "UTC" when it says
+    nothing. Valid until the next call."""
+    return _r(_lib.Rtimezone_get_system())
+
+
+_lib.Rtimezone_set_directory.argtypes = [ctypes.c_char_p]
+_lib.Rtimezone_set_directory.restype = None
+
+
+def Rtimezone_set_directory(path):
+    """The folder of the tz database (the files "Europe/Paris"...), or
+    the packed tzdata file of Android, to read instead of the system's: for
+    a database shipped with the application, or tests. It is then the only
+    one read. NULL: the system's (or the TZDIR variable). Forgets the zones
+    read so far."""
+    _lib.Rtimezone_set_directory(_s(path))
+
+
+_lib.Rtimezone_is_valid.argtypes = [ctypes.c_char_p]
+_lib.Rtimezone_is_valid.restype = ctypes.c_int
+
+
+def Rtimezone_is_valid(zone):
+    """R_TRUE when the zone is known. Every function takes a name of
+    the tz database, "UTC", a POSIX TZ rule ("EST5EDT,M3.2.0,M11.1.0"), or
+    NULL / "" for the zone of the system."""
+    return _lib.Rtimezone_is_valid(_s(zone))
+
+
+_lib.Rtimezone_to_local.argtypes = [ctypes.c_char_p, ctypes.c_double, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+_lib.Rtimezone_to_local.restype = ctypes.c_int
+
+
+def Rtimezone_to_local(zone, utc):
+    """The date and time an instant shows in a zone (month 1 to 12). R_FALSE for an unknown zone."""
+    year_ = ctypes.c_int()
+    month_ = ctypes.c_int()
+    day_ = ctypes.c_int()
+    hour_ = ctypes.c_int()
+    minute_ = ctypes.c_int()
+    second_ = ctypes.c_int()
+    result = _lib.Rtimezone_to_local(_s(zone), utc, ctypes.byref(year_), ctypes.byref(month_), ctypes.byref(day_), ctypes.byref(hour_), ctypes.byref(minute_), ctypes.byref(second_))
+    return (result, year_.value, month_.value, day_.value, hour_.value, minute_.value, second_.value)
+
+
+_lib.Rtimezone_from_local.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rtimezone_from_local.restype = ctypes.c_double
+
+
+def Rtimezone_from_local(zone, year, month, day, hour, minute, second):
+    """The instant a date and time of a zone is. When the clocks go
+    forward, the times they skip do not exist: such a time is moved forward
+    by the length of the gap (02:30 becomes 03:30). When they go back, the
+    times of the hour repeated happen twice: the first is taken (still in
+    summer time). Rtimezone_count_local tells these cases apart."""
+    return _lib.Rtimezone_from_local(_s(zone), year, month, day, hour, minute, second)
+
+
+_lib.Rtimezone_count_local.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_lib.Rtimezone_count_local.restype = ctypes.c_int
+
+
+def Rtimezone_count_local(zone, year, month, day, hour, minute, second):
+    """How many instants show this date and time in the zone: 1, 0 (skipped when the clocks went forward) or 2 (repeated when they went back)."""
+    return _lib.Rtimezone_count_local(_s(zone), year, month, day, hour, minute, second)
+
+
+_lib.Rtimezone_get_offset.argtypes = [ctypes.c_char_p, ctypes.c_double]
+_lib.Rtimezone_get_offset.restype = ctypes.c_int
+
+
+def Rtimezone_get_offset(zone, utc):
+    """Seconds the zone is ahead of UTC at an instant (3600 in Paris in winter, -14400 in New York in summer)."""
+    return _lib.Rtimezone_get_offset(_s(zone), utc)
+
+
+_lib.Rtimezone_is_daylight_saving.argtypes = [ctypes.c_char_p, ctypes.c_double]
+_lib.Rtimezone_is_daylight_saving.restype = ctypes.c_int
+
+
+def Rtimezone_is_daylight_saving(zone, utc):
+    """R_TRUE when the zone is on summer (daylight saving) time at the instant."""
+    return _lib.Rtimezone_is_daylight_saving(_s(zone), utc)
+
+
+_lib.Rtimezone_get_abbreviation.argtypes = [ctypes.c_char_p, ctypes.c_double]
+_lib.Rtimezone_get_abbreviation.restype = ctypes.c_char_p
+
+
+def Rtimezone_get_abbreviation(zone, utc):
+    """The abbreviation of the zone at an instant ("CET", "EDT"; "+03" where the database has no name)."""
+    return _r(_lib.Rtimezone_get_abbreviation(_s(zone), utc))
+
+
+_lib.Rtimezone_get_label.argtypes = [ctypes.c_char_p, ctypes.c_double]
+_lib.Rtimezone_get_label.restype = ctypes.c_char_p
+
+
+def Rtimezone_get_label(zone, utc):
+    """The zone at an instant, to show: "CET, UTC+1", "EDT, UTC-4", "IST, UTC+5:30", "UTC+3" when it has no name."""
+    return _r(_lib.Rtimezone_get_label(_s(zone), utc))
 
 
 _lib.Raccessibility_set_text_scale.argtypes = [ctypes.c_float]
@@ -13579,6 +18770,28 @@ def Rwidget_set_accessible_labelled_by(widget, label):
     _lib.Rwidget_set_accessible_labelled_by(widget, label)
 
 
+_lib.Rwidget_set_accessible_action.argtypes = [ctypes.c_uint32, RAccessiblePressCallback, ctypes.c_void_p]
+_lib.Rwidget_set_accessible_action.restype = None
+
+
+def Rwidget_set_accessible_action(widget, press, user_data=None):
+    """Explicit screen-reader press action, including for custom widgets.
+    NULL removes the override. Does not change pointer or keyboard handling.
+    Disabled widgets (including disabled ancestors) cannot be pressed."""
+    _lib.Rwidget_set_accessible_action(widget, _callback(RAccessiblePressCallback, _adapt_RAccessiblePressCallback, press), user_data)
+
+
+_lib.Rwidget_set_accessible_checked.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rwidget_set_accessible_checked.restype = None
+
+
+def Rwidget_set_accessible_checked(widget, checked):
+    """Override the checked state: 1 checked, 0 unchecked, -1 restores the
+    widget's default (not checkable for a custom widget). The application owns
+    this state; a press callback updates it when appropriate."""
+    _lib.Rwidget_set_accessible_checked(widget, checked)
+
+
 _lib.Raccessibility_announce.argtypes = [ctypes.c_char_p, ctypes.c_int]
 _lib.Raccessibility_announce.restype = None
 
@@ -13755,6 +18968,29 @@ def Rhost_window_set_size(window, width, height, scale):
     _lib.Rhost_window_set_size(window, width, height, scale)
 
 
+_lib.Rhost_window_set_insets.argtypes = [ctypes.c_uint32, ctypes.POINTER(RInsets), ctypes.c_int]
+_lib.Rhost_window_set_insets.restype = None
+
+
+def Rhost_window_set_insets(window, safe_area, keyboard_height):
+    """What covers a host window on a phone or a tablet, in pixels: the
+    safe area (status bar, notch, home indicator; NULL: none) and the height
+    of the on-screen keyboard over its bottom (0: hidden). The content is laid
+    out inside them (Rwindow_get_safe_area, Rwindow_get_keyboard_area)."""
+    _lib.Rhost_window_set_insets(window, _p(safe_area), keyboard_height)
+
+
+_lib.Rhost_set_system_dark.argtypes = [ctypes.c_int]
+_lib.Rhost_set_system_dark.restype = None
+
+
+def Rhost_set_system_dark(dark):
+    """The application's system is in dark (R_TRUE) or light (R_FALSE)
+    mode, -1 when it does not tell (the default): Rtheme_get_system_dark,
+    and Rtheme_follow_system follows it."""
+    _lib.Rhost_set_system_dark(dark)
+
+
 _lib.Rhost_inject_mouse_move.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_uint32]
 _lib.Rhost_inject_mouse_move.restype = None
 
@@ -13806,6 +19042,19 @@ def Rhost_inject_text(window, codepoint):
     _lib.Rhost_inject_text(window, codepoint)
 
 
+_lib.Rhost_inject_composition.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+_lib.Rhost_inject_composition.restype = None
+
+
+def Rhost_inject_composition(window, text, selection_start, selection_end):
+    """The input method of the application's system composes `text`
+    (preedit), with its selection in bytes (see Rwindow_inject_composition).
+    NULL or "" cancels it; the committed text then comes through
+    Rhost_inject_text. Rwindow_get_text_input_rect tells where to put the
+    candidate window."""
+    _lib.Rhost_inject_composition(window, _s(text), selection_start, selection_end)
+
+
 _lib.Rhost_inject_focus.argtypes = [ctypes.c_uint32, ctypes.c_int]
 _lib.Rhost_inject_focus.restype = None
 
@@ -13822,6 +19071,370 @@ _lib.Rhost_inject_close.restype = None
 def Rhost_inject_close(window):
     """The user asked to close the window (its close callback decides)."""
     _lib.Rhost_inject_close(window)
+
+
+_lib.Rhost_permission_answer.argtypes = [ctypes.c_int, ctypes.c_int]
+_lib.Rhost_permission_answer.restype = None
+
+
+def Rhost_permission_answer(permission, status):
+    """The user answered a permission_request (or the status changed
+    by itself). The waiting Rpermission_request callbacks get it at the
+    next frame. Any thread."""
+    _lib.Rhost_permission_answer(int(permission), int(status))
+
+
+_lib.Rhost_service_complete.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(RPickedFile), ctypes.c_int]
+_lib.Rhost_service_complete.restype = None
+
+
+def Rhost_service_complete(request, result, files, count):
+    """The end of a service_request: the files it gave (copied; paths
+    Raven can read; size 0 is read from the file), at the next frame. Once
+    per request. Any thread."""
+    _lib.Rhost_service_complete(request, int(result), _p(files), count)
+
+
+_lib.Rtest_set_deterministic.argtypes = [ctypes.c_int]
+_lib.Rtest_set_deterministic.restype = None
+
+
+def Rtest_set_deterministic(enabled):
+    """R_TRUE makes what is drawn depend only on what the test does:
+    every frame advances the animations by 1/60 s (Rset_animation_time_step),
+    and the carets of the text fields stay lit instead of blinking. R_FALSE
+    gives the clock back (time step 0)."""
+    _lib.Rtest_set_deterministic(enabled)
+
+
+_lib.Rtest_is_deterministic.argtypes = []
+_lib.Rtest_is_deterministic.restype = ctypes.c_int
+
+
+def Rtest_is_deterministic():
+    return _lib.Rtest_is_deterministic()
+
+
+_lib.Rtest_get_platform_tag.argtypes = []
+_lib.Rtest_get_platform_tag.restype = ctypes.c_char_p
+
+
+def Rtest_get_platform_tag():
+    """Returns: What the goldens of this run are made with, "OS-backend":
+    "macos-metal", "linux-vulkan", "windows-vulkan", "web-webgl"... and
+    "null" with the null backend."""
+    return _r(_lib.Rtest_get_platform_tag())
+
+
+_lib.Rtest_find.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtest_find.restype = ctypes.c_uint32
+
+
+def Rtest_find(scope, path):
+    """Finds a widget by name (Rwidget_set_name, Name="" in XML). The
+    path may have several names separated by '/': "settings/ok" is the
+    widget named "ok" inside the one named "settings". In a window, the
+    open popups (menus, dialogs) are searched first, top first, then the
+    content.
+    scope A window or a widget.
+    Returns: R_INVALID_ID when nothing has that name (no error is reported)."""
+    return _lib.Rtest_find(scope, _s(path))
+
+
+_lib.Rtest_click.argtypes = [ctypes.c_uint32]
+_lib.Rtest_click.restype = ctypes.c_int
+
+
+def Rtest_click(widget):
+    """Moves the mouse to the middle of the widget, presses and releases the left button."""
+    return _lib.Rtest_click(widget)
+
+
+_lib.Rtest_double_click.argtypes = [ctypes.c_uint32]
+_lib.Rtest_double_click.restype = ctypes.c_int
+
+
+def Rtest_double_click(widget):
+    """Two clicks in a row on the middle of the widget, seen as a double click."""
+    return _lib.Rtest_double_click(widget)
+
+
+_lib.Rtest_right_click.argtypes = [ctypes.c_uint32]
+_lib.Rtest_right_click.restype = ctypes.c_int
+
+
+def Rtest_right_click(widget):
+    """A click of the right button on the middle of the widget (a context menu)."""
+    return _lib.Rtest_right_click(widget)
+
+
+_lib.Rtest_click_at.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_int, ctypes.c_int, ctypes.c_uint32]
+_lib.Rtest_click_at.restype = ctypes.c_int
+
+
+def Rtest_click_at(target, x, y, button, clicks, modifiers):
+    """Clicks at a position of a widget or a window.
+    clicks 1 for a click, 2 for a double click, 3 for a triple click.
+    modifiers RModifier held during the clicks (R_MOD_SHIFT...)."""
+    return _lib.Rtest_click_at(target, x, y, int(button), clicks, modifiers)
+
+
+_lib.Rtest_hover.argtypes = [ctypes.c_uint32]
+_lib.Rtest_hover.restype = ctypes.c_int
+
+
+def Rtest_hover(widget):
+    """Moves the mouse over the middle of the widget, without clicking."""
+    return _lib.Rtest_hover(widget)
+
+
+_lib.Rtest_hover_at.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rtest_hover_at.restype = ctypes.c_int
+
+
+def Rtest_hover_at(target, x, y):
+    """Moves the mouse to a position of a widget or a window."""
+    return _lib.Rtest_hover_at(target, x, y)
+
+
+_lib.Rtest_drag.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rtest_drag.restype = ctypes.c_int
+
+
+def Rtest_drag(widget, dx, dy):
+    """Presses the left button on the middle of the widget, moves by
+    (dx, dy) in several steps, and releases: a slider, a splitter, a
+    window dragged by a widget."""
+    return _lib.Rtest_drag(widget, dx, dy)
+
+
+_lib.Rtest_drag_to.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
+_lib.Rtest_drag_to.restype = ctypes.c_int
+
+
+def Rtest_drag_to(from_, to):
+    """Drags from the middle of one widget to the middle of another (drag and drop)."""
+    return _lib.Rtest_drag_to(from_, to)
+
+
+_lib.Rtest_scroll.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float]
+_lib.Rtest_scroll.restype = ctypes.c_int
+
+
+def Rtest_scroll(widget, wheel_x, wheel_y):
+    """Turns the mouse wheel over the middle of the widget: `wheel_y`
+    notches (positive: toward the top, as a wheel turned away from the
+    user), `wheel_x` notches sideways."""
+    return _lib.Rtest_scroll(widget, wheel_x, wheel_y)
+
+
+_lib.Rtest_key.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+_lib.Rtest_key.restype = ctypes.c_int
+
+
+def Rtest_key(target, key, modifiers):
+    """Presses and releases a key, with RModifier held. A widget
+    target gets the keyboard focus first; a window sends the key to what
+    has the focus."""
+    return _lib.Rtest_key(target, int(key), modifiers)
+
+
+_lib.Rtest_type_text.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtest_type_text.restype = ctypes.c_int
+
+
+def Rtest_type_text(target, text):
+    """Types UTF-8 text as a keyboard would. A widget target gets the
+    keyboard focus first. '\\n', '\\t' and '\\b' are sent as the keys Enter,
+    Tab and Backspace."""
+    return _lib.Rtest_type_text(target, _s(text))
+
+
+_lib.Rtest_tap.argtypes = [ctypes.c_uint32]
+_lib.Rtest_tap.restype = ctypes.c_int
+
+
+def Rtest_tap(widget):
+    """A finger touches the middle of the widget and leaves at once."""
+    return _lib.Rtest_tap(widget)
+
+
+_lib.Rtest_swipe.argtypes = [ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_double]
+_lib.Rtest_swipe.restype = ctypes.c_int
+
+
+def Rtest_swipe(widget, dx, dy, seconds):
+    """A finger put on the middle of the widget moves by (dx, dy) in
+    `seconds`, and leaves: a fast swipe flicks a list, which then coasts
+    (Rtest_settle lets it stop)."""
+    return _lib.Rtest_swipe(widget, dx, dy, seconds)
+
+
+_lib.Rtest_pump.argtypes = [ctypes.c_int]
+_lib.Rtest_pump.restype = ctypes.c_int
+
+
+def Rtest_pump(frames):
+    """Produces `frames` frames (Rdraw_frame). Returns: R_FALSE once the application quits."""
+    return _lib.Rtest_pump(frames)
+
+
+_lib.Rtest_is_idle.argtypes = []
+_lib.Rtest_is_idle.restype = ctypes.c_int
+
+
+def Rtest_is_idle():
+    """Returns: R_TRUE when nothing waits for a frame: no posted task, no layout
+    to do, nothing to paint, no animation, no layout spring, no inertia.
+    Windows that redraw all the time (Rwindow_set_continuous_redraw, a
+    realtime viewport) and the timers are not counted."""
+    return _lib.Rtest_is_idle()
+
+
+_lib.Rtest_settle.argtypes = [ctypes.c_double]
+_lib.Rtest_settle.restype = ctypes.c_int
+
+
+def Rtest_settle(max_seconds):
+    """Produces frames until Rtest_is_idle, each advancing the
+    animations by the time step (1/60 s unless Rset_animation_time_step
+    gives another), for at most `max_seconds` of that time.
+    Returns: R_FALSE when it was still moving at the end."""
+    return _lib.Rtest_settle(max_seconds)
+
+
+_lib.Rtest_get_text.argtypes = [ctypes.c_uint32]
+_lib.Rtest_get_text.restype = ctypes.c_char_p
+
+
+def Rtest_get_text(widget):
+    """Returns: What the user reads in the widget: the text of a field, else
+    its label (as screen readers say it: the text of a Label, a Button, a
+    Checkbox...). "" when it has none. Valid until the next call."""
+    return _r(_lib.Rtest_get_text(widget))
+
+
+_lib.Rtest_is_shown.argtypes = [ctypes.c_uint32]
+_lib.Rtest_is_shown.restype = ctypes.c_int
+
+
+def Rtest_is_shown(widget):
+    """Returns: R_TRUE when the widget can be seen: in a window, Visible with
+    all that holds it, on the page a Switcher or a TabView shows, and laid
+    out with a size."""
+    return _lib.Rtest_is_shown(widget)
+
+
+_lib.Rtest_is_checked.argtypes = [ctypes.c_uint32]
+_lib.Rtest_is_checked.restype = ctypes.c_int
+
+
+def Rtest_is_checked(widget):
+    """Returns: R_TRUE for a checked Checkbox, Switch, RadioButton, toggle Button or menu item."""
+    return _lib.Rtest_is_checked(widget)
+
+
+_lib.Rtest_expect_golden.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.POINTER(RGoldenOptions), ctypes.POINTER(RGoldenResult)]
+_lib.Rtest_expect_golden.restype = ctypes.c_int
+
+
+def Rtest_expect_golden(target, golden_path, options, result):
+    """Captures a window, or the rectangle of one widget, and compares
+    it with the PNG file `golden_path` (see the top of this file).
+    target A window or a widget.
+    options NULL for the defaults.
+    result Receives the details; may be NULL.
+    Returns: R_TRUE when the capture matches (or the golden was written
+    because RAVEN_UPDATE_GOLDENS=1)."""
+    return _lib.Rtest_expect_golden(target, _s(golden_path), _p(options), _p(result))
+
+
+_lib.Rtest_compare_pixels.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.c_void_p]
+_lib.Rtest_compare_pixels.restype = ctypes.c_int
+
+
+def Rtest_compare_pixels(actual, expected, width, height, channel_tolerance, diff_rgba):
+    """Compares two RGBA8 images of the same size as Rtest_expect_golden
+    does, without files.
+    diff_rgba When not NULL, receives width * height * 4 bytes: the
+    expected image faded, with the different pixels in red.
+    Returns: The number of pixels farther apart than `channel_tolerance`;
+    -1 when an image is missing."""
+    max_channel_difference_ = ctypes.c_int()
+    result = _lib.Rtest_compare_pixels(actual, expected, width, height, channel_tolerance, ctypes.byref(max_channel_difference_), diff_rgba)
+    return (result, max_channel_difference_.value)
+
+
+_lib.Rtest_dump_tree.argtypes = [ctypes.c_uint32]
+_lib.Rtest_dump_tree.restype = ctypes.c_char_p
+
+
+def Rtest_dump_tree(target):
+    """The widgets as JSON, what a test, a script or an agent reads of
+    the interface. Each widget gives its "type" (its XML tag), "name" and
+    "path" (for Rtest_find) when it has a name, its accessibility "role",
+    its "text" (Rtest_get_text), "label" and "value" when they differ,
+    "bounds" [x, y, width, height] in logical units of its window,
+    "shown", "enabled", and when they apply "focused", "checked",
+    "selected", "expanded", "number"/"minimum"/"maximum", the rows of a
+    list ("items") and its "children", in the order of the layout.
+    target A window or a widget; R_INVALID_ID for every window of
+    the application: {"raven": version, "backend": tag, "windows": [...]},
+    each with its "title", "size", "scale", "content", "popups".
+    Returns: The JSON text, valid until the next call. "" on error."""
+    return _r(_lib.Rtest_dump_tree(target))
+
+
+_lib.Rtest_save_tree.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtest_save_tree.restype = ctypes.c_int
+
+
+def Rtest_save_tree(target, path):
+    """Rtest_dump_tree written to a file ("-": the standard output)."""
+    return _lib.Rtest_save_tree(target, _s(path))
+
+
+_lib.Rtest_save_png.argtypes = [ctypes.c_uint32, ctypes.c_char_p]
+_lib.Rtest_save_png.restype = ctypes.c_int
+
+
+def Rtest_save_png(target, path):
+    """Captures a window, or the rectangle of a widget, into a PNG
+    file. The null backend draws nothing: its picture is the clear color."""
+    return _lib.Rtest_save_png(target, _s(path))
+
+
+_lib.Rtest_run_script.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+_lib.Rtest_run_script.restype = ctypes.c_int
+
+
+def Rtest_run_script(script, source_name):
+    """Runs a script of steps, one per line, as RAVEN_SCRIPT does (see
+    "Driving any application headlessly" in README.md):
+    
+        click form/user
+        type "ada"
+        key Enter
+        expect status text "Welcome, ada"
+        snap after-login
+    
+    The frames are produced by the function (Rdraw_frame) until the script
+    ends. A widget is named by its name or path, by "text:Sign in" (the
+    first one shown that reads it), or a point of the window by "@x,y".
+    script The text of the script.
+    source_name The name its messages give it ("login.script"); may be NULL.
+    Returns: R_TRUE when every step was done and every check was true;
+    R_FALSE otherwise, with the reason in Rtest_get_script_error."""
+    return _lib.Rtest_run_script(_s(script), _s(source_name))
+
+
+_lib.Rtest_get_script_error.argtypes = []
+_lib.Rtest_get_script_error.restype = ctypes.c_char_p
+
+
+def Rtest_get_script_error():
+    """Returns: Why the last Rtest_run_script failed ("login.script:4: expect: ..."), "" when it passed."""
+    return _r(_lib.Rtest_get_script_error())
 
 
 # ---- Raven MCP (raven_mcp.h, version 0.1)

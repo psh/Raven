@@ -42,8 +42,8 @@ import raven.cinterop.Rmap_set_tile_capacity
 import raven.cinterop.Rmap_set_tile_source
 import raven.cinterop.Rmap_set_zoom
 import raven.cinterop.Rmap_set_zoom_range
-import raven.cinterop.Rmap_tile_failed
-import raven.cinterop.Rmap_tile_loaded
+import raven.cinterop.Rmap_set_tile_failed
+import raven.cinterop.Rmap_set_tile_data
 import raven.cinterop.Rwidget_is_valid
 import raven.compose.ui.MapCameraChanged
 import raven.compose.ui.Modifier
@@ -200,7 +200,7 @@ private class TileLoader(val scope: CoroutineScope) {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Rmap_tile_failed(widget, z, x, y)
+                    Rmap_set_tile_failed(widget, z, x, y)
                     return@launch
                 }
                 loaded(widget, z, x, y, bytes)
@@ -227,9 +227,9 @@ private class TileLoader(val scope: CoroutineScope) {
 @OptIn(ExperimentalForeignApi::class)
 private fun loaded(widget: Rid, z: Int, x: Int, y: Int, bytes: ByteArray?) {
     if (bytes == null || bytes.isEmpty()) {
-        Rmap_tile_loaded(widget, z, x, y, null, 0u)
+        Rmap_set_tile_data(widget, z, x, y, null, 0u)
     } else {
-        bytes.usePinned { Rmap_tile_loaded(widget, z, x, y, it.addressOf(0), bytes.size.convert()) }
+        bytes.usePinned { Rmap_set_tile_data(widget, z, x, y, it.addressOf(0), bytes.size.convert()) }
     }
 }
 

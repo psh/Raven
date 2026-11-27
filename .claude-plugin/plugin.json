@@ -1,6 +1,6 @@
 {
   "name": "raven",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Preview, drive and test a Raven UI in C or any language Raven binds: the raven agent skill.",
   "repository": "https://github.com/oscar-soirey/Raven",
   "license": "Apache-2.0",

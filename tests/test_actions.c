@@ -1,5 +1,5 @@
 /**
- * Raven tests - listing the actions: Raction_get_count, Raction_get_name, descriptions and the list callback.
+ * Raven tests - listing the actions: Raction_get_count, Raction_get_name_at, descriptions and the list callback.
  */
 
 #include "test.h"
@@ -32,22 +32,22 @@ static void on_list(const char* name, int bound, void* user_data) {
 static void test_listing(void) {
 	Rid window;
 	CHECK(Raction_get_count() == 0);
-	CHECK(Raction_get_name(0) == NULL);
+	CHECK(Raction_get_name_at(0) == NULL);
 	Raction_bind("file.open", on_a, NULL);
 	Raction_bind("file.save", on_a, NULL);
 	Raction_bind("edit.undo", on_a, NULL);
 	CHECK(Raction_get_count() == 3);
-	CHECK_STR(Raction_get_name(0), "file.open");
-	CHECK_STR(Raction_get_name(1), "file.save");
-	CHECK_STR(Raction_get_name(2), "edit.undo");
-	CHECK(Raction_get_name(3) == NULL);
-	CHECK(Raction_get_name(-1) == NULL);
+	CHECK_STR(Raction_get_name_at(0), "file.open");
+	CHECK_STR(Raction_get_name_at(1), "file.save");
+	CHECK_STR(Raction_get_name_at(2), "edit.undo");
+	CHECK(Raction_get_name_at(3) == NULL);
+	CHECK(Raction_get_name_at(-1) == NULL);
 
 	/* the others keep their order */
 	Raction_unbind("file.save");
 	CHECK(Raction_get_count() == 2);
-	CHECK_STR(Raction_get_name(0), "file.open");
-	CHECK_STR(Raction_get_name(1), "edit.undo");
+	CHECK_STR(Raction_get_name_at(0), "file.open");
+	CHECK_STR(Raction_get_name_at(1), "edit.undo");
 
 	/* rebinding is not a second action */
 	Raction_bind("file.open", on_b, NULL);
@@ -123,7 +123,7 @@ static void test_the_list_callback(void) {
 	/* the name read from the list is freed only after the callback has it */
 	g_heard[0] = '\0';
 	Raction_bind("read.from.list", on_a, NULL);
-	Raction_unbind(Raction_get_name(0));
+	Raction_unbind(Raction_get_name_at(0));
 	CHECK_STR(g_heard, "+read.from.list -read.from.list");
 	CHECK(Raction_get_count() == 0);
 

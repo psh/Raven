@@ -88,8 +88,51 @@ typedef enum RWindowSystem{
 	R_WINDOW_SYSTEM_X11,
 	R_WINDOW_SYSTEM_WAYLAND,
 	R_WINDOW_SYSTEM_COCOA,
-    R_WINDOW_SYSTEM_EMSCRIPTEN
+    R_WINDOW_SYSTEM_EMSCRIPTEN,
+	R_WINDOW_SYSTEM_ANDROID,
+	R_WINDOW_SYSTEM_UIKIT
 }RWindowSystem;
+
+/** Distances from the edges of a window, in logical units. */
+typedef struct RInsets {
+	float top, right, bottom, left;
+} RInsets;
+
+/** The on-screen keyboard appeared, changed height or went away: `height` in logical units, 0 when hidden. */
+typedef void (*RKeyboardCallback)(Rid window, int visible, float height, void* user_data);
+
+/** What a text input holds: on mobile it picks the on-screen keyboard (letters, @, digits...). */
+typedef enum RTextInputType {
+	R_TEXT_INPUT_TYPE_TEXT = 0x0B60,
+	R_TEXT_INPUT_TYPE_EMAIL,
+	R_TEXT_INPUT_TYPE_NUMBER,
+	/** Digits and a decimal separator. */
+	R_TEXT_INPUT_TYPE_DECIMAL,
+	R_TEXT_INPUT_TYPE_PHONE,
+	R_TEXT_INPUT_TYPE_URL,
+	R_TEXT_INPUT_TYPE_SEARCH
+} RTextInputType;
+
+/** The label and meaning of the return key of the on-screen keyboard. Enter does the same on every key. */
+typedef enum RReturnKey {
+	R_RETURN_KEY_DEFAULT = 0x0B70,
+	R_RETURN_KEY_DONE,
+	R_RETURN_KEY_GO,
+	R_RETURN_KEY_NEXT,
+	R_RETURN_KEY_SEARCH,
+	R_RETURN_KEY_SEND
+} RReturnKey;
+
+/** What the platform needs to know of the focused text input to set up the on-screen keyboard. */
+typedef struct RTextInputInfo {
+	RTextInputType type;
+	RReturnKey return_key;
+	/** R_TRUE: the text is hidden (no suggestions, no autocorrection, no learning). */
+	int password;
+	int read_only;
+	/** Most characters accepted; 0 for no limit. */
+	int max_length;
+} RTextInputInfo;
 
 /**
  * Native handles of a window or of a native viewport.
@@ -99,6 +142,8 @@ typedef enum RWindowSystem{
  *           Wayland or X11 when Rinit runs: check `system`)
  *   Cocoa : display = NSWindow*, window = CAMetalLayer* for Vulkan presentation
  *   Emscripten: window = opaque browser surface token (no OS window handle)
+ *   Android: window = ANativeWindow*
+ *   UIKit : display = UIWindow*, window = CAMetalLayer* for Vulkan presentation (iOS, iPadOS)
  */
 typedef struct RNativeWindow {
 	RWindowSystem system;
@@ -310,6 +355,25 @@ typedef struct RDropEvent {
  */
 typedef int (*RDropCallback)(Rid target, const RDropEvent* event, void* user_data);
 
+/** What the application that takes a drag does with it (Rdrag_begin_external): a bitmask of what is allowed, or the one done. */
+typedef enum RDragOperation{
+	/** Nothing was taken: dropped where nothing accepted it, or cancelled. */
+	R_DRAG_OPERATION_NONE = 0,
+	/** The target made a copy: the source keeps its data. */
+	R_DRAG_OPERATION_COPY = (1 << 0),
+	/** The target took the data: the source removes it (a file the file manager moved...). */
+	R_DRAG_OPERATION_MOVE = (1 << 1),
+	/** The target made a link, an alias or a shortcut to it. */
+	R_DRAG_OPERATION_LINK = (1 << 2)
+}RDragOperation;
+
+/**
+ * @brief The end of a drag out of the window (Rdrag_begin_external):
+ * `operation` is what the target did, R_DRAG_OPERATION_NONE when nothing
+ * took it. Called once per drag, whatever ended it.
+ */
+typedef void (*RDragFinishedCallback)(Rid source, RDragOperation operation, void* user_data);
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -352,6 +416,55 @@ extern "C" {
 	RAVEN_API const char* Rwindow_get_title(Rid window);
 	RAVEN_API void Rwindow_set_size(Rid window, int width, int height);
 	RAVEN_API void Rwindow_get_size(Rid window, int* width, int* height);
+	/**
+	 * @brief The part of the window the system covers (status bar, notch,
+	 * home indicator, navigation bar), in logical units. The content of the
+	 * window is laid out inside it already. All 0 on desktop.
+	 */
+	RAVEN_API void Rwindow_get_safe_area(Rid window, RInsets* insets);
+	/**
+	 * @brief The part of the window the on-screen keyboard covers (only
+	 * `bottom` is set), in logical units; 0 when it is hidden or there is
+	 * none (desktop). The content is laid out above it already, and the
+	 * field that has the focus is scrolled into view above it, by the
+	 * ScrollBoxes that hold it, when the keyboard comes or changes height,
+	 * when the window turns, and when another field takes the focus.
+	 */
+	RAVEN_API void Rwindow_get_keyboard_area(Rid window, RInsets* insets);
+	/** @brief Called when the on-screen keyboard appears, changes height or goes away (mobile). NULL removes it. */
+	RAVEN_API void Rwindow_set_keyboard_callback(Rid window, RKeyboardCallback callback, void* user_data);
+	/**
+	 * @brief Leaves the window with no focused widget, as a click on an empty
+	 * place does: the widget that had the focus loses it (and is told), and
+	 * keys go to the window until something takes the focus again. On mobile,
+	 * the on-screen keyboard goes away.
+	 */
+	RAVEN_API void Rwindow_clear_focus(Rid window);
+
+	/**
+	 * Back: the back button and the back gesture of Android (not a key: it is
+	 * never sent as R_KEY_ESCAPE). Raven takes it first to close the top
+	 * popup or dialog, as Escape does; then the back callback of the window
+	 * goes back a page. When neither takes it the system does its default
+	 * (Android: it leaves the application).
+	 */
+
+	/**
+	 * @brief Called on Back when no popup or dialog of Raven is open. Return
+	 * R_TRUE when the application went back, R_FALSE when it had nowhere to
+	 * go (the system then does its default). NULL removes it.
+	 */
+	typedef int (*RBackCallback)(Rid window, void* user_data);
+	RAVEN_API void Rwindow_set_back_callback(Rid window, RBackCallback callback, void* user_data);
+	/**
+	 * @brief R_TRUE while the application has somewhere to go back to (a page
+	 * under the one shown). Android 13 and later ask for Back only while the
+	 * window wants it (predictive back): at the root page the system handles
+	 * Back itself and animates back to the home screen. Default R_FALSE.
+	 */
+	RAVEN_API void Rwindow_set_back_enabled(Rid window, int enabled);
+	/** @return R_TRUE while Back would be taken: a popup or dialog is open, or Rwindow_set_back_enabled said so. */
+	RAVEN_API int Rwindow_wants_back(Rid window);
 	RAVEN_API void Rwindow_set_min_size(Rid window, int width, int height);
 	RAVEN_API void Rwindow_set_position(Rid window, int x, int y);
 	RAVEN_API void Rwindow_get_position(Rid window, int* x, int* y);
@@ -454,6 +567,21 @@ extern "C" {
 	RAVEN_API int Rwindow_set_topmost(Rid window, int topmost);
 
 	/**
+	 * @brief Gives the window an owner (a tool window or an inspector of the
+	 * main window): it stays above its owner, has no button of its own in the
+	 * taskbar, is minimized and restored with it (where the window system
+	 * does it: Windows, X11), and is destroyed with it (everywhere: Raven
+	 * destroys the windows a window owns before the window). R_INVALID_ID
+	 * gives the window back its independence.
+	 * @return R_FALSE when the window system cannot keep the window with its
+	 * owner (it is still destroyed with it), or when the owner is not valid
+	 * or is owned by the window (nothing is changed then).
+	 */
+	RAVEN_API int Rwindow_set_owner(Rid window, Rid owner);
+	/** @return The owner of the window (Rwindow_set_owner), or R_INVALID_ID. */
+	RAVEN_API Rid Rwindow_get_owner(Rid window);
+
+	/**
 	 * @brief Picture in picture: the window becomes a small floating window
 	 * that stays above the other windows, on every desktop (every space of
 	 * macOS, over the applications in full screen too), in a corner of the
@@ -521,6 +649,14 @@ extern "C" {
 	 * where no widget takes it (Rwidget_set_drop_callback). NULL removes it.
 	 */
 	RAVEN_API void Rwindow_set_drop_callback(Rid window, RDropCallback callback, void* user_data);
+	/**
+	 * @brief During R_DROP_ENTER / R_DROP_MOVE only: choose Raven's highlight
+	 * in target-local logical units (window-local for a window callback).
+	 * Clipped to the target; zero width or height hides it without refusing
+	 * the drop. Each callback starts with the default highlight again.
+	 * Dimensions must be finite and nonnegative; coordinates must be finite.
+	 */
+	RAVEN_API void Rdrop_set_highlight_rect(float x, float y, float width, float height);
 
 	RAVEN_API void Rwindow_set_user_handle(Rid window, void* handle);
 	RAVEN_API void* Rwindow_get_user_handle(Rid window);
@@ -550,7 +686,7 @@ extern "C" {
 	 * and drawn at it (Rset_ui_scale, restored afterwards, which closes its
 	 * popups), so text stays crisp: not resampled.
 	 * @return R_FALSE, reported, when the backend can't capture (the null
-	 * backend) or the file can't be written (R_ERROR_IO).
+	 * backend) or the file can't be written (R_ERROR_FILE_NOT_FOUND).
 	 */
 	RAVEN_API int Rwindow_save_preview(Rid window, const char* png_path, float scale);
 
@@ -561,12 +697,6 @@ extern "C" {
 
 	/** @brief Widget that has the keyboard focus in the window, or R_INVALID_ID. */
 	RAVEN_API Rid Rwindow_get_focused_widget(Rid window);
-	/**
-	 * @brief Leaves the window with no focused widget, as a click on an empty
-	 * place does: the widget that had the focus loses it (and is told), and
-	 * keys go to the window until something takes the focus again.
-	 */
-	RAVEN_API void Rwindow_clear_focus(Rid window);
 	/** @brief Deepest widget under the cursor, or R_INVALID_ID. */
 	RAVEN_API Rid Rwindow_get_hovered_widget(Rid window);
 	RAVEN_API void Rwindow_get_mouse_position(Rid window, float* x, float* y);
@@ -582,6 +712,19 @@ extern "C" {
 	RAVEN_API void Rwindow_inject_key(Rid window, RKey key, int pressed, Ruint modifiers);
 	RAVEN_API void Rwindow_inject_text(Rid window, const char* text);
 	/**
+	 * @brief The text an input method is composing (preedit: Chinese,
+	 * Japanese, Korean, dead keys), as the platforms send it. The focused
+	 * TextInput, SpinBox or TextEditor shows it at its caret, underlined, in
+	 * place of its selection, but it is not in its text and no changed
+	 * callback runs. [selection_start, selection_end) are bytes of `text`:
+	 * the part the input method works on (underlined thicker), or the caret
+	 * when they are equal; -1 is the end of `text`. NULL or "" ends the
+	 * composition without typing anything (cancel). The committed text comes
+	 * through Rwindow_inject_text, which ends the composition too, and so
+	 * does a change of focus. Ignored when the focus takes no text.
+	 */
+	RAVEN_API void Rwindow_inject_composition(Rid window, const char* text, int selection_start, int selection_end);
+	/**
 	 * @brief A drag from another application moves over the window
 	 * (`inside` R_TRUE) or leaves it.
 	 * @return R_TRUE when a drop at this position would be accepted.
@@ -589,6 +732,15 @@ extern "C" {
 	RAVEN_API int Rwindow_inject_drag(Rid window, float x, float y, int inside);
 	/** @brief Drops files and / or text at a position. Returns R_TRUE when a target took them. */
 	RAVEN_API int Rwindow_inject_drop(Rid window, float x, float y, const char* const* paths, int path_count, const char* text);
+	/**
+	 * @brief The end of the drag out of the window that the window system
+	 * holds (Rdrag_begin_external), as it reports it: `operation` is what the
+	 * target did (an RDragOperation). Returns R_FALSE when no such drag is in
+	 * progress.
+	 */
+	RAVEN_API int Rwindow_inject_drag_end(Rid window, RDragOperation operation);
+	/** @brief Back, as the system sends it (Rwindow_set_back_callback). Returns R_TRUE when something took it. */
+	RAVEN_API int Rwindow_inject_back(Rid window);
 
 	/**
 	 * @brief Registers a keyboard shortcut active while the window has focus and
@@ -607,13 +759,43 @@ extern "C" {
 	RAVEN_API int Rwindow_is_mouse_inside(Rid window);
 	/** @brief R_TRUE when the keyboard focus is in a text input, spin box or text editor. */
 	RAVEN_API int Rwindow_wants_text_input(Rid window);
+	/*
+	 * The focused text input, for the text services of the system (the
+	 * on-screen keyboard of Android and iOS: suggestions, autocorrection,
+	 * composition). Only a TextInput answers for now: R_FALSE / NULL for a
+	 * SpinBox, a TextEditor or no focus, where the platform falls back to
+	 * key and text events. Offsets are in bytes of the UTF-8 text, on
+	 * character boundaries.
+	 */
+	/** @brief The kind of the focused text input; R_FALSE when there is none. */
+	RAVEN_API int Rwindow_get_text_input_info(Rid window, RTextInputInfo* info);
+	/** @brief Its text (UTF-8), valid until it changes; NULL when there is none. */
+	RAVEN_API const char* Rwindow_get_text_input_text(Rid window);
+	/** @brief Its selection: start == end is the caret. R_FALSE when there is none. */
+	RAVEN_API int Rwindow_get_text_input_selection(Rid window, int* start, int* end);
+	/** @brief Selects bytes [start, end) of it (end before start puts the caret at end). */
+	RAVEN_API int Rwindow_set_text_input_selection(Rid window, int start, int end);
+	/**
+	 * @brief Replaces bytes [start, end) of it with `text` and puts the caret
+	 * after it, as typing would (the changed callback runs; MaxLength
+	 * applies). R_FALSE when there is none or it is read-only.
+	 */
+	RAVEN_API int Rwindow_replace_text_input(Rid window, int start, int end, const char* text);
+	/**
+	 * @brief The composition of the input method in progress (UTF-8, valid
+	 * until it changes) and its selection in bytes; NULL when there is none.
+	 * Any output pointer may be NULL.
+	 */
+	RAVEN_API const char* Rwindow_get_text_composition(Rid window, int* selection_start, int* selection_end);
 	/** @brief R_TRUE while a menu, list or dialog is open over the window. */
 	RAVEN_API int Rwindow_has_popup(Rid window);
 	/**
 	 * Last painted caret in window pixels (x, y, width, height), including scrolling and scale.
 	 * Call after Rdraw_frame. Independent of the blink phase. Returns R_FALSE and zeros the
 	 * outputs when there is no visible editable caret, the window is inactive, or focus changed
-	 * since painting. Any output pointer may be NULL.
+	 * since painting. Any output pointer may be NULL. While an input method
+	 * composes, it is the caret inside the composition: where its candidate
+	 * window goes.
 	 */
 	RAVEN_API int Rwindow_get_text_input_rect(Rid window, int* x, int* y, int* width, int* height);
 	/** @return Number of open in-window popups (menus, combo lists, pickers), bottom to top. */
@@ -654,6 +836,50 @@ extern "C" {
 	RAVEN_API const char* Rdrag_get_data(Rid window);
 	/** @brief Ends the drag in progress without dropping (the target receives R_DROP_LEAVE). */
 	RAVEN_API void Rdrag_cancel(Rid window);
+
+	/* ---- dragging out of the window, to other applications ---- */
+
+	/**
+	 * @brief Lets the user drag data out of the window, to another
+	 * application: a picture into a document, files into the file manager,
+	 * text into an editor. `items` is one content in several formats
+	 * (RDataItem, copied): the target takes the one it prefers.
+	 * `operations` is a bitmask of RDragOperation the target may do (0:
+	 * R_DRAG_OPERATION_COPY).
+	 *
+	 * Call it as Rdrag_begin, while the mouse button is held (from a mouse
+	 * move once the pointer has moved a few units). The window system then
+	 * takes the drag at the next move of the pointer: it shows the picture
+	 * that follows the pointer (Rdrag_set_image) and the cursor that tells
+	 * what a drop there does; the button released, `callback` (may be NULL)
+	 * is told what the target did.
+	 *
+	 * Called while a drag inside the application (Rdrag_begin) is in progress
+	 * in the window of `source`, it gives that drag the data for outside:
+	 * the drag stays inside the window, to its drop targets, and becomes a
+	 * drag of the window system only when the pointer leaves the window.
+	 * Brought back over a window of the application, it still comes to the
+	 * drop targets with the type and data given to Rdrag_begin.
+	 *
+	 * Implemented on macOS and Windows; elsewhere it returns R_FALSE
+	 * (Rdrag_external_supported).
+	 * @return R_FALSE when the widget is not in a window or the window
+	 * system cannot drag out of its windows.
+	 */
+	RAVEN_API int Rdrag_begin_external(Rid source, const RDataItem* items, int count, Ruint operations,
+		RDragFinishedCallback callback, void* user_data);
+	/**
+	 * @brief The picture that follows the pointer during the drag given by
+	 * Rdrag_begin_external (RGBA8 pixels, straight alpha, tightly packed,
+	 * copied), held by the pointer at its center. Call it right after
+	 * Rdrag_begin_external. Without it the system chooses: the picture
+	 * dragged, the icons of the files, or a generic one.
+	 */
+	RAVEN_API void Rdrag_set_image(const uint8_t* rgba, int width, int height);
+	/** @brief R_TRUE when the window system lets Raven drag data out of its windows (Rdrag_begin_external). */
+	RAVEN_API int Rdrag_external_supported(void);
+	/** @brief R_TRUE from Rdrag_begin_external until its callback was called. */
+	RAVEN_API int Rdrag_external_is_active(void);
 
 	RAVEN_API void Rwindow_register_shortcut(Rid window, RKey key, Ruint modifiers, const char* action);
 	RAVEN_API void Rwindow_unregister_shortcut(Rid window, RKey key, Ruint modifiers);
