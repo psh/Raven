@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 wayfinder: map
 ---
 
@@ -52,8 +52,16 @@ fog and [Raven API coverage](../api-coverage.md).
 - [Lists at scale: lazy virtualisation](archive/0214-lists-at-scale-lazy-virtualisation.md): only the items in view, between two Spacers in the ScrollBox, sizes cached by key with estimates, the place held by key, focus pinned; `layoutInfo` and `canScroll*`; no Raven change. Filed as [Lists at scale: the lazy list window](0233-lists-at-scale-the-lazy-list-window.md) and [Lists at scale: layoutInfo and contentType](0234-lists-at-scale-layoutinfo-and-contenttype.md).
 - [Lists at scale: Table](archive/0215-lists-at-scale-table.md): Raven's Table in virtual mode, text cells from a `column(...) { text }` DSL; sorting and selection controlled, the app sorting its items; widths the user's. Filed as [Lists at scale: Table](0235-lists-at-scale-table.md).
 - [Lists at scale: TileView](archive/0216-lists-at-scale-tileview.md): Raven's TileView wrapped, the app's items and a controlled selection of keys as the model, a `tile: (T) -> TileContent` for what each tile shows; the lazy grids left alone. Filed as [Lists at scale: TileView](0236-lists-at-scale-tileview.md).
+- [Lists at scale: TreeView expansion and item operations](archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md): controlled `expanded` over a Raven expand callback, children asked for lazily, `TreeViewState.revealItem(key)`; tab renaming already works, the item at a point waits for drags. Filed as [Raven: tree expand callback](0237-raven-tree-expand-callback.md) and [Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md).
 
 ## Not yet specified
+
+Closed on 2026-11-26 with the destination reached: the four batches (designed samples, icons and
+resources, small widgets, lists at scale) are designed into `compose/docs/spec.md`, every decision
+ticket is archived, and their implementation tickets are filed in sequence, from
+[samples/effects](0218-samples-effects.md) to
+[Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md).
+The patches below are the fog that remains, for a later map.
 
 - **Gestures and drag**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`,
   `draggable`/`detectDragGestures` and long press beyond `onPointerEvent`; drop targets on widgets

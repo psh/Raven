@@ -137,9 +137,11 @@ SizeBox and Canvas are the other unbound widget types, which Compose idioms cove
 - **CodeEditor**: undo/redo availability (`Rtext_editor_can_undo`), the selection, scrolling to a
   line, zoom, tab size and auto pairs, and token colours (`Rtheme_set_token_color`) are unbound.
   Its markers are bound.
-- **TreeView, ListView**: item-level operations, such as scrolling to an item, the item at a point
-  and the selected item, are unbound. `ListViewState.revealItem` covers scrolling a ListView row
-  into view.
+- **TreeView, ListView**: item-level operations. `ListViewState.revealItem` covers scrolling a
+  ListView row into view; `TreeViewState.revealItem`, controlled expansion and its Raven change are
+  filed ([Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md)).
+  The selected item is controlled state already; the item at a point waits for drags inside the
+  app.
 - **Slider**: no vertical orientation (`Rslider_set_orientation`).
 - **Textures**: no SVG or async loading (`Rtexture_create_from_svg`, `_create_async`), which vector
   icons need.

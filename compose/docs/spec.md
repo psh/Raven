@@ -1008,7 +1008,8 @@ Added for the `overlay` and `glass` ports:
   out of place among siblings the rest are destroyed and added again, keeping their expansion.
   - Selection is a controlled set of keys.
   - Expansion stays Raven's, because Raven reports no expansion. `initiallyExpanded` applies to
-    new items only.
+    new items only. From phase 5 expansion is controlled
+    ([TreeView expansion](#treeview-expansion-phase-5)).
   - `contextMenuItems` opens a menu at the pointer.
 
 ### Scroll position (phase 3)
@@ -1165,6 +1166,29 @@ The app's items and selection are the model; one function says what each item's 
 - **Not yet**: dragging tiles out and the drop highlight (with drags inside the app), and
   `Rtile_view_get_item_at`, which only drops need.
 - The XML translator maps `<TileView>`'s attributes onto the parameters; the app gives the items.
+
+### TreeView expansion (phase 5)
+
+From phase 5 `TreeView`'s expansion is the app's state, over Raven change 14, an expand callback
+([Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md)).
+
+- **`expanded: Set<Any>` and `onExpandedChange: (Set<Any>) -> Unit`**, the keys of the open items,
+  controlled as `selection` is: the user's change (the arrow, a double click, Left and Right, the
+  ancestors a selection opens) calls `onExpandedChange`, and one the app doesn't take reverts. They
+  replace `initiallyExpanded`. An app that doesn't care holds
+  `var expanded by rememberSaveable { mutableStateOf(setOf<Any>()) }`, which keeps it saveable.
+  A collapse that moves the selection to the collapsed item calls `onSelectionChange` too.
+- **Children asked for lazily**: `children(item)` is asked for only for the items shown (the roots
+  and the children of open items) and one level below them, so their arrows show. A file tree lists
+  a folder only once its parent is open. Raven items already added stay when a branch closes.
+- **`TreeViewState`** (`rememberTreeViewState()`, the `state` parameter) has only
+  `suspend revealItem(key)`: an item inside a closed branch calls `onExpandedChange` with its
+  ancestors added and is scrolled to once they are open; a shown one is scrolled to at once
+  (`Rtree_view_scroll_to_item`). It isn't saveable.
+- **Item operations**: a tab is renamed through `Tab(title)`, as Raven reads its slot's title when it
+  paints; the selected item is already controlled; the item at a point (`Rtree_view_get_item_at`)
+  waits for drags inside the app, its only use.
+- The XML translator's `Expanded` on `<Item>` gives the initial `expanded` set.
 
 ### Tabs and grids (phase 3)
 
@@ -1887,6 +1911,13 @@ for change 6, which only a real macOS window reaches.
     colour for one kind of token in one editor, over its theme's; Raven's are otherwise only the
     global theme's (`Rtheme_set_token_color`). Planned in
     [Small widgets: the CodeEditor extras](issues/archive/0212-small-widgets-the-codeeditor-extras.md).
+14. **`Rtree_view_set_expanded_callback(Rid tree, RTreeExpandCallback callback, void* user_data)`**,
+    `typedef void (*RTreeExpandCallback)(Rid tree, Rid item, int expanded, void* user_data)`
+    (required for `TreeView`'s controlled expansion, to be made): called for each expansion change
+    Raven makes itself (the arrow, a double click, Left and Right, the ancestors a selection opens),
+    not for `Rtree_item_set_expanded`. A collapse that moves the selection to the collapsed item
+    also calls the selection-changed callback, which it skips today. Planned in
+    [Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md).
 
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
