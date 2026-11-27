@@ -20,7 +20,7 @@ its implementation tickets.
 
 Resolved on 2026-11-26 in conversation. Written into spec section 8 (Date and time pickers),
 section 2 (foundation's new dependency) and section 12, and filed as
-[Small widgets: DatePicker and TimePicker](../0227-small-widgets-datepicker-and-timepicker.md).
+[Small widgets: DatePicker and TimePicker](0227-small-widgets-datepicker-and-timepicker.md).
 
 - **Controlled**, as the binding's other inputs are: `DatePicker(date, onDateChange, ...)` and
   `TimePicker(time, onTimeChange, ...)`, named after Raven's widgets. Material 3's state objects

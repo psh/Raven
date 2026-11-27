@@ -8,14 +8,14 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-27, when the XML translator moved into `compose-raven-xml`, a library module the count includes (samples are left out).*
+*Last updated 2026-11-27, when DatePicker and TimePicker were bound.*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 491 of 1,701 (28%) |
-| Widget types bound | 36 of 51 | 37 of 58 |
+| Functions used | 370 of 1,157 (31%) | 503 of 1,701 (29%) |
+| Widget types bound | 36 of 51 | 39 of 58 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
 functions it doesn't call are deliberately unnecessary in a Compose binding. Of the everyday
@@ -36,7 +36,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 
 | Header | Used | Declared | Coverage | Main reason for the rest |
 |---|---:|---:|---:|---|
-| `raven_controls.h` | 100 | 557 | 18% | Table, TileView, Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Date/TimePicker, Rating, Pagination, Breadcrumb, Toast unbound; getters |
+| `raven_controls.h` | 112 | 557 | 20% | Table, TileView, Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Rating, Pagination, Breadcrumb, Toast unbound; the pickers' time zones and instants; getters |
 | `raven_tools.h` | 8 | 231 | 3% | NodeGraph, Timeline, BlockEditor, DiffView unbound (phase 5 fog) |
 | `raven_window.h` | 46 | 108 | 43% | drag and drop inside the app, window themes, shortcuts, the inspector, mobile insets and keyboard, getters |
 | `raven_text_editor.h` | 24 | 91 | 26% | undo/redo availability, selection, zoom, token colours, find bar, folding, spell checking |
@@ -64,7 +64,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
 | `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
-| **Total** | **491** | **1,701** | **28%** | |
+| **Total** | **503** | **1,701** | **29%** | |
 
 ## Not needed by design
 
@@ -142,14 +142,14 @@ Found while doing them:
 | TileView | 29 | virtualised grid of items. With lazy virtualisation | designed: [Lists at scale: TileView](issues/0236-lists-at-scale-tileview.md) |
 | SystemWebView | 19 | the system's web engine in a view | designed: [The web: WebView and WebViewState](issues/0269-the-web-webview-and-webviewstate.md) |
 | Carousel | 17 | pages swiped one at a time | designed: [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) |
-| TimePicker | 15 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
-| DatePicker | 13 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
+| TimePicker | 15 | | built: [Small widgets: DatePicker and TimePicker](issues/archive/0227-small-widgets-datepicker-and-timepicker.md) |
+| DatePicker | 13 | | built: [Small widgets: DatePicker and TimePicker](issues/archive/0227-small-widgets-datepicker-and-timepicker.md) |
 | Toast | 13 | transient messages | designed: [Overlays and pagers: SnackbarHost](issues/0257-overlays-and-pagers-snackbarhost.md) |
 | Rating | 8 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 | Pagination | 6 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 | Breadcrumb | 6 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 
-Every widget here is designed: seven by the [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md)
+Every widget here is designed, and those marked built have their composable now: seven by the [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md)
 map and the rest by [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md);
 each waits on its implementation ticket.
 

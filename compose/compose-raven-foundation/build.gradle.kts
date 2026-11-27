@@ -34,6 +34,8 @@ kotlin {
         api(project(":compose-raven-ui"))
         // ScrollState and LazyListState are rememberSaveable.
         api(libs.compose.runtime.saveable)
+        // DatePicker and TimePicker are controlled by its LocalDate and LocalTime.
+        api(libs.kotlinx.datetime)
         implementation(project(":compose-raven-native"))
     }
     sourceSets.nativeTest {

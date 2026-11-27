@@ -13,6 +13,11 @@ import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.IntVar
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.value
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.nativeHeap
 import kotlinx.cinterop.set
@@ -53,6 +58,9 @@ import raven.cinterop.Risland_is_expanded
 import raven.cinterop.Risland_set_changed_callback
 import raven.cinterop.Risland_set_expanded
 import raven.cinterop.Rlabel_set_link_callback
+import raven.cinterop.Rdate_picker_get_date
+import raven.cinterop.Rdate_picker_set_changed_callback
+import raven.cinterop.Rdate_picker_set_date
 import raven.cinterop.Rmenu_item_is_checked
 import raven.cinterop.Rmenu_item_set_checked
 import raven.cinterop.Rmenu_item_set_clicked_callback
@@ -64,6 +72,9 @@ import raven.cinterop.Rspin_box_get_value
 import raven.cinterop.Rspin_box_set_changed_callback
 import raven.cinterop.Rspin_box_set_value
 import raven.cinterop.Rtext_editor_get_text
+import raven.cinterop.Rtime_picker_get_time
+import raven.cinterop.Rtime_picker_set_changed_callback
+import raven.cinterop.Rtime_picker_set_time
 import raven.cinterop.Rtext_editor_set_changed_callback
 import raven.cinterop.Rtext_editor_set_completion_callback
 import raven.cinterop.Rtext_editor_set_text
@@ -615,6 +626,60 @@ public val ColorPickerChanged: Event<(Color) -> Unit> = Event(marks = ColorPicke
 
 private val onColorPickerChanged = staticCFunction { _: Rid, r: Float, g: Float, b: Float, a: Float, userData: COpaquePointer? ->
     dispatchEvent(userData, ColorPickerChanged) { it(Color(r, g, b, a)) }
+}
+
+// The date and time pickers' controlled values and event kinds. compose-raven-ui has no
+// kotlinx-datetime, so a date is packed as `year * 10000 + month * 100 + day` and a time as its
+// second of the day; foundation's pickers turn them into LocalDate and LocalTime.
+
+/** A date picker's date, packed as `year * 10000 + month * 100 + day`. Raven refuses an invalid date. */
+@InternalComposeRavenApi
+public val DatePickerDate: ControlledValue<Int> = ControlledValue(
+    read = { widget ->
+        memScoped {
+            val year = alloc<IntVar>()
+            val month = alloc<IntVar>()
+            val day = alloc<IntVar>()
+            Rdate_picker_get_date(widget, year.ptr, month.ptr, day.ptr)
+            year.value * 10000 + month.value * 100 + day.value
+        }
+    },
+    write = { widget, date -> Rdate_picker_set_date(widget, date / 10000, date / 100 % 100, date % 100) },
+)
+
+/** A date chosen by the user, packed as [DatePickerDate] is. */
+@InternalComposeRavenApi
+public val DatePickerChanged: Event<(Int) -> Unit> = Event(marks = DatePickerDate) { widget, userData ->
+    Rdate_picker_set_changed_callback(widget, onDatePickerChanged, userData)
+}
+
+private val onDatePickerChanged = staticCFunction { _: Rid, year: Int, month: Int, day: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, DatePickerChanged) { it(year * 10000 + month * 100 + day) }
+}
+
+/** A time picker's time, as its second of the day (0 to 86399), seconds the picker hides included. */
+@InternalComposeRavenApi
+public val TimePickerTime: ControlledValue<Int> = ControlledValue(
+    read = { widget ->
+        memScoped {
+            val hour = alloc<IntVar>()
+            val minute = alloc<IntVar>()
+            val second = alloc<IntVar>()
+            Rtime_picker_get_time(widget, hour.ptr, minute.ptr, second.ptr)
+            hour.value * 3600 + minute.value * 60 + second.value
+        }
+    },
+    write = { widget, time -> Rtime_picker_set_time(widget, time / 3600, time / 60 % 60, time % 60) },
+)
+
+/** A time changed by the user, as [TimePickerTime] is. */
+@InternalComposeRavenApi
+public val TimePickerChanged: Event<(Int) -> Unit> = Event(marks = TimePickerTime) { widget, userData ->
+    Rtime_picker_set_changed_callback(widget, onTimePickerChanged, userData)
+}
+
+private val onTimePickerChanged = staticCFunction { _: Rid, hour: Int, minute: Int, second: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TimePickerChanged) { it(hour * 3600 + minute * 60 + second) }
 }
 
 /** A map moved or zoomed by the user (compose-raven-map reads where it now looks). */

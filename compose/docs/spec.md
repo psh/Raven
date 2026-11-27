@@ -718,10 +718,18 @@ controlled, as `TextField` is: the user's change calls back, and the app's value
   uses `Rdate_picker_set_date` / `_set_changed_callback`, `_set_range` (an open end where `range`
   is null), `_set_first_day_of_week` and `_set_format`, whose pattern is Raven's (`YYYY`, `MM`,
   `M`, `DD`, `D`, `MMMM`, `MMM`, `dddd`, `ddd`; `"D MMMM YYYY"` gives "3 November 2026"). `date`
-  is never null, as Raven's widget always holds one.
+  is never null, as Raven's widget always holds one. A `date` outside `range` is shown within it,
+  as `Slider` coerces its value; Raven's years are 1 to 9999, and a date or range outside them
+  throws.
 - **`TimePicker(time: LocalTime, onTimeChange, modifier, enabled, showSeconds = false, minuteStep = 1)`**
   uses `Rtime_picker_set_time` / `_set_changed_callback`, `_set_seconds_visible` and
-  `_set_minute_step`. It is 24-hour only; seconds the picker doesn't show are kept.
+  `_set_minute_step`. It is 24-hour only (`Rtime_picker_set_clock(R_CLOCK_24_HOUR)`, whatever the
+  locale's clock); seconds the picker doesn't show are kept, and a fraction of a second is left
+  out. `minuteStep` is 1 to 59.
+- **Binding**: compose-raven-ui has no kotlinx-datetime, so its controlled values pack a date as
+  `year * 10000 + month * 100 + day` and a time as its second of the day; foundation converts.
+  Raven has no getter for the first day of the week or the minute step: the minute step is tested
+  by what the arrows add, the first day by its mapping (Sunday 0 to Saturday 6).
 - **Types**: kotlinx-datetime's `LocalDate`, `LocalTime` and `DayOfWeek`, a dependency of
   compose-raven-foundation that apps see
   ([Small widgets: date and time pickers](issues/archive/0210-small-widgets-date-and-time-pickers.md)).

@@ -8,7 +8,7 @@ Add `Rating`, `Pagination`, `Breadcrumb` and `VerticalSlider`, controlled compos
 widgets. Spec: [8: Rating, Pagination, Breadcrumb and VerticalSlider](../spec.md#rating-pagination-breadcrumb-and-verticalslider-phase-5)
 and section 12. Planned in [Small widgets: Rating, Pagination, Breadcrumb and a vertical Slider](archive/0211-small-widgets-rating-pagination-breadcrumb-and-a-vertical-slider.md).
 
-**Depends on:** [Small widgets: DatePicker and TimePicker](0227-small-widgets-datepicker-and-timepicker.md).
+**Depends on:** [Small widgets: DatePicker and TimePicker](archive/0227-small-widgets-datepicker-and-timepicker.md).
 
 ## Deliverables
 
