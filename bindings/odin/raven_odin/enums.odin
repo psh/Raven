@@ -1,6 +1,6 @@
 // Raven for Odin: the enumerations of the C API.
 //
-// Generated from the C headers by tools/bindgen (Raven 0.2): do not edit.
+// Generated from the C headers by tools/bindgen (Raven 0.3): do not edit.
 //
 // Values are those of the C constants, so the raw i32 of the generated package converts both
 // ways: Widget_Type(raw.Rwidget_get_type(widget)). Groups of flags are bit_sets (Window_Flags);
@@ -8,6 +8,8 @@
 package raven_odin
 
 Backend :: enum i32 {
+	// The renderer of the platform: WebGL in browser builds, Metal on macOS and iOS when it is compiled, Vulkan otherwise.
+	Default = 0,
 	// Built-in Vulkan renderer.
 	Vulkan = 1,
 	// Renders nothing. Used for headless runs and unit tests.
@@ -16,6 +18,8 @@ Backend :: enum i32 {
 	Custom = 3,
 	// Browser renderer (Emscripten, WebGL 2).
 	Webgl = 4,
+	// Built-in Metal renderer (macOS, iOS).
+	Metal = 5,
 }
 
 Error :: enum i32 {
@@ -31,6 +35,8 @@ Error :: enum i32 {
 	Error_File_Not_Found = 0x0079,
 	Error_Xml = 0x007A,
 	Error_Wrong_Thread = 0x007B,
+	// A diagnostic of Raven Script (raven_script.h): the text is the whole message, "error[RS102]: ...".
+	Error_Script = 0x007C,
 }
 
 Severity :: enum i32 {
@@ -38,6 +44,31 @@ Severity :: enum i32 {
 	Warning = 0x0081,
 	Error = 0x0082,
 	Fatal = 0x0083,
+}
+
+// What the system does with the application, on iOS and Android (desktop
+// systems send none of these). A pause is not always followed by
+// R_APP_DID_PAUSE: pulling down the notifications (iOS) or a dialog of the
+// system in front (Android) gives R_APP_WILL_PAUSE, then R_APP_DID_RESUME.
+// At the start, R_APP_WILL_RESUME and R_APP_DID_RESUME may come too.
+//
+//   leaving the front   R_APP_WILL_PAUSE    still seen: save what must not be lost
+//   in the background   R_APP_DID_PAUSE     not seen, no GPU work: Raven stops drawing
+//   coming back         R_APP_WILL_RESUME   Raven draws again
+//   in front again      R_APP_DID_RESUME    takes input again
+App_Event :: enum i32 {
+	// The application is about to leave the front (home, app switcher, a call). Save the state now.
+	Will_Pause = 0x0B80,
+	// The application is in the background: Raven has stopped drawing, and waited until the GPU was idle.
+	Did_Pause = 0x0B81,
+	// The application is coming back to the front: Raven draws again.
+	Will_Resume = 0x0B82,
+	// The application is in front and takes input again.
+	Did_Resume = 0x0B83,
+	// The system is low on memory: free what can be made again. Raven then drops its own caches and trims its heap.
+	Low_Memory = 0x0B84,
+	// The application is about to end (Android: the activity is finishing; its window is closed right after).
+	Will_Terminate = 0x0B85,
 }
 
 Window_Flag :: enum u32 {
@@ -110,6 +141,30 @@ Window_System :: enum i32 {
 	Wayland = 0x0093,
 	Cocoa = 0x0094,
 	Emscripten = 0x0095,
+	Android = 0x0096,
+	Uikit = 0x0097,
+}
+
+// What a text input holds: on mobile it picks the on-screen keyboard (letters, @, digits...).
+Text_Input_Type :: enum i32 {
+	Text = 0x0B60,
+	Email = 0x0B61,
+	Number = 0x0B62,
+	// Digits and a decimal separator.
+	Decimal = 0x0B63,
+	Phone = 0x0B64,
+	Url = 0x0B65,
+	Search = 0x0B66,
+}
+
+// The label and meaning of the return key of the on-screen keyboard. Enter does the same on every key.
+Return_Key :: enum i32 {
+	Default = 0x0B70,
+	Done = 0x0B71,
+	Go = 0x0B72,
+	Next = 0x0B73,
+	Search = 0x0B74,
+	Send = 0x0B75,
 }
 
 // Edges and corners of a window, for Rwindow_begin_resize.
@@ -290,6 +345,18 @@ Drop_Phase :: enum i32 {
 	// The user dropped: `paths` and `text` hold what was dropped.
 	Dropped = 0x00E3,
 }
+
+// What the application that takes a drag does with it (Rdrag_begin_external): a bitmask of what is allowed, or the one done.
+Drag_Operation :: enum u32 {
+	// The target made a copy: the source keeps its data.
+	Copy = 0,
+	// The target took the data: the source removes it (a file the file manager moved...).
+	Move = 1,
+	// The target made a link, an alias or a shortcut to it.
+	Link = 2,
+}
+Drag_Operations :: bit_set[Drag_Operation; u32]
+// R_DRAG_OPERATION_NONE (0 in C) is {}
 
 // What a finger does on a widget (Rwidget_set_touch_mode).
 Touch_Mode :: enum i32 {
@@ -512,6 +579,18 @@ Color_Role :: enum i32 {
 	Link = 0x0122,
 	// Background of code in formatted text.
 	Code = 0x0123,
+	// The matches of a search in a text editor (usually see-through).
+	Search_Match = 0x0124,
+	// The selected match of a search in a text editor.
+	Search_Current = 0x0125,
+	// Wavy underline of the misspelled words of a TextInput or a TextEditor (spell checking).
+	Spelling = 0x0126,
+	// Diff view: the background of an added line and of a removed line (see-through: the background shows).
+	Diff_Added = 0x0127,
+	Diff_Removed = 0x0128,
+	// Diff view: the words that changed inside an added line and inside a removed line, over the color of the line.
+	Diff_Added_Word = 0x0129,
+	Diff_Removed_Word = 0x012A,
 }
 
 // Sizes, in logical units.
@@ -656,6 +735,18 @@ Widget_Type :: enum i32 {
 	Pagination = 0x0231,
 	// Curves of X / Y data: legend, line styles, markers, log axes, a second X and Y axis, pan and zoom.
 	Plot = 0x0232,
+	// The pages of a PDF document, scrolled and zoomed (drawn by PDFium, loaded at run time).
+	Pdf_View = 0x0233,
+	// The charts of dashboards: pie, donut, gauge, heatmap, sparkline (RChartKind).
+	Chart = 0x0234,
+	// A map of slippy-map tiles given by the application (or read from files): panned, zoomed, with markers.
+	Map_View = 0x0235,
+	// Pages shown one at a time and swiped (a page view), with dots and arrows.
+	Carousel = 0x0236,
+	// A web page shown by the engine of the system (WKWebView, WebView2) in a view kept over the widget.
+	System_Web_View = 0x0237,
+	// The differences between two texts or a patch: unified or side by side, folded, virtualized (raven_tools.h).
+	Diff_View = 0x0238,
 }
 
 H_Align :: enum i32 {
@@ -803,6 +894,73 @@ Plot_Axis :: enum i32 {
 	Y2 = 0x0523,
 }
 
+// How a PdfView sizes its pages.
+Pdf_Fit :: enum i32 {
+	// The widest page fills the width of the view (default).
+	Width = 0x05C0,
+	// The largest page fits whole in the view.
+	Page = 0x05C1,
+	// The zoom of Rpdf_view_set_zoom; zooming with the wheel or the keys switches to it.
+	None = 0x05C2,
+}
+
+// What a PdfView holds.
+Pdf_Status :: enum i32 {
+	// No document.
+	Empty = 0x05D0,
+	// A document is shown.
+	Loaded = 0x05D1,
+	// The document needs a password, or the one given is wrong: load it again with one.
+	Needs_Password = 0x05D2,
+	// The file could not be read, or is not a PDF document.
+	Error = 0x05D3,
+	// The PDFium library was not found (see Rpdf_is_available).
+	Unavailable = 0x05D4,
+}
+
+// The fonts of a PDF document (Rpdf_document_set_font): those of Raven, then the ones added (2, 3...).
+Pdf_Font :: enum i32 {
+	// Roboto, the font of the interface of Raven.
+	Sans = 0,
+	// Roboto Mono.
+	Mono = 1,
+}
+
+// How a shape of a PDF document is painted: a bitmask.
+Pdf_Paint :: enum u32 {
+	// Filled with the fill color.
+	Fill = 0,
+	// Outlined with the stroke color and the line width.
+	Stroke = 1,
+}
+Pdf_Paints :: bit_set[Pdf_Paint; u32]
+
+// A bitmask of styles of the text of a PDF document.
+Pdf_Text_Style :: enum u32 {
+	Bold = 0,
+	Italic = 1,
+	Underline = 2,
+}
+Pdf_Text_Styles :: bit_set[Pdf_Text_Style; u32]
+
+Pdf_Print_Flag :: enum u32 {
+	// No dialog: printed at once on the printer named, else the default one.
+	Dialog = 0,
+}
+Pdf_Print_Flags :: bit_set[Pdf_Print_Flag; u32]
+
+// Where a tile of a MapView stands (Rmap_view_get_tile_state).
+Map_Tile_State :: enum i32 {
+	// Not in the view's cache: never asked for, no longer wanted, or evicted.
+	None = 0x0600,
+	// Asked for (the tile callback was called, or the file is being read): waiting for its pixels.
+	Pending = 0x0601,
+	// Its pixels are in the cache.
+	Loaded = 0x0602,
+	// The application said it has none (Rmap_view_set_tile_failed), or its file could not be read.
+	Failed = 0x0603,
+}
+
 // How an axis of a Plot spreads its values.
 Plot_Scale :: enum i32 {
 	Linear = 0x0530,
@@ -850,6 +1008,56 @@ Plot_Legend :: enum i32 {
 	Left = 0x0568,
 	// To the right of the data, outside it.
 	Outside = 0x0569,
+}
+
+// What a Chart draws.
+Chart_Kind :: enum i32 {
+	// Slices of a whole, as parts of a disc (the default).
+	Pie = 0x0590,
+	// Slices of a whole, as parts of a ring; its middle shows the total, or the slice under the pointer.
+	Donut = 0x0591,
+	// One value within a range, on an arc; bands color parts of the range.
+	Gauge = 0x0592,
+	// A grid of values, each cell colored from the low color to the high one.
+	Heatmap = 0x0593,
+	// A small line of values without axes, to sit in a tile or a cell of a table.
+	Sparkline = 0x0594,
+}
+
+// What happens in a SystemWebView (Rsystem_web_view_set_event_callback).
+System_Web_View_Event :: enum i32 {
+	// The view shows another address (Rsystem_web_view_get_url).
+	Navigated = 0x0B90,
+	// The title of the page changed (Rsystem_web_view_get_title).
+	Title = 0x0B91,
+	// A page starts loading.
+	Loading = 0x0B92,
+	// The page and what it refers to are loaded.
+	Loaded = 0x0B93,
+	// The page could not be loaded, or the engine showing it stopped (Rsystem_web_view_get_error).
+	Failed = 0x0B94,
+}
+
+// How the rows of a Table are selected (Rtable_set_selection_mode).
+Table_Selection_Mode :: enum i32 {
+	// One row at a time (the default).
+	Single = 0x0BC0,
+	// Any number of rows: Ctrl/Cmd+click, Shift+click, Shift+arrows, Space, Ctrl/Cmd+A.
+	Multiple = 0x0BC1,
+	// The user selects nothing (the rows are only shown; cells may still be edited and checked).
+	None = 0x0BC2,
+}
+
+// What the cells of a column show (Rtable_set_column_kind).
+Table_Column_Kind :: enum i32 {
+	// Their text (the default).
+	Text = 0x0BD0,
+	// A check box, checked when the text is "1", "true" or "yes". The user
+	// toggles it with a click or Space unless the column is made not
+	// editable; the cell edited callback is then called with "1" or "0".
+	Check = 0x0BD1,
+	// A progress bar, from a number 0..1 or a percentage ("45%"); an empty cell shows nothing.
+	Progress = 0x0BD2,
 }
 
 // Shorthands of Rtext_editor_set_language for two languages.
@@ -907,6 +1115,17 @@ Token :: enum i32 {
 	Link = 0x03AE,
 }
 
+// Options of a search (Rtext_editor_set_search), a bitmask.
+Search_Flag :: enum u32 {
+	// Upper and lower case differ. Without it the case is ignored, for the
+	// letters of ASCII, Latin-1, the Latin letters of Unicode, Greek,
+	// Cyrillic and Armenian.
+	Match_Case = 0,
+	// A match is a whole word: "for" does not find the start of "format".
+	Whole_Word = 1,
+}
+Search_Flags :: bit_set[Search_Flag; u32]
+
 // What a marker says about the text it underlines.
 Marker_Kind :: enum i32 {
 	Error = 0x0350,
@@ -944,6 +1163,11 @@ Dock_Side :: enum i32 {
 	Bottom = 0x0363,
 	// Behind the same tabs as the other panel.
 	Tab = 0x0364,
+}
+
+Dock_Float_Mode :: enum i32 {
+	Window = 0,
+	In_Window = 1,
 }
 
 Visual_Preset :: enum i32 {
@@ -988,6 +1212,50 @@ Block_Place :: enum i32 {
 	Input = 0x0712,
 }
 
+Diff_View_Mode :: enum i32 {
+	// One column: the removed lines, then the added lines, between the lines kept.
+	Unified = 0x0C50,
+	// Two columns: the left text and the right text side by side, aligned.
+	Split = 0x0C51,
+}
+
+Diff_Side :: enum i32 {
+	// The text before (the old one, "a/", the lines removed).
+	Left = 0x0C54,
+	// The text after (the new one, "b/", the lines added).
+	Right = 0x0C55,
+}
+
+Diff_Row_Kind :: enum i32 {
+	// A line that is on both sides.
+	Same = 0x0C58,
+	// A line of the left text only.
+	Removed = 0x0C59,
+	// A line of the right text only.
+	Added = 0x0C5A,
+	// Split mode: a removed line facing the added line that replaces it.
+	Changed = 0x0C5B,
+	// Unchanged lines folded away ("12 unchanged lines"); Rdiff_view_expand shows them.
+	Fold = 0x0C5C,
+	// A patch: the header of a hunk ("@@ -12,7 +12,8 @@ main").
+	Hunk = 0x0C5D,
+	// A patch: the names of a file.
+	File = 0x0C5E,
+	// A note attached to the line above it (Rdiff_view_add_annotation).
+	Note = 0x0C5F,
+}
+
+// How lines are compared (Rdiff_view_set_flags, Rdiff_unified).
+Diff_Flag :: enum u32 {
+	// Spaces and tabs at the end of a line (and a carriage return) do not count.
+	Trailing_Space = 0,
+	// No space or tab counts, wherever it is.
+	Space = 1,
+	// Upper and lower case letters are the same (A to Z).
+	Case = 2,
+}
+Diff_Flags :: bit_set[Diff_Flag; u32]
+
 // How much a notification of the system asks for attention (Rnotification_show).
 Notification_Urgency :: enum i32 {
 	// No sound; may only go to the list of notifications.
@@ -995,6 +1263,32 @@ Notification_Urgency :: enum i32 {
 	Normal = 0x04F1,
 	// Stays until the user dismisses it, where the system allows it.
 	Critical = 0x04F2,
+}
+
+// What happened to a notification (Rnotification_set_callback).
+Notification_Event :: enum i32 {
+	// The user clicked the notification itself (not one of its buttons).
+	Activated = 0x0C20,
+	// The user clicked one of its buttons: `action` is the id of that button.
+	Action_Invoked = 0x0C21,
+	// It went away without being clicked: closed by the user, or its time ran out (where the system tells).
+	Dismissed = 0x0C22,
+}
+
+// What the notifications of the system can do here (Rnotification_supports).
+Notification_Feature :: enum i32 {
+	// Buttons (RNotificationDesc::actions).
+	Actions = 1,
+	// A notification shown again with the same tag replaces the first one.
+	Replace = 2,
+	// Rnotification_close takes a notification away.
+	Close = 4,
+	// An image beside the text (RNotificationDesc::icon).
+	Icon = 8,
+	// A click on the notification is reported (R_NOTIFICATION_ACTIVATED).
+	Activated = 0x0010,
+	// Its dismissal is reported (R_NOTIFICATION_DISMISSED).
+	Dismissed = 0x0020,
 }
 
 File_Dialog_Flag :: enum u32 {
@@ -1028,6 +1322,69 @@ Message_Result :: enum i32 {
 	Ok = 1,
 	Yes = 2,
 	No = 3,
+}
+
+// What the application may be allowed to use (Rpermission_request).
+Permission :: enum i32 {
+	Camera = 0x0C00,
+	// Notifications of the system (Rnotification_show).
+	Notifications = 0x0C01,
+	// Reading the whole photo library. Rphoto_pick needs none: the system's picker gives only what the user chose.
+	Photos = 0x0C02,
+	Microphone = 0x0C03,
+	// The location of the device while the application is in use.
+	Location = 0x0C04,
+}
+
+// What the user answered, or would be asked (Rpermission_get_status).
+Permission_Status :: enum i32 {
+	// There is nothing to ask for here: the platform has no such permission,
+	// or Raven cannot ask for it on this platform. Whether the service itself
+	// exists is told by its own function (Rcamera_is_available,
+	// Rnotification_is_supported).
+	Unsupported = 0x0C10,
+	// Not asked yet: Rpermission_request shows the question of the system.
+	Not_Asked = 0x0C11,
+	// Allowed (also where the system asks nothing: notifications on Windows and Linux).
+	Granted = 0x0C12,
+	// Allowed in part: some photos only (iOS, Android 14), quiet notifications (iOS provisional), the approximate location only.
+	Limited = 0x0C13,
+	// Refused, and the system may ask again (Android, after a first refusal).
+	Denied = 0x0C14,
+	// Refused for good, or not the user's to give (parental controls, a
+	// profile of the company): the system shows no question any more, only
+	// its Settings can change it (Rpermission_open_settings).
+	Blocked = 0x0C15,
+}
+
+// How a request of a picker, the camera or a share sheet ended.
+Device_Result :: enum i32 {
+	// Done: the files were chosen, the photo taken, the file saved, the sheet shown.
+	Done = 0x0C20,
+	// The user closed the screen of the system without choosing.
+	Cancelled = 0x0C21,
+	// A permission it needs was refused (Rcamera_take_photo: the camera).
+	Denied = 0x0C22,
+	// The platform does not have this service.
+	Unsupported = 0x0C23,
+	// Another screen of the system is still open: one at a time.
+	Busy = 0x0C24,
+	// The system reported an error (also reported as an R_ERROR_PLATFORM warning).
+	Failed = 0x0C25,
+}
+
+// A short vibration that answers a touch (Rhaptic_play).
+Haptic :: enum i32 {
+	// Impacts: something touched, snapped, landed.
+	Light = 0x0C30,
+	Medium = 0x0C31,
+	Heavy = 0x0C32,
+	// The selection moved (a picker wheel, a switch, a segmented control).
+	Selection = 0x0C33,
+	// The outcome of an action.
+	Success = 0x0C34,
+	Warning = 0x0C35,
+	Error = 0x0C36,
 }
 
 // How a spring moves. Animations in Raven are springs, as on iOS: a value is
@@ -1093,6 +1450,16 @@ Xml_Value_Type :: enum i32 {
 	List = 0x03C8,
 }
 
+// How the hours of a time are shown.
+Clock :: enum i32 {
+	// As the locale does (Rlocale_uses_12_hour_clock).
+	Auto = 0x0C30,
+	// 1 to 12, with AM and PM.
+	_12_Hour = 0x0C31,
+	// 0 to 23.
+	_24_Hour = 0x0C32,
+}
+
 Color_Filter :: enum i32 {
 	None = 0x0740,
 	// Corrections: the colors that cannot be told apart are moved to colors that can.
@@ -1148,4 +1515,35 @@ Accessible_Role :: enum i32 {
 	Separator = 0x0781,
 	Scroll_Bar = 0x0782,
 	Pane = 0x0783,
+}
+
+// What a request of a service of the device asks the application for (RHostServiceRequest).
+Host_Service :: enum i32 {
+	// Files to read (Rfile_open_async): `filters`, `flags` (R_FILE_DIALOG_MULTIPLE).
+	Open_Files = 0x0C40,
+	// Save `data` / `size`, or the file `path` when data is NULL, as `file_name` (Rfile_save_async, Rfile_export_async).
+	Save_File = 0x0C41,
+	// A folder (Rfile_select_folder_async).
+	Select_Folder = 0x0C42,
+	// A photo from the camera (Rcamera_take_photo); camera permission already asked.
+	Take_Photo = 0x0C43,
+	// Up to `max_count` photos (0: no limit) from the library (Rphoto_pick).
+	Pick_Photos = 0x0C44,
+	// The share sheet: `text` and / or the file `path` (`mime_type`), pointing at `anchor_*` (Rshare_show).
+	Share = 0x0C45,
+}
+
+Golden_Status :: enum i32 {
+	// The capture matches the golden.
+	Match = 0x0BA0,
+	// RAVEN_UPDATE_GOLDENS=1: the capture was written as the golden.
+	Updated = 0x0BA1,
+	// Too many pixels differ: NAME.actual.png and NAME.diff.png were written.
+	Mismatch = 0x0BA2,
+	// The capture and the golden do not have the same size: NAME.actual.png was written.
+	Size_Mismatch = 0x0BA3,
+	// There is no golden yet: NAME.actual.png was written (run with RAVEN_UPDATE_GOLDENS=1 to keep it).
+	Missing = 0x0BA4,
+	// The window could not be captured, or a file could not be read or written.
+	Failed = 0x0BA5,
 }

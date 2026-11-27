@@ -6,6 +6,7 @@
 #include "context.h"
 #include "heap.h"
 #include "fs_watch.h"
+#include "transfer.h"
 #include "../widgets/common.h"
 #include "../render/renderer.h"
 
@@ -30,6 +31,9 @@ int rvn_api_check(const char* function) {
 			"%s must be called from the UI thread (use Rtask_post from other threads)", function);
 		return R_FALSE;
 	}
+#if defined(RAVEN_PLATFORM_EMSCRIPTEN)
+	rvn_web_loop_poke();
+#endif
 	return R_TRUE;
 }
 
@@ -92,8 +96,18 @@ static const RBackendVTable* rvn_select_backend(RBackend backend) {
                       "Raven was built without the WebGL backend");
             return NULL;
 #endif
+		case R_BACKEND_METAL:
+#if defined(RAVEN_BACKEND_METAL_ENABLED)
+			return rvn_backend_metal();
+#else
+			rvn_error(R_ERROR_BACKEND, R_SEVERITY_FATAL, "Raven was built without the Metal backend");
+			return NULL;
+#endif
         case R_BACKEND_NULL:
 			return rvn_backend_null();
+		case R_BACKEND_DEFAULT:
+			/* (resolved by Rinit_ex before) */
+			break;
 		case R_BACKEND_CUSTOM:
 			if (!g_custom_backend_set) {
 				rvn_error(R_ERROR_BACKEND, R_SEVERITY_FATAL, "R_BACKEND_CUSTOM needs Rbackend_register first");
@@ -112,11 +126,20 @@ int Rinit(RBackend backend) {
 	return Rinit_ex(&desc);
 }
 
+/* A run driven by the environment without a GPU that works (a Linux machine without a Vulkan driver): the tree still can be read. */
+static int rvn_init_null_fallback(const RBackendVTable** backend, RBackendInitInfo* info, int threaded) {
+	fprintf(stderr, "raven: the %s backend cannot start: the run goes on with the null backend (the tree, no pictures)\n", (*backend)->name);
+	*backend = rvn_backend_null();
+	g_rvn.backend = R_BACKEND_NULL;
+	info->vsync = rvn_present_vsync();
+	return rvn_renderer_init(*backend, info, threaded);
+}
+
 int Rinit_ex(const RInitDesc* user_desc) {
 	RInitDesc desc;
 	RBackendInitInfo info;
 	const RBackendVTable* backend;
-	int workers, threaded;
+	int workers, threaded, driven;
 
 	if (g_rvn.initialized) {
 		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_WARNING, "Rinit: already initialized");
@@ -124,9 +147,13 @@ int Rinit_ex(const RInitDesc* user_desc) {
 	}
 	memset(&desc, 0, sizeof(desc));
 	if (user_desc) desc = *user_desc;
-	if (desc.backend == 0) {
+	/* RAVEN_HEADLESS, RAVEN_SCRIPT...: the application is driven from outside (widget/headless.c) */
+	driven = rvn_headless_configure(&desc);
+	if (desc.backend == R_BACKEND_DEFAULT) {
 #if defined(RAVEN_BACKEND_WEBGL_ENABLED)
         desc.backend = R_BACKEND_WEBGL;
+#elif defined(RAVEN_BACKEND_METAL_ENABLED)
+		desc.backend = R_BACKEND_METAL;
 #else
         desc.backend = R_BACKEND_VULKAN;
 #endif
@@ -140,6 +167,11 @@ int Rinit_ex(const RInitDesc* user_desc) {
 #endif
 
 	backend = rvn_select_backend(desc.backend);
+	if (!backend && driven && desc.backend != R_BACKEND_NULL && rvn_headless_allows_null_fallback()) {
+		fprintf(stderr, "raven: no GPU backend: the run goes on with the null backend (the tree, no pictures)\n");
+		desc.backend = R_BACKEND_NULL;
+		backend = rvn_select_backend(desc.backend);
+	}
 	if (!backend) return R_FALSE;
 
 	memset(&g_rvn, 0, sizeof(g_rvn));
@@ -189,19 +221,22 @@ int Rinit_ex(const RInitDesc* user_desc) {
 	info.vsync = rvn_present_vsync();
 	info.window_system = g_rvn.platform->system;
 	info.native_display = g_rvn.platform->native_display();
-	if (!rvn_renderer_init(backend, &info, threaded)) {
+	if (!rvn_renderer_init(backend, &info, threaded) &&
+		!(driven && desc.backend != R_BACKEND_NULL && rvn_headless_allows_null_fallback() && rvn_init_null_fallback(&backend, &info, threaded))) {
 		rvn_error(R_ERROR_BACKEND, R_SEVERITY_FATAL, "Rinit: cannot initialize the %s backend", backend->name);
 		goto fail_renderer;
 	}
 	rvn_renderer_set_wait_service(g_rvn.platform->wait_service);
 
 	g_rvn.initialized = R_TRUE;
+	rvn_services_init();
 	rvn_paint_init();
 	rvn_themes_init();
 	rvn_theme_apply(R_THEME_DARK);
 	rvn_fonts_init();
 	g_rvn.theme.font = g_rvn.default_font;
 	g_rvn.last_update_time = rvn_clock_seconds();
+	if (driven) rvn_headless_start();
 	return R_TRUE;
 
 fail_renderer:
@@ -229,13 +264,19 @@ void rvn_web_images_shutdown(void);
 #endif
 void Rshutdown(void) {
 	uint32_t i;
+	int headless_exit;
 	if (!rvn_api_check(__func__)) return;
+
+	/* a run driven by the environment ends here when the application ends first: its pictures and its tree, while the windows are there */
+	headless_exit = rvn_headless_shutdown();
 
 	#if defined(__EMSCRIPTEN__)
     rvn_web_images_shutdown();
 #endif
     /* Stop native filesystem notifications before draining posted UI tasks. */
 	rvn_fs_watch_stop();
+	/* the answers of the system still coming are dropped: no callback of the application while everything goes */
+	rvn_services_shutdown();
 	/* windows first: this deletes every widget that is shown */
 	/* (the inspectors first: they are windows that follow other windows) */
 	rvn_inspector_shutdown();
@@ -260,15 +301,21 @@ void Rshutdown(void) {
 		}
 	}
 
+	/* (the scripts before the XML: their actions are unbound, their memory goes) */
+	rvn_script_shutdown();
 	rvn_xml_shutdown();
 	rvn_taskbar_shutdown();
 	rvn_tray_shutdown();
+	rvn_notify_shutdown();
 	rvn_locale_shutdown();
+	rvn_timezone_shutdown();
 	rvn_a11y_shutdown();
 	rvn_themes_shutdown();
 	rvn_look_shutdown();
 	rvn_dialogs_shutdown();
 	rvn_islands_shutdown();
+	rvn_pdf_shutdown();
+	rvn_spell_shutdown();
 	rvn_languages_shutdown();
 	rvn_fonts_shutdown();
 	rvn_shaders_shutdown();
@@ -281,6 +328,7 @@ void Rshutdown(void) {
 	for (i = 0; i < g_rvn.action_count; i++) rvn_free(g_rvn.actions[i].name);
 	rvn_free(g_rvn.actions);
 	rvn_free(g_rvn.tasks);
+	rvn_free(g_rvn.icons);
 	rvn_free(g_rvn.dead_widgets);
 	rvn_free(g_rvn.dead_windows);
 	rvn_free(g_rvn.clipboard);
@@ -299,6 +347,12 @@ void Rshutdown(void) {
 	memset(&g_rvn, 0, sizeof(g_rvn));
 	/* nothing is allocated any more: the regions of the heap return to the OS */
 	rvn_heap_trim();
+	/* a script that failed fails the process, whatever main returns after */
+	if (headless_exit != 0) {
+		fflush(stdout);
+		fflush(stderr);
+		exit(headless_exit);
+	}
 }
 
 int Ris_initialized(void) {
@@ -350,7 +404,7 @@ void rvn_tasks_run(void) {
 	rvn_free(tasks);
 }
 
-static int rvn_tasks_pending(void) {
+int rvn_tasks_pending(void) {
 	int pending;
 	rvn_mutex_lock(&g_rvn.task_mutex);
 	pending = g_rvn.task_count > 0;
@@ -524,6 +578,14 @@ void Raction_fire(const char* name, Rid sender) {
 	rvn_free(copy);
 }
 
+int rvn_action_lookup(const char* name, RActionCallback* callback, void** user_data) {
+	rvn_action_t* action = name ? rvn_action_find(name) : NULL;
+	if (!action) return R_FALSE;
+	if (callback) *callback = action->callback;
+	if (user_data) *user_data = action->user_data;
+	return R_TRUE;
+}
+
 void Raction_set_default_handler(RActionCallback callback, void* user_data) {
 	RVN_API_GUARD_VOID();
 	g_rvn.default_action = callback;
@@ -565,7 +627,16 @@ void Rclipboard_set_text(const char* text) {
 
 void Rclipboard_set_html(const char* text, const char* html) {
 	RVN_API_GUARD_VOID();
-	if (html && g_rvn.platform->clipboard_set_html) {
+	if (html && g_rvn.platform->clipboard_set_data) {
+		RDataItem items[2];
+		items[0].mime = "text/plain";
+		items[0].data = text ? text : "";
+		items[0].size = strlen((const char*)items[0].data);
+		items[1].mime = "text/html";
+		items[1].data = html;
+		items[1].size = strlen(html);
+		g_rvn.platform->clipboard_set_data(items, 2);
+	} else if (html && g_rvn.platform->clipboard_set_html) {
 		g_rvn.platform->clipboard_set_html(text ? text : "", html);
 	} else {
 		g_rvn.platform->clipboard_set(text ? text : "");
@@ -577,6 +648,137 @@ const char* Rclipboard_get_text(void) {
 	rvn_free(g_rvn.clipboard);
 	g_rvn.clipboard = g_rvn.platform->clipboard_get();
 	return g_rvn.clipboard ? g_rvn.clipboard : "";
+}
+
+static int rvn_data_check(const RDataItem* items, int count, const char* function) {
+	int i;
+	if (count < 0 || (count > 0 && !items)) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "%s: no items", function);
+		return R_FALSE;
+	}
+	for (i = 0; i < count; i++) {
+		if (!items[i].mime || !items[i].mime[0] || (!items[i].data && items[i].size)) {
+			rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "%s: item %d has no MIME type or no data", function, i);
+			return R_FALSE;
+		}
+	}
+	return R_TRUE;
+}
+
+int Rclipboard_set_data(const RDataItem* items, int count) {
+	const RDataItem* text;
+	const RDataItem* html;
+	char* plain;
+	int i, all = R_TRUE;
+	RVN_API_GUARD(R_FALSE);
+	if (!rvn_data_check(items, count, __func__)) return R_FALSE;
+	if (g_rvn.platform->clipboard_set_data) return g_rvn.platform->clipboard_set_data(items, count) ? R_TRUE : R_FALSE;
+	/* a window system that only takes text (and HTML) */
+	text = rvn_data_find(items, count, "text/plain");
+	html = g_rvn.platform->clipboard_set_html ? rvn_data_find(items, count, "text/html") : NULL;
+	if (!text) return R_FALSE;
+	for (i = 0; i < count; i++) {
+		if (&items[i] != text && &items[i] != html) all = R_FALSE;
+	}
+	plain = rvn_bytes_dup(text->data, text->size);
+	if (html) {
+		char* markup = rvn_bytes_dup(html->data, html->size);
+		g_rvn.platform->clipboard_set_html(plain, markup);
+		rvn_free(markup);
+	} else {
+		g_rvn.platform->clipboard_set(plain);
+	}
+	rvn_free(plain);
+	return all;
+}
+
+int Rclipboard_has_data(const char* mime) {
+	char* text;
+	int has;
+	RVN_API_GUARD(R_FALSE);
+	if (!mime || !mime[0]) return R_FALSE;
+	if (g_rvn.platform->clipboard_has_data) return g_rvn.platform->clipboard_has_data(mime) ? R_TRUE : R_FALSE;
+	if (!rvn_mime_is(mime, "text/plain")) return R_FALSE;
+	text = g_rvn.platform->clipboard_get();
+	has = text && text[0];
+	rvn_free(text);
+	return has ? R_TRUE : R_FALSE;
+}
+
+char* Rclipboard_get_data(const char* mime, size_t* size) {
+	char* data;
+	size_t length = 0;
+	if (size) *size = 0;
+	RVN_API_GUARD(NULL);
+	if (!mime || !mime[0]) return NULL;
+	if (g_rvn.platform->clipboard_get_data) {
+		data = g_rvn.platform->clipboard_get_data(mime, &length);
+	} else if (rvn_mime_is(mime, "text/plain")) {
+		data = g_rvn.platform->clipboard_get();
+		length = data ? strlen(data) : 0;
+		if (data && !length) {
+			rvn_free(data);
+			data = NULL;
+		}
+	} else {
+		data = NULL;
+	}
+	if (data && size) *size = length;
+	return data;
+}
+
+int Rclipboard_set_image(const uint8_t* rgba, int width, int height, int stride) {
+	RDataItem item;
+	uint8_t* png;
+	uint8_t* packed = NULL;
+	size_t size = 0;
+	int done;
+	RVN_API_GUARD(R_FALSE);
+	if (!rgba || width <= 0 || height <= 0 || (stride != 0 && stride < width * 4)) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rclipboard_set_image: invalid pixels (%dx%d, stride %d)", width, height, stride);
+		return R_FALSE;
+	}
+	if (!g_rvn.platform->clipboard_set_data) return R_FALSE;
+	/* (the PNG writer takes rows one after the other) */
+	if (stride != 0 && stride != width * 4) {
+		int y;
+		packed = (uint8_t*)rvn_alloc((size_t)width * (size_t)height * 4u);
+		for (y = 0; y < height; y++) {
+			memcpy(packed + (size_t)y * (size_t)width * 4u, rgba + (size_t)y * (size_t)stride, (size_t)width * 4u);
+		}
+	}
+	png = Rimage_encode_png(packed ? packed : rgba, width, height, &size);
+	rvn_free(packed);
+	if (!png) return R_FALSE;
+	item.mime = "image/png";
+	item.data = png;
+	item.size = size;
+	done = g_rvn.platform->clipboard_set_data(&item, 1);
+	Rpixels_free(png);
+	return done ? R_TRUE : R_FALSE;
+}
+
+int Rclipboard_has_image(void) {
+	RVN_API_GUARD(R_FALSE);
+	return Rclipboard_has_data("image/png") || Rclipboard_has_data("image/jpeg");
+}
+
+uint8_t* Rclipboard_get_image(int* width, int* height) {
+	static const char* const formats[] = { "image/png", "image/jpeg", "image/bmp" };
+	size_t i;
+	if (width) *width = 0;
+	if (height) *height = 0;
+	RVN_API_GUARD(NULL);
+	for (i = 0; i < sizeof(formats) / sizeof(formats[0]); i++) {
+		size_t size = 0;
+		char* data = Rclipboard_get_data(formats[i], &size);
+		uint8_t* pixels;
+		if (!data) continue;
+		pixels = Rimage_decode(data, size, width, height);
+		rvn_free(data);
+		if (pixels) return pixels;
+	}
+	return NULL;
 }
 
 /* ---------------------------------------------------------------------------
@@ -619,18 +821,70 @@ double Rget_time(void) {
 	return g_rvn.initialized ? rvn_clock_seconds() - g_rvn.start_time : 0.0;
 }
 
+/* ---------------------------------------------------------------------------
+ *  Application lifecycle
+ * ------------------------------------------------------------------------- */
+
+void rvn_app_event(RAppEvent event) {
+	switch (event) {
+		case R_APP_DID_PAUSE:
+			/* nothing is drawn from now on (rvn_window_can_paint); what is queued is finished before the system takes the GPU away */
+			g_rvn.app_paused = R_TRUE;
+			rvn_renderer_wait_idle();
+			break;
+		case R_APP_WILL_RESUME:
+		case R_APP_DID_RESUME:
+			/* (DID_RESUME alone too: a platform may miss the first) */
+			if (g_rvn.app_paused) {
+				g_rvn.app_paused = R_FALSE;
+				rvn_repaint_all_windows();
+				rvn_wake();
+			}
+			break;
+		default:
+			break;
+	}
+	if (g_rvn.app_event_callback) {
+		rvn_dispatch_begin();
+		g_rvn.app_event_callback(event, g_rvn.app_event_user);
+		rvn_dispatch_end();
+	}
+	if (event == R_APP_LOW_MEMORY) {
+		/* after the application freed its own: Raven's caches that are made again on use, then the empty pages of the heap */
+		rvn_renderer_trim();
+		Rmemory_trim();
+	}
+}
+
+void Rset_app_event_callback(RAppEventCallback callback, void* user_data) {
+	RVN_API_GUARD_VOID();
+	g_rvn.app_event_callback = callback;
+	g_rvn.app_event_user = user_data;
+}
+
+int Ris_app_paused(void) {
+	return g_rvn.initialized && g_rvn.app_paused ? R_TRUE : R_FALSE;
+}
+
+void Rinject_app_event(RAppEvent event) {
+	RVN_API_GUARD_VOID();
+	if ((int)event < (int)R_APP_WILL_PAUSE || (int)event > (int)R_APP_WILL_TERMINATE) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rinject_app_event: %d is not an RAppEvent", (int)event);
+		return;
+	}
+	rvn_app_event(event);
+}
+
 void Rpoll_events(void) {
 	RVN_API_GUARD_VOID();
 	g_rvn.platform->pump(0.0);
 }
 
-void Rwait_events(double timeout_seconds) {
+double rvn_wait_timeout(double timeout_seconds) {
 	uint32_t i;
 	double timer_delay;
-	RVN_API_GUARD_VOID();
-
 	/* do not sleep when there is already something to do */
-	if (rvn_tasks_pending() || rvn_atomic_load(&g_rvn.redraw_all) || rvn_atomic_load(&g_rvn.quit_requested)) {
+	if (rvn_tasks_pending() || rvn_atomic_load(&g_rvn.redraw_all) || rvn_atomic_load(&g_rvn.quit_requested) || rvn_headless_busy()) {
 		timeout_seconds = 0.0;
 	}
 	for (i = 0; i < g_rvn.windows.used && timeout_seconds != 0.0; i++) {
@@ -641,7 +895,12 @@ void Rwait_events(double timeout_seconds) {
 	}
 	timer_delay = rvn_timers_next_delay();
 	if (timer_delay >= 0.0 && (timeout_seconds < 0.0 || timer_delay < timeout_seconds)) timeout_seconds = timer_delay;
-	g_rvn.platform->pump(timeout_seconds);
+	return timeout_seconds;
+}
+
+void Rwait_events(double timeout_seconds) {
+	RVN_API_GUARD_VOID();
+	g_rvn.platform->pump(rvn_wait_timeout(timeout_seconds));
 }
 
 void rvn_update(void) {
@@ -671,16 +930,21 @@ void rvn_update(void) {
 	rvn_tray_update();
 	rvn_textures_update_svg();
 	rvn_inspector_update();
+	/* (a callback of the layout may close a window: it is freed once they all are done) */
+	rvn_dispatch_begin();
 	for (i = 0; i < g_rvn.windows.used; i++) {
 		rvn_window_t* window = (rvn_window_t*)rvn_pool_at(&g_rvn.windows, i);
 		if (window) rvn_window_update(window);
 	}
+	rvn_dispatch_end();
 	g_rvn.in_update = R_FALSE;
+	/* the next steps of a script (widget/headless.c) */
+	rvn_headless_frame();
 }
 
 int rvn_frame_pacing(void) {
-	/* (only the Vulkan backend presents to the window: a frame of the null backend would never be answered) */
-	return g_rvn.backend == R_BACKEND_VULKAN && g_rvn.platform &&
+	/* (only the Vulkan and Metal backends present to the window: a frame of the null backend would never be answered) */
+	return (g_rvn.backend == R_BACKEND_VULKAN || g_rvn.backend == R_BACKEND_METAL) && g_rvn.platform &&
 		g_rvn.platform->window_frame_wait && g_rvn.platform->window_frame_begin;
 }
 

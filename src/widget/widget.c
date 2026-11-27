@@ -227,6 +227,11 @@ void rvn_widgets_collect(void) {
 
 void rvn_widget_set_window(rvn_widget_t* widget, rvn_window_t* window) {
 	uint32_t i;
+	/* in another window, the styles are those of another theme: they are looked for again (as rvn_window_restyle_tree does) */
+	if (widget->window != window) {
+		widget->style_generation = 0;
+		widget->flags |= RVN_WF_LAYOUT_DIRTY;
+	}
 	widget->window = window;
 	for (i = 0; i < widget->child_count; i++) rvn_widget_set_window(widget->children[i], window);
 }
@@ -252,6 +257,10 @@ static void rvn_widget_add_counts(rvn_widget_t* from, int subtree, int ui_paint)
 		walk->subtree_count = (uint32_t)((int)walk->subtree_count + subtree);
 		walk->ui_paint_count = (uint32_t)((int)walk->ui_paint_count + ui_paint);
 	}
+}
+
+void rvn_widget_add_ui_paint(rvn_widget_t* widget, int delta) {
+	rvn_widget_add_counts(widget, 0, delta);
 }
 
 void rvn_widget_detach(rvn_widget_t* widget) {
@@ -285,12 +294,20 @@ void rvn_widget_detach(rvn_widget_t* widget) {
 	}
 }
 
-void rvn_widget_add_child(rvn_widget_t* parent, rvn_widget_t* child, int index) {
+int rvn_widget_add_child(rvn_widget_t* parent, rvn_widget_t* child, int index) {
 	rvn_a11y_structure_changed();
 	if (child->parent || child->window) rvn_widget_detach(child);
 
 	if ((parent->cls->flags & RVN_CF_SINGLE_CHILD) && parent->child_count > 0) {
-		while (parent->child_count > 0) rvn_widget_destroy(parent->children[parent->child_count - 1]);
+		/* the destroy callbacks of the old child run here: one may destroy the container, or the new
+		 * child, or give the new child a parent; look both up again */
+		Rid parent_id = parent->id, child_id = child->id;
+		while (parent->child_count > 0) {
+			rvn_widget_destroy(parent->children[parent->child_count - 1]);
+			if (rvn_widget_get(parent_id) != parent) return R_FALSE;
+		}
+		if (rvn_widget_get(child_id) != child) return R_FALSE;
+		if (child->parent || child->window) rvn_widget_detach(child);
 	}
 	if (index < 0 || index > (int)parent->child_count) index = (int)parent->child_count;
 	RVN_ARRAY_RESERVE(parent->children, parent->child_cap, parent->child_count + 1);
@@ -306,6 +323,7 @@ void rvn_widget_add_child(rvn_widget_t* parent, rvn_widget_t* child, int index) 
 	rvn_widget_appear(child);
 	if (parent->cls->children_changed) parent->cls->children_changed(parent);
 	rvn_widget_invalidate_layout(parent);
+	return R_TRUE;
 }
 
 void rvn_widget_spread_font(rvn_widget_t* widget, Rid scope) {
@@ -431,7 +449,8 @@ Rid Rwidget_insert_child(Rid parent_id, Rid child_id, int index) {
 		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_ERROR, "Rwidget_add_child: a widget cannot be added to itself or to one of its descendants");
 		return R_INVALID_ID;
 	}
-	rvn_widget_add_child(parent, child, index);
+	/* not added when replacing the child of a container destroyed the container or the new child */
+	if (!rvn_widget_add_child(parent, child, index)) return R_INVALID_ID;
 	return child_id;
 }
 
@@ -649,7 +668,12 @@ void Rwidget_set_enabled(Rid id, int enabled) {
 	} else {
 		widget->flags |= RVN_WF_DISABLED;
 		if (widget->window && widget->window->focus && rvn_widget_is_inside(widget->window->focus, widget)) {
+			/* (FOCUS_LOST may delete the widget: it is freed when this returns) */
+			rvn_dispatch_begin();
 			rvn_window_set_focus(widget->window, NULL);
+			if (!(widget->flags & RVN_WF_DEAD)) rvn_widget_invalidate_paint(widget);
+			rvn_dispatch_end();
+			return;
 		}
 	}
 	rvn_widget_invalidate_paint(widget);
@@ -682,6 +706,8 @@ void Rwidget_set_clipping(Rid id, int clip) {
 void Rwidget_set_tooltip(Rid id, const char* text) {
 	RVN_WIDGET_VOID(widget, id, 0);
 	rvn_str_set(&widget->tooltip, (text && text[0]) ? text : NULL);
+	/* a label lets the mouse through: with a tooltip it takes the hover, or the tooltip never shows */
+	if (widget->cls->type == R_WIDGET_LABEL) rvn_label_tooltip_changed(widget);
 }
 
 const char* Rwidget_get_tooltip(Rid id) {
@@ -762,6 +788,10 @@ void Rwidget_set_focusable(Rid id, int focusable) {
 void Rwidget_focus(Rid id) {
 	RVN_WIDGET_VOID(widget, id, 0);
 	rvn_widget_focus(widget);
+	/* (a callback of the focus change may have destroyed the widget, or its window with it) */
+	widget = rvn_widget_get(id);
+	/* given by the application (the next field after Enter): it is shown */
+	if (widget && widget->window && !widget->window->dead && widget->window->focus == widget) rvn_window_reveal_focus(widget->window);
 }
 
 int Rwidget_is_focused(Rid id) {

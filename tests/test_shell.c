@@ -38,10 +38,11 @@ static void double_click_at(Rid window, float x, float y) {
 }
 
 static void test_header_bar(void) {
+	/* (the buttons on the right, as on Windows and Linux: the default side is that of the system, tested below) */
 	Rid window = window_from(
 		"<Window Title=\"Header\" Width=\"600\" Height=\"300\" CustomHeader=\"true\">"
 		"<VBox>"
-		"<HeaderBar Name=\"bar\">"
+		"<HeaderBar Name=\"bar\" ButtonSide=\"Right\">"
 		"<Button Name=\"open\" Text=\"Open\"/>"
 		"<Button Name=\"share\" Text=\"Share\" Slot.HAlign=\"Right\"/>"
 		"</HeaderBar>"
@@ -128,6 +129,28 @@ static void test_header_bar(void) {
 	test_click_at(window, 600.0f - 23.0f, h * 0.5f);
 	CHECK(g_close_asked == 2);
 	CHECK(!Rwindow_is_valid(window));
+}
+
+/* Without ButtonSide, the buttons are where the system has them: on the left on macOS, on the right elsewhere. */
+static void test_header_default_side(void) {
+	Rid window = window_from(
+		"<Window Title=\"Side\" Width=\"600\" Height=\"300\" CustomHeader=\"true\">"
+		"<VBox><HeaderBar Name=\"bar\"><Button Name=\"a\" Text=\"A\"/><Button Name=\"z\" Text=\"Z\" Slot.HAlign=\"Right\"/></HeaderBar>"
+		"<Label Slot.Fill=\"1\">Body</Label></VBox></Window>");
+	float x, y, w, h;
+
+	Rwidget_get_rect(Rwidget_find(window, "a"), &x, &y, &w, &h);
+#if defined(__APPLE__)
+	/* the lights (3 x 13, 8 apart, 14 from the edge) come first */
+	CHECK(x > 14.0f + 3 * 13.0f + 2 * 8.0f);
+	Rwidget_get_rect(Rwidget_find(window, "z"), &x, &y, &w, &h);
+	CHECK_NEAR(x + w, 600 - 8);
+#else
+	CHECK_NEAR(x, 8);
+	Rwidget_get_rect(Rwidget_find(window, "z"), &x, &y, &w, &h);
+	CHECK(x + w < 600 - 8 - 3 * 24.0f);
+#endif
+	Rwindow_destroy(window);
 }
 
 static void test_header_variants(void) {
@@ -849,6 +872,50 @@ static void test_window_focus(void) {
 	CHECK(!Rwindow_is_valid(window));
 }
 
+/* Owned windows: kept with their owner, destroyed with it (before it), no cycles. */
+static void test_window_owner(void) {
+	Rid main_window = Rwindow_create("main", 640, 360, R_WINDOW_DEFAULT);
+	Rid tool = Rwindow_create("tool", 320, 240, R_WINDOW_HIDDEN);
+	Rid nested = Rwindow_create("nested", 200, 120, R_WINDOW_HIDDEN);
+	Rid other = Rwindow_create("other", 200, 120, R_WINDOW_DEFAULT);
+	Rid content = Rwidget_create(R_WIDGET_LABEL);
+	CHECK(Rwindow_get_owner(tool) == R_INVALID_ID);
+	/* (the null window system keeps no owner: R_FALSE, but the owner is kept by Raven) */
+	Rwindow_set_owner(tool, main_window);
+	CHECK(Rwindow_get_owner(tool) == main_window);
+	Rwindow_set_owner(nested, tool);
+	CHECK(Rwindow_get_owner(nested) == tool);
+	Rwindow_set_content(tool, content);
+	/* no window owns itself, directly or not; nothing changes then */
+	EXPECT_ERRORS_BEGIN();
+	CHECK(!Rwindow_set_owner(main_window, nested));
+	CHECK(!Rwindow_set_owner(tool, tool));
+	CHECK(!Rwindow_set_owner(tool, R_INVALID_ID + 12345));
+	EXPECT_ERRORS_END(3);
+	CHECK(Rwindow_get_owner(main_window) == R_INVALID_ID);
+	CHECK(Rwindow_get_owner(tool) == main_window);
+	/* shown and hidden on its own */
+	Rwindow_show(tool);
+	Rdraw_frame();
+	Rwindow_hide(tool);
+	Rdraw_frame();
+	CHECK(Rwindow_is_valid(tool));
+	/* given back its independence, then owned again */
+	Rwindow_set_owner(other, main_window);
+	Rwindow_set_owner(other, R_INVALID_ID);
+	CHECK(Rwindow_get_owner(other) == R_INVALID_ID);
+	/* the owner goes: the windows it owns (and theirs) go first, with their content */
+	Rwindow_destroy(main_window);
+	CHECK(!Rwindow_is_valid(main_window));
+	CHECK(!Rwindow_is_valid(tool));
+	CHECK(!Rwindow_is_valid(nested));
+	CHECK(!Rwidget_is_valid(content));
+	CHECK(Rwindow_is_valid(other));
+	Rdraw_frame();
+	CHECK(Ris_running());
+	Rwindow_destroy(other);
+}
+
 static void test_picture_in_picture(void) {
 	static const char xml[] =
 		"<VBox Name=\"root\">"
@@ -943,7 +1010,7 @@ static void test_taskbar(void) {
 	Rwindow_destroy(window);
 }
 
-/* Tray icons: handles, checks, and their menu that follows its Menu. */
+/* Tray icons: handles, checks, a title beside the icon, where it is, and their menu that follows its Menu. */
 static void test_tray(void) {
 	static uint8_t pixels[16 * 16 * 4];
 	Rid tray, menu, bar, inside;
@@ -952,6 +1019,19 @@ static void test_tray(void) {
 	CHECK(tray != R_INVALID_ID && Rtray_is_valid(tray));
 	Rtray_set_icon(tray, pixels, 16, 16);
 	Rtray_set_tooltip(tray, "Raven");
+	/* a text beside the icon, then the icon alone again */
+	Rtray_set_title(tray, "1:05");
+	Rdraw_frame();
+	Rtray_set_title(tray, NULL);
+	Rtray_set_title(tray, "");
+	/* where it is: a real rectangle, or R_FALSE and zeros where the system does not tell */
+	{
+		int x = -1, y = -1, width = -1, height = -1;
+		int known = Rtray_get_rect(tray, &x, &y, &width, &height);
+		if (known) CHECK(width > 0 && height > 0);
+		else CHECK(x == 0 && y == 0 && width == 0 && height == 0);
+		CHECK(Rtray_get_rect(tray, NULL, NULL, NULL, NULL) == known);
+	}
 	menu = Rwidget_create(R_WIDGET_MENU);
 	Rmenu_add_item(menu, "Show");
 	Rtray_set_menu(tray, menu);
@@ -975,7 +1055,13 @@ static void test_tray(void) {
 	CHECK(!Rtray_is_valid(tray));
 	EXPECT_ERRORS_BEGIN();
 	Rtray_set_tooltip(tray, "gone");
-	EXPECT_ERRORS_END(1);
+	Rtray_set_title(tray, "gone");
+	{
+		int x = -1, y = -1, width = -1, height = -1;
+		CHECK(!Rtray_get_rect(tray, &x, &y, &width, &height));
+		CHECK(x == 0 && y == 0 && width == 0 && height == 0);
+	}
+	EXPECT_ERRORS_END(3);
 	/* left at the end: Rshutdown takes it away */
 	tray = Rtray_create();
 	CHECK(Rtray_is_valid(tray));
@@ -987,6 +1073,7 @@ int main(void) {
 		return 1;
 	}
 	RUN(test_header_bar);
+	RUN(test_header_default_side);
 	RUN(test_header_variants);
 	RUN(test_drop);
 	RUN(test_hit_test);
@@ -996,6 +1083,7 @@ int main(void) {
 	RUN(test_picture_in_picture);
 	RUN(test_splash_screen);
 	RUN(test_window_focus);
+	RUN(test_window_owner);
 	RUN(test_inspector);
 	RUN(test_taskbar);
 	RUN(test_tray);

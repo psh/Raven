@@ -4,7 +4,8 @@
  * window and reads no OS event queue. A window is a size and a scale; the
  * application injects its input through the same events a native platform
  * sends, and Raven asks the application for the cursor, the clipboard and
- * wake-ups.
+ * wake-ups, and for the services of the device it offers (each entry of the
+ * table is there only when the application gave its callback).
  */
 
 #include "../platform.h"
@@ -20,6 +21,9 @@ struct rvn_pwindow_t {
 	void* user;
 	char* title;
 	rvn_pwindow_state_t state;
+	/** Rhost_window_set_insets, in pixels: top, right, bottom, left; the on-screen keyboard. */
+	float safe_area[4];
+	float keyboard_height;
 };
 
 static struct {
@@ -33,6 +37,8 @@ static struct {
 	rvn_cond_t cond;
 	int woken;
 	char* clipboard;
+	/** Rhost_set_system_dark: 1 dark, 0 light, -1 not told (as at start). */
+	int dark;
 } g_host;
 
 int rvn_host_platform_registered(void) {
@@ -43,6 +49,7 @@ static int rvn_host_init(rvn_pevent_handler_t handler, rvn_pregion_handler_t reg
 	RVN_UNUSED(regions);
 	memset(&g_host, 0, sizeof(g_host));
 	g_host.handler = handler; /* rvn_window_on_platform_event */
+	g_host.dark = -1;
 	rvn_mutex_init(&g_host.mutex);
 	rvn_cond_init(&g_host.cond);
 	return R_TRUE;
@@ -235,8 +242,89 @@ static char* rvn_host_clipboard_get(void) {
 	return rvn_strdup(g_host.clipboard);
 }
 
+static void rvn_host_window_get_safe_area(rvn_pwindow_t* window, float insets[4]) {
+	memcpy(insets, window->safe_area, sizeof(window->safe_area));
+}
+
+static float rvn_host_window_get_keyboard_height(rvn_pwindow_t* window) {
+	return window->keyboard_height;
+}
+
+static int rvn_host_system_dark(void) {
+	return g_host.dark;
+}
+
+/* ---- services of the device: forwarded to the callbacks of the application ---- */
+
+static int rvn_host_permission_status(int permission) {
+	return (int)g_host_desc.desc.permission_status((RPermission)permission, g_host_desc.desc.user_data);
+}
+
+static void rvn_host_permission_request(int permission) {
+	g_host_desc.desc.permission_request((RPermission)permission, g_host_desc.desc.user_data);
+}
+
+static void rvn_host_service(const rvn_service_request_t* request, RHostService service) {
+	RHostServiceRequest host;
+	memset(&host, 0, sizeof(host));
+	host.id = request->id;
+	host.service = service;
+	host.window = request->window ? request->window->id : R_INVALID_ID;
+	host.anchor_x = request->anchor[0];
+	host.anchor_y = request->anchor[1];
+	host.anchor_width = request->anchor[2];
+	host.anchor_height = request->anchor[3];
+	host.title = request->title;
+	host.filters = request->filters;
+	host.filter_count = request->filter_count;
+	host.flags = request->multiple ? (Ruint)R_FILE_DIALOG_MULTIPLE : 0u;
+	host.file_name = request->file_name;
+	host.default_extension = request->default_extension;
+	host.data = request->data;
+	host.size = request->size;
+	host.path = request->path;
+	host.max_count = request->max_count;
+	host.text = request->text;
+	host.mime_type = request->mime_type;
+	host.share_title = request->share_title;
+	g_host_desc.desc.service_request(&host, g_host_desc.desc.user_data);
+}
+
+static void rvn_host_file_open(const rvn_service_request_t* request) { rvn_host_service(request, R_HOST_SERVICE_OPEN_FILES); }
+static void rvn_host_file_save(const rvn_service_request_t* request) { rvn_host_service(request, R_HOST_SERVICE_SAVE_FILE); }
+static void rvn_host_folder_select(const rvn_service_request_t* request) { rvn_host_service(request, R_HOST_SERVICE_SELECT_FOLDER); }
+static void rvn_host_camera_take_photo(const rvn_service_request_t* request) { rvn_host_service(request, R_HOST_SERVICE_TAKE_PHOTO); }
+static void rvn_host_photo_pick(const rvn_service_request_t* request) { rvn_host_service(request, R_HOST_SERVICE_PICK_PHOTOS); }
+static void rvn_host_share(const rvn_service_request_t* request) { rvn_host_service(request, R_HOST_SERVICE_SHARE); }
+
+static int rvn_host_camera_available(void) {
+	return g_host_desc.desc.has_camera ? R_TRUE : R_FALSE;
+}
+
+static int rvn_host_open_url(const char* url) {
+	return g_host_desc.desc.open_url(url, g_host_desc.desc.user_data) ? R_TRUE : R_FALSE;
+}
+
+static int rvn_host_haptic(int haptic) {
+	return g_host_desc.desc.haptic((RHaptic)haptic, g_host_desc.desc.user_data) ? R_TRUE : R_FALSE;
+}
+
+/* Worker threads. */
+static int rvn_host_download(const char* url, uint8_t** data, size_t* size, char** error) {
+	size_t length = 0;
+	void* content = g_host_desc.desc.download(url, &length, g_host_desc.desc.user_data);
+	if (!content) {
+		*error = rvn_strdup("the application's download failed");
+		return R_FALSE;
+	}
+	/* (Rmemory_alloc is rvn_alloc: the core frees it with rvn_free) */
+	*data = (uint8_t*)content;
+	*size = length;
+	return R_TRUE;
+}
+
 const rvn_platform_t* rvn_platform_host(void) {
-	static const rvn_platform_t platform = {
+	static rvn_platform_t platform = {
 		.name = "host",
 		.system = R_WINDOW_SYSTEM_NONE,
 		.init = rvn_host_init,
@@ -265,8 +353,26 @@ const rvn_platform_t* rvn_platform_host(void) {
 		.pump = rvn_host_pump,
 		.wake = rvn_host_wake,
 		.clipboard_set = rvn_host_clipboard_set,
-		.clipboard_get = rvn_host_clipboard_get
+		.clipboard_get = rvn_host_clipboard_get,
+		.window_get_safe_area = rvn_host_window_get_safe_area,
+		.system_dark = rvn_host_system_dark,
+		.window_get_keyboard_height = rvn_host_window_get_keyboard_height
 	};
+	/* the services the application offers (Rhost_platform_register comes before Rinit, which asks for this table) */
+	const RHostPlatformDesc* desc = &g_host_desc.desc;
+	int services = desc->service_request != NULL;
+	platform.permission_status = desc->permission_status ? rvn_host_permission_status : NULL;
+	platform.permission_request = desc->permission_request ? rvn_host_permission_request : NULL;
+	platform.file_open = services ? rvn_host_file_open : NULL;
+	platform.file_save = services ? rvn_host_file_save : NULL;
+	platform.folder_select = services ? rvn_host_folder_select : NULL;
+	platform.camera_take_photo = services ? rvn_host_camera_take_photo : NULL;
+	platform.camera_available = services ? rvn_host_camera_available : NULL;
+	platform.photo_pick = services ? rvn_host_photo_pick : NULL;
+	platform.share = services ? rvn_host_share : NULL;
+	platform.open_url = desc->open_url ? rvn_host_open_url : NULL;
+	platform.haptic = desc->haptic ? rvn_host_haptic : NULL;
+	platform.download = desc->download ? rvn_host_download : NULL;
 	return &platform;
 }
 
@@ -322,6 +428,38 @@ void Rhost_window_set_size(Rid id, int width, int height, float scale) {
 	platform->height = height;
 	platform->scale = scale;
 	rvn_host_send_resize(platform);
+}
+
+void Rhost_window_set_insets(Rid id, const RInsets* safe_area, int keyboard_height) {
+	rvn_window_t* window = rvn_host_target(id, "Rhost_window_set_insets");
+	rvn_pwindow_t* platform;
+	rvn_pevent_t event;
+	if (!window) return;
+	platform = window->platform;
+	platform->safe_area[0] = safe_area ? rvn_maxf(safe_area->top, 0.0f) : 0.0f;
+	platform->safe_area[1] = safe_area ? rvn_maxf(safe_area->right, 0.0f) : 0.0f;
+	platform->safe_area[2] = safe_area ? rvn_maxf(safe_area->bottom, 0.0f) : 0.0f;
+	platform->safe_area[3] = safe_area ? rvn_maxf(safe_area->left, 0.0f) : 0.0f;
+	platform->keyboard_height = (float)(keyboard_height > 0 ? keyboard_height : 0);
+	memset(&event, 0, sizeof(event));
+	event.type = RVN_PEVENT_INSETS;
+	rvn_host_send(window, &event);
+}
+
+void Rhost_set_system_dark(int dark) {
+	rvn_pevent_t event;
+	if (!rvn_api_check("Rhost_set_system_dark")) return;
+	if (g_rvn.platform != rvn_platform_host()) {
+		rvn_error(R_ERROR_INVALID_OPERATION, R_SEVERITY_ERROR,
+			"Rhost_set_system_dark: the host platform is not in use (call Rhost_platform_register before Rinit)");
+		return;
+	}
+	dark = dark < 0 ? -1 : dark != 0;
+	if (dark == g_host.dark) return;
+	g_host.dark = dark;
+	memset(&event, 0, sizeof(event));
+	event.type = RVN_PEVENT_APPEARANCE;
+	g_host.handler(&event);
 }
 
 void Rhost_inject_mouse_move(Rid id, int x, int y, Ruint modifiers) {
@@ -394,6 +532,18 @@ void Rhost_inject_text(Rid id, uint32_t codepoint) {
 	rvn_host_send(window, &event);
 }
 
+void Rhost_inject_composition(Rid id, const char* text, int selection_start, int selection_end) {
+	rvn_window_t* window = rvn_host_target(id, "Rhost_inject_composition");
+	rvn_pevent_t event;
+	if (!window) return;
+	memset(&event, 0, sizeof(event));
+	event.type = RVN_PEVENT_COMPOSITION;
+	event.composition = text;
+	event.composition_start = selection_start;
+	event.composition_end = selection_end;
+	rvn_host_send(window, &event);
+}
+
 void Rhost_inject_focus(Rid id, int focused) {
 	rvn_window_t* window = rvn_host_target(id, "Rhost_inject_focus");
 	rvn_pevent_t event;
@@ -402,6 +552,23 @@ void Rhost_inject_focus(Rid id, int focused) {
 	event.type = RVN_PEVENT_FOCUS;
 	event.focused = focused ? R_TRUE : R_FALSE;
 	rvn_host_send(window, &event);
+}
+
+void Rhost_permission_answer(RPermission permission, RPermissionStatus status) {
+	if ((int)permission < (int)R_PERMISSION_CAMERA || (int)permission > (int)R_PERMISSION_LOCATION ||
+		(int)status < (int)R_PERMISSION_UNSUPPORTED || (int)status > (int)R_PERMISSION_BLOCKED) {
+		rvn_error(R_ERROR_INVALID_ENUM, R_SEVERITY_ERROR, "Rhost_permission_answer: not an RPermission and an RPermissionStatus");
+		return;
+	}
+	rvn_permission_answer((int)permission, (int)status);
+}
+
+void Rhost_service_complete(Ruint request, RDeviceResult result, const RPickedFile* files, int count) {
+	if ((int)result < (int)R_DEVICE_DONE || (int)result > (int)R_DEVICE_FAILED) {
+		rvn_error(R_ERROR_INVALID_ENUM, R_SEVERITY_ERROR, "Rhost_service_complete: %d is not an RDeviceResult", (int)result);
+		return;
+	}
+	rvn_service_complete((uint32_t)request, (int)result, files, count, NULL);
 }
 
 void Rhost_inject_close(Rid id) {

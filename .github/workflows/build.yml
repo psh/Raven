@@ -7,10 +7,14 @@
 #   Windows (MinGW-w64)    libraven.a            raven.dll + libraven.dll.a
 #
 # Every package is a CMake install prefix (include/, lib/, bin/ with
-# raven_designer, share/raven/): find_package(raven) with CMAKE_PREFIX_PATH set to it.
+# raven_designer, share/raven/): find_package(raven) with CMAKE_PREFIX_PATH set to it,
+# or pkg-config with PKG_CONFIG_PATH set to its lib/pkgconfig (raven.pc).
 #
-# The tests run on Linux (headless; test_web drives the Chrome of the runner).
-# A tag is released only when they pass.
+# The tests run on Linux, macOS and Windows (Visual C++): the headless ones,
+# and those of the platform of each runner (Cocoa, Win32); test_web drives the
+# Chrome of the runner. The mobile example is also launched on an Android
+# emulator. A tag is released only when they pass on all three (the Android
+# emulator aside).
 #
 # Each run uploads the packages as artifacts (Actions tab > the run > Artifacts).
 # Pushing a tag v* (git tag v0.1.0 && git push origin v0.1.0) also attaches them
@@ -33,14 +37,29 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  #  Tests (Linux, headless)
+  #  Tests (Linux, macOS, Windows with Visual C++)
+  #
+  #  The headless tests everywhere, and the tests of the platform of each
+  #  runner, which has a desktop: test_cocoa_input (AppKit) on macOS,
+  #  test_win32_backdrop (DWM) and test_win32_web_view (WebView2, when its
+  #  runtime is there) on Windows. The runners have no GPU for
+  #  Vulkan: test_render is reported as skipped (on macOS test_render_metal
+  #  renders with Metal).
   # ---------------------------------------------------------------------------
   test:
-    name: tests (linux)
-    runs-on: ubuntu-latest
+    name: tests (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux,        os: ubuntu-latest,  pdfium: pdfium-linux-x64.tgz, pdfium_sha256: bdc60126399f39fe768566a18d4be055a7b3681bc9e248e8a6656b4f6cae0aa2, pdfium_library: lib/libpdfium.so }
+          - { name: macos,        os: macos-latest,   pdfium: pdfium-mac-arm64.tgz, pdfium_sha256: 46c674298c60123f1195c2a03c65ee08c4783c84874ce4f5b3a054abb3ecaf30, pdfium_library: lib/libpdfium.dylib }
+          - { name: windows-msvc, os: windows-latest, pdfium: pdfium-win-x64.tgz,   pdfium_sha256: 3452d11031050ec65e57f180215b57b9e6d465e3fbedafa8a77ad90885c7d23e, pdfium_library: bin/pdfium.dll }
+    defaults:
+      run:
+        shell: bash
     env:
-      # the Chrome sandbox needs user namespaces, which the runner restricts
-      RAVEN_WEB_NO_SANDBOX: "1"
       # ctest prints this protocol trace only when the embedding test fails.
       RAVEN_WEB_TRACE: "1"
     steps:
@@ -53,26 +72,69 @@ jobs:
           ref: ${{ env.VULKAN_HEADERS_TAG }}
           path: _vulkan-headers
 
-      - name: Dependencies
+      - name: Dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libx11-dev ninja-build
+          # the Chrome sandbox needs user namespaces, which the runner restricts
+          echo "RAVEN_WEB_NO_SANDBOX=1" >> "$GITHUB_ENV"
+
+      - name: PDFium (test_pdf opens and draws documents with it; Raven itself does not need it)
+        run: |
+          curl -fsSL -o pdfium.tgz https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F8111/${{ matrix.pdfium }}
+          test "$(cmake -E sha256sum pdfium.tgz | cut -d ' ' -f 1)" = "${{ matrix.pdfium_sha256 }}"
+          mkdir -p _pdfium && tar -xzf pdfium.tgz -C _pdfium
+          ROOT="$(pwd)"
+          if [ "$RUNNER_OS" = "Windows" ]; then ROOT="$(pwd -W)"; fi
+          echo "RAVEN_PDFIUM=$ROOT/_pdfium/${{ matrix.pdfium_library }}" >> "$GITHUB_ENV"
+
+      # The Evergreen runtime is not in the list of the runner image: installed when missing.
+      # (If this fails, test_win32_web_view reports itself as skipped.)
+      - name: WebView2 Runtime (test_win32_web_view shows pages with it; Raven itself does not need it)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\ClientState\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $found = (Get-ItemProperty -Path $key -Name EBWebView -ErrorAction SilentlyContinue).EBWebView
+          if ($found) { Write-Host "WebView2 Runtime already installed: $found"; exit 0 }
+          $setup = Join-Path $env:RUNNER_TEMP 'MicrosoftEdgeWebview2Setup.exe'
+          Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $setup
+          $signature = Get-AuthenticodeSignature $setup
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') { throw "unexpected signature: $($signature.Status) $($signature.SignerCertificate.Subject)" }
+          Start-Process -FilePath $setup -ArgumentList '/silent', '/install' -Wait
+          $found = (Get-ItemProperty -Path $key -Name EBWebView -ErrorAction SilentlyContinue).EBWebView
+          Write-Host "WebView2 Runtime after the installer: $found"
+
+      - name: Zig (binding_zig checks every declaration of bindings/zig/raven.zig)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/zig.tar.xz" https://ziglang.org/download/0.17.1/zig-x86_64-linux-0.17.1.tar.xz
+          echo "3581863e3cbcfd0fce0efc682ce7e9e93da96668a977791d356a26d2a7e9b17a  $RUNNER_TEMP/zig.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/zig.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/zig-x86_64-linux-0.17.1" >> "$GITHUB_PATH"
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
+          ROOT="$(pwd)"
+          if [ "$RUNNER_OS" = "Windows" ]; then ROOT="$(pwd -W)"; fi
+          EXTRA=()
+          if [ "$RUNNER_OS" = "Linux" ]; then zig version; EXTRA+=(-G Ninja); fi
+          if [ "$RUNNER_OS" = "Windows" ]; then EXTRA+=(-A x64); fi
+          cmake -S . -B build "${EXTRA[@]}" \
             -DCMAKE_BUILD_TYPE=Debug \
             -DRAVEN_BUILD_TESTS=ON \
             -DRAVEN_BUILD_EXAMPLES=OFF \
             -DRAVEN_BUILD_TOOLS=ON \
             -DRAVEN_WARNINGS_AS_ERRORS=OFF \
-            -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+            -DRAVEN_VULKAN_INCLUDE_DIR="$ROOT/_vulkan-headers/include"
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --config Debug --parallel
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure --timeout 300
+        run: ctest --test-dir build -C Debug --output-on-failure --timeout 300
 
   # ---------------------------------------------------------------------------
   #  Odin (Linux): the generated package and raven_odin, with the shared library
@@ -123,6 +185,236 @@ jobs:
       # --no-tests=error: without odin the tests do not exist, which must not pass
       - name: Test
         run: ctest --test-dir build -R '^binding_odin' --no-tests=error --output-on-failure --timeout 300
+
+  # ---------------------------------------------------------------------------
+  #  D (Linux): the dub package of bindings/d, with the shared library
+  # ---------------------------------------------------------------------------
+  dlang:
+    name: d (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vulkan headers (only the headers are needed; nothing is linked)
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: ${{ env.VULKAN_HEADERS_TAG }}
+          path: _vulkan-headers
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev ninja-build
+
+      - name: LDC and dub
+        uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: ldc-latest
+
+      - name: Configure
+        run: |
+          ldc2 --version | head -n 1
+          dub --version
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DRAVEN_BUILD_SHARED=ON \
+            -DRAVEN_BUILD_TESTS=ON \
+            -DRAVEN_BUILD_EXAMPLES=OFF \
+            -DRAVEN_BUILD_TOOLS=OFF \
+            -DRAVEN_WARNINGS_AS_ERRORS=OFF \
+            -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+
+      - name: Build
+        run: cmake --build build --parallel --target raven
+
+      # --no-tests=error: without dub the test does not exist, which must not pass
+      - name: Test
+        run: ctest --test-dir build -R '^binding_d$' --no-tests=error --output-on-failure --timeout 600
+
+  # ---------------------------------------------------------------------------
+  #  Nim (Linux): the nimble package of bindings/nim, with the shared library
+  # ---------------------------------------------------------------------------
+  nim:
+    name: nim (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vulkan headers (only the headers are needed; nothing is linked)
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: ${{ env.VULKAN_HEADERS_TAG }}
+          path: _vulkan-headers
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev ninja-build
+
+      - name: Nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: '2.4.0'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure
+        run: |
+          nim --version | head -n 1
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DRAVEN_BUILD_SHARED=ON \
+            -DRAVEN_BUILD_TESTS=ON \
+            -DRAVEN_BUILD_EXAMPLES=OFF \
+            -DRAVEN_BUILD_TOOLS=OFF \
+            -DRAVEN_WARNINGS_AS_ERRORS=OFF \
+            -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+
+      - name: Build
+        run: cmake --build build --parallel --target raven
+
+      # --no-tests=error: without nim the test does not exist, which must not pass
+      - name: Test
+        run: ctest --test-dir build -R '^binding_nim$' --no-tests=error --output-on-failure --timeout 600
+
+  # ---------------------------------------------------------------------------
+  #  Swift (Linux): the package of bindings/swift, with the shared library
+  #  (the runner comes with Swift)
+  # ---------------------------------------------------------------------------
+  swift:
+    name: swift (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vulkan headers (only the headers are needed; nothing is linked)
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: ${{ env.VULKAN_HEADERS_TAG }}
+          path: _vulkan-headers
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev ninja-build
+
+      - name: Configure
+        run: |
+          swift --version
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DRAVEN_BUILD_SHARED=ON \
+            -DRAVEN_BUILD_TESTS=ON \
+            -DRAVEN_BUILD_EXAMPLES=OFF \
+            -DRAVEN_BUILD_TOOLS=OFF \
+            -DRAVEN_WARNINGS_AS_ERRORS=OFF \
+            -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+
+      - name: Build
+        run: cmake --build build --parallel --target raven
+
+      # --no-tests=error: without swift the test does not exist, which must not pass
+      - name: Test
+        run: ctest --test-dir build -R '^binding_swift$' --no-tests=error --output-on-failure --timeout 600
+
+  # ---------------------------------------------------------------------------
+  #  Haskell (Linux): the cabal package of bindings/haskell, with the shared library
+  # ---------------------------------------------------------------------------
+  haskell:
+    name: haskell (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vulkan headers (only the headers are needed; nothing is linked)
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: ${{ env.VULKAN_HEADERS_TAG }}
+          path: _vulkan-headers
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev ninja-build
+
+      - name: GHC and cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6"
+          cabal-version: latest
+
+      - name: Configure
+        run: |
+          ghc --version
+          cabal --version
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DRAVEN_BUILD_SHARED=ON \
+            -DRAVEN_BUILD_TESTS=ON \
+            -DRAVEN_BUILD_EXAMPLES=OFF \
+            -DRAVEN_BUILD_TOOLS=OFF \
+            -DRAVEN_WARNINGS_AS_ERRORS=OFF \
+            -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+
+      - name: Build
+        run: cmake --build build --parallel --target raven
+
+      # --no-tests=error: without ghc and cabal the test does not exist, which must not pass
+      - name: Test
+        run: ctest --test-dir build -R '^binding_haskell$' --no-tests=error --output-on-failure --timeout 900
+
+  # ---------------------------------------------------------------------------
+  #  Lua (Linux): the C module of bindings/lua with the Lua of the distribution,
+  #  the oldest and the newest it has: loaded by the interpreter (binding_lua)
+  #  and compiled into a program that embeds Lua (binding_lua_embedded)
+  # ---------------------------------------------------------------------------
+  lua:
+    name: lua ${{ matrix.lua }} (linux)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { lua: "5.1", dev: liblua5.1-0-dev }
+          - { lua: "5.4", dev: liblua5.4-dev }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vulkan headers (only the headers are needed; nothing is linked)
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: ${{ env.VULKAN_HEADERS_TAG }}
+          path: _vulkan-headers
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev ninja-build lua${{ matrix.lua }} ${{ matrix.dev }}
+
+      - name: Configure
+        run: |
+          lua${{ matrix.lua }} -v
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DRAVEN_BUILD_SHARED=ON \
+            -DRAVEN_BUILD_TESTS=ON \
+            -DRAVEN_BUILD_EXAMPLES=OFF \
+            -DRAVEN_BUILD_TOOLS=OFF \
+            -DRAVEN_WARNINGS_AS_ERRORS=OFF \
+            -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+
+      - name: Build
+        run: cmake --build build --parallel --target raven raven_lua raven_binding_lua_host
+
+      # both tests must exist: without them (Lua not found) the job must not pass
+      - name: Test
+        run: |
+          ctest --test-dir build -N -R '^binding_lua' | grep -q "Total Tests: 2"
+          ctest --test-dir build -R '^binding_lua' --no-tests=error --output-on-failure --timeout 300
 
   # ---------------------------------------------------------------------------
   #  Linux, macOS, Windows (Visual C++)
@@ -204,6 +496,179 @@ jobs:
             ${{ env.PACKAGE }}.zip
             ${{ env.PACKAGE }}.tar.gz
           if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  #  Packages (Linux, macOS): the installed library used from outside, static
+  #  and shared: tests/package/consumer.c built with pkg-config (raven.pc) and
+  #  with find_package(raven), run headless (ctest package_pkgconfig,
+  #  package_cmake). Only the library is built. On macOS, the Homebrew formula
+  #  is also checked (brew style, brew audit; packaging/README.md).
+  #  The tests job runs the same two tests on its static Debug build.
+  # ---------------------------------------------------------------------------
+  packages:
+    name: packages (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux, os: ubuntu-latest }
+          - { name: macos, os: macos-latest }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vulkan headers (only the headers are needed; nothing is linked)
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: ${{ env.VULKAN_HEADERS_TAG }}
+          path: _vulkan-headers
+
+      - name: Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev ninja-build pkg-config
+
+      - name: Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja pkgconf
+
+      - name: Library, install, consumers (static and shared)
+        run: |
+          for shared in OFF ON; do
+            echo "::group::RAVEN_BUILD_SHARED=$shared"
+            cmake -S . -B "build-$shared" -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DRAVEN_BUILD_SHARED=$shared \
+              -DRAVEN_BUILD_TESTS=ON \
+              -DRAVEN_BUILD_EXAMPLES=OFF \
+              -DRAVEN_BUILD_TOOLS=OFF \
+              -DRAVEN_VULKAN_INCLUDE_DIR="$(pwd)/_vulkan-headers/include"
+            cmake --build "build-$shared" --target raven --parallel
+            ctest --test-dir "build-$shared" -R '^package_' --output-on-failure --verbose
+            echo "::endgroup::"
+          done
+
+      - name: Homebrew formula (brew style, brew audit)
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          # brew checks formulae of a tap: a temporary one holds the formula
+          brew tap-new --no-git local/raven-ci
+          # (Homebrew versions that ask for it: the formulae of a tap that is not official are trusted first)
+          if brew commands | grep -qx trust; then brew trust --tap local/raven-ci; fi
+          cp packaging/homebrew/raven-gui.rb "$(brew --repository local/raven-ci)/Formula/"
+          brew style local/raven-ci/raven-gui
+          brew audit --new --strict --formula local/raven-ci/raven-gui
+
+  # The addon of the Node.js binding links node.lib on Windows, which CMake downloads
+  # for the node of the runner; then binding_node runs its example with the DLL.
+  node-windows:
+    name: node (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: |
+          node --version
+          cmake -S . -B build -A x64 -DRAVEN_BACKEND_VULKAN=OFF -DRAVEN_BUILD_WEB=OFF -DRAVEN_BUILD_SHARED=ON -DRAVEN_BUILD_TESTS=ON -DRAVEN_BUILD_EXAMPLES=OFF -DRAVEN_BUILD_TOOLS=OFF
+      - name: Build
+        run: cmake --build build --config Release --target raven raven_node --parallel
+      # --no-tests=error: without the addon the test does not exist, which must not pass
+      - name: Test
+        run: ctest --test-dir build -C Release -R '^binding_node$' --no-tests=error --output-on-failure --timeout 300
+
+  # ---------------------------------------------------------------------------
+  #  Android (NDK, arm64-v8a): Raven and the showcase APK of examples/mobile,
+  #  with the SDK, NDK and JDK of the runner. Built here; android-emulator runs
+  #  it (built for x86_64).
+  # ---------------------------------------------------------------------------
+  android:
+    name: android (arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Build Raven and the APK
+        env:
+          RAVEN_CMAKE_ARGS: -DRAVEN_WARNINGS_AS_ERRORS=ON
+        run: |
+          export ANDROID_NDK="$ANDROID_NDK_LATEST_HOME"
+          echo "SDK: $ANDROID_HOME  NDK: $ANDROID_NDK"
+          ./examples/mobile/android/build.sh
+
+      - name: Check the APK
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1)
+          "$BT/apksigner" verify examples/mobile/android/raven-hello.apk
+          unzip -l examples/mobile/android/raven-hello.apk > apk.txt
+          cat apk.txt
+          for f in lib/arm64-v8a/libravenhello.so classes.dex assets/fonts/; do grep -q "$f" apk.txt || { echo "missing from the APK: $f"; exit 1; }; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raven-hello-android-arm64
+          path: examples/mobile/android/raven-hello.apk
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  #  Android on an emulator: the showcase APK built for x86_64 (ABI=x86_64), the
+  #  ABI an emulator runs at full speed on the x86_64 runner (KVM), installed and
+  #  launched by examples/mobile/android/smoke.sh, which checks that the app
+  #  keeps running and draws (a screenshot that is not blank), and prints its
+  #  log when it does not. Vulkan is SwiftShader's (-gpu swiftshader_indirect).
+  # ---------------------------------------------------------------------------
+  android-emulator:
+    name: android (emulator, x86_64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Build Raven and the APK (x86_64)
+        env:
+          ABI: x86_64
+          RAVEN_CMAKE_ARGS: -DRAVEN_WARNINGS_AS_ERRORS=ON
+        run: |
+          export ANDROID_NDK="$ANDROID_NDK_LATEST_HOME"
+          ./examples/mobile/android/build.sh
+          unzip -l examples/mobile/android/raven-hello.apk | grep lib/x86_64/libravenhello.so
+
+      # (the action runs each line of script on its own: the steps are in smoke.sh)
+      - name: Run on an emulator
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        env:
+          WAIT: "30"
+          SCREENSHOT: android-emulator.png
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: ./examples/mobile/android/smoke.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-emulator-screenshot
+          path: android-emulator.png
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   #  Windows (MinGW-w64, through MSYS2)
@@ -375,14 +840,17 @@ jobs:
   release:
     name: release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, build, mingw, installer]
+    needs: [test, build, packages, mingw, installer, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      # the packages, the installers and the APK (raven-*), not the screenshots of the
+      # simulator and emulator jobs
       - uses: actions/download-artifact@v4
         with:
           path: packages
+          pattern: raven-*
           merge-multiple: true
 
       - name: Checksums

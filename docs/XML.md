@@ -45,6 +45,10 @@ attribute can be set at run time with `Rwidget_set_attribute(widget, "Text", "He
   current folder and the folders of `PATH` (see
   [Where files are looked for](#where-files-are-looked-for)). A file is
   loaded once and shared by every widget that names it.
+- An image can be one of the icons shipped with Raven: `raven:` and its name
+  (`Source="raven:search"`, `Icon="raven:save"`; `Ricon_get_name` lists
+  them). Icons, and SVGs painted only in `currentColor`, are drawn in the
+  color of the text of the widget that shows them.
 
 ## Value types
 
@@ -94,6 +98,7 @@ these attributes change how, for the window (`Rwindow_set_touch_settings`):
 | `Touch.Deceleration` | how fast it slows down, units per second per second (default 2400) |
 | `Touch.Gestures` | boolean (default true): two fingers pinch to zoom and pan |
 | `Touch.PalmRejection` | boolean (default true): fingers are ignored while a pen is near the screen |
+| `Touch.MinSize` | smallest height of what a finger presses: controls and rows are at least this high, check boxes and slider handles half of it; 0 leaves the sizes of the theme (default 44 on iOS, 48 on Android, 0 elsewhere) |
 | `Pen.MouseEmulation` | boolean (default true): the pen drives the widgets as the mouse does; its barrel button is the right button |
 | `Pen.PressureCurve` | the pressure given to the application is the one of the pen to this power: 1 as it is, below 1 softer, above 1 harder |
 | `Pen.PressureThreshold` | pressure, 0 to 1, the tip needs before it presses (default 0) |
@@ -130,7 +135,8 @@ Color roles: `Window Panel Border Text TextDisabled TextPlaceholder Accent
 AccentHovered AccentPressed AccentText Control ControlHovered ControlPressed
 ControlBorder Input Focus Selection RowHovered Track Handle HandleHovered
 Separator Header HeaderHovered TabActive Popup PopupBorder Shadow Tooltip
-TooltipText Switch`. `Color.Text` is inherited by the children.
+TooltipText Switch Success Warning Danger Link Code SearchMatch SearchCurrent`.
+`Color.Text` is inherited by the children.
 
 Metrics: `FontSize CornerRadius BorderWidth ControlHeight PaddingX PaddingY
 Spacing ScrollbarSize RowHeight Indent SplitterSize CheckSize SliderHandleSize
@@ -160,6 +166,39 @@ Raction_bind("file.save", on_save, NULL);
 /* or one function for everything that has no binding of its own */
 Raction_set_default_handler(on_any_action, NULL);
 ```
+
+#### Actions written in the document: `<Script>`
+
+The functions of the actions can be written in the document itself, in
+Raven Script (a small typed language with the syntax of TypeScript). A
+`<Script>` holds code (raw text up to `</Script>`: `<` and `&&` are written
+as they are) or names a file with `Src`; it is not a widget.
+
+```xml
+<Window Title="Counter">
+    <Script>
+        let counter: number = 0;
+        fn app.increment() {
+            counter += 1;
+            ui.setText("counter", counter.toString());
+        }
+        fn app.volume(value: number) {
+            app.log("Volume: " + value.toString());
+        }
+    </Script>
+    <Script Src="scripts/more.rvs"/>
+    <VBox>
+        <Label Name="counter" Text="0"/>
+        <Button Text="+1" OnClicked="app.increment"/>
+        <Slider OnChanged="app.volume"/>
+    </VBox>
+</Window>
+```
+
+The event gives its function arguments (the value of a Slider, the state of a
+Checkbox, the text of a TextInput...); a function whose parameters do not fit
+its widget is reported when the document loads. `OnClicked="app.quit()"` is
+the same as `OnClicked="app.quit"`. The whole language: [SCRIPT.md](SCRIPT.md).
 
 #### Actions that need no C
 
@@ -229,6 +268,7 @@ panel uses the attributes that make sense for it.
 | `Slot.Size` | `width,height` (when the anchors do not stretch) | Canvas |
 | `Slot.Alignment` | `x,y` pivot of the child, 0..1 (`0.5,0.5` centers it on its position) | Canvas |
 | `Slot.Title` | text of the tab | TabView, DockArea |
+| `Slot.Icon` | icon before the title of the tab: an image, or an icon of Raven (`raven:folder`) | TabView with `Documents="true"`, DockArea |
 | `Slot.Dock` | `Left`, `Right`, `Top`, `Bottom`: the side the panel takes; `Tab`: a tab beside the panel named by `Slot.DockTo` | DockArea |
 | `Slot.DockTo` | name of the panel it is placed against; without it, the whole area | DockArea |
 | `Slot.DockSize` | share of the place it is cut from, 0..1 (0: a half, or a quarter of the whole area) | DockArea |
@@ -267,19 +307,24 @@ panel uses the attributes that make sense for it.
 | `Checkbox` (`CheckBox`) | `Text`, `Checked`, `Style` (`Check`, `Radio`, `Switch`). Radio boxes of the same parent are exclusive |
 | `Slider` | `Min`, `Max`, `Value`, `Step`, `Orientation` |
 | `ProgressBar` | `Value` (0..1) |
-| `SpinBox` | `Min`, `Max`, `Value`, `Step`, `Decimals` |
-| `TextInput` (`TextBox`, `EditableText`) | `Text`, `Placeholder`, `Password`, `ReadOnly`, `MaxLength` |
-| `ComboBox` | `Selected` (index), items as children `<Item Text="..."/>` or `Items="A|B|C"` |
+| `SpinBox` | `Min`, `Max`, `Value`, `Step`, `Decimals`, `Buttons` (step buttons in the looks of Raven too) |
+| `TextInput` (`TextBox`, `EditableText`) | `Text`, `Placeholder`, `Password`, `ReadOnly`, `MaxLength`, `SpellCheck` (`true`: misspelled words underlined, corrections on a right click; off by default), `SpellLanguage` (`en_US`, `fr`...; none: the language of the application) |
+| `ComboBox` | `Selected` (index), items as children `<Item Text="..."/>` or `Items="A|B|C"`, `Editable` (any text can be typed; `Text`), `Searchable` (typing filters the list) |
+| `DatePicker` | `Date` (`YYYY-MM-DD` or `Today`), `Min`, `Max`, `FirstDayOfWeek` (`Sunday Monday Saturday` or 0 to 6), `Format` (`D MMMM YYYY`...), `TimeZone` (of `Rdate_picker_get_instant`), `OnChanged` |
+| `TimePicker` | `Time` (`HH:MM` or `HH:MM:SS`, on 24 hours), `ShowSeconds`, `MinuteStep`, `Clock` (`Auto`: as the locale does; `12`: 1 to 12 with AM and PM; `24`), `TimeZone` (`America/New_York`, `Europe/Paris`; empty: the zone of the system), `ShowTimeZone` (writes the zone after the time: `EST`, `CET`, `UTC+3`), `Date` (the day of the time, for its zone; `Today` by default), `OnChanged` |
 | `ListView` | `Selected`, items as children `<Item>` or `Items="A|B|C"` (large lists: `Rlist_view_set_virtual_items`) |
-| `TreeView` | nested `<Item Text="..." Expanded="true">` children |
-| `Image` | `Source` (path of an image), `Tint`, `Stretch` (`Fill Fit Cover None`), `Region` (`u0,v0,u1,v1`), `CornerRadius` |
+| `Table` | `Columns="A|B"` or `<Column Header Width Fill Sortable Align Editable Kind/>` children (`Kind="Check"`: a check box the user toggles, from "1"/"0"; `Kind="Progress"`: a bar from 0..1 or "45%"), `<Row>a|b</Row>` children, `Selected`, `SelectionMode` (`Single`, `Multiple`, `None`), `MultiSelect`, `SortColumn`, `SortDescending`, `ShowHeader`, `GridLines`, `Striped`, `FrozenColumns` (the first columns stay while the others scroll) |
+| `TreeView` | nested `<Item Text="..." Expanded="true" Icon="raven:folder">` children |
+| `Image` | `Source` (path of an image, or an icon of Raven: `raven:search`; an animated GIF or APNG plays), `Tint`, `Stretch` (`Fill Fit Cover None`), `Region` (`u0,v0,u1,v1`), `CornerRadius`, `Animate` (`false`: an animation stays on its first frame until `Rimage_play`), `Loop` (times it plays, `0` for forever; default: what the file says). Its action fires when an animation stops after its last play |
 | `Separator` | `Orientation` (`Horizontal` line by default) |
 | `MenuBar` | `<Menu>` children; `Native` (`false`: drawn in the window on macOS too, instead of the menu bar of the system) |
 | `Menu` | `Text`; children `<MenuItem>`, `<Separator/>` and nested `<Menu>` |
-| `MenuItem` | `Text`, `Shortcut`, `Checkable`, `Checked` |
+| `MenuItem` | `Text`, `Shortcut`, `Checkable`, `Checked`, `Icon` (an image, or an icon of Raven: `raven:save`) |
 | `Viewport` | `Source` (image shown until the application sets a texture), `Stretch`, `FlipY`, `Realtime` |
+| `SystemWebView` | `Url` (the address shown), `Source` (an .html file, found next to the document), `Html` (a page given as text) and `BaseUrl` (where its relative addresses are looked for), `OnChanged` (the view shows another address). The page is shown by the web engine of the system (WKWebView on macOS and iOS, WebView2 on Windows) in a view kept over the widget; where there is none, a message takes its place |
 | `Custom` | drawn by the application: `Rcustom_set_paint_callback` |
-| `TextEditor` (`TextArea`) | `Text` (or the text inside the element), `Language` (`C`, `C++`, `C#`, `Java`, `JavaScript`, `TypeScript`, `Python`, `Rust`, `Zig`, `GLSL`, `JSON`, `CSS`, `XML`, `HTML`, one declared with `Rlanguage_register`, or `None`), `LineNumbers`, `Wrap`, `ReadOnly`, `Placeholder`, `TabSize`, `TabSpaces`, `Completion` (`false`: proposes words only on Ctrl+Space), `AutoPairs` (`false`: does not close brackets and quotes), `TextSize`, `Font`, `Markdown` (`true`: the same as `Language="Markdown"`: the text stays as typed, styled in place) |
+| `TextEditor` (`TextArea`) | `Text` (or the text inside the element), `Language` (`C`, `C++`, `C#`, `Java`, `JavaScript`, `TypeScript`, `Python`, `Rust`, `Zig`, `GLSL`, `JSON`, `CSS`, `XML`, `HTML`, one declared with `Rlanguage_register`, or `None`), `LineNumbers`, `Wrap`, `ReadOnly`, `Placeholder`, `TabSize`, `TabSpaces`, `Completion` (`false`: proposes words only on Ctrl+Space), `AutoPairs` (`false`: does not close brackets and quotes), `TextSize`, `Font`, `Markdown` (`true`: the same as `Language="Markdown"`: the text stays as typed, styled in place), `SpellCheck`, `SpellLanguage` (as on `TextInput`; only the lines shown are checked), `FindBar` (`false`: no find bar, and Ctrl+F, Ctrl+H, F3 go to the shortcuts of the window), `Search` (the text searched for: its matches are highlighted), `Folding` (`false`: no folding, and Ctrl+Shift+[ / ] go to the shortcuts of the window) |
+| `DiffView` (`DiffViewer`) | `LeftSource`, `RightSource` (files compared), `Left`, `Right` (texts, or `<Left>` / `<Right>` elements), `LeftName`, `RightName`, `Patch` (a unified diff, or a `<Patch>` element), `PatchSource`, `Mode` (`Unified`, `Split`), `Context` (lines around each change, `All` or -1 for every line), `IgnoreWhitespace` (`None`, `Trailing`, `All`), `IgnoreCase`, `WordDiff`, `LineNumbers`, `Language` (as `TextEditor`; guessed from the names by default), `OnClicked` (a line or its number was clicked) |
 | `FileBrowser` | `Directory`, `Mode` (`Open`, `Save`, `Folder`), `Filter` (`*.png;*.jpg`), `FileName`, `DefaultExtension`, `ShowHidden`, `Multiple`, `Controls` (`false` hides the name, the filter and the buttons), `Places` (`false` hides the list of places) |
 
 A `MenuItem` shortcut works without any `<Shortcut>` element: the window
@@ -431,7 +476,8 @@ Rxml_register_tag("Gauge", make_gauge, gauge_attribute, NULL);      /* then: <Ga
 ```
 
 `<WebView>` of the optional library `raven_web` is such a tag: see
-[WEB.md](WEB.md).
+[WEB.md](WEB.md). (`<SystemWebView>`, the web engine of the system, is a tag
+of Raven itself.)
 
 ## Declaring tags
 

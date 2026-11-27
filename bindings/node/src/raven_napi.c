@@ -1,7 +1,7 @@
 /*
  * Raven for Node.js: the addon.
  *
- * Generated from the C headers by tools/bindgen (Raven 0.2): do not edit.
+ * Generated from the C headers by tools/bindgen (Raven 0.3): do not edit.
  *
  * It opens the shared library of Raven at run time (see _open), so that one
  * .node per platform works with any build of Raven of this version, and
@@ -53,6 +53,9 @@ static struct {
 	void (*Rset_frame_callback)(RFrameCallback, void*);
 	double (*Rget_delta_time)(void);
 	double (*Rget_time)(void);
+	void (*Rset_app_event_callback)(RAppEventCallback, void*);
+	int (*Ris_app_paused)(void);
+	void (*Rinject_app_event)(RAppEvent);
 	void (*Rset_ui_scale)(float);
 	void (*Rset_vsync)(int);
 	int (*Rget_vsync)(void);
@@ -75,12 +78,30 @@ static struct {
 	void (*Raction_unbind)(const char*);
 	void (*Raction_fire)(const char*, Rid);
 	void (*Raction_set_default_handler)(RActionCallback, void*);
+	int (*Raction_bind_with_parameters)(const char*, const char*, RActionParametersCallback, void*);
+	Rid (*Raction_get_sender)(const RActionContext*);
+	const char* (*Raction_get_name)(const RActionContext*);
+	int (*Raction_get_argument_count)(const RActionContext*);
+	double (*Raction_get_number)(const RActionContext*, int);
+	const char* (*Raction_get_string)(const RActionContext*, int);
+	int (*Raction_get_bool)(const RActionContext*, int);
+	void (*Raction_return_number)(RActionContext*, double);
+	void (*Raction_return_string)(RActionContext*, const char*);
+	void (*Raction_return_bool)(RActionContext*, int);
+	void (*Raction_fail)(RActionContext*, const char*);
 	void (*Raction_set_builtins)(int);
 	int (*Raction_is_builtin)(const char*);
 	int (*Ropen_url)(const char*);
 	void (*Rclipboard_set_text)(const char*);
 	void (*Rclipboard_set_html)(const char*, const char*);
 	const char* (*Rclipboard_get_text)(void);
+	int (*Rclipboard_has_text)(void);
+	int (*Rclipboard_set_data)(const RDataItem*, int);
+	int (*Rclipboard_has_data)(const char*);
+	char* (*Rclipboard_get_data)(const char*, size_t*);
+	int (*Rclipboard_set_image)(const uint8_t*, int, int, int);
+	int (*Rclipboard_has_image)(void);
+	uint8_t* (*Rclipboard_get_image)(int*, int*);
 	RError (*Rerror_get_last)(const char**, RSeverity*);
 	const char* (*Rerror_to_string)(RError);
 	const char* (*Rseverity_to_string)(RSeverity);
@@ -96,6 +117,13 @@ static struct {
 	const char* (*Rwindow_get_title)(Rid);
 	void (*Rwindow_set_size)(Rid, int, int);
 	void (*Rwindow_get_size)(Rid, int*, int*);
+	void (*Rwindow_get_safe_area)(Rid, RInsets*);
+	void (*Rwindow_get_keyboard_area)(Rid, RInsets*);
+	void (*Rwindow_set_keyboard_callback)(Rid, RKeyboardCallback, void*);
+	void (*Rwindow_clear_focus)(Rid);
+	void (*Rwindow_set_back_callback)(Rid, RBackCallback, void*);
+	void (*Rwindow_set_back_enabled)(Rid, int);
+	int (*Rwindow_wants_back)(Rid);
 	void (*Rwindow_set_min_size)(Rid, int, int);
 	void (*Rwindow_set_position)(Rid, int, int);
 	void (*Rwindow_get_position)(Rid, int*, int*);
@@ -124,6 +152,8 @@ static struct {
 	int (*Rwindow_set_opacity)(Rid, float);
 	float (*Rwindow_get_opacity)(Rid);
 	int (*Rwindow_set_topmost)(Rid, int);
+	int (*Rwindow_set_owner)(Rid, Rid);
+	Rid (*Rwindow_get_owner)(Rid);
 	int (*Rwindow_set_picture_in_picture)(Rid, int);
 	int (*Rwindow_is_picture_in_picture)(Rid);
 	void (*Rwindow_set_picture_in_picture_layout)(Rid, int, int, RPictureInPictureCorner);
@@ -137,6 +167,7 @@ static struct {
 	void (*Rwindow_set_close_callback)(Rid, RWindowCloseCallback, void*);
 	void (*Rwindow_set_resize_callback)(Rid, RWindowResizeCallback, void*);
 	void (*Rwindow_set_drop_callback)(Rid, RDropCallback, void*);
+	void (*Rdrop_set_highlight_rect)(float, float, float, float);
 	void (*Rwindow_set_user_handle)(Rid, void*);
 	void* (*Rwindow_get_user_handle)(Rid);
 	int (*Rwindow_get_native_handle)(Rid, RNativeWindow*);
@@ -149,13 +180,22 @@ static struct {
 	void (*Rwindow_inject_mouse_wheel)(Rid, float, float);
 	void (*Rwindow_inject_key)(Rid, RKey, int, Ruint);
 	void (*Rwindow_inject_text)(Rid, const char*);
+	void (*Rwindow_inject_composition)(Rid, const char*, int, int);
 	int (*Rwindow_inject_drag)(Rid, float, float, int);
 	int (*Rwindow_inject_drop)(Rid, float, float, const char*const*, int, const char*);
+	int (*Rwindow_inject_drag_end)(Rid, RDragOperation);
+	int (*Rwindow_inject_back)(Rid);
 	int (*Rwindow_is_key_down)(Rid, RKey);
 	int (*Rwindow_is_mouse_button_down)(Rid, RMouseButton);
 	Ruint (*Rwindow_get_modifiers)(Rid);
 	int (*Rwindow_is_mouse_inside)(Rid);
 	int (*Rwindow_wants_text_input)(Rid);
+	int (*Rwindow_get_text_input_info)(Rid, RTextInputInfo*);
+	const char* (*Rwindow_get_text_input_text)(Rid);
+	int (*Rwindow_get_text_input_selection)(Rid, int*, int*);
+	int (*Rwindow_set_text_input_selection)(Rid, int, int);
+	int (*Rwindow_replace_text_input)(Rid, int, int, const char*);
+	const char* (*Rwindow_get_text_composition)(Rid, int*, int*);
 	int (*Rwindow_has_popup)(Rid);
 	int (*Rwindow_get_text_input_rect)(Rid, int*, int*, int*, int*);
 	int (*Rwindow_get_popup_count)(Rid);
@@ -167,6 +207,10 @@ static struct {
 	const char* (*Rdrag_get_type)(Rid);
 	const char* (*Rdrag_get_data)(Rid);
 	void (*Rdrag_cancel)(Rid);
+	int (*Rdrag_begin_external)(Rid, const RDataItem*, int, Ruint, RDragFinishedCallback, void*);
+	void (*Rdrag_set_image)(const uint8_t*, int, int);
+	int (*Rdrag_external_supported)(void);
+	int (*Rdrag_external_is_active)(void);
 	void (*Rwindow_register_shortcut)(Rid, RKey, Ruint, const char*);
 	void (*Rwindow_unregister_shortcut)(Rid, RKey, Ruint);
 	void (*Rtouch_get_settings)(RTouchSettings*);
@@ -205,6 +249,8 @@ static struct {
 	Rid (*Rtheme_get_font)(void);
 	void (*Rtheme_set_accent)(float, float, float);
 	void (*Rtheme_set_dark)(int);
+	int (*Rtheme_get_system_dark)(void);
+	void (*Rtheme_follow_system)(int);
 	int (*Rtheme_is_dark)(void);
 	void (*Rtheme_set_wallpaper)(Rid);
 	Rid (*Rtheme_get_wallpaper)(void);
@@ -232,19 +278,28 @@ static struct {
 	Rid (*Rtexture_create)(const char*, size_t);
 	Rid (*Rtexture_create_async)(const char*, size_t);
 	Rid (*Rtexture_create_from_svg)(const char*, size_t, float);
+	int (*Rtexture_uses_current_color)(Rid);
 	float (*Rtexture_get_density)(Rid);
 	Rid (*Rtexture_create_from_file)(const char*);
 	Rid (*Rtexture_create_from_file_async)(const char*);
+	Rid (*Rtexture_create_from_url_async)(const char*);
 	Rid (*Rtexture_create_from_pixels)(const uint8_t*, int, int);
 	void (*Rtexture_update)(Rid, const uint8_t*, int, int);
 	uint8_t* (*Rimage_decode)(const void*, size_t, int*, int*);
+	int (*Rimage_decode_info)(const void*, size_t, int*, int*, int*, int*);
+	uint8_t* (*Rimage_decode_frame)(const void*, size_t, int, int*, int*, double*);
 	void (*Rpixels_free)(uint8_t*);
+	uint8_t* (*Rimage_encode_png)(const uint8_t*, int, int, size_t*);
+	int (*Rimage_save_png)(const char*, const uint8_t*, int, int);
 	int (*Rtexture_is_ready)(Rid);
 	void (*Rtexture_wait)(Rid);
 	void (*Rtexture_destroy)(Rid);
 	int (*Rtexture_is_valid)(Rid);
 	void (*Rtexture_get_size)(Rid, int*, int*);
 	void (*Rtexture_set_filter)(Rid, RFilterType);
+	Rid (*Ricon_get)(const char*);
+	int (*Ricon_get_count)(void);
+	const char* (*Ricon_get_name)(int);
 	Rid (*Rwidget_create)(RWidgetType);
 	void (*Rwidget_destroy)(Rid);
 	int (*Rwidget_is_valid)(Rid);
@@ -424,6 +479,19 @@ static struct {
 	void (*Rimage_set_stretch)(Rid, RStretch);
 	void (*Rimage_set_region)(Rid, float, float, float, float);
 	void (*Rimage_set_corner_radius)(Rid, float);
+	int (*Rimage_is_animated)(Rid);
+	int (*Rimage_get_frame_count)(Rid);
+	double (*Rimage_get_duration)(Rid);
+	double (*Rimage_get_frame_delay)(Rid, int);
+	void (*Rimage_play)(Rid);
+	void (*Rimage_pause)(Rid);
+	void (*Rimage_stop)(Rid);
+	int (*Rimage_is_playing)(Rid);
+	void (*Rimage_set_frame)(Rid, int);
+	int (*Rimage_get_frame)(Rid);
+	void (*Rimage_set_loop_count)(Rid, int);
+	int (*Rimage_get_loop_count)(Rid);
+	void (*Rimage_set_finished_callback)(Rid, RImageFinishedCallback, void*);
 	void (*Rtext_input_set_text)(Rid, const char*);
 	const char* (*Rtext_input_get_text)(Rid);
 	void (*Rtext_input_set_placeholder)(Rid, const char*);
@@ -433,14 +501,34 @@ static struct {
 	void (*Rtext_input_set_read_only)(Rid, int);
 	void (*Rtext_input_set_max_length)(Rid, int);
 	void (*Rtext_input_select_all)(Rid);
+	void (*Rtext_input_set_input_type)(Rid, RTextInputType);
+	RTextInputType (*Rtext_input_get_input_type)(Rid);
+	void (*Rtext_input_set_return_key)(Rid, RReturnKey);
+	RReturnKey (*Rtext_input_get_return_key)(Rid);
 	void (*Rtext_input_set_changed_callback)(Rid, RTextChangedCallback, void*);
 	void (*Rtext_input_set_committed_callback)(Rid, RTextChangedCallback, void*);
+	void (*Rtext_input_set_spell_check)(Rid, int);
+	int (*Rtext_input_get_spell_check)(Rid);
+	void (*Rtext_input_set_spell_language)(Rid, const char*);
+	int (*Rspell_is_supported)(void);
+	int (*Rspell_get_language_count)(void);
+	const char* (*Rspell_get_language_at)(int);
+	int (*Rspell_set_language)(const char*);
+	const char* (*Rspell_get_language)(void);
+	int (*Rspell_check)(const char*, const char*);
+	int (*Rspell_get_misspelling)(int, int*, int*);
+	int (*Rspell_suggest)(const char*, const char*);
+	const char* (*Rspell_get_suggestion)(int);
+	void (*Rspell_learn)(const char*, const char*);
+	void (*Rspell_ignore)(const char*);
 	void (*Rspin_box_set_range)(Rid, double, double);
 	void (*Rspin_box_set_value)(Rid, double);
 	double (*Rspin_box_get_value)(Rid);
 	void (*Rspin_box_get_range)(Rid, double*, double*, double*);
 	void (*Rspin_box_set_step)(Rid, double);
 	void (*Rspin_box_set_decimals)(Rid, int);
+	void (*Rspin_box_set_buttons)(Rid, int);
+	int (*Rspin_box_get_buttons)(Rid);
 	void (*Rspin_box_set_changed_callback)(Rid, RSpinBoxChangedCallback, void*);
 	int (*Rcombo_box_add_item)(Rid, const char*);
 	void (*Rcombo_box_clear_items)(Rid);
@@ -449,6 +537,15 @@ static struct {
 	void (*Rcombo_box_set_selected)(Rid, int);
 	int (*Rcombo_box_get_selected)(Rid);
 	void (*Rcombo_box_set_changed_callback)(Rid, RComboBoxChangedCallback, void*);
+	void (*Rcombo_box_set_editable)(Rid, int);
+	int (*Rcombo_box_is_editable)(Rid);
+	void (*Rcombo_box_set_searchable)(Rid, int);
+	int (*Rcombo_box_is_searchable)(Rid);
+	const char* (*Rcombo_box_get_text)(Rid);
+	void (*Rcombo_box_set_text)(Rid, const char*);
+	void (*Rcombo_box_set_text_changed_callback)(Rid, RComboBoxTextCallback, void*);
+	void (*Rcombo_box_set_open)(Rid, int);
+	int (*Rcombo_box_is_open)(Rid);
 	void (*Rseparator_set_orientation)(Rid, ROrientation);
 	int (*Rlist_view_add_item)(Rid, const char*);
 	void (*Rlist_view_set_item_text)(Rid, int, const char*);
@@ -457,6 +554,7 @@ static struct {
 	void (*Rlist_view_clear_items)(Rid);
 	int (*Rlist_view_get_item_count)(Rid);
 	void (*Rlist_view_set_virtual_items)(Rid, int, RListItemTextCallback, void*);
+	void (*Rlist_view_set_item_color_callback)(Rid, RListItemColorCallback, void*);
 	void (*Rlist_view_set_selected)(Rid, int);
 	int (*Rlist_view_get_selected)(Rid);
 	void (*Rlist_view_scroll_to_item)(Rid, int);
@@ -500,9 +598,13 @@ static struct {
 	void (*Rmenu_set_title)(Rid, const char*);
 	Rid (*Rmenu_add_item)(Rid, const char*);
 	Rid (*Rmenu_add_separator)(Rid);
+	Rid (*Rmenu_add_header)(Rid, const char*);
+	Rid (*Rmenu_bar_add_divider)(Rid);
+	void (*Rmenu_set_title_color)(Rid, float, float, float, float);
 	void (*Rmenu_item_set_text)(Rid, const char*);
 	const char* (*Rmenu_item_get_text)(Rid);
 	void (*Rmenu_item_set_shortcut)(Rid, RKey, Ruint);
+	void (*Rmenu_item_set_shortcut_text)(Rid, const char*);
 	void (*Rmenu_item_set_checkable)(Rid, int);
 	void (*Rmenu_item_set_checked)(Rid, int);
 	void (*Rmenu_item_set_icon)(Rid, Rid, float, float, float, float, int);
@@ -515,6 +617,14 @@ static struct {
 	int (*Rtile_view_get_count)(Rid);
 	void (*Rtile_view_set_tile_size)(Rid, float, float, float);
 	void (*Rtile_view_set_empty_text)(Rid, const char*);
+	void (*Rtile_view_set_icon_width)(Rid, float);
+	void (*Rtile_view_set_sections)(Rid, int, RTileSectionCallback, void*);
+	int (*Rtile_view_get_section_count)(Rid);
+	int (*Rtile_view_get_section_of)(Rid, int);
+	void (*Rtile_view_set_section_folded)(Rid, int, int);
+	int (*Rtile_view_is_section_folded)(Rid, int);
+	int (*Rtile_view_get_section_at)(Rid, float, float);
+	void (*Rtile_view_set_section_toggled_callback)(Rid, RTileEventCallback, void*);
 	void (*Rtile_view_set_selected)(Rid, int, int);
 	int (*Rtile_view_is_selected)(Rid, int);
 	void (*Rtile_view_clear_selection)(Rid);
@@ -527,6 +637,7 @@ static struct {
 	void (*Rtile_view_set_drop_highlight)(Rid, int);
 	void (*Rtile_view_set_drag_type)(Rid, const char*);
 	void (*Rtile_view_set_drag_data_callback)(Rid, RTileDragDataCallback, void*);
+	void (*Rtile_view_set_drag_out_callback)(Rid, RTileEventCallback, void*);
 	void (*Rtile_view_set_selection_changed_callback)(Rid, RTileEventCallback, void*);
 	void (*Rtile_view_set_activated_callback)(Rid, RTileEventCallback, void*);
 	void (*Rtile_view_set_context_callback)(Rid, RTileContextCallback, void*);
@@ -547,8 +658,23 @@ static struct {
 	void (*Rtable_clear_rows)(Rid);
 	int (*Rtable_get_row_count)(Rid);
 	void (*Rtable_set_virtual_rows)(Rid, int, RTableCellTextCallback, void*);
+	void (*Rtable_set_cell_color_callback)(Rid, RTableCellColorCallback, void*);
+	void (*Rtable_set_cell_text_color)(Rid, int, int, float, float, float, float);
+	void (*Rtable_set_multi_select)(Rid, int);
+	void (*Rtable_set_selection_mode)(Rid, RTableSelectionMode);
+	RTableSelectionMode (*Rtable_get_selection_mode)(Rid);
+	void (*Rtable_set_row_selected)(Rid, int, int);
+	int (*Rtable_is_row_selected)(Rid, int);
+	void (*Rtable_select_range)(Rid, int, int, int);
+	void (*Rtable_select_all)(Rid);
+	void (*Rtable_clear_selection)(Rid);
+	int (*Rtable_get_selection_count)(Rid);
+	int (*Rtable_get_selection)(Rid, int);
+	int (*Rtable_get_selection_range_count)(Rid);
+	int (*Rtable_get_selection_range)(Rid, int, int*, int*);
 	void (*Rtable_set_selected)(Rid, int);
 	int (*Rtable_get_selected)(Rid);
+	int (*Rtable_get_current_row)(Rid);
 	void (*Rtable_scroll_to_row)(Rid, int);
 	void (*Rtable_sort)(Rid, int, int);
 	int (*Rtable_get_sort_column)(Rid);
@@ -559,6 +685,18 @@ static struct {
 	void (*Rtable_set_selection_changed_callback)(Rid, RTableEventCallback, void*);
 	void (*Rtable_set_activated_callback)(Rid, RTableEventCallback, void*);
 	void (*Rtable_set_sort_callback)(Rid, RTableSortCallback, void*);
+	void (*Rtable_set_column_editable)(Rid, int, int);
+	int (*Rtable_is_column_editable)(Rid, int);
+	void (*Rtable_set_cell_edited_callback)(Rid, RTableCellEditedCallback, void*);
+	int (*Rtable_edit_cell)(Rid, int, int);
+	int (*Rtable_is_editing)(Rid);
+	int (*Rtable_end_edit)(Rid, int);
+	void (*Rtable_set_frozen_columns)(Rid, int);
+	int (*Rtable_get_frozen_columns)(Rid);
+	void (*Rtable_set_column_kind)(Rid, int, RTableColumnKind);
+	RTableColumnKind (*Rtable_get_column_kind)(Rid, int);
+	int (*Rtable_is_cell_checked)(Rid, int, int);
+	void (*Rtable_set_cell_checked)(Rid, int, int, int);
 	void (*Rdate_picker_set_date)(Rid, int, int, int);
 	void (*Rdate_picker_get_date)(Rid, int*, int*, int*);
 	void (*Rdate_picker_set_range)(Rid, int, int, int, int, int, int);
@@ -568,11 +706,25 @@ static struct {
 	void (*Rdate_picker_set_open)(Rid, int);
 	int (*Rdate_picker_is_open)(Rid);
 	void (*Rdate_picker_set_changed_callback)(Rid, RDateChangedCallback, void*);
+	void (*Rdate_picker_set_time_zone)(Rid, const char*);
+	const char* (*Rdate_picker_get_time_zone)(Rid);
+	void (*Rdate_picker_set_instant)(Rid, double);
+	double (*Rdate_picker_get_instant)(Rid);
 	void (*Rtime_picker_set_time)(Rid, int, int, int);
 	void (*Rtime_picker_get_time)(Rid, int*, int*, int*);
 	void (*Rtime_picker_set_seconds_visible)(Rid, int);
 	void (*Rtime_picker_set_minute_step)(Rid, int);
 	void (*Rtime_picker_set_changed_callback)(Rid, RTimeChangedCallback, void*);
+	void (*Rtime_picker_set_clock)(Rid, RClock);
+	RClock (*Rtime_picker_get_clock)(Rid);
+	const char* (*Rtime_picker_get_text)(Rid);
+	void (*Rtime_picker_set_time_zone)(Rid, const char*);
+	const char* (*Rtime_picker_get_time_zone)(Rid);
+	void (*Rtime_picker_set_time_zone_visible)(Rid, int);
+	void (*Rtime_picker_set_date)(Rid, int, int, int);
+	void (*Rtime_picker_get_date)(Rid, int*, int*, int*);
+	void (*Rtime_picker_set_instant)(Rid, double);
+	double (*Rtime_picker_get_instant)(Rid);
 	void (*Rtoast_show)(Rid, const char*, double);
 	void (*Rtoast_show_kind)(Rid, const char*, RToastKind, double);
 	void (*Rtoast_hide)(Rid);
@@ -661,6 +813,168 @@ static struct {
 	void (*Rplot_set_view_changed_callback)(Rid, RPlotViewCallback, void*);
 	void (*Rplot_set_drag_line_callback)(Rid, RPlotDragLineCallback, void*);
 	void (*Rplot_set_series_toggled_callback)(Rid, RPlotSeriesCallback, void*);
+	Rid (*Rchart_create)(RChartKind);
+	void (*Rchart_set_kind)(Rid, RChartKind);
+	RChartKind (*Rchart_get_kind)(Rid);
+	void (*Rchart_set_title)(Rid, const char*);
+	const char* (*Rchart_get_title)(Rid);
+	void (*Rchart_set_format)(Rid, const char*);
+	void (*Rchart_set_color)(Rid, float, float, float, float);
+	void (*Rchart_set_legend)(Rid, int);
+	void (*Rchart_clear)(Rid);
+	int (*Rchart_get_hovered)(Rid);
+	int (*Rchart_add_slice)(Rid, const char*, double);
+	void (*Rchart_remove_slice)(Rid, int);
+	int (*Rchart_get_slice_count)(Rid);
+	void (*Rchart_set_slice_value)(Rid, int, double);
+	double (*Rchart_get_slice_value)(Rid, int);
+	void (*Rchart_set_slice_label)(Rid, int, const char*);
+	const char* (*Rchart_get_slice_label)(Rid, int);
+	void (*Rchart_set_slice_color)(Rid, int, float, float, float, float);
+	double (*Rchart_get_total)(Rid);
+	void (*Rchart_set_selected)(Rid, int);
+	int (*Rchart_get_selected)(Rid);
+	void (*Rchart_set_hole)(Rid, float);
+	void (*Rchart_set_center_text)(Rid, const char*, const char*);
+	void (*Rchart_set_slice_clicked_callback)(Rid, RChartSliceCallback, void*);
+	void (*Rchart_set_range)(Rid, double, double);
+	void (*Rchart_get_range)(Rid, double*, double*);
+	void (*Rchart_set_value)(Rid, double);
+	double (*Rchart_get_value)(Rid);
+	int (*Rchart_add_band)(Rid, double, double, float, float, float, float);
+	void (*Rchart_clear_bands)(Rid);
+	int (*Rchart_get_band_count)(Rid);
+	void (*Rchart_set_grid)(Rid, int, int, const float*);
+	int (*Rchart_get_row_count)(Rid);
+	int (*Rchart_get_column_count)(Rid);
+	void (*Rchart_set_cell)(Rid, int, int, float);
+	float (*Rchart_get_cell)(Rid, int, int);
+	void (*Rchart_set_row_labels)(Rid, const char*);
+	void (*Rchart_set_column_labels)(Rid, const char*);
+	const char* (*Rchart_get_row_label)(Rid, int);
+	const char* (*Rchart_get_column_label)(Rid, int);
+	void (*Rchart_set_color_scale)(Rid, float, float, float, float, float, float, float, float);
+	void (*Rchart_set_cell_clicked_callback)(Rid, RChartCellCallback, void*);
+	void (*Rchart_set_values)(Rid, const float*, int);
+	void (*Rchart_push_value)(Rid, float, int);
+	int (*Rchart_get_value_count)(Rid);
+	float (*Rchart_get_value_at)(Rid, int);
+	void (*Rchart_set_fill)(Rid, int);
+	void (*Rchart_set_marker)(Rid, int);
+	int (*Rpdf_is_available)(void);
+	int (*Rpdf_view_load_file)(Rid, const char*, const char*);
+	int (*Rpdf_view_load_memory)(Rid, const char*, size_t, const char*);
+	void (*Rpdf_view_close)(Rid);
+	RPdfStatus (*Rpdf_view_get_status)(Rid);
+	int (*Rpdf_view_get_page_count)(Rid);
+	void (*Rpdf_view_get_page_size)(Rid, int, float*, float*);
+	void (*Rpdf_view_set_page)(Rid, int);
+	int (*Rpdf_view_get_page)(Rid);
+	void (*Rpdf_view_set_zoom)(Rid, float);
+	float (*Rpdf_view_get_zoom)(Rid);
+	void (*Rpdf_view_set_fit)(Rid, RPdfFit);
+	RPdfFit (*Rpdf_view_get_fit)(Rid);
+	const char* (*Rpdf_view_get_title)(Rid);
+	const char* (*Rpdf_view_get_page_text)(Rid, int);
+	void (*Rpdf_view_set_page_changed_callback)(Rid, RPdfPageChangedCallback, void*);
+	Rid (*Rcarousel_create)(void);
+	void (*Rcarousel_set_page)(Rid, int, int);
+	int (*Rcarousel_get_page)(Rid);
+	int (*Rcarousel_get_page_count)(Rid);
+	void (*Rcarousel_next)(Rid);
+	void (*Rcarousel_prev)(Rid);
+	void (*Rcarousel_set_loop)(Rid, int);
+	int (*Rcarousel_get_loop)(Rid);
+	void (*Rcarousel_set_autoplay)(Rid, double);
+	double (*Rcarousel_get_autoplay)(Rid);
+	void (*Rcarousel_set_indicators_visible)(Rid, int);
+	int (*Rcarousel_get_indicators_visible)(Rid);
+	void (*Rcarousel_set_arrows_visible)(Rid, int);
+	int (*Rcarousel_get_arrows_visible)(Rid);
+	void (*Rcarousel_set_orientation)(Rid, ROrientation);
+	ROrientation (*Rcarousel_get_orientation)(Rid);
+	void (*Rcarousel_set_page_changed_callback)(Rid, RCarouselPageChangedCallback, void*);
+	int (*Rpdf_view_print)(Rid, const RPdfPrintDesc*);
+	Rid (*Rmap_view_create)(void);
+	void (*Rmap_view_set_center)(Rid, double, double);
+	void (*Rmap_view_get_center)(Rid, double*, double*);
+	void (*Rmap_view_set_zoom)(Rid, double);
+	double (*Rmap_view_get_zoom)(Rid);
+	void (*Rmap_view_set_zoom_range)(Rid, double, double);
+	void (*Rmap_view_get_zoom_range)(Rid, double*, double*);
+	void (*Rmap_view_animate_to)(Rid, double, double, double);
+	void (*Rmap_view_screen_to_latlon)(Rid, float, float, double*, double*);
+	void (*Rmap_view_latlon_to_screen)(Rid, double, double, float*, float*);
+	void (*Rmap_view_set_tile_callback)(Rid, RMapTileCallback, void*);
+	void (*Rmap_view_set_tile_cancel_callback)(Rid, RMapTileCallback, void*);
+	void (*Rmap_view_set_tile)(Rid, int, int, int, const uint8_t*, int, int);
+	void (*Rmap_view_set_tile_data)(Rid, int, int, int, const void*, size_t);
+	void (*Rmap_view_set_tile_failed)(Rid, int, int, int);
+	void (*Rmap_view_set_tile_path)(Rid, const char*);
+	const char* (*Rmap_view_get_tile_path)(Rid);
+	void (*Rmap_view_set_tile_size)(Rid, int);
+	int (*Rmap_view_get_tile_size)(Rid);
+	void (*Rmap_view_set_cache_size)(Rid, size_t);
+	size_t (*Rmap_view_get_cache_usage)(Rid);
+	void (*Rmap_view_clear_tiles)(Rid);
+	RMapTileState (*Rmap_view_get_tile_state)(Rid, int, int, int);
+	int (*Rmap_view_add_marker)(Rid, double, double, const char*);
+	void (*Rmap_view_remove_marker)(Rid, int);
+	void (*Rmap_view_clear_markers)(Rid);
+	int (*Rmap_view_get_marker_count)(Rid);
+	void (*Rmap_view_set_marker_position)(Rid, int, double, double);
+	void (*Rmap_view_set_marker_label)(Rid, int, const char*);
+	void (*Rmap_view_set_marker_color)(Rid, int, float, float, float, float);
+	void (*Rmap_view_set_marker_clicked_callback)(Rid, RMapMarkerCallback, void*);
+	void (*Rmap_view_set_view_changed_callback)(Rid, RMapViewCallback, void*);
+	void (*Rmap_view_set_attribution)(Rid, const char*);
+	const char* (*Rmap_view_get_attribution)(Rid);
+	int (*Rsystem_web_view_is_supported)(void);
+	Rid (*Rsystem_web_view_create)(void);
+	void (*Rsystem_web_view_load_url)(Rid, const char*);
+	void (*Rsystem_web_view_load_file)(Rid, const char*);
+	void (*Rsystem_web_view_load_html)(Rid, const char*, const char*);
+	void (*Rsystem_web_view_reload)(Rid);
+	void (*Rsystem_web_view_stop)(Rid);
+	void (*Rsystem_web_view_go_back)(Rid);
+	void (*Rsystem_web_view_go_forward)(Rid);
+	int (*Rsystem_web_view_can_go_back)(Rid);
+	int (*Rsystem_web_view_can_go_forward)(Rid);
+	const char* (*Rsystem_web_view_get_url)(Rid);
+	const char* (*Rsystem_web_view_get_title)(Rid);
+	int (*Rsystem_web_view_is_loading)(Rid);
+	const char* (*Rsystem_web_view_get_error)(Rid);
+	void (*Rsystem_web_view_run_javascript)(Rid, const char*, RSystemWebViewResultCallback, void*);
+	void (*Rsystem_web_view_set_message_callback)(Rid, RSystemWebViewMessageCallback, void*);
+	void (*Rsystem_web_view_set_event_callback)(Rid, RSystemWebViewEventCallback, void*);
+	void* (*Rsystem_web_view_get_native_handle)(Rid);
+	Rid (*Rpdf_document_create)(void);
+	void (*Rpdf_document_delete)(Rid);
+	void (*Rpdf_document_set_title)(Rid, const char*);
+	void (*Rpdf_document_set_author)(Rid, const char*);
+	void (*Rpdf_document_set_subject)(Rid, const char*);
+	int (*Rpdf_document_add_page)(Rid, float, float);
+	int (*Rpdf_document_get_page_count)(Rid);
+	void (*Rpdf_document_set_fill_color)(Rid, float, float, float, float);
+	void (*Rpdf_document_set_stroke_color)(Rid, float, float, float, float);
+	void (*Rpdf_document_set_line_width)(Rid, float);
+	void (*Rpdf_document_draw_rect)(Rid, float, float, float, float, float, Ruint);
+	void (*Rpdf_document_draw_ellipse)(Rid, float, float, float, float, Ruint);
+	void (*Rpdf_document_draw_line)(Rid, float, float, float, float);
+	int (*Rpdf_document_add_font)(Rid, const char*, size_t);
+	int (*Rpdf_document_add_font_from_file)(Rid, const char*);
+	void (*Rpdf_document_set_font)(Rid, int, float, Ruint);
+	float (*Rpdf_document_get_line_height)(Rid);
+	float (*Rpdf_document_measure_text)(Rid, const char*);
+	float (*Rpdf_document_draw_text)(Rid, float, float, const char*);
+	float (*Rpdf_document_draw_paragraph)(Rid, float, float, float, const char*, RHAlign);
+	void (*Rpdf_document_draw_image)(Rid, float, float, float, float, const uint8_t*, int, int);
+	int (*Rpdf_document_draw_window)(Rid, Rid, float, float, float, float);
+	int (*Rpdf_document_save)(Rid, const char*);
+	char* (*Rpdf_document_save_memory)(Rid, size_t*);
+	int (*Rpdf_print)(const RPdfPrintDesc*, const char*, size_t);
+	int (*Rpdf_print_file)(const RPdfPrintDesc*, const char*);
+	int (*Rpdf_document_print)(Rid, const RPdfPrintDesc*);
 	Rid (*Rtext_editor_create)(const char*);
 	void (*Rtext_editor_set_text)(Rid, const char*);
 	const char* (*Rtext_editor_get_text)(Rid);
@@ -675,6 +989,23 @@ static struct {
 	int (*Rtext_editor_get_selection)(Rid, int*, int*, int*, int*);
 	const char* (*Rtext_editor_get_selected_text)(Rid);
 	void (*Rtext_editor_scroll_to_line)(Rid, int);
+	void (*Rtext_editor_add_cursor)(Rid, int, int);
+	void (*Rtext_editor_add_selection)(Rid, int, int, int, int);
+	int (*Rtext_editor_get_cursor_count)(Rid);
+	int (*Rtext_editor_get_cursor_at)(Rid, int, int*, int*, int*, int*);
+	int (*Rtext_editor_get_main_cursor)(Rid);
+	void (*Rtext_editor_clear_cursors)(Rid);
+	int (*Rtext_editor_add_next_occurrence)(Rid);
+	int (*Rtext_editor_select_all_occurrences)(Rid);
+	int (*Rtext_editor_fold)(Rid, int);
+	int (*Rtext_editor_unfold)(Rid, int);
+	void (*Rtext_editor_fold_all)(Rid);
+	void (*Rtext_editor_unfold_all)(Rid);
+	int (*Rtext_editor_is_folded)(Rid, int);
+	int (*Rtext_editor_is_line_hidden)(Rid, int);
+	int (*Rtext_editor_get_fold_end)(Rid, int);
+	void (*Rtext_editor_set_folding)(Rid, int);
+	int (*Rtext_editor_get_folding)(Rid);
 	void (*Rtext_editor_undo)(Rid);
 	void (*Rtext_editor_redo)(Rid);
 	int (*Rtext_editor_can_undo)(Rid);
@@ -700,16 +1031,37 @@ static struct {
 	const char* (*Rtext_editor_get_language)(Rid);
 	void (*Rtext_editor_set_markdown)(Rid, int);
 	int (*Rtext_editor_get_markdown)(Rid);
+	void (*Rtext_editor_set_spell_check)(Rid, int);
+	int (*Rtext_editor_get_spell_check)(Rid);
+	void (*Rtext_editor_set_spell_language)(Rid, const char*);
 	RToken (*Rtext_editor_get_token)(Rid, int, int);
 	void (*Rtext_editor_set_completion)(Rid, int);
 	void (*Rtext_editor_show_completions)(Rid);
 	int (*Rtext_editor_is_completing)(Rid);
 	void (*Rtext_editor_set_completion_callback)(Rid, RCompletionCallback, void*);
 	void (*Rtext_editor_add_completion)(Rid, const char*, const char*);
+	void (*Rtext_editor_add_completion_insert)(Rid, const char*, const char*, const char*);
+	void (*Rtext_editor_set_completion_words)(Rid, int);
 	void (*Rtext_editor_set_auto_pairs)(Rid, int);
 	void (*Rtext_editor_add_marker)(Rid, int, int, int, RMarkerKind, const char*);
 	void (*Rtext_editor_clear_markers)(Rid);
 	int (*Rtext_editor_get_marker_count)(Rid);
+	void (*Rtext_editor_set_hover_callback)(Rid, RTextEditorHoverCallback, void*);
+	void (*Rtext_editor_set_search)(Rid, const char*, Ruint);
+	const char* (*Rtext_editor_get_search)(Rid);
+	Ruint (*Rtext_editor_get_search_flags)(Rid);
+	int (*Rtext_editor_find_next)(Rid);
+	int (*Rtext_editor_find_previous)(Rid);
+	int (*Rtext_editor_get_match_count)(Rid);
+	int (*Rtext_editor_get_match_index)(Rid);
+	int (*Rtext_editor_get_match)(Rid, int, int*, int*, int*);
+	int (*Rtext_editor_select_match)(Rid, int);
+	int (*Rtext_editor_replace)(Rid, const char*);
+	int (*Rtext_editor_replace_all)(Rid, const char*);
+	void (*Rtext_editor_show_find)(Rid, int);
+	void (*Rtext_editor_hide_find)(Rid);
+	int (*Rtext_editor_is_find_shown)(Rid);
+	void (*Rtext_editor_set_find_bar)(Rid, int);
 	void (*Rtheme_set_token_color)(RToken, float, float, float, float);
 	void (*Rtheme_get_token_color)(RToken, float*, float*, float*, float*);
 	void (*Rtheme_clear_token_colors)(void);
@@ -740,6 +1092,8 @@ static struct {
 	void (*Rdock_area_set_close_callback)(Rid, RDockCloseCallback, void*);
 	void (*Rdock_area_set_tearable)(Rid, int);
 	int (*Rdock_area_is_tearable)(Rid);
+	void (*Rdock_area_set_float_mode)(Rid, RDockFloatMode);
+	void (*Rdock_area_set_float_window)(Rid, Ruint, RDockFloatWindowCallback, void*);
 	Rid (*Rdock_area_float_panel)(Rid, Rid, int, int);
 	void (*Rdock_area_dock_panel)(Rid, Rid);
 	Rid (*Rdock_area_get_panel_window)(Rid, Rid);
@@ -770,6 +1124,8 @@ static struct {
 	void (*Rtray_set_tooltip)(Rid, const char*);
 	void (*Rtray_set_menu)(Rid, Rid);
 	void (*Rtray_set_clicked_callback)(Rid, RTrayClickedCallback, void*);
+	void (*Rtray_set_title)(Rid, const char*);
+	int (*Rtray_get_rect)(Rid, int*, int*, int*, int*);
 	Rid (*Rcolor_picker_create)(void);
 	void (*Rcolor_picker_set_color)(Rid, float, float, float, float);
 	void (*Rcolor_picker_get_color)(Rid, float*, float*, float*, float*);
@@ -928,6 +1284,11 @@ static struct {
 	void (*Rnode_graph_set_pin_tag)(Rid, int, const char*);
 	void (*Rnode_graph_set_link_hidden)(Rid, int, int);
 	void (*Rnode_graph_set_pin_emphasis)(Rid, int, int);
+	int (*Rnode_graph_get_tag_at)(Rid, float, float);
+	void (*Rnode_graph_set_pin_tag_lit)(Rid, int, int);
+	void (*Rnode_graph_set_pin_label_width)(Rid, float);
+	float (*Rnode_graph_get_pin_label_width)(Rid);
+	void (*Rnode_graph_set_node_badge_color)(Rid, int, float, float, float);
 	Rid (*Rblock_editor_create)(void);
 	int (*Rblock_editor_add_kind)(Rid, const char*, const char*, RBlockShape, const char*);
 	void (*Rblock_editor_set_category_color)(Rid, const char*, float, float, float);
@@ -964,6 +1325,38 @@ static struct {
 	void (*Rblock_editor_select)(Rid, int, int);
 	void (*Rblock_editor_get_view)(Rid, float*, float*, float*);
 	void (*Rblock_editor_set_view)(Rid, float, float, float);
+	char* (*Rdiff_unified)(const char*, const char*, const char*, const char*, int, uint32_t, size_t*);
+	int (*Rdiff_count_changes)(const char*, const char*, uint32_t);
+	Rid (*Rdiff_view_create)(void);
+	void (*Rdiff_view_set_texts)(Rid, const char*, const char*);
+	void (*Rdiff_view_set_names)(Rid, const char*, const char*);
+	int (*Rdiff_view_load_files)(Rid, const char*, const char*);
+	int (*Rdiff_view_set_patch)(Rid, const char*);
+	void (*Rdiff_view_set_mode)(Rid, RDiffViewMode);
+	RDiffViewMode (*Rdiff_view_get_mode)(Rid);
+	void (*Rdiff_view_set_context)(Rid, int);
+	int (*Rdiff_view_get_context)(Rid);
+	void (*Rdiff_view_set_flags)(Rid, uint32_t);
+	uint32_t (*Rdiff_view_get_flags)(Rid);
+	void (*Rdiff_view_set_word_diff)(Rid, int);
+	void (*Rdiff_view_set_line_numbers)(Rid, int);
+	void (*Rdiff_view_set_language)(Rid, const char*);
+	int (*Rdiff_view_get_change_count)(Rid);
+	int (*Rdiff_view_get_change)(Rid, int, int*, int*, int*, int*);
+	void (*Rdiff_view_go_to_change)(Rid, int);
+	int (*Rdiff_view_get_current_change)(Rid);
+	int (*Rdiff_view_next_change)(Rid);
+	int (*Rdiff_view_prev_change)(Rid);
+	int (*Rdiff_view_get_row_count)(Rid);
+	RDiffRowKind (*Rdiff_view_get_row)(Rid, int, int*, int*);
+	const char* (*Rdiff_view_get_row_text)(Rid, int, RDiffSide);
+	int (*Rdiff_view_expand)(Rid, int);
+	int (*Rdiff_view_get_first_visible_row)(Rid);
+	void (*Rdiff_view_scroll_to_row)(Rid, int);
+	void (*Rdiff_view_add_annotation)(Rid, RDiffSide, int, const char*);
+	void (*Rdiff_view_clear_annotations)(Rid);
+	const char* (*Rdiff_view_get_selected_text)(Rid);
+	void (*Rdiff_view_set_line_clicked_callback)(Rid, RDiffViewLineCallback, void*);
 	void (*Rdialog_open)(Rid, Rid, RDialogClosedCallback, void*);
 	void (*Rdialog_close)(Rid, int);
 	int (*Rdialog_run)(Rid, Rid);
@@ -1004,6 +1397,27 @@ static struct {
 	int (*Rnotification_is_supported)(void);
 	void (*Rnotification_set_fallback)(RNotificationFallback, void*);
 	void (*Rnotification_set_clicked_callback)(RNotificationClickedCallback, void*);
+	int (*Rnotification_show_desc)(const RNotificationDesc*);
+	void (*Rnotification_close)(const char*);
+	void (*Rnotification_set_callback)(RNotificationCallback, void*);
+	void (*Rnotification_set_bring_to_front)(int);
+	void (*Rnotification_set_fallback_toast)(Rid);
+	int (*Rnotification_supports)(RNotificationFeature);
+	RPermissionStatus (*Rpermission_get_status)(RPermission);
+	void (*Rpermission_request)(RPermission, RPermissionCallback, void*);
+	int (*Rpermission_open_settings)(void);
+	const char* (*Rpermission_to_string)(RPermission);
+	const char* (*Rpermission_status_to_string)(RPermissionStatus);
+	void (*Rfile_open_async)(const RFileDialogDesc*, RDeviceCallback, void*);
+	void (*Rfile_save_async)(const RFileDialogDesc*, const void*, size_t, RDeviceCallback, void*);
+	void (*Rfile_export_async)(const RFileDialogDesc*, const char*, RDeviceCallback, void*);
+	void (*Rfile_select_folder_async)(const RFileDialogDesc*, RDeviceCallback, void*);
+	int (*Rcamera_is_available)(void);
+	void (*Rcamera_take_photo)(RDeviceCallback, void*);
+	void (*Rphoto_pick)(int, RDeviceCallback, void*);
+	int (*Rhaptic_is_supported)(void);
+	int (*Rhaptic_play)(RHaptic);
+	void (*Rshare_show)(const RShareDesc*, RDeviceCallback, void*);
 	void (*Rviewport_set_texture)(Rid, Rid);
 	void (*Rviewport_set_stretch)(Rid, RStretch);
 	void (*Rviewport_set_flip_y)(Rid, int);
@@ -1016,6 +1430,7 @@ static struct {
 	void (*Rcustom_set_paint_callback)(Rid, RPaintCallback, void*);
 	void (*Rcustom_set_measure_callback)(Rid, RMeasureCallback, void*);
 	void (*Rdraw_rect)(RPainter*, float, float, float, float, float, float, float, float, float);
+	void (*Rdraw_shadow)(RPainter*, float, float, float, float, float, float, float, float, float, float);
 	void (*Rdraw_rect_outline)(RPainter*, float, float, float, float, float, float, float, float, float, float);
 	void (*Rdraw_circle)(RPainter*, float, float, float, float, float, float, float);
 	void (*Rdraw_line)(RPainter*, float, float, float, float, float, float, float, float, float);
@@ -1107,6 +1522,18 @@ static struct {
 	int (*Rxml_get_tag_children)(const char*);
 	int (*Rxml_get_attribute_count)(const char*);
 	int (*Rxml_get_attribute_info)(const char*, int, RXmlAttributeInfo*);
+	int (*Rscript_load)(const char*, size_t, const char*);
+	int (*Rscript_load_file)(const char*);
+	int (*Rscript_check)(const char*, size_t, const char*);
+	int (*Rscript_check_file)(const char*);
+	const char* (*Rscript_format)(const char*, size_t, const char*);
+	void (*Rscript_reset)(void);
+	int (*Rscript_has_function)(const char*);
+	void (*Rscript_set_enabled)(int);
+	int (*Rscript_is_enabled)(void);
+	void (*Rscript_set_limits)(Ruint, int, size_t);
+	void (*Rscript_set_log_callback)(RScriptLogCallback, void*);
+	void (*Rscript_set_diagnostic_callback)(RScriptDiagnosticCallback, void*);
 	int (*Rlocale_load_csv)(const char*);
 	int (*Rlocale_load_csv_from_memory)(const char*, size_t);
 	void (*Rlocale_clear)(void);
@@ -1125,6 +1552,21 @@ static struct {
 	const char* (*Rtr_plural)(const char*, int);
 	void (*Rwidget_set_text_key)(Rid, const char*, const char*);
 	const char* (*Rlocale_format_number)(double, int);
+	void (*Rlocale_set_clock)(RClock);
+	RClock (*Rlocale_get_clock)(void);
+	int (*Rlocale_uses_12_hour_clock)(void);
+	const char* (*Rlocale_get_day_period)(int);
+	const char* (*Rlocale_format_time)(int, int, int, int);
+	const char* (*Rtimezone_get_system)(void);
+	void (*Rtimezone_set_directory)(const char*);
+	int (*Rtimezone_is_valid)(const char*);
+	int (*Rtimezone_to_local)(const char*, double, int*, int*, int*, int*, int*, int*);
+	double (*Rtimezone_from_local)(const char*, int, int, int, int, int, int);
+	int (*Rtimezone_count_local)(const char*, int, int, int, int, int, int);
+	int (*Rtimezone_get_offset)(const char*, double);
+	int (*Rtimezone_is_daylight_saving)(const char*, double);
+	const char* (*Rtimezone_get_abbreviation)(const char*, double);
+	const char* (*Rtimezone_get_label)(const char*, double);
 	void (*Raccessibility_set_text_scale)(float);
 	float (*Raccessibility_get_text_scale)(void);
 	void (*Raccessibility_set_high_contrast)(int);
@@ -1144,19 +1586,56 @@ static struct {
 	RAccessibleRole (*Rwidget_get_accessible_role)(Rid);
 	void (*Rwidget_set_accessible_hidden)(Rid, int);
 	void (*Rwidget_set_accessible_labelled_by)(Rid, Rid);
+	void (*Rwidget_set_accessible_action)(Rid, RAccessiblePressCallback, void*);
+	void (*Rwidget_set_accessible_checked)(Rid, int);
 	void (*Raccessibility_announce)(const char*, int);
 	int (*Raccessibility_is_screen_reader_active)(void);
 	void (*Rhost_platform_register)(const RHostPlatformDesc*);
 	int (*Rhost_platform_is_active)(void);
 	void (*Rhost_window_set_size)(Rid, int, int, float);
+	void (*Rhost_window_set_insets)(Rid, const RInsets*, int);
+	void (*Rhost_set_system_dark)(int);
 	void (*Rhost_inject_mouse_move)(Rid, int, int, Ruint);
 	void (*Rhost_inject_mouse_button)(Rid, int, int, RMouseButton, int, Ruint);
 	void (*Rhost_inject_mouse_wheel)(Rid, float, float, Ruint);
 	void (*Rhost_inject_mouse_leave)(Rid);
 	void (*Rhost_inject_key)(Rid, RKey, int, Ruint, int);
 	void (*Rhost_inject_text)(Rid, uint32_t);
+	void (*Rhost_inject_composition)(Rid, const char*, int, int);
 	void (*Rhost_inject_focus)(Rid, int);
 	void (*Rhost_inject_close)(Rid);
+	void (*Rhost_permission_answer)(RPermission, RPermissionStatus);
+	void (*Rhost_service_complete)(Ruint, RDeviceResult, const RPickedFile*, int);
+	void (*Rtest_set_deterministic)(int);
+	int (*Rtest_is_deterministic)(void);
+	const char* (*Rtest_get_platform_tag)(void);
+	Rid (*Rtest_find)(Rid, const char*);
+	int (*Rtest_click)(Rid);
+	int (*Rtest_double_click)(Rid);
+	int (*Rtest_right_click)(Rid);
+	int (*Rtest_click_at)(Rid, float, float, RMouseButton, int, Ruint);
+	int (*Rtest_hover)(Rid);
+	int (*Rtest_hover_at)(Rid, float, float);
+	int (*Rtest_drag)(Rid, float, float);
+	int (*Rtest_drag_to)(Rid, Rid);
+	int (*Rtest_scroll)(Rid, float, float);
+	int (*Rtest_key)(Rid, RKey, Ruint);
+	int (*Rtest_type_text)(Rid, const char*);
+	int (*Rtest_tap)(Rid);
+	int (*Rtest_swipe)(Rid, float, float, double);
+	int (*Rtest_pump)(int);
+	int (*Rtest_is_idle)(void);
+	int (*Rtest_settle)(double);
+	const char* (*Rtest_get_text)(Rid);
+	int (*Rtest_is_shown)(Rid);
+	int (*Rtest_is_checked)(Rid);
+	int (*Rtest_expect_golden)(Rid, const char*, const RGoldenOptions*, RGoldenResult*);
+	int (*Rtest_compare_pixels)(const uint8_t*, const uint8_t*, int, int, int, int*, uint8_t*);
+	const char* (*Rtest_dump_tree)(Rid);
+	int (*Rtest_save_tree)(Rid, const char*);
+	int (*Rtest_save_png)(Rid, const char*);
+	int (*Rtest_run_script)(const char*, const char*);
+	const char* (*Rtest_get_script_error)(void);
 } rn;
 
 static const struct {
@@ -1186,6 +1665,9 @@ static const struct {
 	{"Rset_frame_callback", offsetof(__typeof__(rn), Rset_frame_callback)},
 	{"Rget_delta_time", offsetof(__typeof__(rn), Rget_delta_time)},
 	{"Rget_time", offsetof(__typeof__(rn), Rget_time)},
+	{"Rset_app_event_callback", offsetof(__typeof__(rn), Rset_app_event_callback)},
+	{"Ris_app_paused", offsetof(__typeof__(rn), Ris_app_paused)},
+	{"Rinject_app_event", offsetof(__typeof__(rn), Rinject_app_event)},
 	{"Rset_ui_scale", offsetof(__typeof__(rn), Rset_ui_scale)},
 	{"Rset_vsync", offsetof(__typeof__(rn), Rset_vsync)},
 	{"Rget_vsync", offsetof(__typeof__(rn), Rget_vsync)},
@@ -1208,12 +1690,30 @@ static const struct {
 	{"Raction_unbind", offsetof(__typeof__(rn), Raction_unbind)},
 	{"Raction_fire", offsetof(__typeof__(rn), Raction_fire)},
 	{"Raction_set_default_handler", offsetof(__typeof__(rn), Raction_set_default_handler)},
+	{"Raction_bind_with_parameters", offsetof(__typeof__(rn), Raction_bind_with_parameters)},
+	{"Raction_get_sender", offsetof(__typeof__(rn), Raction_get_sender)},
+	{"Raction_get_name", offsetof(__typeof__(rn), Raction_get_name)},
+	{"Raction_get_argument_count", offsetof(__typeof__(rn), Raction_get_argument_count)},
+	{"Raction_get_number", offsetof(__typeof__(rn), Raction_get_number)},
+	{"Raction_get_string", offsetof(__typeof__(rn), Raction_get_string)},
+	{"Raction_get_bool", offsetof(__typeof__(rn), Raction_get_bool)},
+	{"Raction_return_number", offsetof(__typeof__(rn), Raction_return_number)},
+	{"Raction_return_string", offsetof(__typeof__(rn), Raction_return_string)},
+	{"Raction_return_bool", offsetof(__typeof__(rn), Raction_return_bool)},
+	{"Raction_fail", offsetof(__typeof__(rn), Raction_fail)},
 	{"Raction_set_builtins", offsetof(__typeof__(rn), Raction_set_builtins)},
 	{"Raction_is_builtin", offsetof(__typeof__(rn), Raction_is_builtin)},
 	{"Ropen_url", offsetof(__typeof__(rn), Ropen_url)},
 	{"Rclipboard_set_text", offsetof(__typeof__(rn), Rclipboard_set_text)},
 	{"Rclipboard_set_html", offsetof(__typeof__(rn), Rclipboard_set_html)},
 	{"Rclipboard_get_text", offsetof(__typeof__(rn), Rclipboard_get_text)},
+	{"Rclipboard_has_text", offsetof(__typeof__(rn), Rclipboard_has_text)},
+	{"Rclipboard_set_data", offsetof(__typeof__(rn), Rclipboard_set_data)},
+	{"Rclipboard_has_data", offsetof(__typeof__(rn), Rclipboard_has_data)},
+	{"Rclipboard_get_data", offsetof(__typeof__(rn), Rclipboard_get_data)},
+	{"Rclipboard_set_image", offsetof(__typeof__(rn), Rclipboard_set_image)},
+	{"Rclipboard_has_image", offsetof(__typeof__(rn), Rclipboard_has_image)},
+	{"Rclipboard_get_image", offsetof(__typeof__(rn), Rclipboard_get_image)},
 	{"Rerror_get_last", offsetof(__typeof__(rn), Rerror_get_last)},
 	{"Rerror_to_string", offsetof(__typeof__(rn), Rerror_to_string)},
 	{"Rseverity_to_string", offsetof(__typeof__(rn), Rseverity_to_string)},
@@ -1229,6 +1729,13 @@ static const struct {
 	{"Rwindow_get_title", offsetof(__typeof__(rn), Rwindow_get_title)},
 	{"Rwindow_set_size", offsetof(__typeof__(rn), Rwindow_set_size)},
 	{"Rwindow_get_size", offsetof(__typeof__(rn), Rwindow_get_size)},
+	{"Rwindow_get_safe_area", offsetof(__typeof__(rn), Rwindow_get_safe_area)},
+	{"Rwindow_get_keyboard_area", offsetof(__typeof__(rn), Rwindow_get_keyboard_area)},
+	{"Rwindow_set_keyboard_callback", offsetof(__typeof__(rn), Rwindow_set_keyboard_callback)},
+	{"Rwindow_clear_focus", offsetof(__typeof__(rn), Rwindow_clear_focus)},
+	{"Rwindow_set_back_callback", offsetof(__typeof__(rn), Rwindow_set_back_callback)},
+	{"Rwindow_set_back_enabled", offsetof(__typeof__(rn), Rwindow_set_back_enabled)},
+	{"Rwindow_wants_back", offsetof(__typeof__(rn), Rwindow_wants_back)},
 	{"Rwindow_set_min_size", offsetof(__typeof__(rn), Rwindow_set_min_size)},
 	{"Rwindow_set_position", offsetof(__typeof__(rn), Rwindow_set_position)},
 	{"Rwindow_get_position", offsetof(__typeof__(rn), Rwindow_get_position)},
@@ -1257,6 +1764,8 @@ static const struct {
 	{"Rwindow_set_opacity", offsetof(__typeof__(rn), Rwindow_set_opacity)},
 	{"Rwindow_get_opacity", offsetof(__typeof__(rn), Rwindow_get_opacity)},
 	{"Rwindow_set_topmost", offsetof(__typeof__(rn), Rwindow_set_topmost)},
+	{"Rwindow_set_owner", offsetof(__typeof__(rn), Rwindow_set_owner)},
+	{"Rwindow_get_owner", offsetof(__typeof__(rn), Rwindow_get_owner)},
 	{"Rwindow_set_picture_in_picture", offsetof(__typeof__(rn), Rwindow_set_picture_in_picture)},
 	{"Rwindow_is_picture_in_picture", offsetof(__typeof__(rn), Rwindow_is_picture_in_picture)},
 	{"Rwindow_set_picture_in_picture_layout", offsetof(__typeof__(rn), Rwindow_set_picture_in_picture_layout)},
@@ -1270,6 +1779,7 @@ static const struct {
 	{"Rwindow_set_close_callback", offsetof(__typeof__(rn), Rwindow_set_close_callback)},
 	{"Rwindow_set_resize_callback", offsetof(__typeof__(rn), Rwindow_set_resize_callback)},
 	{"Rwindow_set_drop_callback", offsetof(__typeof__(rn), Rwindow_set_drop_callback)},
+	{"Rdrop_set_highlight_rect", offsetof(__typeof__(rn), Rdrop_set_highlight_rect)},
 	{"Rwindow_set_user_handle", offsetof(__typeof__(rn), Rwindow_set_user_handle)},
 	{"Rwindow_get_user_handle", offsetof(__typeof__(rn), Rwindow_get_user_handle)},
 	{"Rwindow_get_native_handle", offsetof(__typeof__(rn), Rwindow_get_native_handle)},
@@ -1282,13 +1792,22 @@ static const struct {
 	{"Rwindow_inject_mouse_wheel", offsetof(__typeof__(rn), Rwindow_inject_mouse_wheel)},
 	{"Rwindow_inject_key", offsetof(__typeof__(rn), Rwindow_inject_key)},
 	{"Rwindow_inject_text", offsetof(__typeof__(rn), Rwindow_inject_text)},
+	{"Rwindow_inject_composition", offsetof(__typeof__(rn), Rwindow_inject_composition)},
 	{"Rwindow_inject_drag", offsetof(__typeof__(rn), Rwindow_inject_drag)},
 	{"Rwindow_inject_drop", offsetof(__typeof__(rn), Rwindow_inject_drop)},
+	{"Rwindow_inject_drag_end", offsetof(__typeof__(rn), Rwindow_inject_drag_end)},
+	{"Rwindow_inject_back", offsetof(__typeof__(rn), Rwindow_inject_back)},
 	{"Rwindow_is_key_down", offsetof(__typeof__(rn), Rwindow_is_key_down)},
 	{"Rwindow_is_mouse_button_down", offsetof(__typeof__(rn), Rwindow_is_mouse_button_down)},
 	{"Rwindow_get_modifiers", offsetof(__typeof__(rn), Rwindow_get_modifiers)},
 	{"Rwindow_is_mouse_inside", offsetof(__typeof__(rn), Rwindow_is_mouse_inside)},
 	{"Rwindow_wants_text_input", offsetof(__typeof__(rn), Rwindow_wants_text_input)},
+	{"Rwindow_get_text_input_info", offsetof(__typeof__(rn), Rwindow_get_text_input_info)},
+	{"Rwindow_get_text_input_text", offsetof(__typeof__(rn), Rwindow_get_text_input_text)},
+	{"Rwindow_get_text_input_selection", offsetof(__typeof__(rn), Rwindow_get_text_input_selection)},
+	{"Rwindow_set_text_input_selection", offsetof(__typeof__(rn), Rwindow_set_text_input_selection)},
+	{"Rwindow_replace_text_input", offsetof(__typeof__(rn), Rwindow_replace_text_input)},
+	{"Rwindow_get_text_composition", offsetof(__typeof__(rn), Rwindow_get_text_composition)},
 	{"Rwindow_has_popup", offsetof(__typeof__(rn), Rwindow_has_popup)},
 	{"Rwindow_get_text_input_rect", offsetof(__typeof__(rn), Rwindow_get_text_input_rect)},
 	{"Rwindow_get_popup_count", offsetof(__typeof__(rn), Rwindow_get_popup_count)},
@@ -1300,6 +1819,10 @@ static const struct {
 	{"Rdrag_get_type", offsetof(__typeof__(rn), Rdrag_get_type)},
 	{"Rdrag_get_data", offsetof(__typeof__(rn), Rdrag_get_data)},
 	{"Rdrag_cancel", offsetof(__typeof__(rn), Rdrag_cancel)},
+	{"Rdrag_begin_external", offsetof(__typeof__(rn), Rdrag_begin_external)},
+	{"Rdrag_set_image", offsetof(__typeof__(rn), Rdrag_set_image)},
+	{"Rdrag_external_supported", offsetof(__typeof__(rn), Rdrag_external_supported)},
+	{"Rdrag_external_is_active", offsetof(__typeof__(rn), Rdrag_external_is_active)},
 	{"Rwindow_register_shortcut", offsetof(__typeof__(rn), Rwindow_register_shortcut)},
 	{"Rwindow_unregister_shortcut", offsetof(__typeof__(rn), Rwindow_unregister_shortcut)},
 	{"Rtouch_get_settings", offsetof(__typeof__(rn), Rtouch_get_settings)},
@@ -1338,6 +1861,8 @@ static const struct {
 	{"Rtheme_get_font", offsetof(__typeof__(rn), Rtheme_get_font)},
 	{"Rtheme_set_accent", offsetof(__typeof__(rn), Rtheme_set_accent)},
 	{"Rtheme_set_dark", offsetof(__typeof__(rn), Rtheme_set_dark)},
+	{"Rtheme_get_system_dark", offsetof(__typeof__(rn), Rtheme_get_system_dark)},
+	{"Rtheme_follow_system", offsetof(__typeof__(rn), Rtheme_follow_system)},
 	{"Rtheme_is_dark", offsetof(__typeof__(rn), Rtheme_is_dark)},
 	{"Rtheme_set_wallpaper", offsetof(__typeof__(rn), Rtheme_set_wallpaper)},
 	{"Rtheme_get_wallpaper", offsetof(__typeof__(rn), Rtheme_get_wallpaper)},
@@ -1365,19 +1890,28 @@ static const struct {
 	{"Rtexture_create", offsetof(__typeof__(rn), Rtexture_create)},
 	{"Rtexture_create_async", offsetof(__typeof__(rn), Rtexture_create_async)},
 	{"Rtexture_create_from_svg", offsetof(__typeof__(rn), Rtexture_create_from_svg)},
+	{"Rtexture_uses_current_color", offsetof(__typeof__(rn), Rtexture_uses_current_color)},
 	{"Rtexture_get_density", offsetof(__typeof__(rn), Rtexture_get_density)},
 	{"Rtexture_create_from_file", offsetof(__typeof__(rn), Rtexture_create_from_file)},
 	{"Rtexture_create_from_file_async", offsetof(__typeof__(rn), Rtexture_create_from_file_async)},
+	{"Rtexture_create_from_url_async", offsetof(__typeof__(rn), Rtexture_create_from_url_async)},
 	{"Rtexture_create_from_pixels", offsetof(__typeof__(rn), Rtexture_create_from_pixels)},
 	{"Rtexture_update", offsetof(__typeof__(rn), Rtexture_update)},
 	{"Rimage_decode", offsetof(__typeof__(rn), Rimage_decode)},
+	{"Rimage_decode_info", offsetof(__typeof__(rn), Rimage_decode_info)},
+	{"Rimage_decode_frame", offsetof(__typeof__(rn), Rimage_decode_frame)},
 	{"Rpixels_free", offsetof(__typeof__(rn), Rpixels_free)},
+	{"Rimage_encode_png", offsetof(__typeof__(rn), Rimage_encode_png)},
+	{"Rimage_save_png", offsetof(__typeof__(rn), Rimage_save_png)},
 	{"Rtexture_is_ready", offsetof(__typeof__(rn), Rtexture_is_ready)},
 	{"Rtexture_wait", offsetof(__typeof__(rn), Rtexture_wait)},
 	{"Rtexture_destroy", offsetof(__typeof__(rn), Rtexture_destroy)},
 	{"Rtexture_is_valid", offsetof(__typeof__(rn), Rtexture_is_valid)},
 	{"Rtexture_get_size", offsetof(__typeof__(rn), Rtexture_get_size)},
 	{"Rtexture_set_filter", offsetof(__typeof__(rn), Rtexture_set_filter)},
+	{"Ricon_get", offsetof(__typeof__(rn), Ricon_get)},
+	{"Ricon_get_count", offsetof(__typeof__(rn), Ricon_get_count)},
+	{"Ricon_get_name", offsetof(__typeof__(rn), Ricon_get_name)},
 	{"Rwidget_create", offsetof(__typeof__(rn), Rwidget_create)},
 	{"Rwidget_destroy", offsetof(__typeof__(rn), Rwidget_destroy)},
 	{"Rwidget_is_valid", offsetof(__typeof__(rn), Rwidget_is_valid)},
@@ -1557,6 +2091,19 @@ static const struct {
 	{"Rimage_set_stretch", offsetof(__typeof__(rn), Rimage_set_stretch)},
 	{"Rimage_set_region", offsetof(__typeof__(rn), Rimage_set_region)},
 	{"Rimage_set_corner_radius", offsetof(__typeof__(rn), Rimage_set_corner_radius)},
+	{"Rimage_is_animated", offsetof(__typeof__(rn), Rimage_is_animated)},
+	{"Rimage_get_frame_count", offsetof(__typeof__(rn), Rimage_get_frame_count)},
+	{"Rimage_get_duration", offsetof(__typeof__(rn), Rimage_get_duration)},
+	{"Rimage_get_frame_delay", offsetof(__typeof__(rn), Rimage_get_frame_delay)},
+	{"Rimage_play", offsetof(__typeof__(rn), Rimage_play)},
+	{"Rimage_pause", offsetof(__typeof__(rn), Rimage_pause)},
+	{"Rimage_stop", offsetof(__typeof__(rn), Rimage_stop)},
+	{"Rimage_is_playing", offsetof(__typeof__(rn), Rimage_is_playing)},
+	{"Rimage_set_frame", offsetof(__typeof__(rn), Rimage_set_frame)},
+	{"Rimage_get_frame", offsetof(__typeof__(rn), Rimage_get_frame)},
+	{"Rimage_set_loop_count", offsetof(__typeof__(rn), Rimage_set_loop_count)},
+	{"Rimage_get_loop_count", offsetof(__typeof__(rn), Rimage_get_loop_count)},
+	{"Rimage_set_finished_callback", offsetof(__typeof__(rn), Rimage_set_finished_callback)},
 	{"Rtext_input_set_text", offsetof(__typeof__(rn), Rtext_input_set_text)},
 	{"Rtext_input_get_text", offsetof(__typeof__(rn), Rtext_input_get_text)},
 	{"Rtext_input_set_placeholder", offsetof(__typeof__(rn), Rtext_input_set_placeholder)},
@@ -1566,14 +2113,34 @@ static const struct {
 	{"Rtext_input_set_read_only", offsetof(__typeof__(rn), Rtext_input_set_read_only)},
 	{"Rtext_input_set_max_length", offsetof(__typeof__(rn), Rtext_input_set_max_length)},
 	{"Rtext_input_select_all", offsetof(__typeof__(rn), Rtext_input_select_all)},
+	{"Rtext_input_set_input_type", offsetof(__typeof__(rn), Rtext_input_set_input_type)},
+	{"Rtext_input_get_input_type", offsetof(__typeof__(rn), Rtext_input_get_input_type)},
+	{"Rtext_input_set_return_key", offsetof(__typeof__(rn), Rtext_input_set_return_key)},
+	{"Rtext_input_get_return_key", offsetof(__typeof__(rn), Rtext_input_get_return_key)},
 	{"Rtext_input_set_changed_callback", offsetof(__typeof__(rn), Rtext_input_set_changed_callback)},
 	{"Rtext_input_set_committed_callback", offsetof(__typeof__(rn), Rtext_input_set_committed_callback)},
+	{"Rtext_input_set_spell_check", offsetof(__typeof__(rn), Rtext_input_set_spell_check)},
+	{"Rtext_input_get_spell_check", offsetof(__typeof__(rn), Rtext_input_get_spell_check)},
+	{"Rtext_input_set_spell_language", offsetof(__typeof__(rn), Rtext_input_set_spell_language)},
+	{"Rspell_is_supported", offsetof(__typeof__(rn), Rspell_is_supported)},
+	{"Rspell_get_language_count", offsetof(__typeof__(rn), Rspell_get_language_count)},
+	{"Rspell_get_language_at", offsetof(__typeof__(rn), Rspell_get_language_at)},
+	{"Rspell_set_language", offsetof(__typeof__(rn), Rspell_set_language)},
+	{"Rspell_get_language", offsetof(__typeof__(rn), Rspell_get_language)},
+	{"Rspell_check", offsetof(__typeof__(rn), Rspell_check)},
+	{"Rspell_get_misspelling", offsetof(__typeof__(rn), Rspell_get_misspelling)},
+	{"Rspell_suggest", offsetof(__typeof__(rn), Rspell_suggest)},
+	{"Rspell_get_suggestion", offsetof(__typeof__(rn), Rspell_get_suggestion)},
+	{"Rspell_learn", offsetof(__typeof__(rn), Rspell_learn)},
+	{"Rspell_ignore", offsetof(__typeof__(rn), Rspell_ignore)},
 	{"Rspin_box_set_range", offsetof(__typeof__(rn), Rspin_box_set_range)},
 	{"Rspin_box_set_value", offsetof(__typeof__(rn), Rspin_box_set_value)},
 	{"Rspin_box_get_value", offsetof(__typeof__(rn), Rspin_box_get_value)},
 	{"Rspin_box_get_range", offsetof(__typeof__(rn), Rspin_box_get_range)},
 	{"Rspin_box_set_step", offsetof(__typeof__(rn), Rspin_box_set_step)},
 	{"Rspin_box_set_decimals", offsetof(__typeof__(rn), Rspin_box_set_decimals)},
+	{"Rspin_box_set_buttons", offsetof(__typeof__(rn), Rspin_box_set_buttons)},
+	{"Rspin_box_get_buttons", offsetof(__typeof__(rn), Rspin_box_get_buttons)},
 	{"Rspin_box_set_changed_callback", offsetof(__typeof__(rn), Rspin_box_set_changed_callback)},
 	{"Rcombo_box_add_item", offsetof(__typeof__(rn), Rcombo_box_add_item)},
 	{"Rcombo_box_clear_items", offsetof(__typeof__(rn), Rcombo_box_clear_items)},
@@ -1582,6 +2149,15 @@ static const struct {
 	{"Rcombo_box_set_selected", offsetof(__typeof__(rn), Rcombo_box_set_selected)},
 	{"Rcombo_box_get_selected", offsetof(__typeof__(rn), Rcombo_box_get_selected)},
 	{"Rcombo_box_set_changed_callback", offsetof(__typeof__(rn), Rcombo_box_set_changed_callback)},
+	{"Rcombo_box_set_editable", offsetof(__typeof__(rn), Rcombo_box_set_editable)},
+	{"Rcombo_box_is_editable", offsetof(__typeof__(rn), Rcombo_box_is_editable)},
+	{"Rcombo_box_set_searchable", offsetof(__typeof__(rn), Rcombo_box_set_searchable)},
+	{"Rcombo_box_is_searchable", offsetof(__typeof__(rn), Rcombo_box_is_searchable)},
+	{"Rcombo_box_get_text", offsetof(__typeof__(rn), Rcombo_box_get_text)},
+	{"Rcombo_box_set_text", offsetof(__typeof__(rn), Rcombo_box_set_text)},
+	{"Rcombo_box_set_text_changed_callback", offsetof(__typeof__(rn), Rcombo_box_set_text_changed_callback)},
+	{"Rcombo_box_set_open", offsetof(__typeof__(rn), Rcombo_box_set_open)},
+	{"Rcombo_box_is_open", offsetof(__typeof__(rn), Rcombo_box_is_open)},
 	{"Rseparator_set_orientation", offsetof(__typeof__(rn), Rseparator_set_orientation)},
 	{"Rlist_view_add_item", offsetof(__typeof__(rn), Rlist_view_add_item)},
 	{"Rlist_view_set_item_text", offsetof(__typeof__(rn), Rlist_view_set_item_text)},
@@ -1590,6 +2166,7 @@ static const struct {
 	{"Rlist_view_clear_items", offsetof(__typeof__(rn), Rlist_view_clear_items)},
 	{"Rlist_view_get_item_count", offsetof(__typeof__(rn), Rlist_view_get_item_count)},
 	{"Rlist_view_set_virtual_items", offsetof(__typeof__(rn), Rlist_view_set_virtual_items)},
+	{"Rlist_view_set_item_color_callback", offsetof(__typeof__(rn), Rlist_view_set_item_color_callback)},
 	{"Rlist_view_set_selected", offsetof(__typeof__(rn), Rlist_view_set_selected)},
 	{"Rlist_view_get_selected", offsetof(__typeof__(rn), Rlist_view_get_selected)},
 	{"Rlist_view_scroll_to_item", offsetof(__typeof__(rn), Rlist_view_scroll_to_item)},
@@ -1633,9 +2210,13 @@ static const struct {
 	{"Rmenu_set_title", offsetof(__typeof__(rn), Rmenu_set_title)},
 	{"Rmenu_add_item", offsetof(__typeof__(rn), Rmenu_add_item)},
 	{"Rmenu_add_separator", offsetof(__typeof__(rn), Rmenu_add_separator)},
+	{"Rmenu_add_header", offsetof(__typeof__(rn), Rmenu_add_header)},
+	{"Rmenu_bar_add_divider", offsetof(__typeof__(rn), Rmenu_bar_add_divider)},
+	{"Rmenu_set_title_color", offsetof(__typeof__(rn), Rmenu_set_title_color)},
 	{"Rmenu_item_set_text", offsetof(__typeof__(rn), Rmenu_item_set_text)},
 	{"Rmenu_item_get_text", offsetof(__typeof__(rn), Rmenu_item_get_text)},
 	{"Rmenu_item_set_shortcut", offsetof(__typeof__(rn), Rmenu_item_set_shortcut)},
+	{"Rmenu_item_set_shortcut_text", offsetof(__typeof__(rn), Rmenu_item_set_shortcut_text)},
 	{"Rmenu_item_set_checkable", offsetof(__typeof__(rn), Rmenu_item_set_checkable)},
 	{"Rmenu_item_set_checked", offsetof(__typeof__(rn), Rmenu_item_set_checked)},
 	{"Rmenu_item_set_icon", offsetof(__typeof__(rn), Rmenu_item_set_icon)},
@@ -1648,6 +2229,14 @@ static const struct {
 	{"Rtile_view_get_count", offsetof(__typeof__(rn), Rtile_view_get_count)},
 	{"Rtile_view_set_tile_size", offsetof(__typeof__(rn), Rtile_view_set_tile_size)},
 	{"Rtile_view_set_empty_text", offsetof(__typeof__(rn), Rtile_view_set_empty_text)},
+	{"Rtile_view_set_icon_width", offsetof(__typeof__(rn), Rtile_view_set_icon_width)},
+	{"Rtile_view_set_sections", offsetof(__typeof__(rn), Rtile_view_set_sections)},
+	{"Rtile_view_get_section_count", offsetof(__typeof__(rn), Rtile_view_get_section_count)},
+	{"Rtile_view_get_section_of", offsetof(__typeof__(rn), Rtile_view_get_section_of)},
+	{"Rtile_view_set_section_folded", offsetof(__typeof__(rn), Rtile_view_set_section_folded)},
+	{"Rtile_view_is_section_folded", offsetof(__typeof__(rn), Rtile_view_is_section_folded)},
+	{"Rtile_view_get_section_at", offsetof(__typeof__(rn), Rtile_view_get_section_at)},
+	{"Rtile_view_set_section_toggled_callback", offsetof(__typeof__(rn), Rtile_view_set_section_toggled_callback)},
 	{"Rtile_view_set_selected", offsetof(__typeof__(rn), Rtile_view_set_selected)},
 	{"Rtile_view_is_selected", offsetof(__typeof__(rn), Rtile_view_is_selected)},
 	{"Rtile_view_clear_selection", offsetof(__typeof__(rn), Rtile_view_clear_selection)},
@@ -1660,6 +2249,7 @@ static const struct {
 	{"Rtile_view_set_drop_highlight", offsetof(__typeof__(rn), Rtile_view_set_drop_highlight)},
 	{"Rtile_view_set_drag_type", offsetof(__typeof__(rn), Rtile_view_set_drag_type)},
 	{"Rtile_view_set_drag_data_callback", offsetof(__typeof__(rn), Rtile_view_set_drag_data_callback)},
+	{"Rtile_view_set_drag_out_callback", offsetof(__typeof__(rn), Rtile_view_set_drag_out_callback)},
 	{"Rtile_view_set_selection_changed_callback", offsetof(__typeof__(rn), Rtile_view_set_selection_changed_callback)},
 	{"Rtile_view_set_activated_callback", offsetof(__typeof__(rn), Rtile_view_set_activated_callback)},
 	{"Rtile_view_set_context_callback", offsetof(__typeof__(rn), Rtile_view_set_context_callback)},
@@ -1680,8 +2270,23 @@ static const struct {
 	{"Rtable_clear_rows", offsetof(__typeof__(rn), Rtable_clear_rows)},
 	{"Rtable_get_row_count", offsetof(__typeof__(rn), Rtable_get_row_count)},
 	{"Rtable_set_virtual_rows", offsetof(__typeof__(rn), Rtable_set_virtual_rows)},
+	{"Rtable_set_cell_color_callback", offsetof(__typeof__(rn), Rtable_set_cell_color_callback)},
+	{"Rtable_set_cell_text_color", offsetof(__typeof__(rn), Rtable_set_cell_text_color)},
+	{"Rtable_set_multi_select", offsetof(__typeof__(rn), Rtable_set_multi_select)},
+	{"Rtable_set_selection_mode", offsetof(__typeof__(rn), Rtable_set_selection_mode)},
+	{"Rtable_get_selection_mode", offsetof(__typeof__(rn), Rtable_get_selection_mode)},
+	{"Rtable_set_row_selected", offsetof(__typeof__(rn), Rtable_set_row_selected)},
+	{"Rtable_is_row_selected", offsetof(__typeof__(rn), Rtable_is_row_selected)},
+	{"Rtable_select_range", offsetof(__typeof__(rn), Rtable_select_range)},
+	{"Rtable_select_all", offsetof(__typeof__(rn), Rtable_select_all)},
+	{"Rtable_clear_selection", offsetof(__typeof__(rn), Rtable_clear_selection)},
+	{"Rtable_get_selection_count", offsetof(__typeof__(rn), Rtable_get_selection_count)},
+	{"Rtable_get_selection", offsetof(__typeof__(rn), Rtable_get_selection)},
+	{"Rtable_get_selection_range_count", offsetof(__typeof__(rn), Rtable_get_selection_range_count)},
+	{"Rtable_get_selection_range", offsetof(__typeof__(rn), Rtable_get_selection_range)},
 	{"Rtable_set_selected", offsetof(__typeof__(rn), Rtable_set_selected)},
 	{"Rtable_get_selected", offsetof(__typeof__(rn), Rtable_get_selected)},
+	{"Rtable_get_current_row", offsetof(__typeof__(rn), Rtable_get_current_row)},
 	{"Rtable_scroll_to_row", offsetof(__typeof__(rn), Rtable_scroll_to_row)},
 	{"Rtable_sort", offsetof(__typeof__(rn), Rtable_sort)},
 	{"Rtable_get_sort_column", offsetof(__typeof__(rn), Rtable_get_sort_column)},
@@ -1692,6 +2297,18 @@ static const struct {
 	{"Rtable_set_selection_changed_callback", offsetof(__typeof__(rn), Rtable_set_selection_changed_callback)},
 	{"Rtable_set_activated_callback", offsetof(__typeof__(rn), Rtable_set_activated_callback)},
 	{"Rtable_set_sort_callback", offsetof(__typeof__(rn), Rtable_set_sort_callback)},
+	{"Rtable_set_column_editable", offsetof(__typeof__(rn), Rtable_set_column_editable)},
+	{"Rtable_is_column_editable", offsetof(__typeof__(rn), Rtable_is_column_editable)},
+	{"Rtable_set_cell_edited_callback", offsetof(__typeof__(rn), Rtable_set_cell_edited_callback)},
+	{"Rtable_edit_cell", offsetof(__typeof__(rn), Rtable_edit_cell)},
+	{"Rtable_is_editing", offsetof(__typeof__(rn), Rtable_is_editing)},
+	{"Rtable_end_edit", offsetof(__typeof__(rn), Rtable_end_edit)},
+	{"Rtable_set_frozen_columns", offsetof(__typeof__(rn), Rtable_set_frozen_columns)},
+	{"Rtable_get_frozen_columns", offsetof(__typeof__(rn), Rtable_get_frozen_columns)},
+	{"Rtable_set_column_kind", offsetof(__typeof__(rn), Rtable_set_column_kind)},
+	{"Rtable_get_column_kind", offsetof(__typeof__(rn), Rtable_get_column_kind)},
+	{"Rtable_is_cell_checked", offsetof(__typeof__(rn), Rtable_is_cell_checked)},
+	{"Rtable_set_cell_checked", offsetof(__typeof__(rn), Rtable_set_cell_checked)},
 	{"Rdate_picker_set_date", offsetof(__typeof__(rn), Rdate_picker_set_date)},
 	{"Rdate_picker_get_date", offsetof(__typeof__(rn), Rdate_picker_get_date)},
 	{"Rdate_picker_set_range", offsetof(__typeof__(rn), Rdate_picker_set_range)},
@@ -1701,11 +2318,25 @@ static const struct {
 	{"Rdate_picker_set_open", offsetof(__typeof__(rn), Rdate_picker_set_open)},
 	{"Rdate_picker_is_open", offsetof(__typeof__(rn), Rdate_picker_is_open)},
 	{"Rdate_picker_set_changed_callback", offsetof(__typeof__(rn), Rdate_picker_set_changed_callback)},
+	{"Rdate_picker_set_time_zone", offsetof(__typeof__(rn), Rdate_picker_set_time_zone)},
+	{"Rdate_picker_get_time_zone", offsetof(__typeof__(rn), Rdate_picker_get_time_zone)},
+	{"Rdate_picker_set_instant", offsetof(__typeof__(rn), Rdate_picker_set_instant)},
+	{"Rdate_picker_get_instant", offsetof(__typeof__(rn), Rdate_picker_get_instant)},
 	{"Rtime_picker_set_time", offsetof(__typeof__(rn), Rtime_picker_set_time)},
 	{"Rtime_picker_get_time", offsetof(__typeof__(rn), Rtime_picker_get_time)},
 	{"Rtime_picker_set_seconds_visible", offsetof(__typeof__(rn), Rtime_picker_set_seconds_visible)},
 	{"Rtime_picker_set_minute_step", offsetof(__typeof__(rn), Rtime_picker_set_minute_step)},
 	{"Rtime_picker_set_changed_callback", offsetof(__typeof__(rn), Rtime_picker_set_changed_callback)},
+	{"Rtime_picker_set_clock", offsetof(__typeof__(rn), Rtime_picker_set_clock)},
+	{"Rtime_picker_get_clock", offsetof(__typeof__(rn), Rtime_picker_get_clock)},
+	{"Rtime_picker_get_text", offsetof(__typeof__(rn), Rtime_picker_get_text)},
+	{"Rtime_picker_set_time_zone", offsetof(__typeof__(rn), Rtime_picker_set_time_zone)},
+	{"Rtime_picker_get_time_zone", offsetof(__typeof__(rn), Rtime_picker_get_time_zone)},
+	{"Rtime_picker_set_time_zone_visible", offsetof(__typeof__(rn), Rtime_picker_set_time_zone_visible)},
+	{"Rtime_picker_set_date", offsetof(__typeof__(rn), Rtime_picker_set_date)},
+	{"Rtime_picker_get_date", offsetof(__typeof__(rn), Rtime_picker_get_date)},
+	{"Rtime_picker_set_instant", offsetof(__typeof__(rn), Rtime_picker_set_instant)},
+	{"Rtime_picker_get_instant", offsetof(__typeof__(rn), Rtime_picker_get_instant)},
 	{"Rtoast_show", offsetof(__typeof__(rn), Rtoast_show)},
 	{"Rtoast_show_kind", offsetof(__typeof__(rn), Rtoast_show_kind)},
 	{"Rtoast_hide", offsetof(__typeof__(rn), Rtoast_hide)},
@@ -1794,6 +2425,168 @@ static const struct {
 	{"Rplot_set_view_changed_callback", offsetof(__typeof__(rn), Rplot_set_view_changed_callback)},
 	{"Rplot_set_drag_line_callback", offsetof(__typeof__(rn), Rplot_set_drag_line_callback)},
 	{"Rplot_set_series_toggled_callback", offsetof(__typeof__(rn), Rplot_set_series_toggled_callback)},
+	{"Rchart_create", offsetof(__typeof__(rn), Rchart_create)},
+	{"Rchart_set_kind", offsetof(__typeof__(rn), Rchart_set_kind)},
+	{"Rchart_get_kind", offsetof(__typeof__(rn), Rchart_get_kind)},
+	{"Rchart_set_title", offsetof(__typeof__(rn), Rchart_set_title)},
+	{"Rchart_get_title", offsetof(__typeof__(rn), Rchart_get_title)},
+	{"Rchart_set_format", offsetof(__typeof__(rn), Rchart_set_format)},
+	{"Rchart_set_color", offsetof(__typeof__(rn), Rchart_set_color)},
+	{"Rchart_set_legend", offsetof(__typeof__(rn), Rchart_set_legend)},
+	{"Rchart_clear", offsetof(__typeof__(rn), Rchart_clear)},
+	{"Rchart_get_hovered", offsetof(__typeof__(rn), Rchart_get_hovered)},
+	{"Rchart_add_slice", offsetof(__typeof__(rn), Rchart_add_slice)},
+	{"Rchart_remove_slice", offsetof(__typeof__(rn), Rchart_remove_slice)},
+	{"Rchart_get_slice_count", offsetof(__typeof__(rn), Rchart_get_slice_count)},
+	{"Rchart_set_slice_value", offsetof(__typeof__(rn), Rchart_set_slice_value)},
+	{"Rchart_get_slice_value", offsetof(__typeof__(rn), Rchart_get_slice_value)},
+	{"Rchart_set_slice_label", offsetof(__typeof__(rn), Rchart_set_slice_label)},
+	{"Rchart_get_slice_label", offsetof(__typeof__(rn), Rchart_get_slice_label)},
+	{"Rchart_set_slice_color", offsetof(__typeof__(rn), Rchart_set_slice_color)},
+	{"Rchart_get_total", offsetof(__typeof__(rn), Rchart_get_total)},
+	{"Rchart_set_selected", offsetof(__typeof__(rn), Rchart_set_selected)},
+	{"Rchart_get_selected", offsetof(__typeof__(rn), Rchart_get_selected)},
+	{"Rchart_set_hole", offsetof(__typeof__(rn), Rchart_set_hole)},
+	{"Rchart_set_center_text", offsetof(__typeof__(rn), Rchart_set_center_text)},
+	{"Rchart_set_slice_clicked_callback", offsetof(__typeof__(rn), Rchart_set_slice_clicked_callback)},
+	{"Rchart_set_range", offsetof(__typeof__(rn), Rchart_set_range)},
+	{"Rchart_get_range", offsetof(__typeof__(rn), Rchart_get_range)},
+	{"Rchart_set_value", offsetof(__typeof__(rn), Rchart_set_value)},
+	{"Rchart_get_value", offsetof(__typeof__(rn), Rchart_get_value)},
+	{"Rchart_add_band", offsetof(__typeof__(rn), Rchart_add_band)},
+	{"Rchart_clear_bands", offsetof(__typeof__(rn), Rchart_clear_bands)},
+	{"Rchart_get_band_count", offsetof(__typeof__(rn), Rchart_get_band_count)},
+	{"Rchart_set_grid", offsetof(__typeof__(rn), Rchart_set_grid)},
+	{"Rchart_get_row_count", offsetof(__typeof__(rn), Rchart_get_row_count)},
+	{"Rchart_get_column_count", offsetof(__typeof__(rn), Rchart_get_column_count)},
+	{"Rchart_set_cell", offsetof(__typeof__(rn), Rchart_set_cell)},
+	{"Rchart_get_cell", offsetof(__typeof__(rn), Rchart_get_cell)},
+	{"Rchart_set_row_labels", offsetof(__typeof__(rn), Rchart_set_row_labels)},
+	{"Rchart_set_column_labels", offsetof(__typeof__(rn), Rchart_set_column_labels)},
+	{"Rchart_get_row_label", offsetof(__typeof__(rn), Rchart_get_row_label)},
+	{"Rchart_get_column_label", offsetof(__typeof__(rn), Rchart_get_column_label)},
+	{"Rchart_set_color_scale", offsetof(__typeof__(rn), Rchart_set_color_scale)},
+	{"Rchart_set_cell_clicked_callback", offsetof(__typeof__(rn), Rchart_set_cell_clicked_callback)},
+	{"Rchart_set_values", offsetof(__typeof__(rn), Rchart_set_values)},
+	{"Rchart_push_value", offsetof(__typeof__(rn), Rchart_push_value)},
+	{"Rchart_get_value_count", offsetof(__typeof__(rn), Rchart_get_value_count)},
+	{"Rchart_get_value_at", offsetof(__typeof__(rn), Rchart_get_value_at)},
+	{"Rchart_set_fill", offsetof(__typeof__(rn), Rchart_set_fill)},
+	{"Rchart_set_marker", offsetof(__typeof__(rn), Rchart_set_marker)},
+	{"Rpdf_is_available", offsetof(__typeof__(rn), Rpdf_is_available)},
+	{"Rpdf_view_load_file", offsetof(__typeof__(rn), Rpdf_view_load_file)},
+	{"Rpdf_view_load_memory", offsetof(__typeof__(rn), Rpdf_view_load_memory)},
+	{"Rpdf_view_close", offsetof(__typeof__(rn), Rpdf_view_close)},
+	{"Rpdf_view_get_status", offsetof(__typeof__(rn), Rpdf_view_get_status)},
+	{"Rpdf_view_get_page_count", offsetof(__typeof__(rn), Rpdf_view_get_page_count)},
+	{"Rpdf_view_get_page_size", offsetof(__typeof__(rn), Rpdf_view_get_page_size)},
+	{"Rpdf_view_set_page", offsetof(__typeof__(rn), Rpdf_view_set_page)},
+	{"Rpdf_view_get_page", offsetof(__typeof__(rn), Rpdf_view_get_page)},
+	{"Rpdf_view_set_zoom", offsetof(__typeof__(rn), Rpdf_view_set_zoom)},
+	{"Rpdf_view_get_zoom", offsetof(__typeof__(rn), Rpdf_view_get_zoom)},
+	{"Rpdf_view_set_fit", offsetof(__typeof__(rn), Rpdf_view_set_fit)},
+	{"Rpdf_view_get_fit", offsetof(__typeof__(rn), Rpdf_view_get_fit)},
+	{"Rpdf_view_get_title", offsetof(__typeof__(rn), Rpdf_view_get_title)},
+	{"Rpdf_view_get_page_text", offsetof(__typeof__(rn), Rpdf_view_get_page_text)},
+	{"Rpdf_view_set_page_changed_callback", offsetof(__typeof__(rn), Rpdf_view_set_page_changed_callback)},
+	{"Rcarousel_create", offsetof(__typeof__(rn), Rcarousel_create)},
+	{"Rcarousel_set_page", offsetof(__typeof__(rn), Rcarousel_set_page)},
+	{"Rcarousel_get_page", offsetof(__typeof__(rn), Rcarousel_get_page)},
+	{"Rcarousel_get_page_count", offsetof(__typeof__(rn), Rcarousel_get_page_count)},
+	{"Rcarousel_next", offsetof(__typeof__(rn), Rcarousel_next)},
+	{"Rcarousel_prev", offsetof(__typeof__(rn), Rcarousel_prev)},
+	{"Rcarousel_set_loop", offsetof(__typeof__(rn), Rcarousel_set_loop)},
+	{"Rcarousel_get_loop", offsetof(__typeof__(rn), Rcarousel_get_loop)},
+	{"Rcarousel_set_autoplay", offsetof(__typeof__(rn), Rcarousel_set_autoplay)},
+	{"Rcarousel_get_autoplay", offsetof(__typeof__(rn), Rcarousel_get_autoplay)},
+	{"Rcarousel_set_indicators_visible", offsetof(__typeof__(rn), Rcarousel_set_indicators_visible)},
+	{"Rcarousel_get_indicators_visible", offsetof(__typeof__(rn), Rcarousel_get_indicators_visible)},
+	{"Rcarousel_set_arrows_visible", offsetof(__typeof__(rn), Rcarousel_set_arrows_visible)},
+	{"Rcarousel_get_arrows_visible", offsetof(__typeof__(rn), Rcarousel_get_arrows_visible)},
+	{"Rcarousel_set_orientation", offsetof(__typeof__(rn), Rcarousel_set_orientation)},
+	{"Rcarousel_get_orientation", offsetof(__typeof__(rn), Rcarousel_get_orientation)},
+	{"Rcarousel_set_page_changed_callback", offsetof(__typeof__(rn), Rcarousel_set_page_changed_callback)},
+	{"Rpdf_view_print", offsetof(__typeof__(rn), Rpdf_view_print)},
+	{"Rmap_view_create", offsetof(__typeof__(rn), Rmap_view_create)},
+	{"Rmap_view_set_center", offsetof(__typeof__(rn), Rmap_view_set_center)},
+	{"Rmap_view_get_center", offsetof(__typeof__(rn), Rmap_view_get_center)},
+	{"Rmap_view_set_zoom", offsetof(__typeof__(rn), Rmap_view_set_zoom)},
+	{"Rmap_view_get_zoom", offsetof(__typeof__(rn), Rmap_view_get_zoom)},
+	{"Rmap_view_set_zoom_range", offsetof(__typeof__(rn), Rmap_view_set_zoom_range)},
+	{"Rmap_view_get_zoom_range", offsetof(__typeof__(rn), Rmap_view_get_zoom_range)},
+	{"Rmap_view_animate_to", offsetof(__typeof__(rn), Rmap_view_animate_to)},
+	{"Rmap_view_screen_to_latlon", offsetof(__typeof__(rn), Rmap_view_screen_to_latlon)},
+	{"Rmap_view_latlon_to_screen", offsetof(__typeof__(rn), Rmap_view_latlon_to_screen)},
+	{"Rmap_view_set_tile_callback", offsetof(__typeof__(rn), Rmap_view_set_tile_callback)},
+	{"Rmap_view_set_tile_cancel_callback", offsetof(__typeof__(rn), Rmap_view_set_tile_cancel_callback)},
+	{"Rmap_view_set_tile", offsetof(__typeof__(rn), Rmap_view_set_tile)},
+	{"Rmap_view_set_tile_data", offsetof(__typeof__(rn), Rmap_view_set_tile_data)},
+	{"Rmap_view_set_tile_failed", offsetof(__typeof__(rn), Rmap_view_set_tile_failed)},
+	{"Rmap_view_set_tile_path", offsetof(__typeof__(rn), Rmap_view_set_tile_path)},
+	{"Rmap_view_get_tile_path", offsetof(__typeof__(rn), Rmap_view_get_tile_path)},
+	{"Rmap_view_set_tile_size", offsetof(__typeof__(rn), Rmap_view_set_tile_size)},
+	{"Rmap_view_get_tile_size", offsetof(__typeof__(rn), Rmap_view_get_tile_size)},
+	{"Rmap_view_set_cache_size", offsetof(__typeof__(rn), Rmap_view_set_cache_size)},
+	{"Rmap_view_get_cache_usage", offsetof(__typeof__(rn), Rmap_view_get_cache_usage)},
+	{"Rmap_view_clear_tiles", offsetof(__typeof__(rn), Rmap_view_clear_tiles)},
+	{"Rmap_view_get_tile_state", offsetof(__typeof__(rn), Rmap_view_get_tile_state)},
+	{"Rmap_view_add_marker", offsetof(__typeof__(rn), Rmap_view_add_marker)},
+	{"Rmap_view_remove_marker", offsetof(__typeof__(rn), Rmap_view_remove_marker)},
+	{"Rmap_view_clear_markers", offsetof(__typeof__(rn), Rmap_view_clear_markers)},
+	{"Rmap_view_get_marker_count", offsetof(__typeof__(rn), Rmap_view_get_marker_count)},
+	{"Rmap_view_set_marker_position", offsetof(__typeof__(rn), Rmap_view_set_marker_position)},
+	{"Rmap_view_set_marker_label", offsetof(__typeof__(rn), Rmap_view_set_marker_label)},
+	{"Rmap_view_set_marker_color", offsetof(__typeof__(rn), Rmap_view_set_marker_color)},
+	{"Rmap_view_set_marker_clicked_callback", offsetof(__typeof__(rn), Rmap_view_set_marker_clicked_callback)},
+	{"Rmap_view_set_view_changed_callback", offsetof(__typeof__(rn), Rmap_view_set_view_changed_callback)},
+	{"Rmap_view_set_attribution", offsetof(__typeof__(rn), Rmap_view_set_attribution)},
+	{"Rmap_view_get_attribution", offsetof(__typeof__(rn), Rmap_view_get_attribution)},
+	{"Rsystem_web_view_is_supported", offsetof(__typeof__(rn), Rsystem_web_view_is_supported)},
+	{"Rsystem_web_view_create", offsetof(__typeof__(rn), Rsystem_web_view_create)},
+	{"Rsystem_web_view_load_url", offsetof(__typeof__(rn), Rsystem_web_view_load_url)},
+	{"Rsystem_web_view_load_file", offsetof(__typeof__(rn), Rsystem_web_view_load_file)},
+	{"Rsystem_web_view_load_html", offsetof(__typeof__(rn), Rsystem_web_view_load_html)},
+	{"Rsystem_web_view_reload", offsetof(__typeof__(rn), Rsystem_web_view_reload)},
+	{"Rsystem_web_view_stop", offsetof(__typeof__(rn), Rsystem_web_view_stop)},
+	{"Rsystem_web_view_go_back", offsetof(__typeof__(rn), Rsystem_web_view_go_back)},
+	{"Rsystem_web_view_go_forward", offsetof(__typeof__(rn), Rsystem_web_view_go_forward)},
+	{"Rsystem_web_view_can_go_back", offsetof(__typeof__(rn), Rsystem_web_view_can_go_back)},
+	{"Rsystem_web_view_can_go_forward", offsetof(__typeof__(rn), Rsystem_web_view_can_go_forward)},
+	{"Rsystem_web_view_get_url", offsetof(__typeof__(rn), Rsystem_web_view_get_url)},
+	{"Rsystem_web_view_get_title", offsetof(__typeof__(rn), Rsystem_web_view_get_title)},
+	{"Rsystem_web_view_is_loading", offsetof(__typeof__(rn), Rsystem_web_view_is_loading)},
+	{"Rsystem_web_view_get_error", offsetof(__typeof__(rn), Rsystem_web_view_get_error)},
+	{"Rsystem_web_view_run_javascript", offsetof(__typeof__(rn), Rsystem_web_view_run_javascript)},
+	{"Rsystem_web_view_set_message_callback", offsetof(__typeof__(rn), Rsystem_web_view_set_message_callback)},
+	{"Rsystem_web_view_set_event_callback", offsetof(__typeof__(rn), Rsystem_web_view_set_event_callback)},
+	{"Rsystem_web_view_get_native_handle", offsetof(__typeof__(rn), Rsystem_web_view_get_native_handle)},
+	{"Rpdf_document_create", offsetof(__typeof__(rn), Rpdf_document_create)},
+	{"Rpdf_document_delete", offsetof(__typeof__(rn), Rpdf_document_delete)},
+	{"Rpdf_document_set_title", offsetof(__typeof__(rn), Rpdf_document_set_title)},
+	{"Rpdf_document_set_author", offsetof(__typeof__(rn), Rpdf_document_set_author)},
+	{"Rpdf_document_set_subject", offsetof(__typeof__(rn), Rpdf_document_set_subject)},
+	{"Rpdf_document_add_page", offsetof(__typeof__(rn), Rpdf_document_add_page)},
+	{"Rpdf_document_get_page_count", offsetof(__typeof__(rn), Rpdf_document_get_page_count)},
+	{"Rpdf_document_set_fill_color", offsetof(__typeof__(rn), Rpdf_document_set_fill_color)},
+	{"Rpdf_document_set_stroke_color", offsetof(__typeof__(rn), Rpdf_document_set_stroke_color)},
+	{"Rpdf_document_set_line_width", offsetof(__typeof__(rn), Rpdf_document_set_line_width)},
+	{"Rpdf_document_draw_rect", offsetof(__typeof__(rn), Rpdf_document_draw_rect)},
+	{"Rpdf_document_draw_ellipse", offsetof(__typeof__(rn), Rpdf_document_draw_ellipse)},
+	{"Rpdf_document_draw_line", offsetof(__typeof__(rn), Rpdf_document_draw_line)},
+	{"Rpdf_document_add_font", offsetof(__typeof__(rn), Rpdf_document_add_font)},
+	{"Rpdf_document_add_font_from_file", offsetof(__typeof__(rn), Rpdf_document_add_font_from_file)},
+	{"Rpdf_document_set_font", offsetof(__typeof__(rn), Rpdf_document_set_font)},
+	{"Rpdf_document_get_line_height", offsetof(__typeof__(rn), Rpdf_document_get_line_height)},
+	{"Rpdf_document_measure_text", offsetof(__typeof__(rn), Rpdf_document_measure_text)},
+	{"Rpdf_document_draw_text", offsetof(__typeof__(rn), Rpdf_document_draw_text)},
+	{"Rpdf_document_draw_paragraph", offsetof(__typeof__(rn), Rpdf_document_draw_paragraph)},
+	{"Rpdf_document_draw_image", offsetof(__typeof__(rn), Rpdf_document_draw_image)},
+	{"Rpdf_document_draw_window", offsetof(__typeof__(rn), Rpdf_document_draw_window)},
+	{"Rpdf_document_save", offsetof(__typeof__(rn), Rpdf_document_save)},
+	{"Rpdf_document_save_memory", offsetof(__typeof__(rn), Rpdf_document_save_memory)},
+	{"Rpdf_print", offsetof(__typeof__(rn), Rpdf_print)},
+	{"Rpdf_print_file", offsetof(__typeof__(rn), Rpdf_print_file)},
+	{"Rpdf_document_print", offsetof(__typeof__(rn), Rpdf_document_print)},
 	{"Rtext_editor_create", offsetof(__typeof__(rn), Rtext_editor_create)},
 	{"Rtext_editor_set_text", offsetof(__typeof__(rn), Rtext_editor_set_text)},
 	{"Rtext_editor_get_text", offsetof(__typeof__(rn), Rtext_editor_get_text)},
@@ -1808,6 +2601,23 @@ static const struct {
 	{"Rtext_editor_get_selection", offsetof(__typeof__(rn), Rtext_editor_get_selection)},
 	{"Rtext_editor_get_selected_text", offsetof(__typeof__(rn), Rtext_editor_get_selected_text)},
 	{"Rtext_editor_scroll_to_line", offsetof(__typeof__(rn), Rtext_editor_scroll_to_line)},
+	{"Rtext_editor_add_cursor", offsetof(__typeof__(rn), Rtext_editor_add_cursor)},
+	{"Rtext_editor_add_selection", offsetof(__typeof__(rn), Rtext_editor_add_selection)},
+	{"Rtext_editor_get_cursor_count", offsetof(__typeof__(rn), Rtext_editor_get_cursor_count)},
+	{"Rtext_editor_get_cursor_at", offsetof(__typeof__(rn), Rtext_editor_get_cursor_at)},
+	{"Rtext_editor_get_main_cursor", offsetof(__typeof__(rn), Rtext_editor_get_main_cursor)},
+	{"Rtext_editor_clear_cursors", offsetof(__typeof__(rn), Rtext_editor_clear_cursors)},
+	{"Rtext_editor_add_next_occurrence", offsetof(__typeof__(rn), Rtext_editor_add_next_occurrence)},
+	{"Rtext_editor_select_all_occurrences", offsetof(__typeof__(rn), Rtext_editor_select_all_occurrences)},
+	{"Rtext_editor_fold", offsetof(__typeof__(rn), Rtext_editor_fold)},
+	{"Rtext_editor_unfold", offsetof(__typeof__(rn), Rtext_editor_unfold)},
+	{"Rtext_editor_fold_all", offsetof(__typeof__(rn), Rtext_editor_fold_all)},
+	{"Rtext_editor_unfold_all", offsetof(__typeof__(rn), Rtext_editor_unfold_all)},
+	{"Rtext_editor_is_folded", offsetof(__typeof__(rn), Rtext_editor_is_folded)},
+	{"Rtext_editor_is_line_hidden", offsetof(__typeof__(rn), Rtext_editor_is_line_hidden)},
+	{"Rtext_editor_get_fold_end", offsetof(__typeof__(rn), Rtext_editor_get_fold_end)},
+	{"Rtext_editor_set_folding", offsetof(__typeof__(rn), Rtext_editor_set_folding)},
+	{"Rtext_editor_get_folding", offsetof(__typeof__(rn), Rtext_editor_get_folding)},
 	{"Rtext_editor_undo", offsetof(__typeof__(rn), Rtext_editor_undo)},
 	{"Rtext_editor_redo", offsetof(__typeof__(rn), Rtext_editor_redo)},
 	{"Rtext_editor_can_undo", offsetof(__typeof__(rn), Rtext_editor_can_undo)},
@@ -1833,16 +2643,37 @@ static const struct {
 	{"Rtext_editor_get_language", offsetof(__typeof__(rn), Rtext_editor_get_language)},
 	{"Rtext_editor_set_markdown", offsetof(__typeof__(rn), Rtext_editor_set_markdown)},
 	{"Rtext_editor_get_markdown", offsetof(__typeof__(rn), Rtext_editor_get_markdown)},
+	{"Rtext_editor_set_spell_check", offsetof(__typeof__(rn), Rtext_editor_set_spell_check)},
+	{"Rtext_editor_get_spell_check", offsetof(__typeof__(rn), Rtext_editor_get_spell_check)},
+	{"Rtext_editor_set_spell_language", offsetof(__typeof__(rn), Rtext_editor_set_spell_language)},
 	{"Rtext_editor_get_token", offsetof(__typeof__(rn), Rtext_editor_get_token)},
 	{"Rtext_editor_set_completion", offsetof(__typeof__(rn), Rtext_editor_set_completion)},
 	{"Rtext_editor_show_completions", offsetof(__typeof__(rn), Rtext_editor_show_completions)},
 	{"Rtext_editor_is_completing", offsetof(__typeof__(rn), Rtext_editor_is_completing)},
 	{"Rtext_editor_set_completion_callback", offsetof(__typeof__(rn), Rtext_editor_set_completion_callback)},
 	{"Rtext_editor_add_completion", offsetof(__typeof__(rn), Rtext_editor_add_completion)},
+	{"Rtext_editor_add_completion_insert", offsetof(__typeof__(rn), Rtext_editor_add_completion_insert)},
+	{"Rtext_editor_set_completion_words", offsetof(__typeof__(rn), Rtext_editor_set_completion_words)},
 	{"Rtext_editor_set_auto_pairs", offsetof(__typeof__(rn), Rtext_editor_set_auto_pairs)},
 	{"Rtext_editor_add_marker", offsetof(__typeof__(rn), Rtext_editor_add_marker)},
 	{"Rtext_editor_clear_markers", offsetof(__typeof__(rn), Rtext_editor_clear_markers)},
 	{"Rtext_editor_get_marker_count", offsetof(__typeof__(rn), Rtext_editor_get_marker_count)},
+	{"Rtext_editor_set_hover_callback", offsetof(__typeof__(rn), Rtext_editor_set_hover_callback)},
+	{"Rtext_editor_set_search", offsetof(__typeof__(rn), Rtext_editor_set_search)},
+	{"Rtext_editor_get_search", offsetof(__typeof__(rn), Rtext_editor_get_search)},
+	{"Rtext_editor_get_search_flags", offsetof(__typeof__(rn), Rtext_editor_get_search_flags)},
+	{"Rtext_editor_find_next", offsetof(__typeof__(rn), Rtext_editor_find_next)},
+	{"Rtext_editor_find_previous", offsetof(__typeof__(rn), Rtext_editor_find_previous)},
+	{"Rtext_editor_get_match_count", offsetof(__typeof__(rn), Rtext_editor_get_match_count)},
+	{"Rtext_editor_get_match_index", offsetof(__typeof__(rn), Rtext_editor_get_match_index)},
+	{"Rtext_editor_get_match", offsetof(__typeof__(rn), Rtext_editor_get_match)},
+	{"Rtext_editor_select_match", offsetof(__typeof__(rn), Rtext_editor_select_match)},
+	{"Rtext_editor_replace", offsetof(__typeof__(rn), Rtext_editor_replace)},
+	{"Rtext_editor_replace_all", offsetof(__typeof__(rn), Rtext_editor_replace_all)},
+	{"Rtext_editor_show_find", offsetof(__typeof__(rn), Rtext_editor_show_find)},
+	{"Rtext_editor_hide_find", offsetof(__typeof__(rn), Rtext_editor_hide_find)},
+	{"Rtext_editor_is_find_shown", offsetof(__typeof__(rn), Rtext_editor_is_find_shown)},
+	{"Rtext_editor_set_find_bar", offsetof(__typeof__(rn), Rtext_editor_set_find_bar)},
 	{"Rtheme_set_token_color", offsetof(__typeof__(rn), Rtheme_set_token_color)},
 	{"Rtheme_get_token_color", offsetof(__typeof__(rn), Rtheme_get_token_color)},
 	{"Rtheme_clear_token_colors", offsetof(__typeof__(rn), Rtheme_clear_token_colors)},
@@ -1873,6 +2704,8 @@ static const struct {
 	{"Rdock_area_set_close_callback", offsetof(__typeof__(rn), Rdock_area_set_close_callback)},
 	{"Rdock_area_set_tearable", offsetof(__typeof__(rn), Rdock_area_set_tearable)},
 	{"Rdock_area_is_tearable", offsetof(__typeof__(rn), Rdock_area_is_tearable)},
+	{"Rdock_area_set_float_mode", offsetof(__typeof__(rn), Rdock_area_set_float_mode)},
+	{"Rdock_area_set_float_window", offsetof(__typeof__(rn), Rdock_area_set_float_window)},
 	{"Rdock_area_float_panel", offsetof(__typeof__(rn), Rdock_area_float_panel)},
 	{"Rdock_area_dock_panel", offsetof(__typeof__(rn), Rdock_area_dock_panel)},
 	{"Rdock_area_get_panel_window", offsetof(__typeof__(rn), Rdock_area_get_panel_window)},
@@ -1903,6 +2736,8 @@ static const struct {
 	{"Rtray_set_tooltip", offsetof(__typeof__(rn), Rtray_set_tooltip)},
 	{"Rtray_set_menu", offsetof(__typeof__(rn), Rtray_set_menu)},
 	{"Rtray_set_clicked_callback", offsetof(__typeof__(rn), Rtray_set_clicked_callback)},
+	{"Rtray_set_title", offsetof(__typeof__(rn), Rtray_set_title)},
+	{"Rtray_get_rect", offsetof(__typeof__(rn), Rtray_get_rect)},
 	{"Rcolor_picker_create", offsetof(__typeof__(rn), Rcolor_picker_create)},
 	{"Rcolor_picker_set_color", offsetof(__typeof__(rn), Rcolor_picker_set_color)},
 	{"Rcolor_picker_get_color", offsetof(__typeof__(rn), Rcolor_picker_get_color)},
@@ -2061,6 +2896,11 @@ static const struct {
 	{"Rnode_graph_set_pin_tag", offsetof(__typeof__(rn), Rnode_graph_set_pin_tag)},
 	{"Rnode_graph_set_link_hidden", offsetof(__typeof__(rn), Rnode_graph_set_link_hidden)},
 	{"Rnode_graph_set_pin_emphasis", offsetof(__typeof__(rn), Rnode_graph_set_pin_emphasis)},
+	{"Rnode_graph_get_tag_at", offsetof(__typeof__(rn), Rnode_graph_get_tag_at)},
+	{"Rnode_graph_set_pin_tag_lit", offsetof(__typeof__(rn), Rnode_graph_set_pin_tag_lit)},
+	{"Rnode_graph_set_pin_label_width", offsetof(__typeof__(rn), Rnode_graph_set_pin_label_width)},
+	{"Rnode_graph_get_pin_label_width", offsetof(__typeof__(rn), Rnode_graph_get_pin_label_width)},
+	{"Rnode_graph_set_node_badge_color", offsetof(__typeof__(rn), Rnode_graph_set_node_badge_color)},
 	{"Rblock_editor_create", offsetof(__typeof__(rn), Rblock_editor_create)},
 	{"Rblock_editor_add_kind", offsetof(__typeof__(rn), Rblock_editor_add_kind)},
 	{"Rblock_editor_set_category_color", offsetof(__typeof__(rn), Rblock_editor_set_category_color)},
@@ -2097,6 +2937,38 @@ static const struct {
 	{"Rblock_editor_select", offsetof(__typeof__(rn), Rblock_editor_select)},
 	{"Rblock_editor_get_view", offsetof(__typeof__(rn), Rblock_editor_get_view)},
 	{"Rblock_editor_set_view", offsetof(__typeof__(rn), Rblock_editor_set_view)},
+	{"Rdiff_unified", offsetof(__typeof__(rn), Rdiff_unified)},
+	{"Rdiff_count_changes", offsetof(__typeof__(rn), Rdiff_count_changes)},
+	{"Rdiff_view_create", offsetof(__typeof__(rn), Rdiff_view_create)},
+	{"Rdiff_view_set_texts", offsetof(__typeof__(rn), Rdiff_view_set_texts)},
+	{"Rdiff_view_set_names", offsetof(__typeof__(rn), Rdiff_view_set_names)},
+	{"Rdiff_view_load_files", offsetof(__typeof__(rn), Rdiff_view_load_files)},
+	{"Rdiff_view_set_patch", offsetof(__typeof__(rn), Rdiff_view_set_patch)},
+	{"Rdiff_view_set_mode", offsetof(__typeof__(rn), Rdiff_view_set_mode)},
+	{"Rdiff_view_get_mode", offsetof(__typeof__(rn), Rdiff_view_get_mode)},
+	{"Rdiff_view_set_context", offsetof(__typeof__(rn), Rdiff_view_set_context)},
+	{"Rdiff_view_get_context", offsetof(__typeof__(rn), Rdiff_view_get_context)},
+	{"Rdiff_view_set_flags", offsetof(__typeof__(rn), Rdiff_view_set_flags)},
+	{"Rdiff_view_get_flags", offsetof(__typeof__(rn), Rdiff_view_get_flags)},
+	{"Rdiff_view_set_word_diff", offsetof(__typeof__(rn), Rdiff_view_set_word_diff)},
+	{"Rdiff_view_set_line_numbers", offsetof(__typeof__(rn), Rdiff_view_set_line_numbers)},
+	{"Rdiff_view_set_language", offsetof(__typeof__(rn), Rdiff_view_set_language)},
+	{"Rdiff_view_get_change_count", offsetof(__typeof__(rn), Rdiff_view_get_change_count)},
+	{"Rdiff_view_get_change", offsetof(__typeof__(rn), Rdiff_view_get_change)},
+	{"Rdiff_view_go_to_change", offsetof(__typeof__(rn), Rdiff_view_go_to_change)},
+	{"Rdiff_view_get_current_change", offsetof(__typeof__(rn), Rdiff_view_get_current_change)},
+	{"Rdiff_view_next_change", offsetof(__typeof__(rn), Rdiff_view_next_change)},
+	{"Rdiff_view_prev_change", offsetof(__typeof__(rn), Rdiff_view_prev_change)},
+	{"Rdiff_view_get_row_count", offsetof(__typeof__(rn), Rdiff_view_get_row_count)},
+	{"Rdiff_view_get_row", offsetof(__typeof__(rn), Rdiff_view_get_row)},
+	{"Rdiff_view_get_row_text", offsetof(__typeof__(rn), Rdiff_view_get_row_text)},
+	{"Rdiff_view_expand", offsetof(__typeof__(rn), Rdiff_view_expand)},
+	{"Rdiff_view_get_first_visible_row", offsetof(__typeof__(rn), Rdiff_view_get_first_visible_row)},
+	{"Rdiff_view_scroll_to_row", offsetof(__typeof__(rn), Rdiff_view_scroll_to_row)},
+	{"Rdiff_view_add_annotation", offsetof(__typeof__(rn), Rdiff_view_add_annotation)},
+	{"Rdiff_view_clear_annotations", offsetof(__typeof__(rn), Rdiff_view_clear_annotations)},
+	{"Rdiff_view_get_selected_text", offsetof(__typeof__(rn), Rdiff_view_get_selected_text)},
+	{"Rdiff_view_set_line_clicked_callback", offsetof(__typeof__(rn), Rdiff_view_set_line_clicked_callback)},
 	{"Rdialog_open", offsetof(__typeof__(rn), Rdialog_open)},
 	{"Rdialog_close", offsetof(__typeof__(rn), Rdialog_close)},
 	{"Rdialog_run", offsetof(__typeof__(rn), Rdialog_run)},
@@ -2137,6 +3009,27 @@ static const struct {
 	{"Rnotification_is_supported", offsetof(__typeof__(rn), Rnotification_is_supported)},
 	{"Rnotification_set_fallback", offsetof(__typeof__(rn), Rnotification_set_fallback)},
 	{"Rnotification_set_clicked_callback", offsetof(__typeof__(rn), Rnotification_set_clicked_callback)},
+	{"Rnotification_show_desc", offsetof(__typeof__(rn), Rnotification_show_desc)},
+	{"Rnotification_close", offsetof(__typeof__(rn), Rnotification_close)},
+	{"Rnotification_set_callback", offsetof(__typeof__(rn), Rnotification_set_callback)},
+	{"Rnotification_set_bring_to_front", offsetof(__typeof__(rn), Rnotification_set_bring_to_front)},
+	{"Rnotification_set_fallback_toast", offsetof(__typeof__(rn), Rnotification_set_fallback_toast)},
+	{"Rnotification_supports", offsetof(__typeof__(rn), Rnotification_supports)},
+	{"Rpermission_get_status", offsetof(__typeof__(rn), Rpermission_get_status)},
+	{"Rpermission_request", offsetof(__typeof__(rn), Rpermission_request)},
+	{"Rpermission_open_settings", offsetof(__typeof__(rn), Rpermission_open_settings)},
+	{"Rpermission_to_string", offsetof(__typeof__(rn), Rpermission_to_string)},
+	{"Rpermission_status_to_string", offsetof(__typeof__(rn), Rpermission_status_to_string)},
+	{"Rfile_open_async", offsetof(__typeof__(rn), Rfile_open_async)},
+	{"Rfile_save_async", offsetof(__typeof__(rn), Rfile_save_async)},
+	{"Rfile_export_async", offsetof(__typeof__(rn), Rfile_export_async)},
+	{"Rfile_select_folder_async", offsetof(__typeof__(rn), Rfile_select_folder_async)},
+	{"Rcamera_is_available", offsetof(__typeof__(rn), Rcamera_is_available)},
+	{"Rcamera_take_photo", offsetof(__typeof__(rn), Rcamera_take_photo)},
+	{"Rphoto_pick", offsetof(__typeof__(rn), Rphoto_pick)},
+	{"Rhaptic_is_supported", offsetof(__typeof__(rn), Rhaptic_is_supported)},
+	{"Rhaptic_play", offsetof(__typeof__(rn), Rhaptic_play)},
+	{"Rshare_show", offsetof(__typeof__(rn), Rshare_show)},
 	{"Rviewport_set_texture", offsetof(__typeof__(rn), Rviewport_set_texture)},
 	{"Rviewport_set_stretch", offsetof(__typeof__(rn), Rviewport_set_stretch)},
 	{"Rviewport_set_flip_y", offsetof(__typeof__(rn), Rviewport_set_flip_y)},
@@ -2149,6 +3042,7 @@ static const struct {
 	{"Rcustom_set_paint_callback", offsetof(__typeof__(rn), Rcustom_set_paint_callback)},
 	{"Rcustom_set_measure_callback", offsetof(__typeof__(rn), Rcustom_set_measure_callback)},
 	{"Rdraw_rect", offsetof(__typeof__(rn), Rdraw_rect)},
+	{"Rdraw_shadow", offsetof(__typeof__(rn), Rdraw_shadow)},
 	{"Rdraw_rect_outline", offsetof(__typeof__(rn), Rdraw_rect_outline)},
 	{"Rdraw_circle", offsetof(__typeof__(rn), Rdraw_circle)},
 	{"Rdraw_line", offsetof(__typeof__(rn), Rdraw_line)},
@@ -2240,6 +3134,18 @@ static const struct {
 	{"Rxml_get_tag_children", offsetof(__typeof__(rn), Rxml_get_tag_children)},
 	{"Rxml_get_attribute_count", offsetof(__typeof__(rn), Rxml_get_attribute_count)},
 	{"Rxml_get_attribute_info", offsetof(__typeof__(rn), Rxml_get_attribute_info)},
+	{"Rscript_load", offsetof(__typeof__(rn), Rscript_load)},
+	{"Rscript_load_file", offsetof(__typeof__(rn), Rscript_load_file)},
+	{"Rscript_check", offsetof(__typeof__(rn), Rscript_check)},
+	{"Rscript_check_file", offsetof(__typeof__(rn), Rscript_check_file)},
+	{"Rscript_format", offsetof(__typeof__(rn), Rscript_format)},
+	{"Rscript_reset", offsetof(__typeof__(rn), Rscript_reset)},
+	{"Rscript_has_function", offsetof(__typeof__(rn), Rscript_has_function)},
+	{"Rscript_set_enabled", offsetof(__typeof__(rn), Rscript_set_enabled)},
+	{"Rscript_is_enabled", offsetof(__typeof__(rn), Rscript_is_enabled)},
+	{"Rscript_set_limits", offsetof(__typeof__(rn), Rscript_set_limits)},
+	{"Rscript_set_log_callback", offsetof(__typeof__(rn), Rscript_set_log_callback)},
+	{"Rscript_set_diagnostic_callback", offsetof(__typeof__(rn), Rscript_set_diagnostic_callback)},
 	{"Rlocale_load_csv", offsetof(__typeof__(rn), Rlocale_load_csv)},
 	{"Rlocale_load_csv_from_memory", offsetof(__typeof__(rn), Rlocale_load_csv_from_memory)},
 	{"Rlocale_clear", offsetof(__typeof__(rn), Rlocale_clear)},
@@ -2258,6 +3164,21 @@ static const struct {
 	{"Rtr_plural", offsetof(__typeof__(rn), Rtr_plural)},
 	{"Rwidget_set_text_key", offsetof(__typeof__(rn), Rwidget_set_text_key)},
 	{"Rlocale_format_number", offsetof(__typeof__(rn), Rlocale_format_number)},
+	{"Rlocale_set_clock", offsetof(__typeof__(rn), Rlocale_set_clock)},
+	{"Rlocale_get_clock", offsetof(__typeof__(rn), Rlocale_get_clock)},
+	{"Rlocale_uses_12_hour_clock", offsetof(__typeof__(rn), Rlocale_uses_12_hour_clock)},
+	{"Rlocale_get_day_period", offsetof(__typeof__(rn), Rlocale_get_day_period)},
+	{"Rlocale_format_time", offsetof(__typeof__(rn), Rlocale_format_time)},
+	{"Rtimezone_get_system", offsetof(__typeof__(rn), Rtimezone_get_system)},
+	{"Rtimezone_set_directory", offsetof(__typeof__(rn), Rtimezone_set_directory)},
+	{"Rtimezone_is_valid", offsetof(__typeof__(rn), Rtimezone_is_valid)},
+	{"Rtimezone_to_local", offsetof(__typeof__(rn), Rtimezone_to_local)},
+	{"Rtimezone_from_local", offsetof(__typeof__(rn), Rtimezone_from_local)},
+	{"Rtimezone_count_local", offsetof(__typeof__(rn), Rtimezone_count_local)},
+	{"Rtimezone_get_offset", offsetof(__typeof__(rn), Rtimezone_get_offset)},
+	{"Rtimezone_is_daylight_saving", offsetof(__typeof__(rn), Rtimezone_is_daylight_saving)},
+	{"Rtimezone_get_abbreviation", offsetof(__typeof__(rn), Rtimezone_get_abbreviation)},
+	{"Rtimezone_get_label", offsetof(__typeof__(rn), Rtimezone_get_label)},
 	{"Raccessibility_set_text_scale", offsetof(__typeof__(rn), Raccessibility_set_text_scale)},
 	{"Raccessibility_get_text_scale", offsetof(__typeof__(rn), Raccessibility_get_text_scale)},
 	{"Raccessibility_set_high_contrast", offsetof(__typeof__(rn), Raccessibility_set_high_contrast)},
@@ -2277,19 +3198,56 @@ static const struct {
 	{"Rwidget_get_accessible_role", offsetof(__typeof__(rn), Rwidget_get_accessible_role)},
 	{"Rwidget_set_accessible_hidden", offsetof(__typeof__(rn), Rwidget_set_accessible_hidden)},
 	{"Rwidget_set_accessible_labelled_by", offsetof(__typeof__(rn), Rwidget_set_accessible_labelled_by)},
+	{"Rwidget_set_accessible_action", offsetof(__typeof__(rn), Rwidget_set_accessible_action)},
+	{"Rwidget_set_accessible_checked", offsetof(__typeof__(rn), Rwidget_set_accessible_checked)},
 	{"Raccessibility_announce", offsetof(__typeof__(rn), Raccessibility_announce)},
 	{"Raccessibility_is_screen_reader_active", offsetof(__typeof__(rn), Raccessibility_is_screen_reader_active)},
 	{"Rhost_platform_register", offsetof(__typeof__(rn), Rhost_platform_register)},
 	{"Rhost_platform_is_active", offsetof(__typeof__(rn), Rhost_platform_is_active)},
 	{"Rhost_window_set_size", offsetof(__typeof__(rn), Rhost_window_set_size)},
+	{"Rhost_window_set_insets", offsetof(__typeof__(rn), Rhost_window_set_insets)},
+	{"Rhost_set_system_dark", offsetof(__typeof__(rn), Rhost_set_system_dark)},
 	{"Rhost_inject_mouse_move", offsetof(__typeof__(rn), Rhost_inject_mouse_move)},
 	{"Rhost_inject_mouse_button", offsetof(__typeof__(rn), Rhost_inject_mouse_button)},
 	{"Rhost_inject_mouse_wheel", offsetof(__typeof__(rn), Rhost_inject_mouse_wheel)},
 	{"Rhost_inject_mouse_leave", offsetof(__typeof__(rn), Rhost_inject_mouse_leave)},
 	{"Rhost_inject_key", offsetof(__typeof__(rn), Rhost_inject_key)},
 	{"Rhost_inject_text", offsetof(__typeof__(rn), Rhost_inject_text)},
+	{"Rhost_inject_composition", offsetof(__typeof__(rn), Rhost_inject_composition)},
 	{"Rhost_inject_focus", offsetof(__typeof__(rn), Rhost_inject_focus)},
 	{"Rhost_inject_close", offsetof(__typeof__(rn), Rhost_inject_close)},
+	{"Rhost_permission_answer", offsetof(__typeof__(rn), Rhost_permission_answer)},
+	{"Rhost_service_complete", offsetof(__typeof__(rn), Rhost_service_complete)},
+	{"Rtest_set_deterministic", offsetof(__typeof__(rn), Rtest_set_deterministic)},
+	{"Rtest_is_deterministic", offsetof(__typeof__(rn), Rtest_is_deterministic)},
+	{"Rtest_get_platform_tag", offsetof(__typeof__(rn), Rtest_get_platform_tag)},
+	{"Rtest_find", offsetof(__typeof__(rn), Rtest_find)},
+	{"Rtest_click", offsetof(__typeof__(rn), Rtest_click)},
+	{"Rtest_double_click", offsetof(__typeof__(rn), Rtest_double_click)},
+	{"Rtest_right_click", offsetof(__typeof__(rn), Rtest_right_click)},
+	{"Rtest_click_at", offsetof(__typeof__(rn), Rtest_click_at)},
+	{"Rtest_hover", offsetof(__typeof__(rn), Rtest_hover)},
+	{"Rtest_hover_at", offsetof(__typeof__(rn), Rtest_hover_at)},
+	{"Rtest_drag", offsetof(__typeof__(rn), Rtest_drag)},
+	{"Rtest_drag_to", offsetof(__typeof__(rn), Rtest_drag_to)},
+	{"Rtest_scroll", offsetof(__typeof__(rn), Rtest_scroll)},
+	{"Rtest_key", offsetof(__typeof__(rn), Rtest_key)},
+	{"Rtest_type_text", offsetof(__typeof__(rn), Rtest_type_text)},
+	{"Rtest_tap", offsetof(__typeof__(rn), Rtest_tap)},
+	{"Rtest_swipe", offsetof(__typeof__(rn), Rtest_swipe)},
+	{"Rtest_pump", offsetof(__typeof__(rn), Rtest_pump)},
+	{"Rtest_is_idle", offsetof(__typeof__(rn), Rtest_is_idle)},
+	{"Rtest_settle", offsetof(__typeof__(rn), Rtest_settle)},
+	{"Rtest_get_text", offsetof(__typeof__(rn), Rtest_get_text)},
+	{"Rtest_is_shown", offsetof(__typeof__(rn), Rtest_is_shown)},
+	{"Rtest_is_checked", offsetof(__typeof__(rn), Rtest_is_checked)},
+	{"Rtest_expect_golden", offsetof(__typeof__(rn), Rtest_expect_golden)},
+	{"Rtest_compare_pixels", offsetof(__typeof__(rn), Rtest_compare_pixels)},
+	{"Rtest_dump_tree", offsetof(__typeof__(rn), Rtest_dump_tree)},
+	{"Rtest_save_tree", offsetof(__typeof__(rn), Rtest_save_tree)},
+	{"Rtest_save_png", offsetof(__typeof__(rn), Rtest_save_png)},
+	{"Rtest_run_script", offsetof(__typeof__(rn), Rtest_run_script)},
+	{"Rtest_get_script_error", offsetof(__typeof__(rn), Rtest_get_script_error)},
 };
 
 /* ---- threads */
@@ -3135,10 +4093,15 @@ static void rn_tray_forget(Rid tray) {
 /* ---- the callbacks */
 
 static void rn_t_RFrameCallback(double, void*);
+static void rn_t_RAppEventCallback(RAppEvent, void*);
 static void rn_t_RTimerCallback(Rid, void*);
 static void rn_t_RActionCallback(Rid, const char*, void*);
+static void rn_t_RActionParametersCallback(RActionContext*, void*);
 static void rn_t_RDeviceResetCallback(void*);
+static void rn_t_RKeyboardCallback(Rid, int, float, void*);
 static int rn_t_RDropCallback(Rid, const RDropEvent*, void*);
+static void rn_t_RDragFinishedCallback(Rid, RDragOperation, void*);
+static int rn_t_RBackCallback(Rid, void*);
 static int rn_t_RWindowCloseCallback(Rid, void*);
 static void rn_t_RWindowResizeCallback(Rid, int, int, void*);
 static int rn_t_RWindowEventHook(Rid, const REvent*, void*);
@@ -3154,21 +4117,27 @@ static void rn_t_RLabelLinkCallback(Rid, const char*, void*);
 static void rn_t_RButtonClickedCallback(Rid, void*);
 static void rn_t_RCheckboxChangedCallback(Rid, int, void*);
 static void rn_t_RSliderChangedCallback(Rid, float, void*);
+static void rn_t_RImageFinishedCallback(Rid, void*);
 static void rn_t_RTextChangedCallback(Rid, const char*, void*);
 static void rn_t_RSpinBoxChangedCallback(Rid, double, void*);
 static void rn_t_RComboBoxChangedCallback(Rid, int, void*);
+static void rn_t_RComboBoxTextCallback(Rid, const char*, void*);
 static const char* rn_t_RListItemTextCallback(Rid, int, void*);
+static int rn_t_RListItemColorCallback(Rid, int, float*, float*, float*, float*, void*);
 static void rn_t_RListEventCallback(Rid, int, void*);
 static void rn_t_RTreeEventCallback(Rid, Rid, void*);
 static void rn_t_RTreeContextCallback(Rid, Rid, float, float, void*);
 static void rn_t_RMenuItemClickedCallback(Rid, void*);
+static void rn_t_RTileSectionCallback(Rid, int, RTileSection*, void*);
 static void rn_t_RTileItemCallback(Rid, int, RTileItem*, void*);
 static void rn_t_RTileEventCallback(Rid, int, void*);
 static void rn_t_RTileContextCallback(Rid, int, float, float, void*);
 static const char* rn_t_RTileDragDataCallback(Rid, void*);
 static const char* rn_t_RTableCellTextCallback(Rid, int, int, void*);
+static int rn_t_RTableCellColorCallback(Rid, int, int, float*, float*, float*, float*, void*);
 static void rn_t_RTableEventCallback(Rid, int, void*);
 static void rn_t_RTableSortCallback(Rid, int, int, void*);
+static int rn_t_RTableCellEditedCallback(Rid, int, int, const char*, void*);
 static void rn_t_RDateChangedCallback(Rid, int, int, int, void*);
 static void rn_t_RTimeChangedCallback(Rid, int, int, int, void*);
 static void rn_t_RToastCallback(Rid, void*);
@@ -3178,11 +4147,23 @@ static void rn_t_RPageChangedCallback(Rid, int, void*);
 static void rn_t_RPlotViewCallback(Rid, void*);
 static void rn_t_RPlotDragLineCallback(Rid, int, double, void*);
 static void rn_t_RPlotSeriesCallback(Rid, int, int, void*);
+static void rn_t_RChartSliceCallback(Rid, int, int, void*);
+static void rn_t_RChartCellCallback(Rid, int, int, float, void*);
+static void rn_t_RPdfPageChangedCallback(Rid, int, void*);
+static void rn_t_RCarouselPageChangedCallback(Rid, int, void*);
+static void rn_t_RMapTileCallback(Rid, int, int, int, void*);
+static void rn_t_RMapMarkerCallback(Rid, int, void*);
+static void rn_t_RMapViewCallback(Rid, double, double, double, void*);
+static void rn_t_RSystemWebViewResultCallback(Rid, const char*, const char*, void*);
+static void rn_t_RSystemWebViewMessageCallback(Rid, const char*, void*);
+static void rn_t_RSystemWebViewEventCallback(Rid, RSystemWebViewEvent, void*);
 static void rn_t_RTextEditorZoomCallback(Rid, float, void*);
 static void rn_t_RCompletionCallback(Rid, const char*, void*);
+static const char* rn_t_RTextEditorHoverCallback(Rid, int, int, void*);
 static void rn_t_RTextEditorChangedCallback(Rid, void*);
 static void rn_t_RTrayClickedCallback(Rid, RMouseButton, void*);
 static int rn_t_RDockCloseCallback(Rid, Rid, void*);
+static Rid rn_t_RDockFloatWindowCallback(Rid, Rid, Rid, Rid, void*);
 static void rn_t_RDockChangedCallback(Rid, void*);
 static void rn_t_RIslandChangedCallback(Rid, int, void*);
 static void rn_t_RColorChangedCallback(Rid, float, float, float, float, void*);
@@ -3194,17 +4175,24 @@ static void rn_t_RNodeGraphContextCallback(Rid, int, float, float, void*);
 static void rn_t_RNodeGraphPointCallback(Rid, int, float, float, void*);
 static void rn_t_RBlockEditorCallback(Rid, int, void*);
 static void rn_t_RBlockEditorContextCallback(Rid, int, float, float, void*);
+static void rn_t_RDiffViewLineCallback(Rid, RDiffSide, int, int, void*);
 static void rn_t_RDialogClosedCallback(Rid, int, void*);
 static void rn_t_RFileBrowserCallback(Rid, const char*, void*);
 static void rn_t_RNotificationFallback(const char*, const char*, RNotificationUrgency, void*);
 static void rn_t_RNotificationClickedCallback(void*);
+static void rn_t_RNotificationCallback(const char*, RNotificationEvent, const char*, void*);
+static void rn_t_RPermissionCallback(RPermission, RPermissionStatus, void*);
+static void rn_t_RDeviceCallback(RDeviceResult, const RPickedFile*, int, void*);
 static void rn_t_RViewportResizeCallback(Rid, int, int, void*);
 static void rn_t_RPaintCallback(Rid, RPainter*, float, float, void*);
 static void rn_t_RMeasureCallback(Rid, float*, float*, void*);
 static void rn_t_RXmlReloadCallback(const char*, int, void*);
 static Rid rn_t_RXmlTagCreateCallback(const char*, void*);
 static int rn_t_RXmlTagAttributeCallback(Rid, const char*, const char*, void*);
+static void rn_t_RScriptLogCallback(const char*, void*);
+static void rn_t_RScriptDiagnosticCallback(RSeverity, const char*, const char*, int, int, const char*, void*);
 static void rn_t_RLocaleChangedCallback(const char*, void*);
+static void rn_t_RAccessiblePressCallback(Rid, void*);
 
 static void rn_t_RFrameCallback(double a0, void* a1) {
 	rn_cb* cb = (rn_cb*)a1;
@@ -3214,6 +4202,20 @@ static void rn_t_RFrameCallback(double a0, void* a1) {
 	napi_open_handle_scope(env, &scope);
 	cb->depth++;
 	napi_create_double(env, a0, &argv[0]);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 2, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RAppEventCallback(RAppEvent a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_int32(env, (int32_t)a0, &argv[0]);
 	argv[1] = rn_make_ptr(env, cb->user_data);
 	rn_call(cb, 0, 2, argv);
 	napi_close_handle_scope(env, scope);
@@ -3249,6 +4251,20 @@ static void rn_t_RActionCallback(Rid a0, const char* a1, void* a2) {
 	rn_cb_leave(cb);
 }
 
+static void rn_t_RActionParametersCallback(RActionContext* a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	argv[0] = rn_make_ptr(env, a0);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 2, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
 static void rn_t_RDeviceResetCallback(void* a0) {
 	rn_cb* cb = (rn_cb*)a0;
 	napi_env env = cb->env;
@@ -3258,6 +4274,22 @@ static void rn_t_RDeviceResetCallback(void* a0) {
 	cb->depth++;
 	argv[0] = rn_make_ptr(env, cb->user_data);
 	rn_call(cb, 0, 1, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RKeyboardCallback(Rid a0, int a1, float a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_double(env, (double)a2, &argv[2]);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 4, argv);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
 }
@@ -3275,6 +4307,39 @@ static int rn_t_RDropCallback(Rid a0, const RDropEvent* a1, void* a2) {
 	argv[1] = rn_make_ptr(env, a1);
 	argv[2] = rn_make_ptr(env, cb->user_data);
 	result = rn_call(cb, 0, 3, argv);
+	value = rn_result_int(env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
+}
+
+static void rn_t_RDragFinishedCallback(Rid a0, RDragOperation a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static int rn_t_RBackCallback(Rid a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_value result;
+	int value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 2, argv);
 	value = rn_result_int(env, result);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
@@ -3533,6 +4598,20 @@ static void rn_t_RSliderChangedCallback(Rid a0, float a1, void* a2) {
 	rn_cb_leave(cb);
 }
 
+static void rn_t_RImageFinishedCallback(Rid a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 2, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
 static void rn_t_RTextChangedCallback(Rid a0, const char* a1, void* a2) {
 	rn_cb* cb = (rn_cb*)a2;
 	napi_env env = cb->env;
@@ -3578,6 +4657,21 @@ static void rn_t_RComboBoxChangedCallback(Rid a0, int a1, void* a2) {
 	rn_cb_leave(cb);
 }
 
+static void rn_t_RComboBoxTextCallback(Rid a0, const char* a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	argv[1] = rn_make_text(env, a1);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
 static const char* rn_t_RListItemTextCallback(Rid a0, int a1, void* a2) {
 	rn_cb* cb = (rn_cb*)a2;
 	napi_env env = cb->env;
@@ -3592,6 +4686,29 @@ static const char* rn_t_RListItemTextCallback(Rid a0, int a1, void* a2) {
 	argv[2] = rn_make_ptr(env, cb->user_data);
 	result = rn_call(cb, 0, 3, argv);
 	value = rn_result_text(cb, env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
+}
+
+static int rn_t_RListItemColorCallback(Rid a0, int a1, float* a2, float* a3, float* a4, float* a5, void* a6) {
+	rn_cb* cb = (rn_cb*)a6;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[7];
+	napi_value result;
+	int value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, a2);
+	argv[3] = rn_make_ptr(env, a3);
+	argv[4] = rn_make_ptr(env, a4);
+	argv[5] = rn_make_ptr(env, a5);
+	argv[6] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 7, argv);
+	value = rn_result_int(env, result);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
 	return value;
@@ -3654,6 +4771,22 @@ static void rn_t_RMenuItemClickedCallback(Rid a0, void* a1) {
 	napi_create_uint32(env, a0, &argv[0]);
 	argv[1] = rn_make_ptr(env, cb->user_data);
 	rn_call(cb, 0, 2, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RTileSectionCallback(Rid a0, int a1, RTileSection* a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, a2);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 4, argv);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
 }
@@ -3744,6 +4877,30 @@ static const char* rn_t_RTableCellTextCallback(Rid a0, int a1, int a2, void* a3)
 	return value;
 }
 
+static int rn_t_RTableCellColorCallback(Rid a0, int a1, int a2, float* a3, float* a4, float* a5, float* a6, void* a7) {
+	rn_cb* cb = (rn_cb*)a7;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[8];
+	napi_value result;
+	int value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	argv[3] = rn_make_ptr(env, a3);
+	argv[4] = rn_make_ptr(env, a4);
+	argv[5] = rn_make_ptr(env, a5);
+	argv[6] = rn_make_ptr(env, a6);
+	argv[7] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 8, argv);
+	value = rn_result_int(env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
+}
+
 static void rn_t_RTableEventCallback(Rid a0, int a1, void* a2) {
 	rn_cb* cb = (rn_cb*)a2;
 	napi_env env = cb->env;
@@ -3773,6 +4930,27 @@ static void rn_t_RTableSortCallback(Rid a0, int a1, int a2, void* a3) {
 	rn_call(cb, 0, 4, argv);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
+}
+
+static int rn_t_RTableCellEditedCallback(Rid a0, int a1, int a2, const char* a3, void* a4) {
+	rn_cb* cb = (rn_cb*)a4;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[5];
+	napi_value result;
+	int value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	argv[3] = rn_make_text(env, a3);
+	argv[4] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 5, argv);
+	value = rn_result_int(env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
 }
 
 static void rn_t_RDateChangedCallback(Rid a0, int a1, int a2, int a3, void* a4) {
@@ -3914,6 +5092,164 @@ static void rn_t_RPlotSeriesCallback(Rid a0, int a1, int a2, void* a3) {
 	rn_cb_leave(cb);
 }
 
+static void rn_t_RChartSliceCallback(Rid a0, int a1, int a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 4, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RChartCellCallback(Rid a0, int a1, int a2, float a3, void* a4) {
+	rn_cb* cb = (rn_cb*)a4;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[5];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	napi_create_double(env, (double)a3, &argv[3]);
+	argv[4] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 5, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RPdfPageChangedCallback(Rid a0, int a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RCarouselPageChangedCallback(Rid a0, int a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RMapTileCallback(Rid a0, int a1, int a2, int a3, void* a4) {
+	rn_cb* cb = (rn_cb*)a4;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[5];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	napi_create_int32(env, (int32_t)a3, &argv[3]);
+	argv[4] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 5, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RMapMarkerCallback(Rid a0, int a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RMapViewCallback(Rid a0, double a1, double a2, double a3, void* a4) {
+	rn_cb* cb = (rn_cb*)a4;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[5];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_double(env, a1, &argv[1]);
+	napi_create_double(env, a2, &argv[2]);
+	napi_create_double(env, a3, &argv[3]);
+	argv[4] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 5, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RSystemWebViewResultCallback(Rid a0, const char* a1, const char* a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	argv[1] = rn_make_text(env, a1);
+	argv[2] = rn_make_text(env, a2);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 4, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RSystemWebViewMessageCallback(Rid a0, const char* a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	argv[1] = rn_make_text(env, a1);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RSystemWebViewEventCallback(Rid a0, RSystemWebViewEvent a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
 static void rn_t_RTextEditorZoomCallback(Rid a0, float a1, void* a2) {
 	rn_cb* cb = (rn_cb*)a2;
 	napi_env env = cb->env;
@@ -3942,6 +5278,26 @@ static void rn_t_RCompletionCallback(Rid a0, const char* a1, void* a2) {
 	rn_call(cb, 0, 3, argv);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
+}
+
+static const char* rn_t_RTextEditorHoverCallback(Rid a0, int a1, int a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_value result;
+	const char* value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 4, argv);
+	value = rn_result_text(cb, env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
 }
 
 static void rn_t_RTextEditorChangedCallback(Rid a0, void* a1) {
@@ -3987,6 +5343,27 @@ static int rn_t_RDockCloseCallback(Rid a0, Rid a1, void* a2) {
 	argv[2] = rn_make_ptr(env, cb->user_data);
 	result = rn_call(cb, 0, 3, argv);
 	value = rn_result_int(env, result);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+	return value;
+}
+
+static Rid rn_t_RDockFloatWindowCallback(Rid a0, Rid a1, Rid a2, Rid a3, void* a4) {
+	rn_cb* cb = (rn_cb*)a4;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[5];
+	napi_value result;
+	Rid value;
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_uint32(env, a1, &argv[1]);
+	napi_create_uint32(env, a2, &argv[2]);
+	napi_create_uint32(env, a3, &argv[3]);
+	argv[4] = rn_make_ptr(env, cb->user_data);
+	result = rn_call(cb, 0, 5, argv);
+	value = rn_result_id(env, result);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
 	return value;
@@ -4170,6 +5547,23 @@ static void rn_t_RBlockEditorContextCallback(Rid a0, int a1, float a2, float a3,
 	rn_cb_leave(cb);
 }
 
+static void rn_t_RDiffViewLineCallback(Rid a0, RDiffSide a1, int a2, int a3, void* a4) {
+	rn_cb* cb = (rn_cb*)a4;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[5];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	napi_create_int32(env, (int32_t)a3, &argv[3]);
+	argv[4] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 5, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
 static void rn_t_RDialogClosedCallback(Rid a0, int a1, void* a2) {
 	rn_cb* cb = (rn_cb*)a2;
 	napi_env env = cb->env;
@@ -4225,6 +5619,53 @@ static void rn_t_RNotificationClickedCallback(void* a0) {
 	cb->depth++;
 	argv[0] = rn_make_ptr(env, cb->user_data);
 	rn_call(cb, 0, 1, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RNotificationCallback(const char* a0, RNotificationEvent a1, const char* a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	argv[0] = rn_make_text(env, a0);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_text(env, a2);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 4, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RPermissionCallback(RPermission a0, RPermissionStatus a1, void* a2) {
+	rn_cb* cb = (rn_cb*)a2;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[3];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_int32(env, (int32_t)a0, &argv[0]);
+	napi_create_int32(env, (int32_t)a1, &argv[1]);
+	argv[2] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 3, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RDeviceCallback(RDeviceResult a0, const RPickedFile* a1, int a2, void* a3) {
+	rn_cb* cb = (rn_cb*)a3;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[4];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_int32(env, (int32_t)a0, &argv[0]);
+	argv[1] = rn_make_ptr(env, a1);
+	napi_create_int32(env, (int32_t)a2, &argv[2]);
+	argv[3] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 4, argv);
 	napi_close_handle_scope(env, scope);
 	rn_cb_leave(cb);
 }
@@ -4331,6 +5772,39 @@ static int rn_t_RXmlTagAttributeCallback(Rid a0, const char* a1, const char* a2,
 	return value;
 }
 
+static void rn_t_RScriptLogCallback(const char* a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	argv[0] = rn_make_text(env, a0);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 2, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RScriptDiagnosticCallback(RSeverity a0, const char* a1, const char* a2, int a3, int a4, const char* a5, void* a6) {
+	rn_cb* cb = (rn_cb*)a6;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[7];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_int32(env, (int32_t)a0, &argv[0]);
+	argv[1] = rn_make_text(env, a1);
+	argv[2] = rn_make_text(env, a2);
+	napi_create_int32(env, (int32_t)a3, &argv[3]);
+	napi_create_int32(env, (int32_t)a4, &argv[4]);
+	argv[5] = rn_make_text(env, a5);
+	argv[6] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 7, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
 static void rn_t_RLocaleChangedCallback(const char* a0, void* a1) {
 	rn_cb* cb = (rn_cb*)a1;
 	napi_env env = cb->env;
@@ -4339,6 +5813,20 @@ static void rn_t_RLocaleChangedCallback(const char* a0, void* a1) {
 	napi_open_handle_scope(env, &scope);
 	cb->depth++;
 	argv[0] = rn_make_text(env, a0);
+	argv[1] = rn_make_ptr(env, cb->user_data);
+	rn_call(cb, 0, 2, argv);
+	napi_close_handle_scope(env, scope);
+	rn_cb_leave(cb);
+}
+
+static void rn_t_RAccessiblePressCallback(Rid a0, void* a1) {
+	rn_cb* cb = (rn_cb*)a1;
+	napi_env env = cb->env;
+	napi_handle_scope scope;
+	napi_value argv[2];
+	napi_open_handle_scope(env, &scope);
+	cb->depth++;
+	napi_create_uint32(env, a0, &argv[0]);
 	argv[1] = rn_make_ptr(env, cb->user_data);
 	rn_call(cb, 0, 2, argv);
 	napi_close_handle_scope(env, scope);
@@ -4598,6 +6086,50 @@ static napi_value rn_w_Rget_time(napi_env env, napi_callback_info info) {
 	(void)info;
 	double value_ = rn.Rget_time();
 	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rset_app_event_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a1;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	k0_ = rn_callback_arg(env, argv[0], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && 1) {
+		cb_ = rn_cb_new(env, &argv[0], 1, a1);
+		if (!cb_) return NULL;
+	}
+	rn.Rset_app_event_callback(cb_ ? (RAppEventCallback)rn_t_RAppEventCallback : (RAppEventCallback)n0_, cb_ ? (void*)cb_ : a1);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 2, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Ris_app_paused(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Ris_app_paused();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rinject_app_event(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rinject_app_event((RAppEvent)a0);
 	return result_;
 }
 
@@ -4882,7 +6414,7 @@ static napi_value rn_w_Raction_bind(napi_env env, napi_callback_info info) {
 		if (!cb_) goto done;
 	}
 	rn.Raction_bind(a0.p, cb_ ? (RActionCallback)rn_t_RActionCallback : (RActionCallback)n0_, cb_ ? (void*)cb_ : a2);
-	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 5, a0.p, cb_);
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 6, a0.p, cb_);
 done:
 	free(a0.heap);
 	return result_;
@@ -4898,7 +6430,7 @@ static napi_value rn_w_Raction_unbind(napi_env env, napi_callback_info info) {
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &a0)) goto done;
 	rn.Raction_unbind(a0.p);
-	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 5, a0.p, NULL);
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 6, a0.p, NULL); if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 8, a0.p, NULL);
 done:
 	free(a0.heap);
 	return result_;
@@ -4940,7 +6472,188 @@ static napi_value rn_w_Raction_set_default_handler(napi_env env, napi_callback_i
 		if (!cb_) return NULL;
 	}
 	rn.Raction_set_default_handler(cb_ ? (RActionCallback)rn_t_RActionCallback : (RActionCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 6, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 7, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Raction_bind_with_parameters(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	void* a3;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_ptr(env, argv[3], &a3)) goto done;
+	k0_ = rn_callback_arg(env, argv[2], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) goto done;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) goto done;
+	if (k0_ == RN_CALLBACK_FUNCTION && a0.p && a0.p[0]) {
+		cb_ = rn_cb_new(env, &argv[2], 1, a3);
+		if (!cb_) goto done;
+	}
+	int value_ = rn.Raction_bind_with_parameters(a0.p, a1.p, cb_ ? (RActionParametersCallback)rn_t_RActionParametersCallback : (RActionParametersCallback)n0_, cb_ ? (void*)cb_ : a3);
+	if (cb_ && !value_) {
+		rn_cb_release(cb_);
+		cb_ = NULL;
+	}
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 8, a0.p, cb_);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Raction_get_sender(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	Rid value_ = rn.Raction_get_sender((const RActionContext*)a0);
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raction_get_name(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Raction_get_name((const RActionContext*)a0));
+	return result_;
+}
+
+static napi_value rn_w_Raction_get_argument_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Raction_get_argument_count((const RActionContext*)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raction_get_number(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	double value_ = rn.Raction_get_number((const RActionContext*)a0, (int)a1);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raction_get_string(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	result_ = rn_make_text(env, rn.Raction_get_string((const RActionContext*)a0, (int)a1));
+	return result_;
+}
+
+static napi_value rn_w_Raction_get_bool(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Raction_get_bool((const RActionContext*)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Raction_return_number(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	double a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	rn.Raction_return_number((RActionContext*)a0, (double)a1);
+	return result_;
+}
+
+static napi_value rn_w_Raction_return_string(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Raction_return_string((RActionContext*)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Raction_return_bool(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Raction_return_bool((RActionContext*)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Raction_fail(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Raction_fail((RActionContext*)a0, a1.p);
+done:
+	free(a1.heap);
 	return result_;
 }
 
@@ -5027,6 +6740,123 @@ static napi_value rn_w_Rclipboard_get_text(napi_env env, napi_callback_info info
 	(void)env;
 	(void)info;
 	result_ = rn_make_text(env, rn.Rclipboard_get_text());
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_has_text(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rclipboard_has_text();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_set_data(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rclipboard_set_data((const RDataItem*)a0, a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_has_data(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	int value_ = rn.Rclipboard_has_data(a0.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_get_data(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	size_t a1 = 0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	{
+		char* owned_ = rn.Rclipboard_get_data(a0.p, &a1);
+		void* copy_;
+		napi_value buffer_;
+		if (!owned_) {
+			result_ = rn_null(env);
+		} else {
+			size_t size_ = (size_t)a1;
+			napi_create_arraybuffer(env, size_, &copy_, &buffer_);
+			if (size_ > 0) memcpy(copy_, owned_, size_);
+			rn.Rmemory_free(owned_);
+			napi_create_typedarray(env, napi_uint8_array, size_, buffer_, 0, &result_);
+		}
+	}
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_set_image(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	int value_ = rn.Rclipboard_set_image((const uint8_t*)a0, (int)a1, (int)a2, (int)a3);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_has_image(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rclipboard_has_image();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rclipboard_get_image(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	int a0 = 0;
+	int a1 = 0;
+	(void)info;
+	result_ = rn_make_ptr(env, rn.Rclipboard_get_image(&a0, &a1));
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a0, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a1, &o1_);
+		{
+			const napi_value values_[3] = {result_, o0_, o1_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
 	return result_;
 }
 
@@ -5126,7 +6956,7 @@ static napi_value rn_w_Rset_device_reset_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rset_device_reset_callback(cb_ ? (RDeviceResetCallback)rn_t_RDeviceResetCallback : (RDeviceResetCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 8, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 10, NULL, cb_);
 	return result_;
 }
 
@@ -5285,6 +7115,125 @@ static napi_value rn_w_Rwindow_get_size(napi_env env, napi_callback_info info) {
 			result_ = rn_tuple(env, 2, values_);
 		}
 	}
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_safe_area(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	rn.Rwindow_get_safe_area((Rid)a0, (RInsets*)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_keyboard_area(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	rn.Rwindow_get_keyboard_area((Rid)a0, (RInsets*)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_set_keyboard_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwindow_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rwindow_set_keyboard_callback((Rid)a0, cb_ ? (RKeyboardCallback)rn_t_RKeyboardCallback : (RKeyboardCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WINDOW, 11, NULL, cb_);
+	rn_windows_sweep();
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_clear_focus(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rwindow_clear_focus((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_set_back_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwindow_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rwindow_set_back_callback((Rid)a0, cb_ ? (RBackCallback)rn_t_RBackCallback : (RBackCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WINDOW, 12, NULL, cb_);
+	rn_windows_sweep();
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_set_back_enabled(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rwindow_set_back_enabled((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_wants_back(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rwindow_wants_back((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
 
@@ -5698,6 +7647,34 @@ static napi_value rn_w_Rwindow_set_topmost(napi_env env, napi_callback_info info
 	return result_;
 }
 
+static napi_value rn_w_Rwindow_set_owner(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	uint32_t a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_uint32(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rwindow_set_owner((Rid)a0, (Rid)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_owner(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	Rid value_ = rn.Rwindow_get_owner((Rid)a0);
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
 static napi_value rn_w_Rwindow_set_picture_in_picture(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -5856,7 +7833,7 @@ static napi_value rn_w_Rwindow_set_close_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rwindow_set_close_callback((Rid)a0, cb_ ? (RWindowCloseCallback)rn_t_RWindowCloseCallback : (RWindowCloseCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WINDOW, 9, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WINDOW, 13, NULL, cb_);
 	rn_windows_sweep();
 	return result_;
 }
@@ -5882,7 +7859,7 @@ static napi_value rn_w_Rwindow_set_resize_callback(napi_env env, napi_callback_i
 		if (!cb_) return NULL;
 	}
 	rn.Rwindow_set_resize_callback((Rid)a0, cb_ ? (RWindowResizeCallback)rn_t_RWindowResizeCallback : (RWindowResizeCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WINDOW, 10, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WINDOW, 14, NULL, cb_);
 	rn_windows_sweep();
 	return result_;
 }
@@ -5908,8 +7885,26 @@ static napi_value rn_w_Rwindow_set_drop_callback(napi_env env, napi_callback_inf
 		if (!cb_) return NULL;
 	}
 	rn.Rwindow_set_drop_callback((Rid)a0, cb_ ? (RDropCallback)rn_t_RDropCallback : (RDropCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WINDOW, 11, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WINDOW, 15, NULL, cb_);
 	rn_windows_sweep();
+	return result_;
+}
+
+static napi_value rn_w_Rdrop_set_highlight_rect(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	float a0;
+	float a1;
+	float a2;
+	float a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_float(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	rn.Rdrop_set_highlight_rect((float)a0, (float)a1, (float)a2, (float)a3);
 	return result_;
 }
 
@@ -6111,6 +8106,27 @@ done:
 	return result_;
 }
 
+static napi_value rn_w_Rwindow_inject_composition(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	int a2;
+	int a3;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_int(env, argv[3], &a3)) goto done;
+	rn.Rwindow_inject_composition((Rid)a0, a1.p, (int)a2, (int)a3);
+done:
+	free(a1.heap);
+	return result_;
+}
+
 static napi_value rn_w_Rwindow_inject_drag(napi_env env, napi_callback_info info) {
 	size_t argc = 4;
 	napi_value argv[4];
@@ -6155,6 +8171,34 @@ static napi_value rn_w_Rwindow_inject_drop(napi_env env, napi_callback_info info
 done:
 	free(a3_heap);
 	free(a5.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_inject_drag_end(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rwindow_inject_drag_end((Rid)a0, (RDragOperation)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_inject_back(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rwindow_inject_back((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
 
@@ -6224,6 +8268,121 @@ static napi_value rn_w_Rwindow_wants_text_input(napi_env env, napi_callback_info
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	int value_ = rn.Rwindow_wants_text_input((Rid)a0);
 	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_text_input_info(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rwindow_get_text_input_info((Rid)a0, (RTextInputInfo*)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_text_input_text(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rwindow_get_text_input_text((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_text_input_selection(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1 = 0;
+	int a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rwindow_get_text_input_selection((Rid)a0, &a1, &a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a1, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a2, &o1_);
+		{
+			const napi_value values_[3] = {result_, o0_, o1_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_set_text_input_selection(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rwindow_set_text_input_selection((Rid)a0, (int)a1, (int)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_replace_text_input(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	rn_str a3;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	int value_ = rn.Rwindow_replace_text_input((Rid)a0, (int)a1, (int)a2, a3.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rwindow_get_text_composition(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1 = 0;
+	int a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rwindow_get_text_composition((Rid)a0, &a1, &a2));
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a1, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a2, &o1_);
+		{
+			const napi_value values_[3] = {result_, o0_, o1_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
 	return result_;
 }
 
@@ -6334,7 +8493,7 @@ static napi_value rn_w_Rwindow_set_event_hook(napi_env env, napi_callback_info i
 		if (!cb_) return NULL;
 	}
 	rn.Rwindow_set_event_hook((Rid)a0, cb_ ? (RWindowEventHook)rn_t_RWindowEventHook : (RWindowEventHook)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WINDOW, 12, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WINDOW, 16, NULL, cb_);
 	rn_windows_sweep();
 	return result_;
 }
@@ -6411,6 +8570,72 @@ static napi_value rn_w_Rdrag_cancel(napi_env env, napi_callback_info info) {
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	rn.Rdrag_cancel((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rdrag_begin_external(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	int a2;
+	uint32_t a3;
+	void* a5;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_uint32(env, argv[3], &a3)) return NULL;
+	if (!rn_get_ptr(env, argv[5], &a5)) return NULL;
+	k0_ = rn_callback_arg(env, argv[4], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[4], 1, a5);
+		if (!cb_) return NULL;
+	}
+	int value_ = rn.Rdrag_begin_external((Rid)a0, (const RDataItem*)a1, a2, (Ruint)a3, cb_ ? (RDragFinishedCallback)rn_t_RDragFinishedCallback : (RDragFinishedCallback)n0_, cb_ ? (void*)cb_ : a5);
+	rn_bind(a0, RN_OWNER_WIDGET, 17, NULL, cb_);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdrag_set_image(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rdrag_set_image((const uint8_t*)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rdrag_external_supported(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rdrag_external_supported();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdrag_external_is_active(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rdrag_external_is_active();
+	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
 
@@ -6619,7 +8844,7 @@ static napi_value rn_w_Rwidget_set_touch_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rwidget_set_touch_callback((Rid)a0, cb_ ? (RTouchCallback)rn_t_RTouchCallback : (RTouchCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 13, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 18, NULL, cb_);
 	return result_;
 }
 
@@ -6644,7 +8869,7 @@ static napi_value rn_w_Rwidget_set_pen_callback(napi_env env, napi_callback_info
 		if (!cb_) return NULL;
 	}
 	rn.Rwidget_set_pen_callback((Rid)a0, cb_ ? (RPenCallback)rn_t_RPenCallback : (RPenCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 14, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 19, NULL, cb_);
 	return result_;
 }
 
@@ -6669,7 +8894,7 @@ static napi_value rn_w_Rwidget_set_gesture_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rwidget_set_gesture_callback((Rid)a0, cb_ ? (RGestureCallback)rn_t_RGestureCallback : (RGestureCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 15, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 20, NULL, cb_);
 	return result_;
 }
 
@@ -7013,6 +9238,27 @@ static napi_value rn_w_Rtheme_set_dark(napi_env env, napi_callback_info info) {
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_get_int(env, argv[0], &a0)) return NULL;
 	rn.Rtheme_set_dark((int)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtheme_get_system_dark(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rtheme_get_system_dark();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtheme_follow_system(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rtheme_follow_system((int)a0);
 	return result_;
 }
 
@@ -7425,6 +9671,19 @@ done:
 	return result_;
 }
 
+static napi_value rn_w_Rtexture_uses_current_color(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtexture_uses_current_color((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
 static napi_value rn_w_Rtexture_get_density(napi_env env, napi_callback_info info) {
 	size_t argc = 1;
 	napi_value argv[1];
@@ -7464,6 +9723,22 @@ static napi_value rn_w_Rtexture_create_from_file_async(napi_env env, napi_callba
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &a0)) goto done;
 	Rid value_ = rn.Rtexture_create_from_file_async(a0.p);
+	napi_create_uint32(env, value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtexture_create_from_url_async(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	Rid value_ = rn.Rtexture_create_from_url_async(a0.p);
 	napi_create_uint32(env, value_, &result_);
 done:
 	free(a0.heap);
@@ -7530,6 +9805,68 @@ static napi_value rn_w_Rimage_decode(napi_env env, napi_callback_info info) {
 	return result_;
 }
 
+static napi_value rn_w_Rimage_decode_info(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	size_t a0_size;
+	int a2 = 0;
+	int a3 = 0;
+	int a4 = 0;
+	int a5 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_bytes(env, argv[0], &a0, &a0_size)) return NULL;
+	int value_ = rn.Rimage_decode_info((const void*)a0, a0_size, &a2, &a3, &a4, &a5);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a4, &o2_);
+		napi_value o3_;
+		napi_create_int32(env, (int32_t)a5, &o3_);
+		{
+			const napi_value values_[5] = {result_, o0_, o1_, o2_, o3_};
+			result_ = rn_tuple(env, 5, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rimage_decode_frame(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	size_t a0_size;
+	int a2;
+	int a3 = 0;
+	int a4 = 0;
+	double a5 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_bytes(env, argv[0], &a0, &a0_size)) return NULL;
+	if (!rn_get_int(env, argv[1], &a2)) return NULL;
+	result_ = rn_make_ptr(env, rn.Rimage_decode_frame((const void*)a0, a0_size, (int)a2, &a3, &a4, &a5));
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a3, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a4, &o1_);
+		napi_value o2_;
+		napi_create_double(env, a5, &o2_);
+		{
+			const napi_value values_[4] = {result_, o0_, o1_, o2_};
+			result_ = rn_tuple(env, 4, values_);
+		}
+	}
+	return result_;
+}
+
 static napi_value rn_w_Rpixels_free(napi_env env, napi_callback_info info) {
 	size_t argc = 1;
 	napi_value argv[1];
@@ -7539,6 +9876,53 @@ static napi_value rn_w_Rpixels_free(napi_env env, napi_callback_info info) {
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
 	rn.Rpixels_free((uint8_t*)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_encode_png(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	int a1;
+	int a2;
+	size_t a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	result_ = rn_make_ptr(env, rn.Rimage_encode_png((const uint8_t*)a0, (int)a1, (int)a2, &a3));
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a3, &o0_);
+		{
+			const napi_value values_[2] = {result_, o0_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rimage_save_png(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	void* a1;
+	int a2;
+	int a3;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_ptr(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_int(env, argv[3], &a3)) goto done;
+	int value_ = rn.Rimage_save_png(a0.p, (const uint8_t*)a1, (int)a2, (int)a3);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
 	return result_;
 }
 
@@ -7627,6 +10011,43 @@ static napi_value rn_w_Rtexture_set_filter(napi_env env, napi_callback_info info
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	if (!rn_get_int(env, argv[1], &a1)) return NULL;
 	rn.Rtexture_set_filter((Rid)a0, (RFilterType)a1);
+	return result_;
+}
+
+static napi_value rn_w_Ricon_get(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	Rid value_ = rn.Ricon_get(a0.p);
+	napi_create_uint32(env, value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Ricon_get_count(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Ricon_get_count();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Ricon_get_name(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Ricon_get_name((int)a0));
 	return result_;
 }
 
@@ -8465,7 +10886,7 @@ static napi_value rn_w_Rwidget_set_event_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rwidget_set_event_callback((Rid)a0, cb_ ? (RWidgetEventCallback)rn_t_RWidgetEventCallback : (RWidgetEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 17, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 22, NULL, cb_);
 	return result_;
 }
 
@@ -8519,7 +10940,7 @@ static napi_value rn_w_Rwidget_set_drop_callback(napi_env env, napi_callback_inf
 		if (!cb_) return NULL;
 	}
 	rn.Rwidget_set_drop_callback((Rid)a0, cb_ ? (RDropCallback)rn_t_RDropCallback : (RDropCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 18, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 23, NULL, cb_);
 	return result_;
 }
 
@@ -9504,7 +11925,7 @@ static napi_value rn_w_Rtab_view_set_changed_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rtab_view_set_changed_callback((Rid)a0, cb_ ? (RTabChangedCallback)rn_t_RTabChangedCallback : (RTabChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 19, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 24, NULL, cb_);
 	return result_;
 }
 
@@ -9661,7 +12082,7 @@ static napi_value rn_w_Rtab_view_set_close_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rtab_view_set_close_callback((Rid)a0, cb_ ? (RTabCloseCallback)rn_t_RTabCloseCallback : (RTabCloseCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 20, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 25, NULL, cb_);
 	return result_;
 }
 
@@ -9742,7 +12163,7 @@ static napi_value rn_w_Rexpander_set_changed_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rexpander_set_changed_callback((Rid)a0, cb_ ? (RExpanderChangedCallback)rn_t_RExpanderChangedCallback : (RExpanderChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 21, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 26, NULL, cb_);
 	return result_;
 }
 
@@ -9967,7 +12388,7 @@ static napi_value rn_w_Rlabel_set_link_callback(napi_env env, napi_callback_info
 		if (!cb_) return NULL;
 	}
 	rn.Rlabel_set_link_callback((Rid)a0, cb_ ? (RLabelLinkCallback)rn_t_RLabelLinkCallback : (RLabelLinkCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 22, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 27, NULL, cb_);
 	return result_;
 }
 
@@ -10114,7 +12535,7 @@ static napi_value rn_w_Rbutton_set_clicked_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rbutton_set_clicked_callback((Rid)a0, cb_ ? (RButtonClickedCallback)rn_t_RButtonClickedCallback : (RButtonClickedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 23, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 28, NULL, cb_);
 	return result_;
 }
 
@@ -10225,7 +12646,7 @@ static napi_value rn_w_Rcheckbox_set_changed_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rcheckbox_set_changed_callback((Rid)a0, cb_ ? (RCheckboxChangedCallback)rn_t_RCheckboxChangedCallback : (RCheckboxChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 24, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 29, NULL, cb_);
 	return result_;
 }
 
@@ -10348,7 +12769,7 @@ static napi_value rn_w_Rslider_set_changed_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rslider_set_changed_callback((Rid)a0, cb_ ? (RSliderChangedCallback)rn_t_RSliderChangedCallback : (RSliderChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 25, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 30, NULL, cb_);
 	return result_;
 }
 
@@ -10472,6 +12893,188 @@ static napi_value rn_w_Rimage_set_corner_radius(napi_env env, napi_callback_info
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	if (!rn_get_float(env, argv[1], &a1)) return NULL;
 	rn.Rimage_set_corner_radius((Rid)a0, (float)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_is_animated(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rimage_is_animated((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_get_frame_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rimage_get_frame_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_get_duration(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rimage_get_duration((Rid)a0);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_get_frame_delay(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	double value_ = rn.Rimage_get_frame_delay((Rid)a0, (int)a1);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_play(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rimage_play((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_pause(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rimage_pause((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_stop(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rimage_stop((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_is_playing(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rimage_is_playing((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_set_frame(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rimage_set_frame((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_get_frame(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rimage_get_frame((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_set_loop_count(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rimage_set_loop_count((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_get_loop_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rimage_get_loop_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rimage_set_finished_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rimage_set_finished_callback((Rid)a0, cb_ ? (RImageFinishedCallback)rn_t_RImageFinishedCallback : (RImageFinishedCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 31, NULL, cb_);
 	return result_;
 }
 
@@ -10601,6 +13204,64 @@ static napi_value rn_w_Rtext_input_select_all(napi_env env, napi_callback_info i
 	return result_;
 }
 
+static napi_value rn_w_Rtext_input_set_input_type(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_input_set_input_type((Rid)a0, (RTextInputType)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_get_input_type(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rtext_input_get_input_type((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_set_return_key(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_input_set_return_key((Rid)a0, (RReturnKey)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_get_return_key(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rtext_input_get_return_key((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
 static napi_value rn_w_Rtext_input_set_changed_callback(napi_env env, napi_callback_info info) {
 	size_t argc = 3;
 	napi_value argv[3];
@@ -10622,7 +13283,7 @@ static napi_value rn_w_Rtext_input_set_changed_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rtext_input_set_changed_callback((Rid)a0, cb_ ? (RTextChangedCallback)rn_t_RTextChangedCallback : (RTextChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 26, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 32, NULL, cb_);
 	return result_;
 }
 
@@ -10647,7 +13308,216 @@ static napi_value rn_w_Rtext_input_set_committed_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rtext_input_set_committed_callback((Rid)a0, cb_ ? (RTextChangedCallback)rn_t_RTextChangedCallback : (RTextChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 27, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 33, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_set_spell_check(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_input_set_spell_check((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_get_spell_check(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_input_get_spell_check((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_input_set_spell_language(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rtext_input_set_spell_language((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_is_supported(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rspell_is_supported();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_get_language_count(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rspell_get_language_count();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_get_language_at(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rspell_get_language_at((int)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rspell_set_language(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	int value_ = rn.Rspell_set_language(a0.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_get_language(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	result_ = rn_make_text(env, rn.Rspell_get_language());
+	return result_;
+}
+
+static napi_value rn_w_Rspell_check(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rspell_check(a0.p, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_get_misspelling(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	int a1 = 0;
+	int a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rspell_get_misspelling((int)a0, &a1, &a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a1, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a2, &o1_);
+		{
+			const napi_value values_[3] = {result_, o0_, o1_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rspell_suggest(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rspell_suggest(a0.p, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_get_suggestion(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rspell_get_suggestion((int)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rspell_learn(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rspell_learn(a0.p, a1.p);
+done:
+	free(a0.heap);
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rspell_ignore(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	rn.Rspell_ignore(a0.p);
+done:
+	free(a0.heap);
 	return result_;
 }
 
@@ -10749,6 +13619,33 @@ static napi_value rn_w_Rspin_box_set_decimals(napi_env env, napi_callback_info i
 	return result_;
 }
 
+static napi_value rn_w_Rspin_box_set_buttons(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rspin_box_set_buttons((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rspin_box_get_buttons(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rspin_box_get_buttons((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
 static napi_value rn_w_Rspin_box_set_changed_callback(napi_env env, napi_callback_info info) {
 	size_t argc = 3;
 	napi_value argv[3];
@@ -10770,7 +13667,7 @@ static napi_value rn_w_Rspin_box_set_changed_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rspin_box_set_changed_callback((Rid)a0, cb_ ? (RSpinBoxChangedCallback)rn_t_RSpinBoxChangedCallback : (RSpinBoxChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 28, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 34, NULL, cb_);
 	return result_;
 }
 
@@ -10879,7 +13776,142 @@ static napi_value rn_w_Rcombo_box_set_changed_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rcombo_box_set_changed_callback((Rid)a0, cb_ ? (RComboBoxChangedCallback)rn_t_RComboBoxChangedCallback : (RComboBoxChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 29, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 35, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_set_editable(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcombo_box_set_editable((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_is_editable(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcombo_box_is_editable((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_set_searchable(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcombo_box_set_searchable((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_is_searchable(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcombo_box_is_searchable((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_get_text(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rcombo_box_get_text((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_set_text(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rcombo_box_set_text((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_set_text_changed_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rcombo_box_set_text_changed_callback((Rid)a0, cb_ ? (RComboBoxTextCallback)rn_t_RComboBoxTextCallback : (RComboBoxTextCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 36, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_set_open(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcombo_box_set_open((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcombo_box_is_open(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcombo_box_is_open((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
 
@@ -11010,7 +14042,32 @@ static napi_value rn_w_Rlist_view_set_virtual_items(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rlist_view_set_virtual_items((Rid)a0, (int)a1, cb_ ? (RListItemTextCallback)rn_t_RListItemTextCallback : (RListItemTextCallback)n0_, cb_ ? (void*)cb_ : a3);
-	rn_bind(a0, RN_OWNER_WIDGET, 30, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 37, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rlist_view_set_item_color_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rlist_view_set_item_color_callback((Rid)a0, cb_ ? (RListItemColorCallback)rn_t_RListItemColorCallback : (RListItemColorCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 38, NULL, cb_);
 	return result_;
 }
 
@@ -11076,7 +14133,7 @@ static napi_value rn_w_Rlist_view_set_selection_changed_callback(napi_env env, n
 		if (!cb_) return NULL;
 	}
 	rn.Rlist_view_set_selection_changed_callback((Rid)a0, cb_ ? (RListEventCallback)rn_t_RListEventCallback : (RListEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 31, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 39, NULL, cb_);
 	return result_;
 }
 
@@ -11101,7 +14158,7 @@ static napi_value rn_w_Rlist_view_set_activated_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rlist_view_set_activated_callback((Rid)a0, cb_ ? (RListEventCallback)rn_t_RListEventCallback : (RListEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 32, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 40, NULL, cb_);
 	return result_;
 }
 
@@ -11361,7 +14418,7 @@ static napi_value rn_w_Rtree_view_set_selection_changed_callback(napi_env env, n
 		if (!cb_) return NULL;
 	}
 	rn.Rtree_view_set_selection_changed_callback((Rid)a0, cb_ ? (RTreeEventCallback)rn_t_RTreeEventCallback : (RTreeEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 33, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 41, NULL, cb_);
 	return result_;
 }
 
@@ -11386,7 +14443,7 @@ static napi_value rn_w_Rtree_view_set_activated_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rtree_view_set_activated_callback((Rid)a0, cb_ ? (RTreeEventCallback)rn_t_RTreeEventCallback : (RTreeEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 34, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 42, NULL, cb_);
 	return result_;
 }
 
@@ -11548,7 +14605,7 @@ static napi_value rn_w_Rtree_view_set_context_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rtree_view_set_context_callback((Rid)a0, cb_ ? (RTreeContextCallback)rn_t_RTreeContextCallback : (RTreeContextCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 35, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 43, NULL, cb_);
 	return result_;
 }
 
@@ -11695,6 +14752,57 @@ static napi_value rn_w_Rmenu_add_separator(napi_env env, napi_callback_info info
 	return result_;
 }
 
+static napi_value rn_w_Rmenu_add_header(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	Rid value_ = rn.Rmenu_add_header((Rid)a0, a1.p);
+	napi_create_uint32(env, value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rmenu_bar_add_divider(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	Rid value_ = rn.Rmenu_bar_add_divider((Rid)a0);
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmenu_set_title_color(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	rn.Rmenu_set_title_color((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4);
+	return result_;
+}
+
 static napi_value rn_w_Rmenu_item_set_text(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -11737,6 +14845,23 @@ static napi_value rn_w_Rmenu_item_set_shortcut(napi_env env, napi_callback_info 
 	if (!rn_get_int(env, argv[1], &a1)) return NULL;
 	if (!rn_get_uint32(env, argv[2], &a2)) return NULL;
 	rn.Rmenu_item_set_shortcut((Rid)a0, (RKey)a1, (Ruint)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rmenu_item_set_shortcut_text(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rmenu_item_set_shortcut_text((Rid)a0, a1.p);
+done:
+	free(a1.heap);
 	return result_;
 }
 
@@ -11826,7 +14951,7 @@ static napi_value rn_w_Rmenu_item_set_clicked_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rmenu_item_set_clicked_callback((Rid)a0, cb_ ? (RMenuItemClickedCallback)rn_t_RMenuItemClickedCallback : (RMenuItemClickedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 36, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 44, NULL, cb_);
 	return result_;
 }
 
@@ -11883,7 +15008,7 @@ static napi_value rn_w_Rtile_view_set_items(napi_env env, napi_callback_info inf
 		if (!cb_) return NULL;
 	}
 	rn.Rtile_view_set_items((Rid)a0, (int)a1, cb_ ? (RTileItemCallback)rn_t_RTileItemCallback : (RTileItemCallback)n0_, cb_ ? (void*)cb_ : a3);
-	rn_bind(a0, RN_OWNER_WIDGET, 37, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 45, NULL, cb_);
 	return result_;
 }
 
@@ -11944,6 +15069,148 @@ static napi_value rn_w_Rtile_view_set_empty_text(napi_env env, napi_callback_inf
 	rn.Rtile_view_set_empty_text((Rid)a0, a1.p);
 done:
 	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_set_icon_width(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	rn.Rtile_view_set_icon_width((Rid)a0, (float)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_set_sections(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	void* a3;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_ptr(env, argv[3], &a3)) return NULL;
+	k0_ = rn_callback_arg(env, argv[2], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[2], 1, a3);
+		if (!cb_) return NULL;
+	}
+	rn.Rtile_view_set_sections((Rid)a0, (int)a1, cb_ ? (RTileSectionCallback)rn_t_RTileSectionCallback : (RTileSectionCallback)n0_, cb_ ? (void*)cb_ : a3);
+	rn_bind(a0, RN_OWNER_WIDGET, 46, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_get_section_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtile_view_get_section_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_get_section_of(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtile_view_get_section_of((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_set_section_folded(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rtile_view_set_section_folded((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_is_section_folded(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtile_view_is_section_folded((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_get_section_at(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtile_view_get_section_at((Rid)a0, (float)a1, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_set_section_toggled_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rtile_view_set_section_toggled_callback((Rid)a0, cb_ ? (RTileEventCallback)rn_t_RTileEventCallback : (RTileEventCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 47, NULL, cb_);
 	return result_;
 }
 
@@ -12128,7 +15395,32 @@ static napi_value rn_w_Rtile_view_set_drag_data_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rtile_view_set_drag_data_callback((Rid)a0, cb_ ? (RTileDragDataCallback)rn_t_RTileDragDataCallback : (RTileDragDataCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 38, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 48, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtile_view_set_drag_out_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rtile_view_set_drag_out_callback((Rid)a0, cb_ ? (RTileEventCallback)rn_t_RTileEventCallback : (RTileEventCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 49, NULL, cb_);
 	return result_;
 }
 
@@ -12153,7 +15445,7 @@ static napi_value rn_w_Rtile_view_set_selection_changed_callback(napi_env env, n
 		if (!cb_) return NULL;
 	}
 	rn.Rtile_view_set_selection_changed_callback((Rid)a0, cb_ ? (RTileEventCallback)rn_t_RTileEventCallback : (RTileEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 39, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 50, NULL, cb_);
 	return result_;
 }
 
@@ -12178,7 +15470,7 @@ static napi_value rn_w_Rtile_view_set_activated_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rtile_view_set_activated_callback((Rid)a0, cb_ ? (RTileEventCallback)rn_t_RTileEventCallback : (RTileEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 40, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 51, NULL, cb_);
 	return result_;
 }
 
@@ -12203,7 +15495,7 @@ static napi_value rn_w_Rtile_view_set_context_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rtile_view_set_context_callback((Rid)a0, cb_ ? (RTileContextCallback)rn_t_RTileContextCallback : (RTileContextCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 41, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 52, NULL, cb_);
 	return result_;
 }
 
@@ -12481,7 +15773,240 @@ static napi_value rn_w_Rtable_set_virtual_rows(napi_env env, napi_callback_info 
 		if (!cb_) return NULL;
 	}
 	rn.Rtable_set_virtual_rows((Rid)a0, (int)a1, cb_ ? (RTableCellTextCallback)rn_t_RTableCellTextCallback : (RTableCellTextCallback)n0_, cb_ ? (void*)cb_ : a3);
-	rn_bind(a0, RN_OWNER_WIDGET, 42, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 53, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_cell_color_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rtable_set_cell_color_callback((Rid)a0, cb_ ? (RTableCellColorCallback)rn_t_RTableCellColorCallback : (RTableCellColorCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 54, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_cell_text_color(napi_env env, napi_callback_info info) {
+	size_t argc = 7;
+	napi_value argv[7];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	float a3;
+	float a4;
+	float a5;
+	float a6;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	if (!rn_get_float(env, argv[6], &a6)) return NULL;
+	rn.Rtable_set_cell_text_color((Rid)a0, (int)a1, (int)a2, (float)a3, (float)a4, (float)a5, (float)a6);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_multi_select(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtable_set_multi_select((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_selection_mode(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtable_set_selection_mode((Rid)a0, (RTableSelectionMode)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_selection_mode(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rtable_get_selection_mode((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_row_selected(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rtable_set_row_selected((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_is_row_selected(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtable_is_row_selected((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_select_range(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	rn.Rtable_select_range((Rid)a0, (int)a1, (int)a2, (int)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_select_all(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtable_select_all((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_clear_selection(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtable_clear_selection((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_selection_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtable_get_selection_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_selection(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtable_get_selection((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_selection_range_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtable_get_selection_range_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_selection_range(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2 = 0;
+	int a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtable_get_selection_range((Rid)a0, (int)a1, &a2, &a3);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		{
+			const napi_value values_[3] = {result_, o0_, o1_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
 	return result_;
 }
 
@@ -12508,6 +16033,19 @@ static napi_value rn_w_Rtable_get_selected(napi_env env, napi_callback_info info
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	int value_ = rn.Rtable_get_selected((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_current_row(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtable_get_current_row((Rid)a0);
 	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
@@ -12631,7 +16169,7 @@ static napi_value rn_w_Rtable_set_selection_changed_callback(napi_env env, napi_
 		if (!cb_) return NULL;
 	}
 	rn.Rtable_set_selection_changed_callback((Rid)a0, cb_ ? (RTableEventCallback)rn_t_RTableEventCallback : (RTableEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 43, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 55, NULL, cb_);
 	return result_;
 }
 
@@ -12656,7 +16194,7 @@ static napi_value rn_w_Rtable_set_activated_callback(napi_env env, napi_callback
 		if (!cb_) return NULL;
 	}
 	rn.Rtable_set_activated_callback((Rid)a0, cb_ ? (RTableEventCallback)rn_t_RTableEventCallback : (RTableEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 44, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 56, NULL, cb_);
 	return result_;
 }
 
@@ -12681,7 +16219,203 @@ static napi_value rn_w_Rtable_set_sort_callback(napi_env env, napi_callback_info
 		if (!cb_) return NULL;
 	}
 	rn.Rtable_set_sort_callback((Rid)a0, cb_ ? (RTableSortCallback)rn_t_RTableSortCallback : (RTableSortCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 45, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 57, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_column_editable(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rtable_set_column_editable((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_is_column_editable(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtable_is_column_editable((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_cell_edited_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rtable_set_cell_edited_callback((Rid)a0, cb_ ? (RTableCellEditedCallback)rn_t_RTableCellEditedCallback : (RTableCellEditedCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 58, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_edit_cell(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtable_edit_cell((Rid)a0, (int)a1, (int)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_is_editing(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtable_is_editing((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_end_edit(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtable_end_edit((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_frozen_columns(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtable_set_frozen_columns((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_frozen_columns(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtable_get_frozen_columns((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_column_kind(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rtable_set_column_kind((Rid)a0, (int)a1, (RTableColumnKind)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_get_column_kind(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	{
+		int value_ = (int)rn.Rtable_get_column_kind((Rid)a0, (int)a1);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtable_is_cell_checked(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtable_is_cell_checked((Rid)a0, (int)a1, (int)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtable_set_cell_checked(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	rn.Rtable_set_cell_checked((Rid)a0, (int)a1, (int)a2, (int)a3);
 	return result_;
 }
 
@@ -12845,7 +16579,63 @@ static napi_value rn_w_Rdate_picker_set_changed_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rdate_picker_set_changed_callback((Rid)a0, cb_ ? (RDateChangedCallback)rn_t_RDateChangedCallback : (RDateChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 46, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 59, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rdate_picker_set_time_zone(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rdate_picker_set_time_zone((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdate_picker_get_time_zone(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rdate_picker_get_time_zone((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rdate_picker_set_instant(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	rn.Rdate_picker_set_instant((Rid)a0, (double)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdate_picker_get_instant(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rdate_picker_get_instant((Rid)a0);
+	napi_create_double(env, value_, &result_);
 	return result_;
 }
 
@@ -12943,7 +16733,163 @@ static napi_value rn_w_Rtime_picker_set_changed_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rtime_picker_set_changed_callback((Rid)a0, cb_ ? (RTimeChangedCallback)rn_t_RTimeChangedCallback : (RTimeChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 47, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 60, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_set_clock(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtime_picker_set_clock((Rid)a0, (RClock)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_get_clock(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rtime_picker_get_clock((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_get_text(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rtime_picker_get_text((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_set_time_zone(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rtime_picker_set_time_zone((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_get_time_zone(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rtime_picker_get_time_zone((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_set_time_zone_visible(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtime_picker_set_time_zone_visible((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_set_date(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	rn.Rtime_picker_set_date((Rid)a0, (int)a1, (int)a2, (int)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_get_date(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1 = 0;
+	int a2 = 0;
+	int a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtime_picker_get_date((Rid)a0, &a1, &a2, &a3);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a1, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a2, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a3, &o2_);
+		{
+			const napi_value values_[3] = {o0_, o1_, o2_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_set_instant(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	rn.Rtime_picker_set_instant((Rid)a0, (double)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtime_picker_get_instant(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rtime_picker_get_instant((Rid)a0);
+	napi_create_double(env, value_, &result_);
 	return result_;
 }
 
@@ -13144,7 +17090,7 @@ static napi_value rn_w_Rtoast_set_action_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rtoast_set_action_callback((Rid)a0, cb_ ? (RToastCallback)rn_t_RToastCallback : (RToastCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 48, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 61, NULL, cb_);
 	return result_;
 }
 
@@ -13245,7 +17191,7 @@ static napi_value rn_w_Rbreadcrumb_set_clicked_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rbreadcrumb_set_clicked_callback((Rid)a0, cb_ ? (RBreadcrumbCallback)rn_t_RBreadcrumbCallback : (RBreadcrumbCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 49, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 62, NULL, cb_);
 	return result_;
 }
 
@@ -13366,7 +17312,7 @@ static napi_value rn_w_Rrating_set_changed_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rrating_set_changed_callback((Rid)a0, cb_ ? (RRatingChangedCallback)rn_t_RRatingChangedCallback : (RRatingChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 50, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 63, NULL, cb_);
 	return result_;
 }
 
@@ -13459,7 +17405,7 @@ static napi_value rn_w_Rpagination_set_changed_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rpagination_set_changed_callback((Rid)a0, cb_ ? (RPageChangedCallback)rn_t_RPageChangedCallback : (RPageChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 51, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 64, NULL, cb_);
 	return result_;
 }
 
@@ -14395,7 +18341,7 @@ static napi_value rn_w_Rplot_set_view_changed_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rplot_set_view_changed_callback((Rid)a0, cb_ ? (RPlotViewCallback)rn_t_RPlotViewCallback : (RPlotViewCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 52, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 65, NULL, cb_);
 	return result_;
 }
 
@@ -14420,7 +18366,7 @@ static napi_value rn_w_Rplot_set_drag_line_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rplot_set_drag_line_callback((Rid)a0, cb_ ? (RPlotDragLineCallback)rn_t_RPlotDragLineCallback : (RPlotDragLineCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 53, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 66, NULL, cb_);
 	return result_;
 }
 
@@ -14445,7 +18391,2704 @@ static napi_value rn_w_Rplot_set_series_toggled_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rplot_set_series_toggled_callback((Rid)a0, cb_ ? (RPlotSeriesCallback)rn_t_RPlotSeriesCallback : (RPlotSeriesCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 54, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 67, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_create(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	Rid value_ = rn.Rchart_create((RChartKind)a0);
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_kind(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_kind((Rid)a0, (RChartKind)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_kind(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rchart_get_kind((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_title(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rchart_set_title((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_title(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rchart_get_title((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_format(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rchart_set_format((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_color(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	rn.Rchart_set_color((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_legend(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_legend((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_clear(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rchart_clear((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_hovered(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_hovered((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_add_slice(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	double a2;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_double(env, argv[2], &a2)) goto done;
+	int value_ = rn.Rchart_add_slice((Rid)a0, a1.p, (double)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_remove_slice(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rchart_remove_slice((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_slice_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_slice_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_slice_value(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	double a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	rn.Rchart_set_slice_value((Rid)a0, (int)a1, (double)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_slice_value(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	double value_ = rn.Rchart_get_slice_value((Rid)a0, (int)a1);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_slice_label(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	rn_str a2;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	rn.Rchart_set_slice_label((Rid)a0, (int)a1, a2.p);
+done:
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_slice_label(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	result_ = rn_make_text(env, rn.Rchart_get_slice_label((Rid)a0, (int)a1));
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_slice_color(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	rn.Rchart_set_slice_color((Rid)a0, (int)a1, (float)a2, (float)a3, (float)a4, (float)a5);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_total(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rchart_get_total((Rid)a0);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_selected(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_selected((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_selected(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_selected((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_hole(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_hole((Rid)a0, (float)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_center_text(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	rn.Rchart_set_center_text((Rid)a0, a1.p, a2.p);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_slice_clicked_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rchart_set_slice_clicked_callback((Rid)a0, cb_ ? (RChartSliceCallback)rn_t_RChartSliceCallback : (RChartSliceCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 68, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_range(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	rn.Rchart_set_range((Rid)a0, (double)a1, (double)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_range(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1 = 0;
+	double a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rchart_get_range((Rid)a0, &a1, &a2);
+	{
+		napi_value o0_;
+		napi_create_double(env, a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, a2, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_value(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_value((Rid)a0, (double)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_value(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rchart_get_value((Rid)a0);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_add_band(napi_env env, napi_callback_info info) {
+	size_t argc = 7;
+	napi_value argv[7];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	float a3;
+	float a4;
+	float a5;
+	float a6;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	if (!rn_get_float(env, argv[6], &a6)) return NULL;
+	int value_ = rn.Rchart_add_band((Rid)a0, (double)a1, (double)a2, (float)a3, (float)a4, (float)a5, (float)a6);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_clear_bands(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rchart_clear_bands((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_band_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_band_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_grid(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	void* a3;
+	void* a3_heap;
+	a3_heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_numbers(env, argv[3], napi_float32_array, &a3, &a3_heap)) goto done;
+	rn.Rchart_set_grid((Rid)a0, (int)a1, (int)a2, (const float*)a3);
+done:
+	free(a3_heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_row_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_row_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_column_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_column_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_cell(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	float a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	rn.Rchart_set_cell((Rid)a0, (int)a1, (int)a2, (float)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_cell(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	float value_ = rn.Rchart_get_cell((Rid)a0, (int)a1, (int)a2);
+	napi_create_double(env, (double)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_row_labels(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rchart_set_row_labels((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_column_labels(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rchart_set_column_labels((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_row_label(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	result_ = rn_make_text(env, rn.Rchart_get_row_label((Rid)a0, (int)a1));
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_column_label(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	result_ = rn_make_text(env, rn.Rchart_get_column_label((Rid)a0, (int)a1));
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_color_scale(napi_env env, napi_callback_info info) {
+	size_t argc = 9;
+	napi_value argv[9];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	float a6;
+	float a7;
+	float a8;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	if (!rn_get_float(env, argv[6], &a6)) return NULL;
+	if (!rn_get_float(env, argv[7], &a7)) return NULL;
+	if (!rn_get_float(env, argv[8], &a8)) return NULL;
+	rn.Rchart_set_color_scale((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4, (float)a5, (float)a6, (float)a7, (float)a8);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_cell_clicked_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rchart_set_cell_clicked_callback((Rid)a0, cb_ ? (RChartCellCallback)rn_t_RChartCellCallback : (RChartCellCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 69, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_values(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	void* a1_heap;
+	int a2;
+	a1_heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_numbers(env, argv[1], napi_float32_array, &a1, &a1_heap)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	rn.Rchart_set_values((Rid)a0, (const float*)a1, (int)a2);
+done:
+	free(a1_heap);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_push_value(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rchart_push_value((Rid)a0, (float)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_value_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rchart_get_value_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_get_value_at(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	float value_ = rn.Rchart_get_value_at((Rid)a0, (int)a1);
+	napi_create_double(env, (double)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_fill(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_fill((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rchart_set_marker(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rchart_set_marker((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_is_available(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rpdf_is_available();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_load_file(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	int value_ = rn.Rpdf_view_load_file((Rid)a0, a1.p, a2.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_load_memory(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a3;
+	a1.heap = NULL;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a3)) goto done;
+	int value_ = rn.Rpdf_view_load_memory((Rid)a0, a1.p, a1.n, a3.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_close(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rpdf_view_close((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_status(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rpdf_view_get_status((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_page_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rpdf_view_get_page_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_page_size(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2 = 0;
+	float a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rpdf_view_get_page_size((Rid)a0, (int)a1, &a2, &a3);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a2, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a3, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_set_page(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rpdf_view_set_page((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_page(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rpdf_view_get_page((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_set_zoom(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	rn.Rpdf_view_set_zoom((Rid)a0, (float)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_zoom(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	float value_ = rn.Rpdf_view_get_zoom((Rid)a0);
+	napi_create_double(env, (double)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_set_fit(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rpdf_view_set_fit((Rid)a0, (RPdfFit)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_fit(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rpdf_view_get_fit((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_title(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rpdf_view_get_title((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_get_page_text(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	result_ = rn_make_text(env, rn.Rpdf_view_get_page_text((Rid)a0, (int)a1));
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_set_page_changed_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rpdf_view_set_page_changed_callback((Rid)a0, cb_ ? (RPdfPageChangedCallback)rn_t_RPdfPageChangedCallback : (RPdfPageChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 70, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_create(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	Rid value_ = rn.Rcarousel_create();
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_page(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rcarousel_set_page((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_page(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcarousel_get_page((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_page_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcarousel_get_page_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_next(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rcarousel_next((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_prev(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rcarousel_prev((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_loop(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcarousel_set_loop((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_loop(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcarousel_get_loop((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_autoplay(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	rn.Rcarousel_set_autoplay((Rid)a0, (double)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_autoplay(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rcarousel_get_autoplay((Rid)a0);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_indicators_visible(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcarousel_set_indicators_visible((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_indicators_visible(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcarousel_get_indicators_visible((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_arrows_visible(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcarousel_set_arrows_visible((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_arrows_visible(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rcarousel_get_arrows_visible((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_orientation(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rcarousel_set_orientation((Rid)a0, (ROrientation)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_get_orientation(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rcarousel_get_orientation((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rcarousel_set_page_changed_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rcarousel_set_page_changed_callback((Rid)a0, cb_ ? (RCarouselPageChangedCallback)rn_t_RCarouselPageChangedCallback : (RCarouselPageChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 71, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_view_print(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rpdf_view_print((Rid)a0, (const RPdfPrintDesc*)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_create(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	Rid value_ = rn.Rmap_view_create();
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_center(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	rn.Rmap_view_set_center((Rid)a0, (double)a1, (double)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_center(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1 = 0;
+	double a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rmap_view_get_center((Rid)a0, &a1, &a2);
+	{
+		napi_value o0_;
+		napi_create_double(env, a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, a2, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_zoom(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	rn.Rmap_view_set_zoom((Rid)a0, (double)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_zoom(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	double value_ = rn.Rmap_view_get_zoom((Rid)a0);
+	napi_create_double(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_zoom_range(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	rn.Rmap_view_set_zoom_range((Rid)a0, (double)a1, (double)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_zoom_range(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1 = 0;
+	double a2 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rmap_view_get_zoom_range((Rid)a0, &a1, &a2);
+	{
+		napi_value o0_;
+		napi_create_double(env, a1, &o0_);
+		napi_value o1_;
+		napi_create_double(env, a2, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_animate_to(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	double a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	if (!rn_get_double(env, argv[3], &a3)) return NULL;
+	rn.Rmap_view_animate_to((Rid)a0, (double)a1, (double)a2, (double)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_screen_to_latlon(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	double a3 = 0;
+	double a4 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	rn.Rmap_view_screen_to_latlon((Rid)a0, (float)a1, (float)a2, &a3, &a4);
+	{
+		napi_value o0_;
+		napi_create_double(env, a3, &o0_);
+		napi_value o1_;
+		napi_create_double(env, a4, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_latlon_to_screen(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	float a3 = 0;
+	float a4 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_double(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	rn.Rmap_view_latlon_to_screen((Rid)a0, (double)a1, (double)a2, &a3, &a4);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a3, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a4, &o1_);
+		{
+			const napi_value values_[2] = {o0_, o1_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rmap_view_set_tile_callback((Rid)a0, cb_ ? (RMapTileCallback)rn_t_RMapTileCallback : (RMapTileCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 72, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile_cancel_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rmap_view_set_tile_cancel_callback((Rid)a0, cb_ ? (RMapTileCallback)rn_t_RMapTileCallback : (RMapTileCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 73, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile(napi_env env, napi_callback_info info) {
+	size_t argc = 7;
+	napi_value argv[7];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	void* a4;
+	int a5;
+	int a6;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	if (!rn_get_ptr(env, argv[4], &a4)) return NULL;
+	if (!rn_get_int(env, argv[5], &a5)) return NULL;
+	if (!rn_get_int(env, argv[6], &a6)) return NULL;
+	rn.Rmap_view_set_tile((Rid)a0, (int)a1, (int)a2, (int)a3, (const uint8_t*)a4, (int)a5, (int)a6);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile_data(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	void* a4;
+	size_t a4_size;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	if (!rn_get_bytes(env, argv[4], &a4, &a4_size)) return NULL;
+	rn.Rmap_view_set_tile_data((Rid)a0, (int)a1, (int)a2, (int)a3, (const void*)a4, a4_size);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile_failed(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	rn.Rmap_view_set_tile_failed((Rid)a0, (int)a1, (int)a2, (int)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile_path(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rmap_view_set_tile_path((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_tile_path(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rmap_view_get_tile_path((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_tile_size(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rmap_view_set_tile_size((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_tile_size(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rmap_view_get_tile_size((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_cache_size(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	uint64_t a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_uint64(env, argv[1], &a1)) return NULL;
+	rn.Rmap_view_set_cache_size((Rid)a0, (size_t)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_cache_usage(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	size_t value_ = rn.Rmap_view_get_cache_usage((Rid)a0);
+	napi_create_double(env, (double)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_clear_tiles(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rmap_view_clear_tiles((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_tile_state(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	{
+		int value_ = (int)rn.Rmap_view_get_tile_state((Rid)a0, (int)a1, (int)a2, (int)a3);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_add_marker(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	double a1;
+	double a2;
+	rn_str a3;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_double(env, argv[1], &a1)) goto done;
+	if (!rn_get_double(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	int value_ = rn.Rmap_view_add_marker((Rid)a0, (double)a1, (double)a2, a3.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_remove_marker(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rmap_view_remove_marker((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_clear_markers(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rmap_view_clear_markers((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_marker_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rmap_view_get_marker_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_marker_position(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	double a2;
+	double a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_double(env, argv[2], &a2)) return NULL;
+	if (!rn_get_double(env, argv[3], &a3)) return NULL;
+	rn.Rmap_view_set_marker_position((Rid)a0, (int)a1, (double)a2, (double)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_marker_label(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	rn_str a2;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	rn.Rmap_view_set_marker_label((Rid)a0, (int)a1, a2.p);
+done:
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_marker_color(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	rn.Rmap_view_set_marker_color((Rid)a0, (int)a1, (float)a2, (float)a3, (float)a4, (float)a5);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_marker_clicked_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rmap_view_set_marker_clicked_callback((Rid)a0, cb_ ? (RMapMarkerCallback)rn_t_RMapMarkerCallback : (RMapMarkerCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 74, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_view_changed_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rmap_view_set_view_changed_callback((Rid)a0, cb_ ? (RMapViewCallback)rn_t_RMapViewCallback : (RMapViewCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 75, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_set_attribution(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rmap_view_set_attribution((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rmap_view_get_attribution(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rmap_view_get_attribution((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_is_supported(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rsystem_web_view_is_supported();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_create(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	Rid value_ = rn.Rsystem_web_view_create();
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_load_url(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rsystem_web_view_load_url((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_load_file(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rsystem_web_view_load_file((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_load_html(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	rn.Rsystem_web_view_load_html((Rid)a0, a1.p, a2.p);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_reload(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rsystem_web_view_reload((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_stop(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rsystem_web_view_stop((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_go_back(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rsystem_web_view_go_back((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_go_forward(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rsystem_web_view_go_forward((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_can_go_back(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rsystem_web_view_can_go_back((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_can_go_forward(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rsystem_web_view_can_go_forward((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_get_url(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rsystem_web_view_get_url((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_get_title(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rsystem_web_view_get_title((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_is_loading(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rsystem_web_view_is_loading((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_get_error(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rsystem_web_view_get_error((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_run_javascript(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	void* a3;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_ptr(env, argv[3], &a3)) goto done;
+	k0_ = rn_callback_arg(env, argv[2], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) goto done;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) goto done;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[2], 1, a3);
+		if (!cb_) goto done;
+	}
+	rn.Rsystem_web_view_run_javascript((Rid)a0, a1.p, cb_ ? (RSystemWebViewResultCallback)rn_t_RSystemWebViewResultCallback : (RSystemWebViewResultCallback)n0_, cb_ ? (void*)cb_ : a3);
+	rn_bind(a0, RN_OWNER_WIDGET, 76, NULL, cb_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_set_message_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rsystem_web_view_set_message_callback((Rid)a0, cb_ ? (RSystemWebViewMessageCallback)rn_t_RSystemWebViewMessageCallback : (RSystemWebViewMessageCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 77, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_set_event_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rsystem_web_view_set_event_callback((Rid)a0, cb_ ? (RSystemWebViewEventCallback)rn_t_RSystemWebViewEventCallback : (RSystemWebViewEventCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 78, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rsystem_web_view_get_native_handle(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_ptr(env, rn.Rsystem_web_view_get_native_handle((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_create(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	Rid value_ = rn.Rpdf_document_create();
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_delete(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rpdf_document_delete((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_title(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rpdf_document_set_title((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_author(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rpdf_document_set_author((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_subject(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rpdf_document_set_subject((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_add_page(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rpdf_document_add_page((Rid)a0, (float)a1, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_get_page_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rpdf_document_get_page_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_fill_color(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	rn.Rpdf_document_set_fill_color((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_stroke_color(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	rn.Rpdf_document_set_stroke_color((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_line_width(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	rn.Rpdf_document_set_line_width((Rid)a0, (float)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_rect(napi_env env, napi_callback_info info) {
+	size_t argc = 7;
+	napi_value argv[7];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	uint32_t a6;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	if (!rn_get_uint32(env, argv[6], &a6)) return NULL;
+	rn.Rpdf_document_draw_rect((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4, (float)a5, (Ruint)a6);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_ellipse(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	uint32_t a5;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_uint32(env, argv[5], &a5)) return NULL;
+	rn.Rpdf_document_draw_ellipse((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4, (Ruint)a5);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_line(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	rn.Rpdf_document_draw_line((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_add_font(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rpdf_document_add_font((Rid)a0, a1.p, a1.n);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_add_font_from_file(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rpdf_document_add_font_from_file((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_set_font(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2;
+	uint32_t a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_uint32(env, argv[3], &a3)) return NULL;
+	rn.Rpdf_document_set_font((Rid)a0, (int)a1, (float)a2, (Ruint)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_get_line_height(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	float value_ = rn.Rpdf_document_get_line_height((Rid)a0);
+	napi_create_double(env, (double)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_measure_text(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	float value_ = rn.Rpdf_document_measure_text((Rid)a0, a1.p);
+	napi_create_double(env, (double)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_text(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	rn_str a3;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_float(env, argv[1], &a1)) goto done;
+	if (!rn_get_float(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	float value_ = rn.Rpdf_document_draw_text((Rid)a0, (float)a1, (float)a2, a3.p);
+	napi_create_double(env, (double)value_, &result_);
+done:
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_paragraph(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	rn_str a4;
+	int a5;
+	a4.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_float(env, argv[1], &a1)) goto done;
+	if (!rn_get_float(env, argv[2], &a2)) goto done;
+	if (!rn_get_float(env, argv[3], &a3)) goto done;
+	if (!rn_str_get(env, argv[4], &a4)) goto done;
+	if (!rn_get_int(env, argv[5], &a5)) goto done;
+	float value_ = rn.Rpdf_document_draw_paragraph((Rid)a0, (float)a1, (float)a2, (float)a3, a4.p, (RHAlign)a5);
+	napi_create_double(env, (double)value_, &result_);
+done:
+	free(a4.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_image(napi_env env, napi_callback_info info) {
+	size_t argc = 8;
+	napi_value argv[8];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	void* a5;
+	int a6;
+	int a7;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_ptr(env, argv[5], &a5)) return NULL;
+	if (!rn_get_int(env, argv[6], &a6)) return NULL;
+	if (!rn_get_int(env, argv[7], &a7)) return NULL;
+	rn.Rpdf_document_draw_image((Rid)a0, (float)a1, (float)a2, (float)a3, (float)a4, (const uint8_t*)a5, (int)a6, (int)a7);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_draw_window(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	uint32_t a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_uint32(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	int value_ = rn.Rpdf_document_draw_window((Rid)a0, (Rid)a1, (float)a2, (float)a3, (float)a4, (float)a5);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_save(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rpdf_document_save((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_save_memory(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	size_t a1 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		char* owned_ = rn.Rpdf_document_save_memory((Rid)a0, &a1);
+		void* copy_;
+		napi_value buffer_;
+		if (!owned_) {
+			result_ = rn_null(env);
+		} else {
+			size_t size_ = (size_t)a1;
+			napi_create_arraybuffer(env, size_, &copy_, &buffer_);
+			if (size_ > 0) memcpy(copy_, owned_, size_);
+			rn.Rmemory_free(owned_);
+			napi_create_typedarray(env, napi_uint8_array, size_, buffer_, 0, &result_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_print(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rpdf_print((const RPdfPrintDesc*)a0, a1.p, a1.n);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_print_file(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rpdf_print_file((const RPdfPrintDesc*)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rpdf_document_print(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rpdf_document_print((Rid)a0, (const RPdfPrintDesc*)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
 	return result_;
 }
 
@@ -14680,6 +21323,265 @@ static napi_value rn_w_Rtext_editor_scroll_to_line(napi_env env, napi_callback_i
 	return result_;
 }
 
+static napi_value rn_w_Rtext_editor_add_cursor(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rtext_editor_add_cursor((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_add_selection(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	int a3;
+	int a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	if (!rn_get_int(env, argv[4], &a4)) return NULL;
+	rn.Rtext_editor_add_selection((Rid)a0, (int)a1, (int)a2, (int)a3, (int)a4);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_cursor_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_get_cursor_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_cursor_at(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2 = 0;
+	int a3 = 0;
+	int a4 = 0;
+	int a5 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_get_cursor_at((Rid)a0, (int)a1, &a2, &a3, &a4, &a5);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a4, &o2_);
+		napi_value o3_;
+		napi_create_int32(env, (int32_t)a5, &o3_);
+		{
+			const napi_value values_[5] = {result_, o0_, o1_, o2_, o3_};
+			result_ = rn_tuple(env, 5, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_main_cursor(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_get_main_cursor((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_clear_cursors(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtext_editor_clear_cursors((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_add_next_occurrence(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_add_next_occurrence((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_select_all_occurrences(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_select_all_occurrences((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_fold(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_fold((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_unfold(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_unfold((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_fold_all(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtext_editor_fold_all((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_unfold_all(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtext_editor_unfold_all((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_is_folded(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_is_folded((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_is_line_hidden(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_is_line_hidden((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_fold_end(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_get_fold_end((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_set_folding(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_editor_set_folding((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_folding(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_get_folding((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
 static napi_value rn_w_Rtext_editor_undo(napi_env env, napi_callback_info info) {
 	size_t argc = 1;
 	napi_value argv[1];
@@ -14909,7 +21811,7 @@ static napi_value rn_w_Rtext_editor_set_zoom_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rtext_editor_set_zoom_callback((Rid)a0, cb_ ? (RTextEditorZoomCallback)rn_t_RTextEditorZoomCallback : (RTextEditorZoomCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 55, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 79, NULL, cb_);
 	return result_;
 }
 
@@ -15036,6 +21938,50 @@ static napi_value rn_w_Rtext_editor_get_markdown(napi_env env, napi_callback_inf
 	return result_;
 }
 
+static napi_value rn_w_Rtext_editor_set_spell_check(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_editor_set_spell_check((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_spell_check(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_get_spell_check((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_set_spell_language(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rtext_editor_set_spell_language((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
 static napi_value rn_w_Rtext_editor_get_token(napi_env env, napi_callback_info info) {
 	size_t argc = 3;
 	napi_value argv[3];
@@ -15115,7 +22061,7 @@ static napi_value rn_w_Rtext_editor_set_completion_callback(napi_env env, napi_c
 		if (!cb_) return NULL;
 	}
 	rn.Rtext_editor_set_completion_callback((Rid)a0, cb_ ? (RCompletionCallback)rn_t_RCompletionCallback : (RCompletionCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 56, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 80, NULL, cb_);
 	return result_;
 }
 
@@ -15137,6 +22083,45 @@ static napi_value rn_w_Rtext_editor_add_completion(napi_env env, napi_callback_i
 done:
 	free(a1.heap);
 	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_add_completion_insert(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	rn_str a3;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	rn.Rtext_editor_add_completion_insert((Rid)a0, a1.p, a2.p, a3.p);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_set_completion_words(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_editor_set_completion_words((Rid)a0, (int)a1);
 	return result_;
 }
 
@@ -15201,6 +22186,261 @@ static napi_value rn_w_Rtext_editor_get_marker_count(napi_env env, napi_callback
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	int value_ = rn.Rtext_editor_get_marker_count((Rid)a0);
 	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_set_hover_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rtext_editor_set_hover_callback((Rid)a0, cb_ ? (RTextEditorHoverCallback)rn_t_RTextEditorHoverCallback : (RTextEditorHoverCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 81, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_set_search(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	uint32_t a2;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_uint32(env, argv[2], &a2)) goto done;
+	rn.Rtext_editor_set_search((Rid)a0, a1.p, (Ruint)a2);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_search(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rtext_editor_get_search((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_search_flags(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	Ruint value_ = rn.Rtext_editor_get_search_flags((Rid)a0);
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_find_next(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_find_next((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_find_previous(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_find_previous((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_match_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_get_match_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_match_index(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_get_match_index((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_match(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2 = 0;
+	int a3 = 0;
+	int a4 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_get_match((Rid)a0, (int)a1, &a2, &a3, &a4);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a4, &o2_);
+		{
+			const napi_value values_[4] = {result_, o0_, o1_, o2_};
+			result_ = rn_tuple(env, 4, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_select_match(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtext_editor_select_match((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_replace(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtext_editor_replace((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_replace_all(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtext_editor_replace_all((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_show_find(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_editor_show_find((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_hide_find(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtext_editor_hide_find((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_is_find_shown(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtext_editor_is_find_shown((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_set_find_bar(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_editor_set_find_bar((Rid)a0, (int)a1);
 	return result_;
 }
 
@@ -15283,7 +22523,7 @@ static napi_value rn_w_Rtext_editor_set_changed_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rtext_editor_set_changed_callback((Rid)a0, cb_ ? (RTextEditorChangedCallback)rn_t_RTextEditorChangedCallback : (RTextEditorChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 57, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 82, NULL, cb_);
 	return result_;
 }
 
@@ -15670,7 +22910,7 @@ static napi_value rn_w_Rdock_area_set_close_callback(napi_env env, napi_callback
 		if (!cb_) return NULL;
 	}
 	rn.Rdock_area_set_close_callback((Rid)a0, cb_ ? (RDockCloseCallback)rn_t_RDockCloseCallback : (RDockCloseCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 58, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 83, NULL, cb_);
 	return result_;
 }
 
@@ -15698,6 +22938,47 @@ static napi_value rn_w_Rdock_area_is_tearable(napi_env env, napi_callback_info i
 	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
 	int value_ = rn.Rdock_area_is_tearable((Rid)a0);
 	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdock_area_set_float_mode(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdock_area_set_float_mode((Rid)a0, (RDockFloatMode)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdock_area_set_float_window(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	uint32_t a1;
+	void* a3;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_uint32(env, argv[1], &a1)) return NULL;
+	if (!rn_get_ptr(env, argv[3], &a3)) return NULL;
+	k0_ = rn_callback_arg(env, argv[2], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[2], 1, a3);
+		if (!cb_) return NULL;
+	}
+	rn.Rdock_area_set_float_window((Rid)a0, (Ruint)a1, cb_ ? (RDockFloatWindowCallback)rn_t_RDockFloatWindowCallback : (RDockFloatWindowCallback)n0_, cb_ ? (void*)cb_ : a3);
+	rn_bind(a0, RN_OWNER_WIDGET, 84, NULL, cb_);
 	return result_;
 }
 
@@ -15770,7 +23051,7 @@ static napi_value rn_w_Rdock_area_set_changed_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rdock_area_set_changed_callback((Rid)a0, cb_ ? (RDockChangedCallback)rn_t_RDockChangedCallback : (RDockChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 59, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 85, NULL, cb_);
 	return result_;
 }
 
@@ -15927,7 +23208,7 @@ static napi_value rn_w_Risland_set_changed_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Risland_set_changed_callback((Rid)a0, cb_ ? (RIslandChangedCallback)rn_t_RIslandChangedCallback : (RIslandChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 60, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 86, NULL, cb_);
 	return result_;
 }
 
@@ -16148,7 +23429,55 @@ static napi_value rn_w_Rtray_set_clicked_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rtray_set_clicked_callback((Rid)a0, cb_ ? (RTrayClickedCallback)rn_t_RTrayClickedCallback : (RTrayClickedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_PLAIN, 61, NULL, cb_);
+	rn_bind(a0, RN_OWNER_PLAIN, 87, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rtray_set_title(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rtray_set_title((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtray_get_rect(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1 = 0;
+	int a2 = 0;
+	int a3 = 0;
+	int a4 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtray_get_rect((Rid)a0, &a1, &a2, &a3, &a4);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a1, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a2, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a3, &o2_);
+		napi_value o3_;
+		napi_create_int32(env, (int32_t)a4, &o3_);
+		{
+			const napi_value values_[5] = {result_, o0_, o1_, o2_, o3_};
+			result_ = rn_tuple(env, 5, values_);
+		}
+	}
 	return result_;
 }
 
@@ -16414,7 +23743,7 @@ static napi_value rn_w_Rcolor_picker_set_changed_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rcolor_picker_set_changed_callback((Rid)a0, cb_ ? (RColorChangedCallback)rn_t_RColorChangedCallback : (RColorChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 62, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 88, NULL, cb_);
 	return result_;
 }
 
@@ -17341,7 +24670,7 @@ static napi_value rn_w_Rtimeline_set_time_callback(napi_env env, napi_callback_i
 		if (!cb_) return NULL;
 	}
 	rn.Rtimeline_set_time_callback((Rid)a0, cb_ ? (RTimelineTimeCallback)rn_t_RTimelineTimeCallback : (RTimelineTimeCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 63, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 89, NULL, cb_);
 	return result_;
 }
 
@@ -17366,7 +24695,7 @@ static napi_value rn_w_Rtimeline_set_changed_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rtimeline_set_changed_callback((Rid)a0, cb_ ? (RTimelineItemCallback)rn_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 64, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 90, NULL, cb_);
 	return result_;
 }
 
@@ -17391,7 +24720,7 @@ static napi_value rn_w_Rtimeline_set_selection_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rtimeline_set_selection_callback((Rid)a0, cb_ ? (RTimelineItemCallback)rn_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 65, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 91, NULL, cb_);
 	return result_;
 }
 
@@ -17416,7 +24745,7 @@ static napi_value rn_w_Rtimeline_set_activated_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rtimeline_set_activated_callback((Rid)a0, cb_ ? (RTimelineItemCallback)rn_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 66, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 92, NULL, cb_);
 	return result_;
 }
 
@@ -17441,7 +24770,7 @@ static napi_value rn_w_Rtimeline_set_removed_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rtimeline_set_removed_callback((Rid)a0, cb_ ? (RTimelineItemCallback)rn_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 67, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 93, NULL, cb_);
 	return result_;
 }
 
@@ -18461,7 +25790,7 @@ static napi_value rn_w_Rnode_graph_set_connect_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_connect_callback((Rid)a0, cb_ ? (RNodeGraphConnectCallback)rn_t_RNodeGraphConnectCallback : (RNodeGraphConnectCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 68, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 94, NULL, cb_);
 	return result_;
 }
 
@@ -18486,7 +25815,7 @@ static napi_value rn_w_Rnode_graph_set_linked_callback(napi_env env, napi_callba
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_linked_callback((Rid)a0, cb_ ? (RNodeGraphItemCallback)rn_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 69, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 95, NULL, cb_);
 	return result_;
 }
 
@@ -18511,7 +25840,7 @@ static napi_value rn_w_Rnode_graph_set_unlinked_callback(napi_env env, napi_call
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_unlinked_callback((Rid)a0, cb_ ? (RNodeGraphItemCallback)rn_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 70, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 96, NULL, cb_);
 	return result_;
 }
 
@@ -18536,7 +25865,7 @@ static napi_value rn_w_Rnode_graph_set_moved_callback(napi_env env, napi_callbac
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_moved_callback((Rid)a0, cb_ ? (RNodeGraphItemCallback)rn_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 71, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 97, NULL, cb_);
 	return result_;
 }
 
@@ -18561,7 +25890,7 @@ static napi_value rn_w_Rnode_graph_set_selection_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_selection_callback((Rid)a0, cb_ ? (RNodeGraphItemCallback)rn_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 72, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 98, NULL, cb_);
 	return result_;
 }
 
@@ -18586,7 +25915,7 @@ static napi_value rn_w_Rnode_graph_set_removed_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_removed_callback((Rid)a0, cb_ ? (RNodeGraphItemCallback)rn_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 73, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 99, NULL, cb_);
 	return result_;
 }
 
@@ -18611,7 +25940,7 @@ static napi_value rn_w_Rnode_graph_set_activated_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_activated_callback((Rid)a0, cb_ ? (RNodeGraphItemCallback)rn_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 74, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 100, NULL, cb_);
 	return result_;
 }
 
@@ -18636,7 +25965,7 @@ static napi_value rn_w_Rnode_graph_set_context_callback(napi_env env, napi_callb
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_context_callback((Rid)a0, cb_ ? (RNodeGraphContextCallback)rn_t_RNodeGraphContextCallback : (RNodeGraphContextCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 75, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 101, NULL, cb_);
 	return result_;
 }
 
@@ -18661,7 +25990,7 @@ static napi_value rn_w_Rnode_graph_set_canvas_activated_callback(napi_env env, n
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_canvas_activated_callback((Rid)a0, cb_ ? (RNodeGraphPointCallback)rn_t_RNodeGraphPointCallback : (RNodeGraphPointCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 76, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 102, NULL, cb_);
 	return result_;
 }
 
@@ -18686,7 +26015,7 @@ static napi_value rn_w_Rnode_graph_set_wire_dropped_callback(napi_env env, napi_
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_wire_dropped_callback((Rid)a0, cb_ ? (RNodeGraphPointCallback)rn_t_RNodeGraphPointCallback : (RNodeGraphPointCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 77, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 103, NULL, cb_);
 	return result_;
 }
 
@@ -18711,7 +26040,7 @@ static napi_value rn_w_Rnode_graph_set_pin_clicked_callback(napi_env env, napi_c
 		if (!cb_) return NULL;
 	}
 	rn.Rnode_graph_set_pin_clicked_callback((Rid)a0, cb_ ? (RNodeGraphPointCallback)rn_t_RNodeGraphPointCallback : (RNodeGraphPointCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 78, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 104, NULL, cb_);
 	return result_;
 }
 
@@ -18945,6 +26274,86 @@ static napi_value rn_w_Rnode_graph_set_pin_emphasis(napi_env env, napi_callback_
 	if (!rn_get_int(env, argv[1], &a1)) return NULL;
 	if (!rn_get_int(env, argv[2], &a2)) return NULL;
 	rn.Rnode_graph_set_pin_emphasis((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rnode_graph_get_tag_at(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rnode_graph_get_tag_at((Rid)a0, (float)a1, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rnode_graph_set_pin_tag_lit(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rnode_graph_set_pin_tag_lit((Rid)a0, (int)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rnode_graph_set_pin_label_width(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	rn.Rnode_graph_set_pin_label_width((Rid)a0, (float)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rnode_graph_get_pin_label_width(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	float value_ = rn.Rnode_graph_get_pin_label_width((Rid)a0);
+	napi_create_double(env, (double)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rnode_graph_set_node_badge_color(napi_env env, napi_callback_info info) {
+	size_t argc = 5;
+	napi_value argv[5];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2;
+	float a3;
+	float a4;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	rn.Rnode_graph_set_node_badge_color((Rid)a0, (int)a1, (float)a2, (float)a3, (float)a4);
 	return result_;
 }
 
@@ -19387,7 +26796,7 @@ static napi_value rn_w_Rblock_editor_set_changed_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rblock_editor_set_changed_callback((Rid)a0, cb_ ? (RBlockEditorCallback)rn_t_RBlockEditorCallback : (RBlockEditorCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 79, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 105, NULL, cb_);
 	return result_;
 }
 
@@ -19412,7 +26821,7 @@ static napi_value rn_w_Rblock_editor_set_clicked_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rblock_editor_set_clicked_callback((Rid)a0, cb_ ? (RBlockEditorCallback)rn_t_RBlockEditorCallback : (RBlockEditorCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 80, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 106, NULL, cb_);
 	return result_;
 }
 
@@ -19437,7 +26846,7 @@ static napi_value rn_w_Rblock_editor_set_context_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rblock_editor_set_context_callback((Rid)a0, cb_ ? (RBlockEditorContextCallback)rn_t_RBlockEditorContextCallback : (RBlockEditorContextCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 81, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 107, NULL, cb_);
 	return result_;
 }
 
@@ -19610,6 +27019,561 @@ static napi_value rn_w_Rblock_editor_set_view(napi_env env, napi_callback_info i
 	return result_;
 }
 
+static napi_value rn_w_Rdiff_unified(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	rn_str a2;
+	rn_str a3;
+	int a4;
+	uint32_t a5;
+	size_t a6 = 0;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	if (!rn_get_int(env, argv[4], &a4)) goto done;
+	if (!rn_get_uint32(env, argv[5], &a5)) goto done;
+	{
+		char* owned_ = rn.Rdiff_unified(a0.p, a1.p, a2.p, a3.p, (int)a4, (uint32_t)a5, &a6);
+		void* copy_;
+		napi_value buffer_;
+		if (!owned_) {
+			result_ = rn_null(env);
+		} else {
+			size_t size_ = (size_t)a6;
+			napi_create_arraybuffer(env, size_, &copy_, &buffer_);
+			if (size_ > 0) memcpy(copy_, owned_, size_);
+			rn.Rmemory_free(owned_);
+			napi_create_typedarray(env, napi_uint8_array, size_, buffer_, 0, &result_);
+		}
+	}
+done:
+	free(a0.heap);
+	free(a1.heap);
+	free(a2.heap);
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_count_changes(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	uint32_t a2;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_uint32(env, argv[2], &a2)) goto done;
+	int value_ = rn.Rdiff_count_changes(a0.p, a1.p, (uint32_t)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_create(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	Rid value_ = rn.Rdiff_view_create();
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_texts(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	rn.Rdiff_view_set_texts((Rid)a0, a1.p, a2.p);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_names(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	rn.Rdiff_view_set_names((Rid)a0, a1.p, a2.p);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_load_files(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	rn_str a2;
+	a1.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_str_get(env, argv[2], &a2)) goto done;
+	int value_ = rn.Rdiff_view_load_files((Rid)a0, a1.p, a2.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_patch(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rdiff_view_set_patch((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_mode(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_set_mode((Rid)a0, (RDiffViewMode)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_mode(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rdiff_view_get_mode((Rid)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_context(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_set_context((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_context(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_get_context((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_flags(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	uint32_t a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_uint32(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_set_flags((Rid)a0, (uint32_t)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_flags(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	uint32_t value_ = rn.Rdiff_view_get_flags((Rid)a0);
+	napi_create_uint32(env, value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_word_diff(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_set_word_diff((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_line_numbers(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_set_line_numbers((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_language(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	rn.Rdiff_view_set_language((Rid)a0, a1.p);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_change_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_get_change_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_change(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2 = 0;
+	int a3 = 0;
+	int a4 = 0;
+	int a5 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rdiff_view_get_change((Rid)a0, (int)a1, &a2, &a3, &a4, &a5);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a4, &o2_);
+		napi_value o3_;
+		napi_create_int32(env, (int32_t)a5, &o3_);
+		{
+			const napi_value values_[5] = {result_, o0_, o1_, o2_, o3_};
+			result_ = rn_tuple(env, 5, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_go_to_change(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_go_to_change((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_current_change(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_get_current_change((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_next_change(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_next_change((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_prev_change(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_prev_change((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_row_count(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_get_row_count((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_row(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2 = 0;
+	int a3 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	{
+		int value_ = (int)rn.Rdiff_view_get_row((Rid)a0, (int)a1, &a2, &a3);
+		napi_create_int32(env, value_, &result_);
+	}
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		{
+			const napi_value values_[3] = {result_, o0_, o1_};
+			result_ = rn_tuple(env, 3, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_row_text(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	result_ = rn_make_text(env, rn.Rdiff_view_get_row_text((Rid)a0, (int)a1, (RDiffSide)a2));
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_expand(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rdiff_view_expand((Rid)a0, (int)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_first_visible_row(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rdiff_view_get_first_visible_row((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_scroll_to_row(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rdiff_view_scroll_to_row((Rid)a0, (int)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_add_annotation(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	int a2;
+	rn_str a3;
+	a3.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_str_get(env, argv[3], &a3)) goto done;
+	rn.Rdiff_view_add_annotation((Rid)a0, (RDiffSide)a1, (int)a2, a3.p);
+done:
+	free(a3.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_clear_annotations(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rdiff_view_clear_annotations((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_get_selected_text(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rdiff_view_get_selected_text((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rdiff_view_set_line_clicked_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rdiff_view_set_line_clicked_callback((Rid)a0, cb_ ? (RDiffViewLineCallback)rn_t_RDiffViewLineCallback : (RDiffViewLineCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 108, NULL, cb_);
+	return result_;
+}
+
 static napi_value rn_w_Rdialog_open(napi_env env, napi_callback_info info) {
 	size_t argc = 4;
 	napi_value argv[4];
@@ -19628,14 +27592,14 @@ static napi_value rn_w_Rdialog_open(napi_env env, napi_callback_info info) {
 	k0_ = rn_callback_arg(env, argv[2], &n0_);
 	if (k0_ == RN_CALLBACK_THROWN) return NULL;
 	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
-	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwindow_is_valid(a0) && rn.Rwidget_is_valid(a1) && !rn_dialog_pending(a1, 82)) {
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwindow_is_valid(a0) && rn.Rwidget_is_valid(a1) && !rn_dialog_pending(a1, 109)) {
 		cb_ = rn_cb_new(env, &argv[2], 1, a3);
 		if (!cb_) return NULL;
 	}
 	rn.Rdialog_open((Rid)a0, (Rid)a1, cb_ ? (RDialogClosedCallback)rn_t_RDialogClosedCallback : (RDialogClosedCallback)n0_, cb_ ? (void*)cb_ : a3);
 	if (cb_) {
 		cb_->once = 1;
-		rn_bind(a1, RN_OWNER_WIDGET, 82, NULL, cb_);
+		rn_bind(a1, RN_OWNER_WIDGET, 109, NULL, cb_);
 	}
 	return result_;
 }
@@ -19696,7 +27660,7 @@ static napi_value rn_w_Rpopup_open(napi_env env, napi_callback_info info) {
 		if (!cb_) return NULL;
 	}
 	rn.Rpopup_open((Rid)a0, (Rid)a1, (float)a2, (float)a3, cb_ ? (RDialogClosedCallback)rn_t_RDialogClosedCallback : (RDialogClosedCallback)n0_, cb_ ? (void*)cb_ : a5);
-	rn_bind(a0, RN_OWNER_WIDGET, 83, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 110, NULL, cb_);
 	return result_;
 }
 
@@ -20159,7 +28123,7 @@ static napi_value rn_w_Rfile_browser_set_accepted_callback(napi_env env, napi_ca
 		if (!cb_) return NULL;
 	}
 	rn.Rfile_browser_set_accepted_callback((Rid)a0, cb_ ? (RFileBrowserCallback)rn_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 84, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 111, NULL, cb_);
 	return result_;
 }
 
@@ -20184,7 +28148,7 @@ static napi_value rn_w_Rfile_browser_set_cancelled_callback(napi_env env, napi_c
 		if (!cb_) return NULL;
 	}
 	rn.Rfile_browser_set_cancelled_callback((Rid)a0, cb_ ? (RFileBrowserCallback)rn_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 85, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 112, NULL, cb_);
 	return result_;
 }
 
@@ -20209,7 +28173,7 @@ static napi_value rn_w_Rfile_browser_set_selection_changed_callback(napi_env env
 		if (!cb_) return NULL;
 	}
 	rn.Rfile_browser_set_selection_changed_callback((Rid)a0, cb_ ? (RFileBrowserCallback)rn_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 86, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 113, NULL, cb_);
 	return result_;
 }
 
@@ -20263,7 +28227,7 @@ static napi_value rn_w_Rnotification_set_fallback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rnotification_set_fallback(cb_ ? (RNotificationFallback)rn_t_RNotificationFallback : (RNotificationFallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 87, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 114, NULL, cb_);
 	return result_;
 }
 
@@ -20286,7 +28250,404 @@ static napi_value rn_w_Rnotification_set_clicked_callback(napi_env env, napi_cal
 		if (!cb_) return NULL;
 	}
 	rn.Rnotification_set_clicked_callback(cb_ ? (RNotificationClickedCallback)rn_t_RNotificationClickedCallback : (RNotificationClickedCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 88, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 115, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rnotification_show_desc(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rnotification_show_desc((const RNotificationDesc*)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rnotification_close(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	rn.Rnotification_close(a0.p);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rnotification_set_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a1;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	k0_ = rn_callback_arg(env, argv[0], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && 1) {
+		cb_ = rn_cb_new(env, &argv[0], 1, a1);
+		if (!cb_) return NULL;
+	}
+	rn.Rnotification_set_callback(cb_ ? (RNotificationCallback)rn_t_RNotificationCallback : (RNotificationCallback)n0_, cb_ ? (void*)cb_ : a1);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 116, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rnotification_set_bring_to_front(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rnotification_set_bring_to_front((int)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rnotification_set_fallback_toast(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rnotification_set_fallback_toast((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rnotification_supports(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rnotification_supports((RNotificationFeature)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpermission_get_status(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	{
+		int value_ = (int)rn.Rpermission_get_status((RPermission)a0);
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rpermission_request(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rpermission_request((RPermission)a0, k0_ == RN_CALLBACK_FUNCTION ? (RPermissionCallback)rn_t_RPermissionCallback : (RPermissionCallback)n0_, cb_ ? (void*)cb_ : a2);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rpermission_open_settings(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rpermission_open_settings();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rpermission_to_string(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rpermission_to_string((RPermission)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rpermission_status_to_string(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rpermission_status_to_string((RPermissionStatus)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rfile_open_async(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rfile_open_async((const RFileDialogDesc*)a0, k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a2);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rfile_save_async(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	void* a1;
+	size_t a1_size;
+	void* a4;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_bytes(env, argv[1], &a1, &a1_size)) return NULL;
+	if (!rn_get_ptr(env, argv[3], &a4)) return NULL;
+	k0_ = rn_callback_arg(env, argv[2], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[2], 1, a4);
+		if (!cb_) return NULL;
+	}
+	rn.Rfile_save_async((const RFileDialogDesc*)a0, (const void*)a1, a1_size, k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a4);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rfile_export_async(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	rn_str a1;
+	void* a3;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_ptr(env, argv[3], &a3)) goto done;
+	k0_ = rn_callback_arg(env, argv[2], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) goto done;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) goto done;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[2], 1, a3);
+		if (!cb_) goto done;
+	}
+	rn.Rfile_export_async((const RFileDialogDesc*)a0, a1.p, k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a3);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rfile_select_folder_async(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rfile_select_folder_async((const RFileDialogDesc*)a0, k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a2);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rcamera_is_available(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rcamera_is_available();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rcamera_take_photo(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a1;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	k0_ = rn_callback_arg(env, argv[0], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[0], 1, a1);
+		if (!cb_) return NULL;
+	}
+	rn.Rcamera_take_photo(k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a1);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rphoto_pick(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rphoto_pick((int)a0, k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a2);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rhaptic_is_supported(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rhaptic_is_supported();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rhaptic_play(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rhaptic_play((RHaptic)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rshare_show(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Ris_initialized()) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rshare_show((const RShareDesc*)a0, k0_ == RN_CALLBACK_FUNCTION ? (RDeviceCallback)rn_t_RDeviceCallback : (RDeviceCallback)n0_, cb_ ? (void*)cb_ : a2);
+	if (cb_) {
+		cb_->once = 1;
+		rn_tasks_add(cb_);
+	}
 	return result_;
 }
 
@@ -20423,7 +28784,7 @@ static napi_value rn_w_Rviewport_set_resize_callback(napi_env env, napi_callback
 		if (!cb_) return NULL;
 	}
 	rn.Rviewport_set_resize_callback((Rid)a0, cb_ ? (RViewportResizeCallback)rn_t_RViewportResizeCallback : (RViewportResizeCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 89, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 125, NULL, cb_);
 	return result_;
 }
 
@@ -20462,7 +28823,7 @@ static napi_value rn_w_Rcustom_set_paint_callback(napi_env env, napi_callback_in
 		if (!cb_) return NULL;
 	}
 	rn.Rcustom_set_paint_callback((Rid)a0, cb_ ? (RPaintCallback)rn_t_RPaintCallback : (RPaintCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 90, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 126, NULL, cb_);
 	return result_;
 }
 
@@ -20487,7 +28848,7 @@ static napi_value rn_w_Rcustom_set_measure_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rcustom_set_measure_callback((Rid)a0, cb_ ? (RMeasureCallback)rn_t_RMeasureCallback : (RMeasureCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rn_bind(a0, RN_OWNER_WIDGET, 91, NULL, cb_);
+	rn_bind(a0, RN_OWNER_WIDGET, 127, NULL, cb_);
 	return result_;
 }
 
@@ -20518,6 +28879,38 @@ static napi_value rn_w_Rdraw_rect(napi_env env, napi_callback_info info) {
 	if (!rn_get_float(env, argv[8], &a8)) return NULL;
 	if (!rn_get_float(env, argv[9], &a9)) return NULL;
 	rn.Rdraw_rect((RPainter*)a0, (float)a1, (float)a2, (float)a3, (float)a4, (float)a5, (float)a6, (float)a7, (float)a8, (float)a9);
+	return result_;
+}
+
+static napi_value rn_w_Rdraw_shadow(napi_env env, napi_callback_info info) {
+	size_t argc = 11;
+	napi_value argv[11];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	float a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	float a6;
+	float a7;
+	float a8;
+	float a9;
+	float a10;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	if (!rn_get_float(env, argv[6], &a6)) return NULL;
+	if (!rn_get_float(env, argv[7], &a7)) return NULL;
+	if (!rn_get_float(env, argv[8], &a8)) return NULL;
+	if (!rn_get_float(env, argv[9], &a9)) return NULL;
+	if (!rn_get_float(env, argv[10], &a10)) return NULL;
+	rn.Rdraw_shadow((RPainter*)a0, (float)a1, (float)a2, (float)a3, (float)a4, (float)a5, (float)a6, (float)a7, (float)a8, (float)a9, (float)a10);
 	return result_;
 }
 
@@ -21197,7 +29590,7 @@ static napi_value rn_w_Rxml_set_reload_callback(napi_env env, napi_callback_info
 		if (!cb_) return NULL;
 	}
 	rn.Rxml_set_reload_callback(cb_ ? (RXmlReloadCallback)rn_t_RXmlReloadCallback : (RXmlReloadCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 92, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 128, NULL, cb_);
 	return result_;
 }
 
@@ -21332,7 +29725,7 @@ static napi_value rn_w_Rxml_register_tag(napi_env env, napi_callback_info info) 
 		rn_cb_release(cb_);
 		cb_ = NULL;
 	}
-	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 93, a0.p, cb_);
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 129, a0.p, cb_);
 	napi_create_int32(env, (int32_t)value_, &result_);
 done:
 	free(a0.heap);
@@ -21349,7 +29742,7 @@ static napi_value rn_w_Rxml_unregister_tag(napi_env env, napi_callback_info info
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &a0)) goto done;
 	rn.Rxml_unregister_tag(a0.p);
-	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 93, a0.p, NULL);
+	if (a0.p && a0.p[0]) rn_bind(rn_name_key(a0.p), RN_OWNER_PLAIN, 129, a0.p, NULL);
 done:
 	free(a0.heap);
 	return result_;
@@ -22023,6 +30416,204 @@ done:
 	return result_;
 }
 
+static napi_value rn_w_Rscript_load(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a2;
+	a0.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a2)) goto done;
+	int value_ = rn.Rscript_load(a0.p, a0.n, a2.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_load_file(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	int value_ = rn.Rscript_load_file(a0.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_check(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a2;
+	a0.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a2)) goto done;
+	int value_ = rn.Rscript_check(a0.p, a0.n, a2.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_check_file(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	int value_ = rn.Rscript_check_file(a0.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_format(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a2;
+	a0.heap = NULL;
+	a2.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a2)) goto done;
+	result_ = rn_make_text(env, rn.Rscript_format(a0.p, a0.n, a2.p));
+done:
+	free(a0.heap);
+	free(a2.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_reset(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	rn.Rscript_reset();
+	return result_;
+}
+
+static napi_value rn_w_Rscript_has_function(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	int value_ = rn.Rscript_has_function(a0.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_set_enabled(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rscript_set_enabled((int)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_is_enabled(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rscript_is_enabled();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_set_limits(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	uint64_t a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_uint64(env, argv[2], &a2)) return NULL;
+	rn.Rscript_set_limits((Ruint)a0, (int)a1, (size_t)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_set_log_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a1;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	k0_ = rn_callback_arg(env, argv[0], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && 1) {
+		cb_ = rn_cb_new(env, &argv[0], 1, a1);
+		if (!cb_) return NULL;
+	}
+	rn.Rscript_set_log_callback(cb_ ? (RScriptLogCallback)rn_t_RScriptLogCallback : (RScriptLogCallback)n0_, cb_ ? (void*)cb_ : a1);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 130, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rscript_set_diagnostic_callback(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a1;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	k0_ = rn_callback_arg(env, argv[0], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && 1) {
+		cb_ = rn_cb_new(env, &argv[0], 1, a1);
+		if (!cb_) return NULL;
+	}
+	rn.Rscript_set_diagnostic_callback(cb_ ? (RScriptDiagnosticCallback)rn_t_RScriptDiagnosticCallback : (RScriptDiagnosticCallback)n0_, cb_ ? (void*)cb_ : a1);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 131, NULL, cb_);
+	return result_;
+}
+
 static napi_value rn_w_Rlocale_load_csv(napi_env env, napi_callback_info info) {
 	size_t argc = 1;
 	napi_value argv[1];
@@ -22182,7 +30773,7 @@ static napi_value rn_w_Rlocale_set_changed_callback(napi_env env, napi_callback_
 		if (!cb_) return NULL;
 	}
 	rn.Rlocale_set_changed_callback(cb_ ? (RLocaleChangedCallback)rn_t_RLocaleChangedCallback : (RLocaleChangedCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 94, NULL, cb_);
+	rn_bind(RN_KEY_APPLICATION, RN_OWNER_PLAIN, 132, NULL, cb_);
 	return result_;
 }
 
@@ -22287,6 +30878,275 @@ static napi_value rn_w_Rlocale_format_number(napi_env env, napi_callback_info in
 	if (!rn_get_double(env, argv[0], &a0)) return NULL;
 	if (!rn_get_int(env, argv[1], &a1)) return NULL;
 	result_ = rn_make_text(env, rn.Rlocale_format_number((double)a0, (int)a1));
+	return result_;
+}
+
+static napi_value rn_w_Rlocale_set_clock(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rlocale_set_clock((RClock)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rlocale_get_clock(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	{
+		int value_ = (int)rn.Rlocale_get_clock();
+		napi_create_int32(env, value_, &result_);
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rlocale_uses_12_hour_clock(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rlocale_uses_12_hour_clock();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rlocale_get_day_period(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rlocale_get_day_period((int)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rlocale_format_time(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	int a1;
+	int a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	result_ = rn_make_text(env, rn.Rlocale_format_time((int)a0, (int)a1, (int)a2, (int)a3));
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_get_system(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	result_ = rn_make_text(env, rn.Rtimezone_get_system());
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_set_directory(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	rn.Rtimezone_set_directory(a0.p);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_is_valid(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	int value_ = rn.Rtimezone_is_valid(a0.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_to_local(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	double a1;
+	int a2 = 0;
+	int a3 = 0;
+	int a4 = 0;
+	int a5 = 0;
+	int a6 = 0;
+	int a7 = 0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_double(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtimezone_to_local(a0.p, (double)a1, &a2, &a3, &a4, &a5, &a6, &a7);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a2, &o0_);
+		napi_value o1_;
+		napi_create_int32(env, (int32_t)a3, &o1_);
+		napi_value o2_;
+		napi_create_int32(env, (int32_t)a4, &o2_);
+		napi_value o3_;
+		napi_create_int32(env, (int32_t)a5, &o3_);
+		napi_value o4_;
+		napi_create_int32(env, (int32_t)a6, &o4_);
+		napi_value o5_;
+		napi_create_int32(env, (int32_t)a7, &o5_);
+		{
+			const napi_value values_[7] = {result_, o0_, o1_, o2_, o3_, o4_, o5_};
+			result_ = rn_tuple(env, 7, values_);
+		}
+	}
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_from_local(napi_env env, napi_callback_info info) {
+	size_t argc = 7;
+	napi_value argv[7];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	int a1;
+	int a2;
+	int a3;
+	int a4;
+	int a5;
+	int a6;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_int(env, argv[3], &a3)) goto done;
+	if (!rn_get_int(env, argv[4], &a4)) goto done;
+	if (!rn_get_int(env, argv[5], &a5)) goto done;
+	if (!rn_get_int(env, argv[6], &a6)) goto done;
+	double value_ = rn.Rtimezone_from_local(a0.p, (int)a1, (int)a2, (int)a3, (int)a4, (int)a5, (int)a6);
+	napi_create_double(env, value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_count_local(napi_env env, napi_callback_info info) {
+	size_t argc = 7;
+	napi_value argv[7];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	int a1;
+	int a2;
+	int a3;
+	int a4;
+	int a5;
+	int a6;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_int(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_int(env, argv[3], &a3)) goto done;
+	if (!rn_get_int(env, argv[4], &a4)) goto done;
+	if (!rn_get_int(env, argv[5], &a5)) goto done;
+	if (!rn_get_int(env, argv[6], &a6)) goto done;
+	int value_ = rn.Rtimezone_count_local(a0.p, (int)a1, (int)a2, (int)a3, (int)a4, (int)a5, (int)a6);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_get_offset(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	double a1;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_double(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtimezone_get_offset(a0.p, (double)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_is_daylight_saving(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	double a1;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_double(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtimezone_is_daylight_saving(a0.p, (double)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_get_abbreviation(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	double a1;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_double(env, argv[1], &a1)) goto done;
+	result_ = rn_make_text(env, rn.Rtimezone_get_abbreviation(a0.p, (double)a1));
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtimezone_get_label(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	double a1;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_get_double(env, argv[1], &a1)) goto done;
+	result_ = rn_make_text(env, rn.Rtimezone_get_label(a0.p, (double)a1));
+done:
+	free(a0.heap);
 	return result_;
 }
 
@@ -22520,6 +31380,45 @@ static napi_value rn_w_Rwidget_set_accessible_labelled_by(napi_env env, napi_cal
 	return result_;
 }
 
+static napi_value rn_w_Rwidget_set_accessible_action(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a2;
+	rn_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	k0_ = rn_callback_arg(env, argv[1], &n0_);
+	if (k0_ == RN_CALLBACK_THROWN) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && !rn_check_thread(env)) return NULL;
+	if (k0_ == RN_CALLBACK_FUNCTION && rn.Rwidget_is_valid(a0)) {
+		cb_ = rn_cb_new(env, &argv[1], 1, a2);
+		if (!cb_) return NULL;
+	}
+	rn.Rwidget_set_accessible_action((Rid)a0, cb_ ? (RAccessiblePressCallback)rn_t_RAccessiblePressCallback : (RAccessiblePressCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rn_bind(a0, RN_OWNER_WIDGET, 133, NULL, cb_);
+	return result_;
+}
+
+static napi_value rn_w_Rwidget_set_accessible_checked(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rwidget_set_accessible_checked((Rid)a0, (int)a1);
+	return result_;
+}
+
 static napi_value rn_w_Raccessibility_announce(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -22582,6 +31481,34 @@ static napi_value rn_w_Rhost_window_set_size(napi_env env, napi_callback_info in
 	if (!rn_get_int(env, argv[2], &a2)) return NULL;
 	if (!rn_get_float(env, argv[3], &a3)) return NULL;
 	rn.Rhost_window_set_size((Rid)a0, (int)a1, (int)a2, (float)a3);
+	return result_;
+}
+
+static napi_value rn_w_Rhost_window_set_insets(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	void* a1;
+	int a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	rn.Rhost_window_set_insets((Rid)a0, (const RInsets*)a1, (int)a2);
+	return result_;
+}
+
+static napi_value rn_w_Rhost_set_system_dark(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rhost_set_system_dark((int)a0);
 	return result_;
 }
 
@@ -22689,6 +31616,27 @@ static napi_value rn_w_Rhost_inject_text(napi_env env, napi_callback_info info) 
 	return result_;
 }
 
+static napi_value rn_w_Rhost_inject_composition(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	int a2;
+	int a3;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_int(env, argv[2], &a2)) goto done;
+	if (!rn_get_int(env, argv[3], &a3)) goto done;
+	rn.Rhost_inject_composition((Rid)a0, a1.p, (int)a2, (int)a3);
+done:
+	free(a1.heap);
+	return result_;
+}
+
 static napi_value rn_w_Rhost_inject_focus(napi_env env, napi_callback_info info) {
 	size_t argc = 2;
 	napi_value argv[2];
@@ -22715,6 +31663,496 @@ static napi_value rn_w_Rhost_inject_close(napi_env env, napi_callback_info info)
 	return result_;
 }
 
+static napi_value rn_w_Rhost_permission_answer(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	int a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rhost_permission_answer((RPermission)a0, (RPermissionStatus)a1);
+	return result_;
+}
+
+static napi_value rn_w_Rhost_service_complete(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	void* a2;
+	int a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_ptr(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	rn.Rhost_service_complete((Ruint)a0, (RDeviceResult)a1, (const RPickedFile*)a2, a3);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_set_deterministic(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	rn.Rtest_set_deterministic((int)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_is_deterministic(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rtest_is_deterministic();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_get_platform_tag(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	result_ = rn_make_text(env, rn.Rtest_get_platform_tag());
+	return result_;
+}
+
+static napi_value rn_w_Rtest_find(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	Rid value_ = rn.Rtest_find((Rid)a0, a1.p);
+	napi_create_uint32(env, value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_click(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_click((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_double_click(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_double_click((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_right_click(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_right_click((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_click_at(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	int a3;
+	int a4;
+	uint32_t a5;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	if (!rn_get_int(env, argv[4], &a4)) return NULL;
+	if (!rn_get_uint32(env, argv[5], &a5)) return NULL;
+	int value_ = rn.Rtest_click_at((Rid)a0, (float)a1, (float)a2, (RMouseButton)a3, (int)a4, (Ruint)a5);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_hover(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_hover((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_hover_at(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtest_hover_at((Rid)a0, (float)a1, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_drag(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtest_drag((Rid)a0, (float)a1, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_drag_to(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	uint32_t a1;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_uint32(env, argv[1], &a1)) return NULL;
+	int value_ = rn.Rtest_drag_to((Rid)a0, (Rid)a1);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_scroll(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtest_scroll((Rid)a0, (float)a1, (float)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_key(napi_env env, napi_callback_info info) {
+	size_t argc = 3;
+	napi_value argv[3];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	uint32_t a2;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_uint32(env, argv[2], &a2)) return NULL;
+	int value_ = rn.Rtest_key((Rid)a0, (RKey)a1, (Ruint)a2);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_type_text(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtest_type_text((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_tap(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_tap((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_swipe(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	float a1;
+	float a2;
+	double a3;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_float(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_double(env, argv[3], &a3)) return NULL;
+	int value_ = rn.Rtest_swipe((Rid)a0, (float)a1, (float)a2, (double)a3);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_pump(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	int a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_int(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_pump((int)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_is_idle(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	int value_ = rn.Rtest_is_idle();
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_settle(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	double a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_double(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_settle((double)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_get_text(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rtest_get_text((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rtest_is_shown(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_is_shown((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_is_checked(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	int value_ = rn.Rtest_is_checked((Rid)a0);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_expect_golden(napi_env env, napi_callback_info info) {
+	size_t argc = 4;
+	napi_value argv[4];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	void* a2;
+	void* a3;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	if (!rn_get_ptr(env, argv[2], &a2)) goto done;
+	if (!rn_get_ptr(env, argv[3], &a3)) goto done;
+	int value_ = rn.Rtest_expect_golden((Rid)a0, a1.p, (const RGoldenOptions*)a2, (RGoldenResult*)a3);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_compare_pixels(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	void* a0;
+	void* a1;
+	int a2;
+	int a3;
+	int a4;
+	int a5 = 0;
+	void* a6;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_ptr(env, argv[0], &a0)) return NULL;
+	if (!rn_get_ptr(env, argv[1], &a1)) return NULL;
+	if (!rn_get_int(env, argv[2], &a2)) return NULL;
+	if (!rn_get_int(env, argv[3], &a3)) return NULL;
+	if (!rn_get_int(env, argv[4], &a4)) return NULL;
+	if (!rn_get_ptr(env, argv[5], &a6)) return NULL;
+	int value_ = rn.Rtest_compare_pixels((const uint8_t*)a0, (const uint8_t*)a1, (int)a2, (int)a3, (int)a4, &a5, (uint8_t*)a6);
+	napi_create_int32(env, (int32_t)value_, &result_);
+	{
+		napi_value o0_;
+		napi_create_int32(env, (int32_t)a5, &o0_);
+		{
+			const napi_value values_[2] = {result_, o0_};
+			result_ = rn_tuple(env, 2, values_);
+		}
+	}
+	return result_;
+}
+
+static napi_value rn_w_Rtest_dump_tree(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	result_ = rn_make_text(env, rn.Rtest_dump_tree((Rid)a0));
+	return result_;
+}
+
+static napi_value rn_w_Rtest_save_tree(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtest_save_tree((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_save_png(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	rn_str a1;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtest_save_png((Rid)a0, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_run_script(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	rn_str a1;
+	a0.heap = NULL;
+	a1.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	if (!rn_str_get(env, argv[1], &a1)) goto done;
+	int value_ = rn.Rtest_run_script(a0.p, a1.p);
+	napi_create_int32(env, (int32_t)value_, &result_);
+done:
+	free(a0.heap);
+	free(a1.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtest_get_script_error(napi_env env, napi_callback_info info) {
+	napi_value result_ = NULL;
+	(void)env;
+	(void)info;
+	result_ = rn_make_text(env, rn.Rtest_get_script_error());
+	return result_;
+}
+
 
 /* ---- what raven.js needs from the addon */
 
@@ -22728,7 +32166,14 @@ static napi_value rn_w__open(napi_env env, napi_callback_info info) {
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &path) || !path.p) goto fail;
 #ifdef _WIN32
-	handle = LoadLibraryA(path.p);
+	{
+		/* the path is UTF-8: LoadLibraryA would read it in the ANSI code page */
+		int count = MultiByteToWideChar(CP_UTF8, 0, path.p, -1, NULL, 0);
+		wchar_t* wide = count > 0 ? (wchar_t*)malloc(sizeof(wchar_t) * (size_t)count) : NULL;
+		handle = NULL;
+		if (wide && MultiByteToWideChar(CP_UTF8, 0, path.p, -1, wide, count) > 0) handle = (void*)LoadLibraryW(wide);
+		free(wide);
+	}
 #else
 	handle = dlopen(path.p, RTLD_NOW | RTLD_LOCAL);
 #endif
@@ -22864,6 +32309,9 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rset_frame_callback", NULL, rn_w_Rset_frame_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rget_delta_time", NULL, rn_w_Rget_delta_time, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rget_time", NULL, rn_w_Rget_time, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rset_app_event_callback", NULL, rn_w_Rset_app_event_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Ris_app_paused", NULL, rn_w_Ris_app_paused, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rinject_app_event", NULL, rn_w_Rinject_app_event, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rset_ui_scale", NULL, rn_w_Rset_ui_scale, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rset_vsync", NULL, rn_w_Rset_vsync, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rget_vsync", NULL, rn_w_Rget_vsync, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -22886,12 +32334,30 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Raction_unbind", NULL, rn_w_Raction_unbind, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raction_fire", NULL, rn_w_Raction_fire, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raction_set_default_handler", NULL, rn_w_Raction_set_default_handler, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_bind_with_parameters", NULL, rn_w_Raction_bind_with_parameters, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_get_sender", NULL, rn_w_Raction_get_sender, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_get_name", NULL, rn_w_Raction_get_name, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_get_argument_count", NULL, rn_w_Raction_get_argument_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_get_number", NULL, rn_w_Raction_get_number, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_get_string", NULL, rn_w_Raction_get_string, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_get_bool", NULL, rn_w_Raction_get_bool, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_return_number", NULL, rn_w_Raction_return_number, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_return_string", NULL, rn_w_Raction_return_string, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_return_bool", NULL, rn_w_Raction_return_bool, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Raction_fail", NULL, rn_w_Raction_fail, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raction_set_builtins", NULL, rn_w_Raction_set_builtins, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raction_is_builtin", NULL, rn_w_Raction_is_builtin, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Ropen_url", NULL, rn_w_Ropen_url, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rclipboard_set_text", NULL, rn_w_Rclipboard_set_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rclipboard_set_html", NULL, rn_w_Rclipboard_set_html, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rclipboard_get_text", NULL, rn_w_Rclipboard_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_has_text", NULL, rn_w_Rclipboard_has_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_set_data", NULL, rn_w_Rclipboard_set_data, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_has_data", NULL, rn_w_Rclipboard_has_data, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_get_data", NULL, rn_w_Rclipboard_get_data, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_set_image", NULL, rn_w_Rclipboard_set_image, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_has_image", NULL, rn_w_Rclipboard_has_image, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rclipboard_get_image", NULL, rn_w_Rclipboard_get_image, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rerror_get_last", NULL, rn_w_Rerror_get_last, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rerror_to_string", NULL, rn_w_Rerror_to_string, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rseverity_to_string", NULL, rn_w_Rseverity_to_string, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -22907,6 +32373,13 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_get_title", NULL, rn_w_Rwindow_get_title, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_size", NULL, rn_w_Rwindow_set_size, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_size", NULL, rn_w_Rwindow_get_size, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_safe_area", NULL, rn_w_Rwindow_get_safe_area, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_keyboard_area", NULL, rn_w_Rwindow_get_keyboard_area, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_set_keyboard_callback", NULL, rn_w_Rwindow_set_keyboard_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_clear_focus", NULL, rn_w_Rwindow_clear_focus, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_set_back_callback", NULL, rn_w_Rwindow_set_back_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_set_back_enabled", NULL, rn_w_Rwindow_set_back_enabled, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_wants_back", NULL, rn_w_Rwindow_wants_back, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_min_size", NULL, rn_w_Rwindow_set_min_size, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_position", NULL, rn_w_Rwindow_set_position, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_position", NULL, rn_w_Rwindow_get_position, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -22935,6 +32408,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_set_opacity", NULL, rn_w_Rwindow_set_opacity, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_opacity", NULL, rn_w_Rwindow_get_opacity, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_topmost", NULL, rn_w_Rwindow_set_topmost, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_set_owner", NULL, rn_w_Rwindow_set_owner, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_owner", NULL, rn_w_Rwindow_get_owner, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_picture_in_picture", NULL, rn_w_Rwindow_set_picture_in_picture, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_is_picture_in_picture", NULL, rn_w_Rwindow_is_picture_in_picture, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_picture_in_picture_layout", NULL, rn_w_Rwindow_set_picture_in_picture_layout, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -22948,6 +32423,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_set_close_callback", NULL, rn_w_Rwindow_set_close_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_resize_callback", NULL, rn_w_Rwindow_set_resize_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_drop_callback", NULL, rn_w_Rwindow_set_drop_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdrop_set_highlight_rect", NULL, rn_w_Rdrop_set_highlight_rect, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_set_user_handle", NULL, rn_w_Rwindow_set_user_handle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_user_handle", NULL, rn_w_Rwindow_get_user_handle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_native_handle", NULL, rn_w_Rwindow_get_native_handle, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -22960,13 +32436,22 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwindow_inject_mouse_wheel", NULL, rn_w_Rwindow_inject_mouse_wheel, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_inject_key", NULL, rn_w_Rwindow_inject_key, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_inject_text", NULL, rn_w_Rwindow_inject_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_inject_composition", NULL, rn_w_Rwindow_inject_composition, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_inject_drag", NULL, rn_w_Rwindow_inject_drag, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_inject_drop", NULL, rn_w_Rwindow_inject_drop, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_inject_drag_end", NULL, rn_w_Rwindow_inject_drag_end, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_inject_back", NULL, rn_w_Rwindow_inject_back, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_is_key_down", NULL, rn_w_Rwindow_is_key_down, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_is_mouse_button_down", NULL, rn_w_Rwindow_is_mouse_button_down, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_modifiers", NULL, rn_w_Rwindow_get_modifiers, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_is_mouse_inside", NULL, rn_w_Rwindow_is_mouse_inside, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_wants_text_input", NULL, rn_w_Rwindow_wants_text_input, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_text_input_info", NULL, rn_w_Rwindow_get_text_input_info, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_text_input_text", NULL, rn_w_Rwindow_get_text_input_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_text_input_selection", NULL, rn_w_Rwindow_get_text_input_selection, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_set_text_input_selection", NULL, rn_w_Rwindow_set_text_input_selection, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_replace_text_input", NULL, rn_w_Rwindow_replace_text_input, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwindow_get_text_composition", NULL, rn_w_Rwindow_get_text_composition, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_has_popup", NULL, rn_w_Rwindow_has_popup, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_text_input_rect", NULL, rn_w_Rwindow_get_text_input_rect, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_get_popup_count", NULL, rn_w_Rwindow_get_popup_count, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -22978,6 +32463,10 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rdrag_get_type", NULL, rn_w_Rdrag_get_type, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdrag_get_data", NULL, rn_w_Rdrag_get_data, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdrag_cancel", NULL, rn_w_Rdrag_cancel, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdrag_begin_external", NULL, rn_w_Rdrag_begin_external, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdrag_set_image", NULL, rn_w_Rdrag_set_image, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdrag_external_supported", NULL, rn_w_Rdrag_external_supported, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdrag_external_is_active", NULL, rn_w_Rdrag_external_is_active, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_register_shortcut", NULL, rn_w_Rwindow_register_shortcut, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwindow_unregister_shortcut", NULL, rn_w_Rwindow_unregister_shortcut, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtouch_get_settings", NULL, rn_w_Rtouch_get_settings, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23016,6 +32505,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtheme_get_font", NULL, rn_w_Rtheme_get_font, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_set_accent", NULL, rn_w_Rtheme_set_accent, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_set_dark", NULL, rn_w_Rtheme_set_dark, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtheme_get_system_dark", NULL, rn_w_Rtheme_get_system_dark, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtheme_follow_system", NULL, rn_w_Rtheme_follow_system, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_is_dark", NULL, rn_w_Rtheme_is_dark, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_set_wallpaper", NULL, rn_w_Rtheme_set_wallpaper, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_get_wallpaper", NULL, rn_w_Rtheme_get_wallpaper, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23043,19 +32534,28 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtexture_create", NULL, rn_w_Rtexture_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_async", NULL, rn_w_Rtexture_create_async, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_svg", NULL, rn_w_Rtexture_create_from_svg, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtexture_uses_current_color", NULL, rn_w_Rtexture_uses_current_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_get_density", NULL, rn_w_Rtexture_get_density, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_file", NULL, rn_w_Rtexture_create_from_file, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_file_async", NULL, rn_w_Rtexture_create_from_file_async, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtexture_create_from_url_async", NULL, rn_w_Rtexture_create_from_url_async, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_pixels", NULL, rn_w_Rtexture_create_from_pixels, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_update", NULL, rn_w_Rtexture_update, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rimage_decode", NULL, rn_w_Rimage_decode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_decode_info", NULL, rn_w_Rimage_decode_info, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_decode_frame", NULL, rn_w_Rimage_decode_frame, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rpixels_free", NULL, rn_w_Rpixels_free, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_encode_png", NULL, rn_w_Rimage_encode_png, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_save_png", NULL, rn_w_Rimage_save_png, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_is_ready", NULL, rn_w_Rtexture_is_ready, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_wait", NULL, rn_w_Rtexture_wait, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_destroy", NULL, rn_w_Rtexture_destroy, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_is_valid", NULL, rn_w_Rtexture_is_valid, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_get_size", NULL, rn_w_Rtexture_get_size, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_set_filter", NULL, rn_w_Rtexture_set_filter, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Ricon_get", NULL, rn_w_Ricon_get, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Ricon_get_count", NULL, rn_w_Ricon_get_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Ricon_get_name", NULL, rn_w_Ricon_get_name, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_create", NULL, rn_w_Rwidget_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_destroy", NULL, rn_w_Rwidget_destroy, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_is_valid", NULL, rn_w_Rwidget_is_valid, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23235,6 +32735,19 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rimage_set_stretch", NULL, rn_w_Rimage_set_stretch, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rimage_set_region", NULL, rn_w_Rimage_set_region, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rimage_set_corner_radius", NULL, rn_w_Rimage_set_corner_radius, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_is_animated", NULL, rn_w_Rimage_is_animated, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_get_frame_count", NULL, rn_w_Rimage_get_frame_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_get_duration", NULL, rn_w_Rimage_get_duration, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_get_frame_delay", NULL, rn_w_Rimage_get_frame_delay, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_play", NULL, rn_w_Rimage_play, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_pause", NULL, rn_w_Rimage_pause, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_stop", NULL, rn_w_Rimage_stop, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_is_playing", NULL, rn_w_Rimage_is_playing, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_set_frame", NULL, rn_w_Rimage_set_frame, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_get_frame", NULL, rn_w_Rimage_get_frame, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_set_loop_count", NULL, rn_w_Rimage_set_loop_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_get_loop_count", NULL, rn_w_Rimage_get_loop_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rimage_set_finished_callback", NULL, rn_w_Rimage_set_finished_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_text", NULL, rn_w_Rtext_input_set_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_get_text", NULL, rn_w_Rtext_input_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_placeholder", NULL, rn_w_Rtext_input_set_placeholder, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23244,14 +32757,34 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtext_input_set_read_only", NULL, rn_w_Rtext_input_set_read_only, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_max_length", NULL, rn_w_Rtext_input_set_max_length, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_select_all", NULL, rn_w_Rtext_input_select_all, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_set_input_type", NULL, rn_w_Rtext_input_set_input_type, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_get_input_type", NULL, rn_w_Rtext_input_get_input_type, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_set_return_key", NULL, rn_w_Rtext_input_set_return_key, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_get_return_key", NULL, rn_w_Rtext_input_get_return_key, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_changed_callback", NULL, rn_w_Rtext_input_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_input_set_committed_callback", NULL, rn_w_Rtext_input_set_committed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_set_spell_check", NULL, rn_w_Rtext_input_set_spell_check, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_get_spell_check", NULL, rn_w_Rtext_input_get_spell_check, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_input_set_spell_language", NULL, rn_w_Rtext_input_set_spell_language, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_is_supported", NULL, rn_w_Rspell_is_supported, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_get_language_count", NULL, rn_w_Rspell_get_language_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_get_language_at", NULL, rn_w_Rspell_get_language_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_set_language", NULL, rn_w_Rspell_set_language, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_get_language", NULL, rn_w_Rspell_get_language, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_check", NULL, rn_w_Rspell_check, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_get_misspelling", NULL, rn_w_Rspell_get_misspelling, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_suggest", NULL, rn_w_Rspell_suggest, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_get_suggestion", NULL, rn_w_Rspell_get_suggestion, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_learn", NULL, rn_w_Rspell_learn, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspell_ignore", NULL, rn_w_Rspell_ignore, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_set_range", NULL, rn_w_Rspin_box_set_range, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_set_value", NULL, rn_w_Rspin_box_set_value, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_get_value", NULL, rn_w_Rspin_box_get_value, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_get_range", NULL, rn_w_Rspin_box_get_range, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_set_step", NULL, rn_w_Rspin_box_set_step, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_set_decimals", NULL, rn_w_Rspin_box_set_decimals, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspin_box_set_buttons", NULL, rn_w_Rspin_box_set_buttons, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rspin_box_get_buttons", NULL, rn_w_Rspin_box_get_buttons, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rspin_box_set_changed_callback", NULL, rn_w_Rspin_box_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcombo_box_add_item", NULL, rn_w_Rcombo_box_add_item, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcombo_box_clear_items", NULL, rn_w_Rcombo_box_clear_items, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23260,6 +32793,15 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rcombo_box_set_selected", NULL, rn_w_Rcombo_box_set_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcombo_box_get_selected", NULL, rn_w_Rcombo_box_get_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcombo_box_set_changed_callback", NULL, rn_w_Rcombo_box_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_set_editable", NULL, rn_w_Rcombo_box_set_editable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_is_editable", NULL, rn_w_Rcombo_box_is_editable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_set_searchable", NULL, rn_w_Rcombo_box_set_searchable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_is_searchable", NULL, rn_w_Rcombo_box_is_searchable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_get_text", NULL, rn_w_Rcombo_box_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_set_text", NULL, rn_w_Rcombo_box_set_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_set_text_changed_callback", NULL, rn_w_Rcombo_box_set_text_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_set_open", NULL, rn_w_Rcombo_box_set_open, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcombo_box_is_open", NULL, rn_w_Rcombo_box_is_open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rseparator_set_orientation", NULL, rn_w_Rseparator_set_orientation, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_add_item", NULL, rn_w_Rlist_view_add_item, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_set_item_text", NULL, rn_w_Rlist_view_set_item_text, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23268,6 +32810,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rlist_view_clear_items", NULL, rn_w_Rlist_view_clear_items, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_get_item_count", NULL, rn_w_Rlist_view_get_item_count, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_set_virtual_items", NULL, rn_w_Rlist_view_set_virtual_items, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rlist_view_set_item_color_callback", NULL, rn_w_Rlist_view_set_item_color_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_set_selected", NULL, rn_w_Rlist_view_set_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_get_selected", NULL, rn_w_Rlist_view_get_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlist_view_scroll_to_item", NULL, rn_w_Rlist_view_scroll_to_item, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23311,9 +32854,13 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rmenu_set_title", NULL, rn_w_Rmenu_set_title, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_add_item", NULL, rn_w_Rmenu_add_item, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_add_separator", NULL, rn_w_Rmenu_add_separator, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmenu_add_header", NULL, rn_w_Rmenu_add_header, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmenu_bar_add_divider", NULL, rn_w_Rmenu_bar_add_divider, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmenu_set_title_color", NULL, rn_w_Rmenu_set_title_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_item_set_text", NULL, rn_w_Rmenu_item_set_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_item_get_text", NULL, rn_w_Rmenu_item_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_item_set_shortcut", NULL, rn_w_Rmenu_item_set_shortcut, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmenu_item_set_shortcut_text", NULL, rn_w_Rmenu_item_set_shortcut_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_item_set_checkable", NULL, rn_w_Rmenu_item_set_checkable, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_item_set_checked", NULL, rn_w_Rmenu_item_set_checked, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rmenu_item_set_icon", NULL, rn_w_Rmenu_item_set_icon, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23326,6 +32873,14 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtile_view_get_count", NULL, rn_w_Rtile_view_get_count, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_tile_size", NULL, rn_w_Rtile_view_set_tile_size, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_empty_text", NULL, rn_w_Rtile_view_set_empty_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_set_icon_width", NULL, rn_w_Rtile_view_set_icon_width, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_set_sections", NULL, rn_w_Rtile_view_set_sections, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_get_section_count", NULL, rn_w_Rtile_view_get_section_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_get_section_of", NULL, rn_w_Rtile_view_get_section_of, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_set_section_folded", NULL, rn_w_Rtile_view_set_section_folded, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_is_section_folded", NULL, rn_w_Rtile_view_is_section_folded, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_get_section_at", NULL, rn_w_Rtile_view_get_section_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_set_section_toggled_callback", NULL, rn_w_Rtile_view_set_section_toggled_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_selected", NULL, rn_w_Rtile_view_set_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_is_selected", NULL, rn_w_Rtile_view_is_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_clear_selection", NULL, rn_w_Rtile_view_clear_selection, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23338,6 +32893,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtile_view_set_drop_highlight", NULL, rn_w_Rtile_view_set_drop_highlight, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_drag_type", NULL, rn_w_Rtile_view_set_drag_type, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_drag_data_callback", NULL, rn_w_Rtile_view_set_drag_data_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtile_view_set_drag_out_callback", NULL, rn_w_Rtile_view_set_drag_out_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_selection_changed_callback", NULL, rn_w_Rtile_view_set_selection_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_activated_callback", NULL, rn_w_Rtile_view_set_activated_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtile_view_set_context_callback", NULL, rn_w_Rtile_view_set_context_callback, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23358,8 +32914,23 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtable_clear_rows", NULL, rn_w_Rtable_clear_rows, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_get_row_count", NULL, rn_w_Rtable_get_row_count, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_set_virtual_rows", NULL, rn_w_Rtable_set_virtual_rows, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_cell_color_callback", NULL, rn_w_Rtable_set_cell_color_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_cell_text_color", NULL, rn_w_Rtable_set_cell_text_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_multi_select", NULL, rn_w_Rtable_set_multi_select, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_selection_mode", NULL, rn_w_Rtable_set_selection_mode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_selection_mode", NULL, rn_w_Rtable_get_selection_mode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_row_selected", NULL, rn_w_Rtable_set_row_selected, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_is_row_selected", NULL, rn_w_Rtable_is_row_selected, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_select_range", NULL, rn_w_Rtable_select_range, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_select_all", NULL, rn_w_Rtable_select_all, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_clear_selection", NULL, rn_w_Rtable_clear_selection, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_selection_count", NULL, rn_w_Rtable_get_selection_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_selection", NULL, rn_w_Rtable_get_selection, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_selection_range_count", NULL, rn_w_Rtable_get_selection_range_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_selection_range", NULL, rn_w_Rtable_get_selection_range, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_set_selected", NULL, rn_w_Rtable_set_selected, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_get_selected", NULL, rn_w_Rtable_get_selected, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_current_row", NULL, rn_w_Rtable_get_current_row, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_scroll_to_row", NULL, rn_w_Rtable_scroll_to_row, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_sort", NULL, rn_w_Rtable_sort, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_get_sort_column", NULL, rn_w_Rtable_get_sort_column, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23370,6 +32941,18 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtable_set_selection_changed_callback", NULL, rn_w_Rtable_set_selection_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_set_activated_callback", NULL, rn_w_Rtable_set_activated_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtable_set_sort_callback", NULL, rn_w_Rtable_set_sort_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_column_editable", NULL, rn_w_Rtable_set_column_editable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_is_column_editable", NULL, rn_w_Rtable_is_column_editable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_cell_edited_callback", NULL, rn_w_Rtable_set_cell_edited_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_edit_cell", NULL, rn_w_Rtable_edit_cell, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_is_editing", NULL, rn_w_Rtable_is_editing, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_end_edit", NULL, rn_w_Rtable_end_edit, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_frozen_columns", NULL, rn_w_Rtable_set_frozen_columns, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_frozen_columns", NULL, rn_w_Rtable_get_frozen_columns, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_column_kind", NULL, rn_w_Rtable_set_column_kind, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_get_column_kind", NULL, rn_w_Rtable_get_column_kind, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_is_cell_checked", NULL, rn_w_Rtable_is_cell_checked, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtable_set_cell_checked", NULL, rn_w_Rtable_set_cell_checked, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdate_picker_set_date", NULL, rn_w_Rdate_picker_set_date, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdate_picker_get_date", NULL, rn_w_Rdate_picker_get_date, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdate_picker_set_range", NULL, rn_w_Rdate_picker_set_range, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23379,11 +32962,25 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rdate_picker_set_open", NULL, rn_w_Rdate_picker_set_open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdate_picker_is_open", NULL, rn_w_Rdate_picker_is_open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdate_picker_set_changed_callback", NULL, rn_w_Rdate_picker_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdate_picker_set_time_zone", NULL, rn_w_Rdate_picker_set_time_zone, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdate_picker_get_time_zone", NULL, rn_w_Rdate_picker_get_time_zone, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdate_picker_set_instant", NULL, rn_w_Rdate_picker_set_instant, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdate_picker_get_instant", NULL, rn_w_Rdate_picker_get_instant, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtime_picker_set_time", NULL, rn_w_Rtime_picker_set_time, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtime_picker_get_time", NULL, rn_w_Rtime_picker_get_time, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtime_picker_set_seconds_visible", NULL, rn_w_Rtime_picker_set_seconds_visible, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtime_picker_set_minute_step", NULL, rn_w_Rtime_picker_set_minute_step, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtime_picker_set_changed_callback", NULL, rn_w_Rtime_picker_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_set_clock", NULL, rn_w_Rtime_picker_set_clock, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_get_clock", NULL, rn_w_Rtime_picker_get_clock, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_get_text", NULL, rn_w_Rtime_picker_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_set_time_zone", NULL, rn_w_Rtime_picker_set_time_zone, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_get_time_zone", NULL, rn_w_Rtime_picker_get_time_zone, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_set_time_zone_visible", NULL, rn_w_Rtime_picker_set_time_zone_visible, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_set_date", NULL, rn_w_Rtime_picker_set_date, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_get_date", NULL, rn_w_Rtime_picker_get_date, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_set_instant", NULL, rn_w_Rtime_picker_set_instant, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtime_picker_get_instant", NULL, rn_w_Rtime_picker_get_instant, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtoast_show", NULL, rn_w_Rtoast_show, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtoast_show_kind", NULL, rn_w_Rtoast_show_kind, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtoast_hide", NULL, rn_w_Rtoast_hide, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23472,6 +33069,168 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rplot_set_view_changed_callback", NULL, rn_w_Rplot_set_view_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rplot_set_drag_line_callback", NULL, rn_w_Rplot_set_drag_line_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rplot_set_series_toggled_callback", NULL, rn_w_Rplot_set_series_toggled_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_create", NULL, rn_w_Rchart_create, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_kind", NULL, rn_w_Rchart_set_kind, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_kind", NULL, rn_w_Rchart_get_kind, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_title", NULL, rn_w_Rchart_set_title, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_title", NULL, rn_w_Rchart_get_title, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_format", NULL, rn_w_Rchart_set_format, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_color", NULL, rn_w_Rchart_set_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_legend", NULL, rn_w_Rchart_set_legend, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_clear", NULL, rn_w_Rchart_clear, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_hovered", NULL, rn_w_Rchart_get_hovered, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_add_slice", NULL, rn_w_Rchart_add_slice, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_remove_slice", NULL, rn_w_Rchart_remove_slice, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_slice_count", NULL, rn_w_Rchart_get_slice_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_slice_value", NULL, rn_w_Rchart_set_slice_value, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_slice_value", NULL, rn_w_Rchart_get_slice_value, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_slice_label", NULL, rn_w_Rchart_set_slice_label, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_slice_label", NULL, rn_w_Rchart_get_slice_label, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_slice_color", NULL, rn_w_Rchart_set_slice_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_total", NULL, rn_w_Rchart_get_total, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_selected", NULL, rn_w_Rchart_set_selected, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_selected", NULL, rn_w_Rchart_get_selected, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_hole", NULL, rn_w_Rchart_set_hole, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_center_text", NULL, rn_w_Rchart_set_center_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_slice_clicked_callback", NULL, rn_w_Rchart_set_slice_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_range", NULL, rn_w_Rchart_set_range, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_range", NULL, rn_w_Rchart_get_range, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_value", NULL, rn_w_Rchart_set_value, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_value", NULL, rn_w_Rchart_get_value, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_add_band", NULL, rn_w_Rchart_add_band, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_clear_bands", NULL, rn_w_Rchart_clear_bands, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_band_count", NULL, rn_w_Rchart_get_band_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_grid", NULL, rn_w_Rchart_set_grid, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_row_count", NULL, rn_w_Rchart_get_row_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_column_count", NULL, rn_w_Rchart_get_column_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_cell", NULL, rn_w_Rchart_set_cell, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_cell", NULL, rn_w_Rchart_get_cell, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_row_labels", NULL, rn_w_Rchart_set_row_labels, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_column_labels", NULL, rn_w_Rchart_set_column_labels, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_row_label", NULL, rn_w_Rchart_get_row_label, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_column_label", NULL, rn_w_Rchart_get_column_label, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_color_scale", NULL, rn_w_Rchart_set_color_scale, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_cell_clicked_callback", NULL, rn_w_Rchart_set_cell_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_values", NULL, rn_w_Rchart_set_values, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_push_value", NULL, rn_w_Rchart_push_value, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_value_count", NULL, rn_w_Rchart_get_value_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_get_value_at", NULL, rn_w_Rchart_get_value_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_fill", NULL, rn_w_Rchart_set_fill, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rchart_set_marker", NULL, rn_w_Rchart_set_marker, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_is_available", NULL, rn_w_Rpdf_is_available, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_load_file", NULL, rn_w_Rpdf_view_load_file, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_load_memory", NULL, rn_w_Rpdf_view_load_memory, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_close", NULL, rn_w_Rpdf_view_close, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_status", NULL, rn_w_Rpdf_view_get_status, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_page_count", NULL, rn_w_Rpdf_view_get_page_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_page_size", NULL, rn_w_Rpdf_view_get_page_size, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_set_page", NULL, rn_w_Rpdf_view_set_page, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_page", NULL, rn_w_Rpdf_view_get_page, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_set_zoom", NULL, rn_w_Rpdf_view_set_zoom, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_zoom", NULL, rn_w_Rpdf_view_get_zoom, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_set_fit", NULL, rn_w_Rpdf_view_set_fit, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_fit", NULL, rn_w_Rpdf_view_get_fit, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_title", NULL, rn_w_Rpdf_view_get_title, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_get_page_text", NULL, rn_w_Rpdf_view_get_page_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_set_page_changed_callback", NULL, rn_w_Rpdf_view_set_page_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_create", NULL, rn_w_Rcarousel_create, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_page", NULL, rn_w_Rcarousel_set_page, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_page", NULL, rn_w_Rcarousel_get_page, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_page_count", NULL, rn_w_Rcarousel_get_page_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_next", NULL, rn_w_Rcarousel_next, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_prev", NULL, rn_w_Rcarousel_prev, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_loop", NULL, rn_w_Rcarousel_set_loop, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_loop", NULL, rn_w_Rcarousel_get_loop, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_autoplay", NULL, rn_w_Rcarousel_set_autoplay, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_autoplay", NULL, rn_w_Rcarousel_get_autoplay, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_indicators_visible", NULL, rn_w_Rcarousel_set_indicators_visible, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_indicators_visible", NULL, rn_w_Rcarousel_get_indicators_visible, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_arrows_visible", NULL, rn_w_Rcarousel_set_arrows_visible, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_arrows_visible", NULL, rn_w_Rcarousel_get_arrows_visible, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_orientation", NULL, rn_w_Rcarousel_set_orientation, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_get_orientation", NULL, rn_w_Rcarousel_get_orientation, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcarousel_set_page_changed_callback", NULL, rn_w_Rcarousel_set_page_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_view_print", NULL, rn_w_Rpdf_view_print, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_create", NULL, rn_w_Rmap_view_create, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_center", NULL, rn_w_Rmap_view_set_center, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_center", NULL, rn_w_Rmap_view_get_center, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_zoom", NULL, rn_w_Rmap_view_set_zoom, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_zoom", NULL, rn_w_Rmap_view_get_zoom, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_zoom_range", NULL, rn_w_Rmap_view_set_zoom_range, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_zoom_range", NULL, rn_w_Rmap_view_get_zoom_range, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_animate_to", NULL, rn_w_Rmap_view_animate_to, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_screen_to_latlon", NULL, rn_w_Rmap_view_screen_to_latlon, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_latlon_to_screen", NULL, rn_w_Rmap_view_latlon_to_screen, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile_callback", NULL, rn_w_Rmap_view_set_tile_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile_cancel_callback", NULL, rn_w_Rmap_view_set_tile_cancel_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile", NULL, rn_w_Rmap_view_set_tile, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile_data", NULL, rn_w_Rmap_view_set_tile_data, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile_failed", NULL, rn_w_Rmap_view_set_tile_failed, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile_path", NULL, rn_w_Rmap_view_set_tile_path, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_tile_path", NULL, rn_w_Rmap_view_get_tile_path, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_tile_size", NULL, rn_w_Rmap_view_set_tile_size, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_tile_size", NULL, rn_w_Rmap_view_get_tile_size, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_cache_size", NULL, rn_w_Rmap_view_set_cache_size, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_cache_usage", NULL, rn_w_Rmap_view_get_cache_usage, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_clear_tiles", NULL, rn_w_Rmap_view_clear_tiles, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_tile_state", NULL, rn_w_Rmap_view_get_tile_state, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_add_marker", NULL, rn_w_Rmap_view_add_marker, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_remove_marker", NULL, rn_w_Rmap_view_remove_marker, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_clear_markers", NULL, rn_w_Rmap_view_clear_markers, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_marker_count", NULL, rn_w_Rmap_view_get_marker_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_marker_position", NULL, rn_w_Rmap_view_set_marker_position, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_marker_label", NULL, rn_w_Rmap_view_set_marker_label, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_marker_color", NULL, rn_w_Rmap_view_set_marker_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_marker_clicked_callback", NULL, rn_w_Rmap_view_set_marker_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_view_changed_callback", NULL, rn_w_Rmap_view_set_view_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_set_attribution", NULL, rn_w_Rmap_view_set_attribution, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rmap_view_get_attribution", NULL, rn_w_Rmap_view_get_attribution, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_is_supported", NULL, rn_w_Rsystem_web_view_is_supported, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_create", NULL, rn_w_Rsystem_web_view_create, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_load_url", NULL, rn_w_Rsystem_web_view_load_url, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_load_file", NULL, rn_w_Rsystem_web_view_load_file, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_load_html", NULL, rn_w_Rsystem_web_view_load_html, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_reload", NULL, rn_w_Rsystem_web_view_reload, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_stop", NULL, rn_w_Rsystem_web_view_stop, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_go_back", NULL, rn_w_Rsystem_web_view_go_back, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_go_forward", NULL, rn_w_Rsystem_web_view_go_forward, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_can_go_back", NULL, rn_w_Rsystem_web_view_can_go_back, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_can_go_forward", NULL, rn_w_Rsystem_web_view_can_go_forward, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_get_url", NULL, rn_w_Rsystem_web_view_get_url, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_get_title", NULL, rn_w_Rsystem_web_view_get_title, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_is_loading", NULL, rn_w_Rsystem_web_view_is_loading, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_get_error", NULL, rn_w_Rsystem_web_view_get_error, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_run_javascript", NULL, rn_w_Rsystem_web_view_run_javascript, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_set_message_callback", NULL, rn_w_Rsystem_web_view_set_message_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_set_event_callback", NULL, rn_w_Rsystem_web_view_set_event_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rsystem_web_view_get_native_handle", NULL, rn_w_Rsystem_web_view_get_native_handle, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_create", NULL, rn_w_Rpdf_document_create, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_delete", NULL, rn_w_Rpdf_document_delete, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_title", NULL, rn_w_Rpdf_document_set_title, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_author", NULL, rn_w_Rpdf_document_set_author, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_subject", NULL, rn_w_Rpdf_document_set_subject, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_add_page", NULL, rn_w_Rpdf_document_add_page, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_get_page_count", NULL, rn_w_Rpdf_document_get_page_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_fill_color", NULL, rn_w_Rpdf_document_set_fill_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_stroke_color", NULL, rn_w_Rpdf_document_set_stroke_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_line_width", NULL, rn_w_Rpdf_document_set_line_width, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_rect", NULL, rn_w_Rpdf_document_draw_rect, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_ellipse", NULL, rn_w_Rpdf_document_draw_ellipse, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_line", NULL, rn_w_Rpdf_document_draw_line, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_add_font", NULL, rn_w_Rpdf_document_add_font, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_add_font_from_file", NULL, rn_w_Rpdf_document_add_font_from_file, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_set_font", NULL, rn_w_Rpdf_document_set_font, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_get_line_height", NULL, rn_w_Rpdf_document_get_line_height, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_measure_text", NULL, rn_w_Rpdf_document_measure_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_text", NULL, rn_w_Rpdf_document_draw_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_paragraph", NULL, rn_w_Rpdf_document_draw_paragraph, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_image", NULL, rn_w_Rpdf_document_draw_image, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_draw_window", NULL, rn_w_Rpdf_document_draw_window, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_save", NULL, rn_w_Rpdf_document_save, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_save_memory", NULL, rn_w_Rpdf_document_save_memory, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_print", NULL, rn_w_Rpdf_print, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_print_file", NULL, rn_w_Rpdf_print_file, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpdf_document_print", NULL, rn_w_Rpdf_document_print, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_create", NULL, rn_w_Rtext_editor_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_set_text", NULL, rn_w_Rtext_editor_set_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_get_text", NULL, rn_w_Rtext_editor_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23486,6 +33245,23 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtext_editor_get_selection", NULL, rn_w_Rtext_editor_get_selection, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_get_selected_text", NULL, rn_w_Rtext_editor_get_selected_text, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_scroll_to_line", NULL, rn_w_Rtext_editor_scroll_to_line, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_add_cursor", NULL, rn_w_Rtext_editor_add_cursor, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_add_selection", NULL, rn_w_Rtext_editor_add_selection, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_cursor_count", NULL, rn_w_Rtext_editor_get_cursor_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_cursor_at", NULL, rn_w_Rtext_editor_get_cursor_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_main_cursor", NULL, rn_w_Rtext_editor_get_main_cursor, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_clear_cursors", NULL, rn_w_Rtext_editor_clear_cursors, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_add_next_occurrence", NULL, rn_w_Rtext_editor_add_next_occurrence, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_select_all_occurrences", NULL, rn_w_Rtext_editor_select_all_occurrences, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_fold", NULL, rn_w_Rtext_editor_fold, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_unfold", NULL, rn_w_Rtext_editor_unfold, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_fold_all", NULL, rn_w_Rtext_editor_fold_all, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_unfold_all", NULL, rn_w_Rtext_editor_unfold_all, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_is_folded", NULL, rn_w_Rtext_editor_is_folded, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_is_line_hidden", NULL, rn_w_Rtext_editor_is_line_hidden, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_fold_end", NULL, rn_w_Rtext_editor_get_fold_end, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_folding", NULL, rn_w_Rtext_editor_set_folding, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_folding", NULL, rn_w_Rtext_editor_get_folding, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_undo", NULL, rn_w_Rtext_editor_undo, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_redo", NULL, rn_w_Rtext_editor_redo, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_can_undo", NULL, rn_w_Rtext_editor_can_undo, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23511,16 +33287,37 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtext_editor_get_language", NULL, rn_w_Rtext_editor_get_language, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_set_markdown", NULL, rn_w_Rtext_editor_set_markdown, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_get_markdown", NULL, rn_w_Rtext_editor_get_markdown, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_spell_check", NULL, rn_w_Rtext_editor_set_spell_check, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_spell_check", NULL, rn_w_Rtext_editor_get_spell_check, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_spell_language", NULL, rn_w_Rtext_editor_set_spell_language, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_get_token", NULL, rn_w_Rtext_editor_get_token, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_set_completion", NULL, rn_w_Rtext_editor_set_completion, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_show_completions", NULL, rn_w_Rtext_editor_show_completions, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_is_completing", NULL, rn_w_Rtext_editor_is_completing, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_set_completion_callback", NULL, rn_w_Rtext_editor_set_completion_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_add_completion", NULL, rn_w_Rtext_editor_add_completion, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_add_completion_insert", NULL, rn_w_Rtext_editor_add_completion_insert, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_completion_words", NULL, rn_w_Rtext_editor_set_completion_words, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_set_auto_pairs", NULL, rn_w_Rtext_editor_set_auto_pairs, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_add_marker", NULL, rn_w_Rtext_editor_add_marker, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_clear_markers", NULL, rn_w_Rtext_editor_clear_markers, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_get_marker_count", NULL, rn_w_Rtext_editor_get_marker_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_hover_callback", NULL, rn_w_Rtext_editor_set_hover_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_search", NULL, rn_w_Rtext_editor_set_search, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_search", NULL, rn_w_Rtext_editor_get_search, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_search_flags", NULL, rn_w_Rtext_editor_get_search_flags, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_find_next", NULL, rn_w_Rtext_editor_find_next, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_find_previous", NULL, rn_w_Rtext_editor_find_previous, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_match_count", NULL, rn_w_Rtext_editor_get_match_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_match_index", NULL, rn_w_Rtext_editor_get_match_index, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_match", NULL, rn_w_Rtext_editor_get_match, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_select_match", NULL, rn_w_Rtext_editor_select_match, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_replace", NULL, rn_w_Rtext_editor_replace, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_replace_all", NULL, rn_w_Rtext_editor_replace_all, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_show_find", NULL, rn_w_Rtext_editor_show_find, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_hide_find", NULL, rn_w_Rtext_editor_hide_find, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_is_find_shown", NULL, rn_w_Rtext_editor_is_find_shown, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_find_bar", NULL, rn_w_Rtext_editor_set_find_bar, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_set_token_color", NULL, rn_w_Rtheme_set_token_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_get_token_color", NULL, rn_w_Rtheme_get_token_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_clear_token_colors", NULL, rn_w_Rtheme_clear_token_colors, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23551,6 +33348,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rdock_area_set_close_callback", NULL, rn_w_Rdock_area_set_close_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdock_area_set_tearable", NULL, rn_w_Rdock_area_set_tearable, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdock_area_is_tearable", NULL, rn_w_Rdock_area_is_tearable, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdock_area_set_float_mode", NULL, rn_w_Rdock_area_set_float_mode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdock_area_set_float_window", NULL, rn_w_Rdock_area_set_float_window, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdock_area_float_panel", NULL, rn_w_Rdock_area_float_panel, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdock_area_dock_panel", NULL, rn_w_Rdock_area_dock_panel, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdock_area_get_panel_window", NULL, rn_w_Rdock_area_get_panel_window, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23581,6 +33380,8 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtray_set_tooltip", NULL, rn_w_Rtray_set_tooltip, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtray_set_menu", NULL, rn_w_Rtray_set_menu, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtray_set_clicked_callback", NULL, rn_w_Rtray_set_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtray_set_title", NULL, rn_w_Rtray_set_title, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtray_get_rect", NULL, rn_w_Rtray_get_rect, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcolor_picker_create", NULL, rn_w_Rcolor_picker_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcolor_picker_set_color", NULL, rn_w_Rcolor_picker_set_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcolor_picker_get_color", NULL, rn_w_Rcolor_picker_get_color, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23739,6 +33540,11 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rnode_graph_set_pin_tag", NULL, rn_w_Rnode_graph_set_pin_tag, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rnode_graph_set_link_hidden", NULL, rn_w_Rnode_graph_set_link_hidden, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rnode_graph_set_pin_emphasis", NULL, rn_w_Rnode_graph_set_pin_emphasis, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnode_graph_get_tag_at", NULL, rn_w_Rnode_graph_get_tag_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnode_graph_set_pin_tag_lit", NULL, rn_w_Rnode_graph_set_pin_tag_lit, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnode_graph_set_pin_label_width", NULL, rn_w_Rnode_graph_set_pin_label_width, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnode_graph_get_pin_label_width", NULL, rn_w_Rnode_graph_get_pin_label_width, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnode_graph_set_node_badge_color", NULL, rn_w_Rnode_graph_set_node_badge_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rblock_editor_create", NULL, rn_w_Rblock_editor_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rblock_editor_add_kind", NULL, rn_w_Rblock_editor_add_kind, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rblock_editor_set_category_color", NULL, rn_w_Rblock_editor_set_category_color, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23775,6 +33581,38 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rblock_editor_select", NULL, rn_w_Rblock_editor_select, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rblock_editor_get_view", NULL, rn_w_Rblock_editor_get_view, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rblock_editor_set_view", NULL, rn_w_Rblock_editor_set_view, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_unified", NULL, rn_w_Rdiff_unified, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_count_changes", NULL, rn_w_Rdiff_count_changes, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_create", NULL, rn_w_Rdiff_view_create, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_texts", NULL, rn_w_Rdiff_view_set_texts, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_names", NULL, rn_w_Rdiff_view_set_names, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_load_files", NULL, rn_w_Rdiff_view_load_files, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_patch", NULL, rn_w_Rdiff_view_set_patch, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_mode", NULL, rn_w_Rdiff_view_set_mode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_mode", NULL, rn_w_Rdiff_view_get_mode, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_context", NULL, rn_w_Rdiff_view_set_context, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_context", NULL, rn_w_Rdiff_view_get_context, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_flags", NULL, rn_w_Rdiff_view_set_flags, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_flags", NULL, rn_w_Rdiff_view_get_flags, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_word_diff", NULL, rn_w_Rdiff_view_set_word_diff, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_line_numbers", NULL, rn_w_Rdiff_view_set_line_numbers, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_language", NULL, rn_w_Rdiff_view_set_language, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_change_count", NULL, rn_w_Rdiff_view_get_change_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_change", NULL, rn_w_Rdiff_view_get_change, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_go_to_change", NULL, rn_w_Rdiff_view_go_to_change, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_current_change", NULL, rn_w_Rdiff_view_get_current_change, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_next_change", NULL, rn_w_Rdiff_view_next_change, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_prev_change", NULL, rn_w_Rdiff_view_prev_change, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_row_count", NULL, rn_w_Rdiff_view_get_row_count, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_row", NULL, rn_w_Rdiff_view_get_row, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_row_text", NULL, rn_w_Rdiff_view_get_row_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_expand", NULL, rn_w_Rdiff_view_expand, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_first_visible_row", NULL, rn_w_Rdiff_view_get_first_visible_row, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_scroll_to_row", NULL, rn_w_Rdiff_view_scroll_to_row, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_add_annotation", NULL, rn_w_Rdiff_view_add_annotation, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_clear_annotations", NULL, rn_w_Rdiff_view_clear_annotations, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_get_selected_text", NULL, rn_w_Rdiff_view_get_selected_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdiff_view_set_line_clicked_callback", NULL, rn_w_Rdiff_view_set_line_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdialog_open", NULL, rn_w_Rdialog_open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdialog_close", NULL, rn_w_Rdialog_close, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdialog_run", NULL, rn_w_Rdialog_run, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23815,6 +33653,27 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rnotification_is_supported", NULL, rn_w_Rnotification_is_supported, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rnotification_set_fallback", NULL, rn_w_Rnotification_set_fallback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rnotification_set_clicked_callback", NULL, rn_w_Rnotification_set_clicked_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnotification_show_desc", NULL, rn_w_Rnotification_show_desc, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnotification_close", NULL, rn_w_Rnotification_close, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnotification_set_callback", NULL, rn_w_Rnotification_set_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnotification_set_bring_to_front", NULL, rn_w_Rnotification_set_bring_to_front, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnotification_set_fallback_toast", NULL, rn_w_Rnotification_set_fallback_toast, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rnotification_supports", NULL, rn_w_Rnotification_supports, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpermission_get_status", NULL, rn_w_Rpermission_get_status, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpermission_request", NULL, rn_w_Rpermission_request, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpermission_open_settings", NULL, rn_w_Rpermission_open_settings, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpermission_to_string", NULL, rn_w_Rpermission_to_string, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rpermission_status_to_string", NULL, rn_w_Rpermission_status_to_string, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rfile_open_async", NULL, rn_w_Rfile_open_async, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rfile_save_async", NULL, rn_w_Rfile_save_async, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rfile_export_async", NULL, rn_w_Rfile_export_async, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rfile_select_folder_async", NULL, rn_w_Rfile_select_folder_async, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcamera_is_available", NULL, rn_w_Rcamera_is_available, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rcamera_take_photo", NULL, rn_w_Rcamera_take_photo, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rphoto_pick", NULL, rn_w_Rphoto_pick, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhaptic_is_supported", NULL, rn_w_Rhaptic_is_supported, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhaptic_play", NULL, rn_w_Rhaptic_play, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rshare_show", NULL, rn_w_Rshare_show, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rviewport_set_texture", NULL, rn_w_Rviewport_set_texture, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rviewport_set_stretch", NULL, rn_w_Rviewport_set_stretch, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rviewport_set_flip_y", NULL, rn_w_Rviewport_set_flip_y, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23827,6 +33686,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rcustom_set_paint_callback", NULL, rn_w_Rcustom_set_paint_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rcustom_set_measure_callback", NULL, rn_w_Rcustom_set_measure_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdraw_rect", NULL, rn_w_Rdraw_rect, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rdraw_shadow", NULL, rn_w_Rdraw_shadow, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdraw_rect_outline", NULL, rn_w_Rdraw_rect_outline, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdraw_circle", NULL, rn_w_Rdraw_circle, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rdraw_line", NULL, rn_w_Rdraw_line, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23918,6 +33778,18 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rxml_get_tag_children", NULL, rn_w_Rxml_get_tag_children, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rxml_get_attribute_count", NULL, rn_w_Rxml_get_attribute_count, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rxml_get_attribute_info", NULL, rn_w_Rxml_get_attribute_info, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_load", NULL, rn_w_Rscript_load, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_load_file", NULL, rn_w_Rscript_load_file, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_check", NULL, rn_w_Rscript_check, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_check_file", NULL, rn_w_Rscript_check_file, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_format", NULL, rn_w_Rscript_format, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_reset", NULL, rn_w_Rscript_reset, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_has_function", NULL, rn_w_Rscript_has_function, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_set_enabled", NULL, rn_w_Rscript_set_enabled, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_is_enabled", NULL, rn_w_Rscript_is_enabled, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_set_limits", NULL, rn_w_Rscript_set_limits, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_set_log_callback", NULL, rn_w_Rscript_set_log_callback, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rscript_set_diagnostic_callback", NULL, rn_w_Rscript_set_diagnostic_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlocale_load_csv", NULL, rn_w_Rlocale_load_csv, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlocale_load_csv_from_memory", NULL, rn_w_Rlocale_load_csv_from_memory, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlocale_clear", NULL, rn_w_Rlocale_clear, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23936,6 +33808,21 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtr_plural", NULL, rn_w_Rtr_plural, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_text_key", NULL, rn_w_Rwidget_set_text_key, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rlocale_format_number", NULL, rn_w_Rlocale_format_number, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rlocale_set_clock", NULL, rn_w_Rlocale_set_clock, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rlocale_get_clock", NULL, rn_w_Rlocale_get_clock, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rlocale_uses_12_hour_clock", NULL, rn_w_Rlocale_uses_12_hour_clock, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rlocale_get_day_period", NULL, rn_w_Rlocale_get_day_period, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rlocale_format_time", NULL, rn_w_Rlocale_format_time, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_get_system", NULL, rn_w_Rtimezone_get_system, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_set_directory", NULL, rn_w_Rtimezone_set_directory, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_is_valid", NULL, rn_w_Rtimezone_is_valid, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_to_local", NULL, rn_w_Rtimezone_to_local, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_from_local", NULL, rn_w_Rtimezone_from_local, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_count_local", NULL, rn_w_Rtimezone_count_local, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_get_offset", NULL, rn_w_Rtimezone_get_offset, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_is_daylight_saving", NULL, rn_w_Rtimezone_is_daylight_saving, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_get_abbreviation", NULL, rn_w_Rtimezone_get_abbreviation, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtimezone_get_label", NULL, rn_w_Rtimezone_get_label, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_set_text_scale", NULL, rn_w_Raccessibility_set_text_scale, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_get_text_scale", NULL, rn_w_Raccessibility_get_text_scale, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_set_high_contrast", NULL, rn_w_Raccessibility_set_high_contrast, NULL, NULL, NULL, napi_enumerable, NULL},
@@ -23955,19 +33842,56 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rwidget_get_accessible_role", NULL, rn_w_Rwidget_get_accessible_role, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_accessible_hidden", NULL, rn_w_Rwidget_set_accessible_hidden, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rwidget_set_accessible_labelled_by", NULL, rn_w_Rwidget_set_accessible_labelled_by, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwidget_set_accessible_action", NULL, rn_w_Rwidget_set_accessible_action, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rwidget_set_accessible_checked", NULL, rn_w_Rwidget_set_accessible_checked, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_announce", NULL, rn_w_Raccessibility_announce, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Raccessibility_is_screen_reader_active", NULL, rn_w_Raccessibility_is_screen_reader_active, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_platform_register", NULL, rn_w_Rhost_platform_register, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_platform_is_active", NULL, rn_w_Rhost_platform_is_active, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_window_set_size", NULL, rn_w_Rhost_window_set_size, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhost_window_set_insets", NULL, rn_w_Rhost_window_set_insets, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhost_set_system_dark", NULL, rn_w_Rhost_set_system_dark, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_mouse_move", NULL, rn_w_Rhost_inject_mouse_move, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_mouse_button", NULL, rn_w_Rhost_inject_mouse_button, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_mouse_wheel", NULL, rn_w_Rhost_inject_mouse_wheel, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_mouse_leave", NULL, rn_w_Rhost_inject_mouse_leave, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_key", NULL, rn_w_Rhost_inject_key, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_text", NULL, rn_w_Rhost_inject_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhost_inject_composition", NULL, rn_w_Rhost_inject_composition, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_focus", NULL, rn_w_Rhost_inject_focus, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rhost_inject_close", NULL, rn_w_Rhost_inject_close, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhost_permission_answer", NULL, rn_w_Rhost_permission_answer, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rhost_service_complete", NULL, rn_w_Rhost_service_complete, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_set_deterministic", NULL, rn_w_Rtest_set_deterministic, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_is_deterministic", NULL, rn_w_Rtest_is_deterministic, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_get_platform_tag", NULL, rn_w_Rtest_get_platform_tag, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_find", NULL, rn_w_Rtest_find, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_click", NULL, rn_w_Rtest_click, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_double_click", NULL, rn_w_Rtest_double_click, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_right_click", NULL, rn_w_Rtest_right_click, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_click_at", NULL, rn_w_Rtest_click_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_hover", NULL, rn_w_Rtest_hover, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_hover_at", NULL, rn_w_Rtest_hover_at, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_drag", NULL, rn_w_Rtest_drag, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_drag_to", NULL, rn_w_Rtest_drag_to, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_scroll", NULL, rn_w_Rtest_scroll, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_key", NULL, rn_w_Rtest_key, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_type_text", NULL, rn_w_Rtest_type_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_tap", NULL, rn_w_Rtest_tap, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_swipe", NULL, rn_w_Rtest_swipe, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_pump", NULL, rn_w_Rtest_pump, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_is_idle", NULL, rn_w_Rtest_is_idle, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_settle", NULL, rn_w_Rtest_settle, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_get_text", NULL, rn_w_Rtest_get_text, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_is_shown", NULL, rn_w_Rtest_is_shown, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_is_checked", NULL, rn_w_Rtest_is_checked, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_expect_golden", NULL, rn_w_Rtest_expect_golden, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_compare_pixels", NULL, rn_w_Rtest_compare_pixels, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_dump_tree", NULL, rn_w_Rtest_dump_tree, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_save_tree", NULL, rn_w_Rtest_save_tree, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_save_png", NULL, rn_w_Rtest_save_png, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_run_script", NULL, rn_w_Rtest_run_script, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtest_get_script_error", NULL, rn_w_Rtest_get_script_error, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"_open", NULL, rn_w__open, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"_ptr", NULL, rn_w__ptr, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"_text", NULL, rn_w__text, NULL, NULL, NULL, napi_enumerable, NULL},

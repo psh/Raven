@@ -4,6 +4,9 @@
 #                        edited visually, its translations, its themes in the preview
 #   raven_theme_editor   makes theme files (tools/theme_editor): every color, size
 #                        and style of a theme, edited over a live preview
+#   raven_script         Raven Script on the command line (tools/script): checks
+#                        and formats scripts and the <Script> of XML documents, runs
+#                        a script; no window (the null backend)
 #
 # embed.py, subset_font.py and designer/embed_splash.py are the scripts that
 # produce the embedded files (src/embedded, designer/splash_xml.c and
@@ -59,6 +62,17 @@ else()
 endif()
 
 include(GNUInstallDirs)
+if(RAVEN_BUILD_SHARED AND NOT WIN32 AND NOT IS_ABSOLUTE "${CMAKE_INSTALL_BINDIR}" AND NOT IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+	# installed, the tools find libraven.so / libraven.dylib in the lib folder beside bin, wherever
+	# the prefix is (a package of a release unpacked anywhere, Homebrew, vcpkg)
+	file(RELATIVE_PATH _raven_bin_to_lib "/prefix/${CMAKE_INSTALL_BINDIR}" "/prefix/${CMAKE_INSTALL_LIBDIR}")
+	if(APPLE)
+		set(_raven_origin "@loader_path")
+	else()
+		set(_raven_origin "$ORIGIN")
+	endif()
+	set_target_properties(raven_designer raven_theme_editor PROPERTIES INSTALL_RPATH "${_raven_origin}/${_raven_bin_to_lib}")
+endif()
 install(TARGETS raven_designer raven_theme_editor RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(RAVEN_BUILD_TESTS)
@@ -174,4 +188,13 @@ if(RAVEN_BUILD_TESTS)
 	# Contrast fixed one pair at a time and all at once, the saved version compared, the theme copied as C code.
 	add_test(NAME theme_editor_check COMMAND raven_theme_editor --null --frames 2 --script
 		"look RavenLight accent #FFD60A do te.generate expectcheck 15 color Text #CCCCCC expectcheck 9 fix 0 expectcheck 13 do te.fix.all expectcheck 15 name Night~Owl do te.copy.c expectclipboard night_owl_theme expectclipboard Rtheme_use(\"Night~Owl\") color Window #102030 save ${_te}.check color Window #FF0000 expectpreview Window #FF0000 compare 1 expectpreview Window #102030 compare 0 expectpreview Window #FF0000 f 2")
+endif()
+
+add_executable(raven_script script/raven_script.c)
+target_link_libraries(raven_script PRIVATE raven::raven)
+set_target_properties(raven_script PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON FOLDER "tools")
+if(MSVC)
+	target_compile_definitions(raven_script PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(NOT WIN32)
+	target_link_libraries(raven_script PRIVATE m)
 endif()

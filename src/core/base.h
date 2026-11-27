@@ -28,7 +28,7 @@
 #define RVN_COUNT_OF(a) (sizeof(a) / sizeof((a)[0]))
 /* Set by CMakeLists.txt from project(VERSION); this copy serves builds without CMake. */
 #ifndef RVN_VERSION_STRING
-#define RVN_VERSION_STRING "0.2.3"
+#define RVN_VERSION_STRING "0.3.0"
 #endif
 
 /* ---------------------------------------------------------------------------
@@ -126,6 +126,15 @@ RVN_INLINE rvn_color_t rvn_color_mix(rvn_color_t a, rvn_color_t b, float t) {
 	}
 	return out;
 }
+/** Each channel of `a` times the same channel of `b`. */
+RVN_INLINE rvn_color_t rvn_color_multiply(rvn_color_t a, rvn_color_t b) {
+	uint32_t i, out = 0;
+	for (i = 0; i < 4; i++) {
+		uint32_t ca = (a >> (i * 8)) & 0xFFu, cb = (b >> (i * 8)) & 0xFFu;
+		out |= ((ca * cb + 127u) / 255u) << (i * 8);
+	}
+	return out;
+}
 RVN_INLINE void rvn_color_to_floats(rvn_color_t c, float* r, float* g, float* b, float* a) {
 	if (r) *r = (float)(c & 0xFFu) / 255.0f;
 	if (g) *g = (float)((c >> 8) & 0xFFu) / 255.0f;
@@ -187,12 +196,50 @@ void rvn_text_add(rvn_text_t* text, const char* string);
 void rvn_text_printf(rvn_text_t* text, const char* format, ...);
 uint32_t rvn_hash_bytes(const void* data, size_t size);
 uint32_t rvn_hash_str(const char* text);
+/**
+ * Compresses `data` as a zlib stream (core/deflate.c: fixed Huffman codes,
+ * LZ77 over a 32 KB window). Never NULL. Free with rvn_free.
+ */
+uint8_t* rvn_zlib_compress(const uint8_t* data, size_t size, size_t* out_size);
 /** Reads a whole file. The result has one extra '\0' byte. Free with rvn_free. */
 char* rvn_read_file(const char* path, size_t* size);
+/**
+ * A file mapped into memory, read only: only the parts read are loaded (the
+ * large fonts of the system: Apple Color Emoji is near 200 MB). NULL when it
+ * cannot be read. Release with rvn_unmap_file.
+ */
+uint8_t* rvn_map_file(const char* path, size_t* size);
+void rvn_unmap_file(uint8_t* data, size_t size);
 /** R_TRUE when the path names a file registered with Rfile_register_memory. */
 int rvn_memory_file_exists(const char* path);
 /** Forgets every file held in memory (Rshutdown). */
 void rvn_memory_files_shutdown(void);
+
+/*
+ * The application's package: the read-only files shipped with the app (the
+ * APK's assets/ on Android, the bundle's resources on iOS). A relative path
+ * that names no file held in memory and no file on disk is read from it, so
+ * that "photo.png" or Source="ui/photo.png" work as they do beside the
+ * program on a desktop or in the virtual file system of a browser.
+ * The platform sets it at init and removes it at shutdown; the desktops have
+ * none. The functions may be called from any thread (textures load on the
+ * workers). `path` is relative, '/' only, without "." or ".." segments.
+ */
+typedef struct rvn_file_provider_t {
+	/** An open file, or NULL when the package has no such file. */
+	void* (*open)(const char* path);
+	/** Size of the file in bytes. */
+	size_t (*size)(void* file);
+	/** Reads at most `size` bytes; returns how many were read (0 at the end or on error). */
+	size_t (*read)(void* file, void* buffer, size_t size);
+	void (*close)(void* file);
+} rvn_file_provider_t;
+/** Sets the package (NULL: none). `provider` must stay valid until it is replaced. */
+void rvn_file_set_provider(const rvn_file_provider_t* provider);
+/** R_TRUE when the platform has a package: relative paths are then the package's. */
+int rvn_file_has_provider(void);
+/** R_TRUE when Raven reads `path` from memory or from the package, not from the disk. */
+int rvn_file_is_virtual(const char* path);
 /** Joins a base folder and a relative path. Free with rvn_free. */
 char* rvn_path_join(const char* base, const char* path);
 /** Folder part of a path, with its trailing separator. Free with rvn_free. */
@@ -206,6 +253,14 @@ int rvn_utf8_encode(uint32_t codepoint, char out[4]);
 int rvn_utf8_next(const char* text, int length, int offset);
 int rvn_utf8_prev(const char* text, int offset);
 int rvn_utf8_count(const char* text, int length);
+/**
+ * A code point as a search compares it: lower case, without its accent
+ * (Latin, Greek and Cyrillic letters: "É" -> 'e', "Ł" -> 'l', "Ά" -> 'α').
+ * Combining marks (U+0300..U+036F) give 0: they are skipped.
+ */
+uint32_t rvn_utf8_fold(uint32_t codepoint);
+/** R_TRUE when `text` contains `part`, compared folded (rvn_utf8_fold); an empty part is in every text. */
+int rvn_utf8_contains_folded(const char* text, const char* part);
 
 /* ---------------------------------------------------------------------------
  *  Errors (core/error.c)

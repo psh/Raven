@@ -505,6 +505,14 @@ static void test_node_graph_editor_hooks(void) {
 		Rnode_graph_from_canvas(graph, bx - 30.0f, by, &mx, &my);
 		tag_pin = Rnode_graph_get_pin_at(graph, mx, my);
 		CHECK(tag_pin == b_in);
+		/* the tag alone: the chip is under the point, the pin dot is not */
+		CHECK(Rnode_graph_get_tag_at(graph, mx, my) == b_in);
+		Rnode_graph_from_canvas(graph, bx, by, &mx, &my);
+		CHECK(Rnode_graph_get_tag_at(graph, mx, my) == 0);
+		Rnode_graph_from_canvas(graph, bx - 30.0f, by, &mx, &my);
+		Rnode_graph_set_pin_tag_lit(graph, b_in, R_TRUE);
+		Rdraw_frame();
+		Rnode_graph_set_pin_tag_lit(graph, b_in, R_FALSE);
 		Rnode_graph_set_pin_tag(graph, b_in, NULL);
 		Rdraw_frame();
 		CHECK(Rnode_graph_get_pin_at(graph, mx, my) == 0);
@@ -525,6 +533,29 @@ static void test_node_graph_editor_hooks(void) {
 		Rdraw_frame();
 		Rnode_graph_set_pin_emphasis(graph, b_in, 0);
 		Rnode_graph_set_pin_emphasis(graph, a_out, 0);
+		/* compact ports: a long label is cut and the node laid out narrower; 0 shows it whole */
+		{
+			int c = Rnode_graph_add_node(graph, "C", 100.0f, 300.0f);
+			float w_full, h, w_cut;
+			Rnode_graph_add_input(graph, c, "A very long input port name indeed", NULL);
+			Rdraw_frame();
+			Rnode_graph_get_node_size(graph, c, &w_full, &h);
+			Rnode_graph_set_pin_label_width(graph, 60.0f);
+			CHECK(Rnode_graph_get_pin_label_width(graph) == 60.0f);
+			Rdraw_frame();
+			Rnode_graph_get_node_size(graph, c, &w_cut, &h);
+			CHECK(w_cut < w_full);
+			Rnode_graph_set_pin_label_width(graph, 0.0f);
+			Rdraw_frame();
+			Rnode_graph_get_node_size(graph, c, &w_cut, &h);
+			CHECK(w_cut == w_full);
+			Rnode_graph_set_node_badge(graph, c, "pinned");
+			Rnode_graph_set_node_badge_color(graph, c, 1.0f, 0.84f, 0.31f);
+			Rdraw_frame();
+			Rnode_graph_set_node_badge_color(graph, c, -1.0f, -1.0f, -1.0f); /* back to the look's color */
+			Rdraw_frame();
+			Rnode_graph_remove_node(graph, c);
+		}
 		Rnode_graph_remove_node(graph, b);
 		Rdraw_frame();
 	}
@@ -1373,15 +1404,165 @@ static void test_looks(void) {
 	Rshutdown();
 }
 
+/* A node's title or name passed back from its getter (the setter used to free it first). */
+static void test_node_graph_own_strings(void) {
+	Rid graph;
+	int node;
+	CHECK(test_init(0));
+	graph = Rnode_graph_create();
+	node = Rnode_graph_add_node(graph, "Multiply", 0.0f, 0.0f);
+	Rnode_graph_set_node_name(graph, node, "mul1");
+	Rnode_graph_set_node_title(graph, node, Rnode_graph_get_node_title(graph, node));
+	Rnode_graph_set_node_name(graph, node, Rnode_graph_get_node_name(graph, node));
+	CHECK_STR(Rnode_graph_get_node_title(graph, node), "Multiply");
+	CHECK_STR(Rnode_graph_get_node_name(graph, node), "mul1");
+	Rnode_graph_set_node_name(graph, node, "");
+	CHECK_STR(Rnode_graph_get_node_name(graph, node), "");
+	Rwidget_destroy(graph);
+	Rshutdown();
+}
+
+/* A very long timeline paints about as much as a short one (the ruler steps grow past hours). */
+static void test_timeline_long_duration(void) {
+	Rid window, tl;
+	RFrameStats stats;
+	Ruint short_count;
+	double durations[] = { 1e6, 1e8, 1e10 };
+	int i;
+
+	CHECK(test_init(0));
+	window = make_window("<Window Width=\"800\" Height=\"300\">"
+		"<Timeline Name=\"t\" Duration=\"10\">"
+		"<Track Name=\"A\"><Clip Start=\"1\" Length=\"2\" Label=\"one\"/></Track></Timeline></Window>");
+	tl = Rwidget_find(window, "t");
+	Rdraw_frame();
+	Rwindow_get_frame_stats(window, &stats);
+	short_count = stats.instance_count;
+	CHECK(short_count > 0);
+	for (i = 0; i < (int)(sizeof(durations) / sizeof(durations[0])); i++) {
+		Rtimeline_set_duration(tl, durations[i]);
+		Rdraw_frame();
+		Rwindow_get_frame_stats(window, &stats);
+		CHECK(stats.instance_count < short_count * 3 + 100);
+	}
+	/* a duration that is not a number of seconds is refused */
+	EXPECT_ERRORS_BEGIN();
+	Rtimeline_set_duration(tl, INFINITY);
+	Rtimeline_set_duration(tl, NAN);
+	EXPECT_ERRORS_END(2);
+	CHECK(Rtimeline_get_duration(tl) == 1e10);
+	Rwindow_destroy(window);
+	Rshutdown();
+}
+
+/* ---------------------------------------------------------------------------
+ *  Block editor
+ * ------------------------------------------------------------------------- */
+
+/* Rblock_editor_attach checks the place it is given before using the index. */
+static void test_block_editor_attach_place(void) {
+	Rid ed;
+	int a, b, c;
+
+	CHECK(test_init(0));
+	ed = Rblock_editor_create();
+	Rblock_editor_add_kind(ed, "move", "move %n steps", R_BLOCK_STATEMENT, "Motion");
+	Rblock_editor_add_kind(ed, "forever", "forever", R_BLOCK_C, "Control");
+	a = Rblock_editor_add_block(ed, "move", 20.0f, 20.0f);
+	b = Rblock_editor_add_block(ed, "move", 20.0f, 200.0f);
+	c = Rblock_editor_add_block(ed, "forever", 20.0f, 400.0f);
+	EXPECT_ERRORS_BEGIN();
+	CHECK(!Rblock_editor_attach(ed, b, a, (RBlockPlace)0, 8));
+	CHECK(!Rblock_editor_attach(ed, b, a, (RBlockPlace)0, 2000));
+	CHECK(!Rblock_editor_attach(ed, b, a, (RBlockPlace)(R_BLOCK_INPUT + 1), -100));
+	EXPECT_ERRORS_END(3);
+	CHECK(Rblock_editor_get_parent(ed, b, NULL, NULL) == 0);
+	CHECK(Rblock_editor_get_next(ed, a) == 0);
+	/* the places it knows still work */
+	CHECK(Rblock_editor_attach(ed, b, a, R_BLOCK_NEXT, 0));
+	CHECK(Rblock_editor_get_next(ed, a) == b);
+	CHECK(!Rblock_editor_attach(ed, a, c, R_BLOCK_BODY, 8));
+	CHECK(Rblock_editor_attach(ed, a, c, R_BLOCK_BODY, 0));
+	CHECK(Rblock_editor_get_body(ed, c, 0) == a);
+	Rwidget_destroy(ed);
+	Rshutdown();
+}
+
+static int g_be_changed = 0;
+static void on_be_changed_add_blocks(Rid editor, int block, void* user_data) {
+	int i;
+	(void)block;
+	(void)user_data;
+	/* the first change adds blocks: the editor's block array grows */
+	if (g_be_changed++ == 0)
+		for (i = 0; i < 64; i++) Rblock_editor_add_block(editor, "move", 400.0f, 400.0f + 40.0f * (float)i);
+}
+
+/* A click on a block while a slot's field is open: closing the field calls the application back first. */
+static void test_block_editor_field_click(void) {
+	Rid window, ed;
+	int a, b;
+	float x, y, bx = -1.0f, by = -1.0f, sx = -1.0f;
+
+	CHECK(test_init(0));
+	window = Rwindow_create("t", 800, 600, 0);
+	ed = Rblock_editor_create();
+	Rwindow_set_content(window, ed);
+	Rblock_editor_set_palette_visible(ed, R_FALSE);
+	Rblock_editor_add_kind(ed, "move", "move %n steps", R_BLOCK_STATEMENT, "Motion");
+	a = Rblock_editor_add_block(ed, "move", 20.0f, 20.0f);
+	b = Rblock_editor_add_block(ed, "move", 20.0f, 200.0f);
+	Rdraw_frame();
+	/* a point of block B that is not a slot: a click there selects B */
+	for (y = 150.0f; y < 300.0f && bx < 0.0f; y += 2.0f)
+		for (x = 0.0f; x < 80.0f && bx < 0.0f; x += 2.0f) {
+			click_at(window, x, y);
+			if (Rblock_editor_get_selected(ed, 0) == b) {
+				bx = x;
+				by = y;
+			}
+		}
+	CHECK(bx >= 0.0f);
+	Rblock_editor_select(ed, 0, R_FALSE);
+	/* the number slot of block A: a click opens a text field */
+	for (y = 0.0f; y < 120.0f && sx < 0.0f; y += 4.0f)
+		for (x = 0.0f; x < 300.0f; x += 4.0f) {
+			Rid focused;
+			click_at(window, x, y);
+			focused = Rwindow_get_focused_widget(window);
+			if (focused != R_INVALID_ID && focused != ed && Rwidget_get_type(focused) == R_WIDGET_TEXT_INPUT) {
+				sx = x;
+				break;
+			}
+		}
+	CHECK(sx >= 0.0f);
+	if (bx >= 0.0f && sx >= 0.0f) {
+		Rwindow_inject_text(window, "42");
+		g_be_changed = 0;
+		Rblock_editor_set_changed_callback(ed, on_be_changed_add_blocks, NULL);
+		/* the click on B keeps the edit (the callback adds blocks), then selects B */
+		click_at(window, bx, by);
+		CHECK(g_be_changed == 1);
+		CHECK_STR(Rblock_editor_get_value(ed, a, 0), "42");
+		CHECK(Rblock_editor_get_selected(ed, 0) == b);
+	}
+	Rwindow_destroy(window);
+	Rshutdown();
+}
+
 int main(void) {
 	RUN(test_color_picker);
 	RUN(test_timeline);
 	RUN(test_timeline_sizes);
+	RUN(test_timeline_long_duration);
 	RUN(test_node_graph);
 	RUN(test_node_graph_editor_hooks);
+	RUN(test_node_graph_own_strings);
 	RUN(test_zoomed_content);
 	RUN(test_blur_and_transparency);
 	RUN(test_hooks);
 	RUN(test_looks);
+	RUN(test_block_editor_attach_place);
+	RUN(test_block_editor_field_click);
 	return test_report("test_tools");
 }
