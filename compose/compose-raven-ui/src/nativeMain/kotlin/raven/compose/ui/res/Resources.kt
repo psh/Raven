@@ -51,6 +51,9 @@ public fun registerResource(path: String, bytes: ByteArray) {
 // The files embedded with registerResource, which every host gives Raven when it starts.
 private val embeddedResources = LinkedHashMap<String, ByteArray>()
 
+/** A copy of the bytes embedded under [path] with [registerResource], if any: readable with no Raven running. */
+internal fun embeddedResource(path: String): ByteArray? = embeddedResources[path]?.copyOf()
+
 /** Gives Raven the embedded files: `Rshutdown` forgets them, so each run of Raven needs them again. */
 internal fun registerEmbeddedResources() {
     embeddedResources.forEach { (path, bytes) -> registerInRaven(path, bytes) }

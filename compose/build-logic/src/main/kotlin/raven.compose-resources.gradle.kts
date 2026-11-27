@@ -1,7 +1,8 @@
 // Compose Multiplatform's resources for an app of this repository: the files of
 // src/nativeMain/composeResources/ (drawable/, font/, files/), a generated `Res` for them, and the
 // folder copied into resources/ beside each executable, test executables too, which is where
-// compose-raven resolves relative resource paths by default.
+// compose-raven resolves relative resource paths by default; or, with `ravenResources { embed = true }`,
+// every file built into the executables instead.
 
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.Executable
@@ -22,19 +23,17 @@ ravenResources.packageOfResClass.convention(
     },
 )
 ravenResources.embed.convention(false)
+ravenResources.composeResourcesDirectory.convention(layout.projectDirectory.dir("src/nativeMain/composeResources"))
 
-val composeResources = layout.projectDirectory.dir("src/nativeMain/composeResources")
+val composeResources = ravenResources.composeResourcesDirectory
 
 val generateResClass = tasks.register<GenerateResClass>("generateResClass") {
     description = "Generates Res for src/nativeMain/composeResources/."
     group = "raven"
-    if (composeResources.asFile.isDirectory) resources.set(composeResources)
+    resources.set(composeResources.map { if (it.asFile.isDirectory) it else null })
     packageName.set(ravenResources.packageOfResClass)
+    embed.set(ravenResources.embed)
     outputDirectory.set(layout.buildDirectory.dir("generated/ravenResources/kotlin"))
-    val embed = ravenResources.embed
-    doFirst {
-        if (embed.get()) throw GradleException("ravenResources { embed = true } isn't built yet (Generated resources: embedding)")
-    }
 }
 
 plugins.withId("org.jetbrains.kotlin.multiplatform") {
@@ -50,6 +49,9 @@ plugins.withId("org.jetbrains.kotlin.multiplatform") {
                 group = "raven"
                 from(composeResources)
                 into(binary.outputDirectoryProperty.dir("resources"))
+                // Embedded, the files are in the executable: nothing goes beside it.
+                val embed = ravenResources.embed
+                onlyIf("the resources aren't embedded") { !embed.get() }
             }
             binary.linkTaskProvider.configure { finalizedBy(copy) }
             if (binary is Executable) binary.runTaskProvider?.configure { dependsOn(copy) }

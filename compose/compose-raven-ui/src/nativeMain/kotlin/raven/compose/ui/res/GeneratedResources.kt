@@ -51,11 +51,14 @@ public fun Font(resource: FontResource, weight: FontWeight = FontWeight.Normal, 
 
 /**
  * The bytes of the file at [path] under `composeResources/` (`"files/notes.txt"`), as the generated
- * `Res.readBytes` reads them: among the embedded files first, then in the resource root of the
+ * `Res.readBytes` reads them: among the embedded files first (`registerResource`, which this reads
+ * before an application has started too), then in the resource root of the
  * running application, or `resources/` beside the executable before one runs. A file that can't be
  * read throws.
  */
 public suspend fun readResourceBytes(path: String): ByteArray {
+    // An embedded file, even before the application starts and gives it to Raven.
+    embeddedResource(path)?.let { return it }
     val resolved = RavenHost.running?.resolveResource(path) ?: if (path.startsWith("/")) path else "${defaultResourceRoot()}/$path"
     return memScoped {
         val size = alloc<ULongVar>()

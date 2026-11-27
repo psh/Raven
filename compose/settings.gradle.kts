@@ -41,6 +41,7 @@ include(
     ":samples:notes",
     ":samples:overlay",
     ":samples:resources",
+    ":samples:resources-embedded",
     ":samples:themes",
     ":samples:workspace",
     ":samples:xml-translator",

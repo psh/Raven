@@ -29,7 +29,7 @@ Built on 2026-11-26.
   from `src/nativeMain/composeResources/` into `build/generated/ravenResources/kotlin`, a source of
   `nativeMain`; for every executable and test executable a `Sync` task copies the folder into
   `resources/` beside it, run after linking (`finalizedBy`) and before the run and test tasks.
-  `embed = true` fails the build until [Generated resources: embedding](../0224-generated-resources-embedding.md).
+  `embed = true` fails the build until [Generated resources: embedding](0224-generated-resources-embedding.md).
 - **`Res`**: `Res.drawable.<name>`, `Res.font.<name>`, `suspend Res.readBytes(path)`. Names by
   Compose's rule, other characters `_` and a leading digit prefixed (`ic-arrow back.svg` is
   `ic_arrow_back`), a Kotlin keyword in backticks. A clash fails the build naming both files (checked

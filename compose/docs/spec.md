@@ -1276,9 +1276,17 @@ From phase 5 `TreeView`'s expansion is the app's state, over Raven change 14, an
   with one name in one kind fail the build. A resource is its path under `composeResources/`.
 - **Shipping**: by default the plugin syncs `composeResources/` into the `resources/` folder beside
   each executable, test executables too, the default resource root, after linking and before
-  running or testing. With `ravenResources { embed = true }` it instead
-  generates the `registerResource` calls that build every file into the binary, for a single-file
-  app; Raven finds an embedded file before the resource root, so the code reading them is the same.
+  running or testing. With `ravenResources { embed = true }` it instead generates
+  `EmbeddedResources`, every file as string literals (a character a byte), registered with
+  `registerResource` the first time `Res` is used, which builds every file into the binary for a
+  single-file app; Raven finds an embedded file before the resource root, and `Res.readBytes` finds
+  one before an application starts, so the code reading them is the same.
+  `ravenResources { composeResourcesDirectory }` names another folder.
+- **What embedding costs** (`samples/resources`, release, macOS): its 34 KB of files add nothing
+  measurable to the build (34 s compile and link, embedded or copied) and 84 KB to the executable;
+  1 MB more adds about 3 s and 2.1 MB, as Kotlin/Native keeps string literals in UTF-16, two bytes
+  a character. That suits icons and fonts. Files of megabytes would want a linker section instead
+  (the bytes placed by the linker, read through a symbol), which waits until an app needs it.
 - **Runtime**, in `raven.compose.ui.res` beside `painterResource(path)`: `DrawableResource`,
   `FontResource`, `painterResource(res: DrawableResource)` and `@Composable Font(res: FontResource,
   weight, style)` take Compose's signatures; `Res.readBytes(path)` calls `readResourceBytes(path)`,

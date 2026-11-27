@@ -10,7 +10,7 @@ tested in this repository; publishing waits for the release. Spec:
 [10: `compose-raven-xml` and `raven-xml2compose`](../spec.md#compose-raven-xml-and-raven-xml2compose-phase-5-published-in-phase-4).
 Planned in [Icons and resources: build-time XML translation](archive/0209-icons-and-resources-build-time-xml-translation.md).
 
-**Depends on:** [Generated resources: embedding](0224-generated-resources-embedding.md), the ticket
+**Depends on:** [Generated resources: embedding](archive/0224-generated-resources-embedding.md), the ticket
 before it in phase 5's implementation sequence.
 
 ## Deliverables

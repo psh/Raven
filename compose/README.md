@@ -139,7 +139,8 @@ names others.
 
 `samples/resources` isn't a port: it checks Compose's `composeResources/` (a drawable, a font and a
 file, read through the generated `Res`) with the `raven.compose-resources` plugin of `build-logic`,
-which an app of this repository applies to get `Res` and the folder copied beside its executables.
+which an app of this repository applies to get `Res` and the folder copied beside its executables. `samples/resources-embedded` builds the same code and files with `ravenResources { embed = true }`:
+one executable with every file inside it.
 
 `samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion
