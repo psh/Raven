@@ -2096,11 +2096,11 @@ This sample translates Raven XML into compose-raven source.
   tests. A few headless smoke tests cover `parseRavenXml`. A CI test translates the `.xml` files of
   Raven's `examples/` and **compiles** the output against the current `compose-raven-foundation`,
   so the translator can't drift from the API.
-  - It is a Gradle check of the sample, run by `allTests` and `check`: a second executable of the
-    sample, `translateFiles`, translates each file headless into a package named after its path
-    (`examples.music.ui.nowplaying`), with its warnings as comments, and an `examples` compilation
-    compiles them against foundation. The translator binary is an input, so a changed translator
-    always translates again.
+  - It is the check module `samples/xml-examples` (from phase 5; before that, a second executable
+    and compilation of the sample), run by `check`: the `raven.compose-xml` plugin translates
+    Raven's `examples/` folder, each example in its subpackage of `examples`
+    (`music/ui/nowplaying.xml` is `examples.music.ui.Nowplaying`), and its `nativeMain` compiles
+    them against foundation. The tool is an input, so a changed translator always translates again.
 
 ### `samples/effects` (phase 5)
 
@@ -2262,16 +2262,23 @@ ravenXml {
 }
 ```
 
-- One task runs `raven-xml2compose` over the whole folder; each subfolder is a subpackage of
+- One task per target, `translateRavenXml<Target>`, runs `raven-xml2compose` over the whole
+  folder (relative to the project); each subfolder is a subpackage of
   `packageName` (`xml/notes/notes.xml` under `app.ui` is in `app.ui.notes`). Its inputs are the XML
   files and the tool, taken from the tool project's link task, so a changed translator translates
-  again; its output, `build/generated/ravenXml/<target>`, is a source directory of `nativeMain`.
-- Warnings show in the build's output; `werror = true` fails the build on them, and errors always do.
+  again; its output, `build/generated/ravenXml/<target>`, is a source directory of `nativeMain`,
+  emptied before each run so files of removed XML go too. `ravenXml { tool }` can name another
+  executable, which the plugin's own tests use.
+- Warnings show in the build's output, a line each as the tool reports them; `werror = true` fails
+  the build on them, and errors always do.
 - A file the XML names (`<Image Source="drawable/logo.png"/>`) keeps its path, which resolves
   against the resource root: with the resources plugin, that is its path under `composeResources/`.
 - Only apps in this repository use it, through the tool's project; apps outside wait for the release.
-- The examples check translates Raven's examples through the plugin, each example in its subpackage
-  ([Icons and resources: build-time XML translation](issues/archive/0209-icons-and-resources-build-time-xml-translation.md)).
+- The examples check, `samples/xml-examples`, translates Raven's examples through the plugin, each
+  example in its subpackage ([Icons and resources: build-time XML translation](issues/archive/0209-icons-and-resources-build-time-xml-translation.md)).
+- Its functional tests (`build-logic/src/test`, Gradle TestKit) run a build of their own over a
+  stand-in tool: translated then up to date, a changed XML file or tool translating again, warnings
+  in the output, `werror`, and errors.
 
 Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compose-translator.md),
 [Templates in the XML translator](issues/archive/0016-xml-translator-templates.md),

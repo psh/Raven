@@ -142,6 +142,13 @@ file, read through the generated `Res`) with the `raven.compose-resources` plugi
 which an app of this repository applies to get `Res` and the folder copied beside its executables. `samples/resources-embedded` builds the same code and files with `ravenResources { embed = true }`:
 one executable with every file inside it.
 
+Raven XML becomes Kotlin with `raven-xml2compose` (`tools/raven-xml2compose`, over the
+`compose-raven-xml` module): `raven-xml2compose ui/ --out <dir> --package app.ui [--main main.xml] [--werror]`
+writes one Kotlin file per XML file. An app of this repository gets the same during its build with
+the `raven.compose-xml` plugin (`ravenXml { packageName = "app.ui"; main = "main.xml" }`, the XML in
+`src/nativeMain/xml/`). `samples/xml-examples` is its check: every XML file of Raven's `examples/`
+translated through the plugin and compiled.
+
 `samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion
 controls), runs the same way: `./gradlew :samples:animations:runReleaseExecutableMacosArm64`, or

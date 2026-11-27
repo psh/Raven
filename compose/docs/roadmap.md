@@ -232,7 +232,10 @@ Decided for phase 4 (in the spec):
   [The public compose-raven-test module](issues/archive/0139-compose-raven-test-module.md), taken ahead of the
   release since it needs no publishing
 - [XML translator as a tool](issues/archive/0030-translator-as-a-tool.md): the `compose-raven-xml` module and
-  the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files
+  the `raven-xml2compose` command-line tool, one Kotlin file per XML file, `<Include>` across files;
+  built in phase 5 with the `raven.compose-xml` plugin ([XML translation: compose-raven-xml and raven-xml2compose](issues/archive/0225-xml-translation-compose-raven-xml-and-raven-xml2compose.md),
+  [XML translation: the raven.compose-xml plugin](issues/archive/0226-xml-translation-the-raven-compose-xml-plugin.md)),
+  so only publishing them is left here
 - [Packaging and publishing](issues/archive/0031-packaging-and-publishing.md): Maven Central under `io.github.psh`,
   one shared version with its own semantic versioning, a `compose-raven-bom`, each target published from its
   own host by CI

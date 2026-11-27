@@ -46,6 +46,7 @@ include(
     ":samples:themes",
     ":samples:workspace",
     ":samples:xml-translator",
+    ":samples:xml-examples",
     ":tools:raven-xml2compose",
     ":spikes:nested-frames",
     ":spikes:maps",

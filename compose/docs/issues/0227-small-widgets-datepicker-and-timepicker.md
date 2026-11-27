@@ -8,7 +8,7 @@ Add controlled `DatePicker` and `TimePicker` composables over Raven's widgets, w
 kotlinx-datetime's types. Spec: [8: Date and time pickers](../spec.md#date-and-time-pickers-phase-5)
 and section 12. Planned in [Small widgets: date and time pickers](archive/0210-small-widgets-date-and-time-pickers.md).
 
-**Depends on:** [XML translation: the raven.compose-xml plugin](0226-xml-translation-the-raven-compose-xml-plugin.md),
+**Depends on:** [XML translation: the raven.compose-xml plugin](archive/0226-xml-translation-the-raven-compose-xml-plugin.md),
 the ticket before it in phase 5's implementation sequence.
 
 ## Deliverables

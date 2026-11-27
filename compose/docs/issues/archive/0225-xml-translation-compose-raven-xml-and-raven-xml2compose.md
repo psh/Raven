@@ -52,7 +52,7 @@ Built on 2026-11-27.
   text is unchanged isn't rewritten, so its timestamp stays.
 - **Raven's examples**: all 57 XML files translate with no errors and 292 warnings (what has no
   composable yet), 57 Kotlin files in `examples.<example>` packages; compiling them is the plugin's
-  examples check, [XML translation: the raven.compose-xml plugin](../0226-xml-translation-the-raven-compose-xml-plugin.md).
+  examples check, [XML translation: the raven.compose-xml plugin](0226-xml-translation-the-raven-compose-xml-plugin.md).
   The sample's own examples check is unchanged until then, and passes.
 - **Tests**: `FolderTest` (14: names, subpackages, includes and their placing, imported declarations,
   declarations without an include, a shared file once, `--main`, cycles, a missing include, a file
