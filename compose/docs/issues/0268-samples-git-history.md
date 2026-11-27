@@ -58,5 +58,5 @@ is built.
 - [ ] libgit2 built from source by the sample's Gradle (pinned tag, static, local-only) and its cinterop, on macOS and Linux.
 - [ ] The repository read off the UI thread by one coroutine owning it: a large patch not freezing the window, a new selection dropping the previous read.
 - [ ] The message for a folder that isn't a git repository.
-- [ ] A headless test over a small repository the test creates in a temporary folder (a few commits, one touching two files): the list's rows, selecting a commit, the diff shown, more commits read at the end of the list.
+- [ ] A headless test over a small repository the test creates in a temporary folder through libgit2 too (`git_repository_init`, the index, `git_commit_create`; no `git` command), a few commits, one touching two files: the list's rows, selecting a commit, the diff shown, more commits read at the end of the list.
 - [ ] The roadmap's sample table, and the sample's README with how to run it on a repository and libgit2's licence.
