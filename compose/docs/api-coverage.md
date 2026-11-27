@@ -133,8 +133,8 @@ Found while doing them:
 | NodeGraph | 87 | specialist (`studio`) | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | Timeline | 59 | specialist (`studio`) | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation | designed: [Lists at scale: Table](issues/0235-lists-at-scale-table.md) |
-| Plot | 55 | charts; `examples/plot`. Needs a design decision first | charted: batch 6 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
-| Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision | charted: batch 6 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Plot | 55 | charts; `examples/plot`. Needs a design decision first | designed: [Charts: Plot and PlotState](issues/0259-charts-plot-and-plotstate.md) |
+| Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision | designed: [Charts: PieChart, Gauge, Heatmap and Sparkline](issues/0261-charts-piechart-gauge-heatmap-and-sparkline.md) |
 | PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | BlockEditor | 36 | specialist, no example | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | MapView | 34 | raster slippy-map tiles with markers; compose-raven's `MapView` binds the vector `Map` widget instead | charted: batch 8 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |

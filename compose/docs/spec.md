@@ -1244,6 +1244,58 @@ over Raven's Toast, with Raven's kinds, and stacking when asked, over Raven chan
 - The XML translator turns `<Toast>` into a `SnackbarHost` at its place, with a remembered
   `SnackbarHostState` and a comment where the app's code shows its messages.
 
+### Charts (phase 5)
+
+One composable per kind over Raven's Plot and Chart, their data compared and handed to Raven only
+when it changes; Raven keeps drawing, pan and zoom, the legend and the glides ([Charts: one model for Plot and Chart](issues/archive/0245-charts-one-model-for-plot-and-chart.md), from
+[Charts: how Compose chart libraries shape their APIs](issues/archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md)).
+
+- **`Plot(modifier, state = rememberPlotState(), title = "", xAxis = PlotAxis(), yAxis = PlotAxis(),
+  x2Axis = PlotAxis(), y2Axis = PlotAxis(), legend = PlotLegend.TopRight, crosshair, mouseText,
+  tooltips) { ... }`**, the helpers at Raven's defaults. The block declares:
+  - **`series(key, y: DoubleArray, x: DoubleArray? = null, name = "", color = Color.Unspecified,
+    line = PlotLine.Solid, lineWidth = 1.5f, marker = PlotMarker.None, markerSize = 6f,
+    markerFilled = true, step = false, fillOpacity = 0f, axes = PlotAxes.XY)`**: the points of a
+    series, `x` null for 0, 1, 2...; NaN leaves a gap. The arrays are compared by reference and
+    given to Raven (`Rplot_set_series_data`, which copies them) only when they change, so live data
+    is a new array each update and a million points are handed over once. Keys keep a series
+    across recompositions as Raven's indices shift. An unspecified colour is Raven's palette;
+    `PlotLine.None` is a scatter; `axes` puts a series on X2 or Y2.
+  - **`dragLine(key, axis, value: Double, onValueChange: (Double) -> Unit, label = "", color =
+    Color.Unspecified)`**: a line the user drags along an axis, controlled as `Slider` is.
+- **`PlotAxis(label = "", scale = PlotScale.Linear, linearThreshold = 1.0, format = "%g", range:
+  ClosedFloatingPointRange<Double>? = null, grid = true, inverted = false, locked = false)`**:
+  `scale` is linear, log or symlog; `format` is Raven's printf; `range = null` fits the data
+  (`auto_fit`), and a range is applied when it changes. The second axes show only when a series or
+  a drag line uses them.
+- **`PlotState`** (`rememberPlotState()`): the view stays Raven's (drag, wheel, pinch, double
+  click to fit). The state exposes each axis's visible range as observable state, read on Raven's
+  view callback, with `fit()` and `setRange(axis, range)`.
+- **The legend** is Raven's, at one of its nine positions or `Hidden`; a click on a series toggles
+  it, which stays Raven's and isn't reported.
+- **`PieChart(slices: List<PieSlice>, modifier, selectedSlice: Int? = null, onSelectedSliceChange:
+  (Int?) -> Unit = {}, hole = 0f, centerText: String? = null, centerCaption: String? = null, title
+  = "", format = "%g", legend = true)`**, `PieSlice(label, value, color = Color.Unspecified)`: a
+  `hole` from 0.2 to 0.9 makes Raven's donut, and a null `centerText` shows the total. The selected
+  slice is controlled, as `ListView`'s selection is.
+- **`Gauge(value: Double, modifier, range = 0.0..100.0, bands: List<GaugeBand> = emptyList(),
+  title = "", format = "%g", color = Color.Unspecified)`**, `GaugeBand(from, to, color =
+  Color.Unspecified)` (unspecified: success, warning and danger in turn).
+- **`Heatmap(values: List<DoubleArray>, modifier, rowLabels: List<String> = emptyList(),
+  columnLabels: List<String> = emptyList(), colorScale: Pair<Color, Color>? = null, range = null,
+  onCellClick: (row: Int, column: Int, value: Double) -> Unit = { _, _, _ -> }, title = "", format =
+  "%g")`**: rows of values, NaN an empty cell; the click is an event.
+- **`Sparkline(values: DoubleArray, modifier, range = null, fill = false, lastPointMarker = false,
+  color = Color.Unspecified)`**.
+- The four Chart composables share one node over Raven's Chart, its kind set by the composable.
+  Their lists are compared by value, each item given to Raven by index (`Rchart_set_slice_value`,
+  `Rchart_set_cell`); value changes glide as Raven makes them.
+- Tests check what reached Raven through its getters, and send the user's slice and cell clicks and
+  drag line moves as Raven's callbacks; no new harness API.
+- The XML translator turns `<Plot>` with `<Series>`, `<Scatter>` and `<DragLine>` into `Plot { }`
+  (a remembered value for each drag line), and `<Chart Kind=...>` into its composable, its
+  `<Slice>`, `<Band>` and `<Row>` children into lists.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -1854,6 +1906,19 @@ Next buttons, Next going back to the first page from the last when it doesn't lo
 example does. No port gaps; the headless test checks each control
 ([Overlays and pagers: Carousel](issues/archive/0242-overlays-and-pagers-carousel.md)).
 
+### `samples/plot` (phase 5)
+
+A port of Raven's `examples/plot`: three live series of 600 points, one on Y2, a new array each
+update; a Bode plot on a log X with fixed, locked Y ranges, `"%g dB"` labels and a cutoff drag line;
+and a million-point random walk on a symlog Y, its view read back through `PlotState`. No port
+gaps; the headless test checks each plot ([Charts: one model for Plot and Chart](issues/archive/0245-charts-one-model-for-plot-and-chart.md)).
+
+### `samples/charts` (phase 5)
+
+A port of Raven's `examples/charts`: sparklines pushed every second, gauges nudged, pie slices
+rescaled in place, and the heatmap retitled from its cell click. No port gaps; the headless test
+checks each chart ([Charts: one model for Plot and Chart](issues/archive/0245-charts-one-model-for-plot-and-chart.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2033,6 +2098,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `HorizontalPager`/`VerticalPager` compose every page, and take `loop`, `indicators`, `arrows` and `autoplay`; no `contentPadding`, `pageSpacing`, `pageSize`, `beyondViewportPageCount`, `flingBehavior`, `key` or `userScrollEnabled` | lazy pages and those parameters; dots, loops and autoplay are the app's to build | [8](#pagers-phase-5) |
 | `PagerState` has only `currentPage`, `pageCount`, `scrollToPage` and `animateScrollToPage` | `currentPageOffsetFraction`, `settledPage`, `targetPage`, `isScrollInProgress` and more | [8](#pagers-phase-5) |
 | `showSnackbar` takes a `kind` (`SnackbarKind`), `SnackbarHost` a `maxVisible` that stacks messages; no `withDismissAction`, `currentSnackbarData` or `snackbar` slot | no kinds, one message at a time, a dismiss button and custom snackbars | [8](#snackbars-phase-5) |
+| `Plot`, `PieChart`, `Gauge`, `Heatmap` and `Sparkline`, drawn by Raven; labels formatted by printf strings; the view and the legend's series visibility are Raven's | no charts (libraries format labels with lambdas, and hoist their views) | [8](#charts-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |

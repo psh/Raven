@@ -53,6 +53,7 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 
 - [Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md): `HorizontalPager` and `VerticalPager` with a small `PagerState`, every page composed, Raven's loop, dots, arrows and autoplay as parameters. Filed as [Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) and [samples/carousel](0254-samples-carousel.md).
 - [Overlays and pagers: Toast](archive/0243-overlays-and-pagers-toast.md): Material 3's `SnackbarHost` and `SnackbarHostState.showSnackbar` over Raven's Toast, with its kinds and stacking, over a Raven change for message ids. Filed as [Raven: toast message ids](0255-raven-toast-message-ids.md), [Propose toast message ids upstream](0256-propose-toast-message-ids-upstream.md) and [Overlays and pagers: SnackbarHost](0257-overlays-and-pagers-snackbarhost.md).
+- [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md): one composable per kind; Plot's series in a keyed DSL over arrays compared by reference, the view Raven's behind a `PlotState`; printf formats; a controlled slice selection; bars ruled out. Filed as [Charts: Plot and PlotState](0259-charts-plot-and-plotstate.md), [samples/plot](0260-samples-plot.md), [Charts: PieChart, Gauge, Heatmap and Sparkline](0261-charts-piechart-gauge-heatmap-and-sparkline.md) and [samples/charts](0262-samples-charts.md).
 - [Printing: Raven's printing and how Kotlin should expose it](0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
 - [The web: how Compose web views shape their APIs](0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](0249-the-web-systemwebview.md).
 - [Charts: how Compose chart libraries shape their APIs](0244-charts-how-compose-chart-libraries-shape-their-apis.md): lists of data classes are the norm, Vico's producer the exception; only Vico and KoalaPlot hoist pan and zoom; Raven's Plot streams by index and owns its view, and has no bar chart; seven trade-offs left for [Charts: one model for Plot and Chart](0245-charts-one-model-for-plot-and-chart.md).
@@ -66,9 +67,16 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
   are decided.
 - **Lazy pages**: composing only the pages near the one shown, for pagers of many pages; today
   every page is composed ([Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md)).
+- **Plot extras**: appends detected, so live data isn't copied whole on each update; series
+  visibility as controlled state rather than Raven's
+  ([Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md)).
 
 ## Out of scope
 
 - **raven_web's `WebView` and the `browser` port**: a separate optional library that drives an
   installed browser; SystemWebView covers web pages in the window. The roadmap's "WebView" for
   `browser` is SystemWebView now.
+- **Bar and column charts**: Raven has no widget for them, so binding one would mean building a
+  Raven widget first, beyond binding what Raven draws. That is
+  [Raven: a bar chart widget, proposed upstream](0258-raven-a-bar-chart-widget-proposed-upstream.md),
+  outside this map.
