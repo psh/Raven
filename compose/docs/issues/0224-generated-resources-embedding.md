@@ -9,7 +9,7 @@ build every file of `composeResources/` into the binary, in place of copying the
 be a single file. Spec: [8: Generated resources](../spec.md#generated-resources-phase-5). Planned
 in [Icons and resources: generated resources](archive/0208-icons-and-resources-generated-resources.md).
 
-**Depends on:** [Generated resources: Res and the plugin](0223-generated-resources-res-and-the-plugin.md).
+**Depends on:** [Generated resources: Res and the plugin](archive/0223-generated-resources-res-and-the-plugin.md).
 
 ## Deliverables
 

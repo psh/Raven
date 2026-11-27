@@ -1,0 +1,1 @@
+Read from composeResources/files/ through Res.readBytes.

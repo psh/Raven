@@ -1261,22 +1261,29 @@ From phase 5 `TreeView`'s expansion is the app's state, over Raven change 14, an
 
 ### Generated resources (phase 5)
 
-- **Layout**: an app keeps its files in Compose Multiplatform's `composeResources/`, under
-  `drawable/`, `font/` and `files/`. There are no strings (`values/strings.xml` waits for
+- **Layout**: an app keeps its files in Compose Multiplatform's `composeResources/`, here
+  `src/nativeMain/composeResources/` (the source set holding the code), under `drawable/`, `font/`
+  and `files/`. There are no strings (`values/strings.xml` waits for
   localisation) and no qualifiers (dark, density, locale): an SVG is redrawn at each density
   already, and the others wait for localisation and theming.
 - **`Res`**: a Gradle convention plugin in `build-logic` (`raven.compose-resources`, applied by the
   samples) generates `Res`, with `Res.drawable.<name>` (`DrawableResource`), `Res.font.<name>`
   (`FontResource`) and `suspend Res.readBytes(path)`. It goes in Compose's default package,
-  `<group>.<module>.generated.resources`, set by `ravenResources { packageOfResClass }`. File names
+  `<group>.<module>.generated.resources`, lowercased with other characters `_` as Compose does
+  (`compose_raven.samples.resources.generated.resources` for `samples/resources`), set by
+  `ravenResources { packageOfResClass }`. File names
   become identifiers by Compose's rules (`ic-arrow back.svg` is `ic_arrow_back`), and two files
   with one name in one kind fail the build. A resource is its path under `composeResources/`.
-- **Shipping**: by default the plugin copies `composeResources/` into the `resources/` folder beside
-  each executable, the default resource root. With `ravenResources { embed = true }` it instead
+- **Shipping**: by default the plugin syncs `composeResources/` into the `resources/` folder beside
+  each executable, test executables too, the default resource root, after linking and before
+  running or testing. With `ravenResources { embed = true }` it instead
   generates the `registerResource` calls that build every file into the binary, for a single-file
   app; Raven finds an embedded file before the resource root, so the code reading them is the same.
-- **Runtime**: `painterResource(res: DrawableResource)`, `Font(res: FontResource, weight, style)` and
-  `Res.readBytes(path)` take Compose's signatures and resolve through Raven's files.
+- **Runtime**, in `raven.compose.ui.res` beside `painterResource(path)`: `DrawableResource`,
+  `FontResource`, `painterResource(res: DrawableResource)` and `@Composable Font(res: FontResource,
+  weight, style)` take Compose's signatures; `Res.readBytes(path)` calls `readResourceBytes(path)`,
+  which reads through Raven's files (`Rfile_read`: the embedded ones, then the resource root) and
+  throws for a file it can't read.
 - **Not yet**: a published Gradle plugin for apps outside this repository goes with the release
   (phase 4). `samples/resources`, a check module and not a port, holds an SVG drawable, a font and
   a file, and tests them copied and embedded

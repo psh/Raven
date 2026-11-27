@@ -79,7 +79,7 @@ samples/notepad/launch-notepad README.md
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-notes`, `launch-overlay`,
 `launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
-`launch-music`, `launch-effects`, `launch-viewport-opengl`, `launch-viewport-vulkan` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
+`launch-music`, `launch-resources`, `launch-effects`, `launch-viewport-opengl`, `launch-viewport-vulkan` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 `samples/notes` is the list of notes every language's samples have. Started with `RAVEN_MCP=1`, it
@@ -136,6 +136,10 @@ two ways: the app's own image shown as a texture, and drawn in Raven's render pa
 way: `./gradlew :samples:viewport-vulkan:runReleaseExecutableMacosArm64`, or `viewport-vulkan.kexe`.
 It compiles against the Vulkan headers Raven's build found or fetched; `-PravenVulkanInclude=<folder>`
 names others.
+
+`samples/resources` isn't a port: it checks Compose's `composeResources/` (a drawable, a font and a
+file, read through the generated `Res`) with the `raven.compose-resources` plugin of `build-logic`,
+which an app of this repository applies to get `Res` and the folder copied beside its executables.
 
 `samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion

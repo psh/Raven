@@ -40,6 +40,7 @@ include(
     ":samples:notepad",
     ":samples:notes",
     ":samples:overlay",
+    ":samples:resources",
     ":samples:themes",
     ":samples:workspace",
     ":samples:xml-translator",
