@@ -18,7 +18,7 @@ check, and what stays out. The answer is the spec section and its implementation
 ## Resolution
 
 Resolved on 2026-11-26 in conversation. Written into spec section 8 (Tray, notifications and
-taskbar) and section 12, and filed as [Small widgets: Tray and notifications](../0231-small-widgets-tray-and-notifications.md)
+taskbar) and section 12, and filed as [Small widgets: Tray and notifications](0231-small-widgets-tray-and-notifications.md)
 and [Small widgets: taskbar progress, badge and Dock menu](../0232-small-widgets-taskbar-progress-badge-and-dock-menu.md),
 in that order.
 

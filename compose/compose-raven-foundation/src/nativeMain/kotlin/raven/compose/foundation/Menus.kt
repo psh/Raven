@@ -42,6 +42,12 @@ public interface MenuScope
 private object MenuBarScopeInstance : MenuBarScope
 private object MenuScopeInstance : MenuScope
 
+/** [content] as a menu's, for the menus composed apart from any window (a tray's, the Dock's). */
+@Composable
+internal fun MenuContent(content: @Composable MenuScope.() -> Unit) {
+    MenuScopeInstance.content()
+}
+
 private val MenuBarWidget = WidgetDescriptor("MenuBar", R_WIDGET_MENU_BAR, ChildKind.Many)
 private val MenuWidget = WidgetDescriptor("Menu", R_WIDGET_MENU, ChildKind.Many)
 private val ItemWidget = WidgetDescriptor("Item", R_WIDGET_MENU_ITEM, events = listOf(MenuItemClicked))

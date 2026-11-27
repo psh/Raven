@@ -8,7 +8,7 @@ Add `Window(taskbarProgress)`, `TaskbarBadge(text)` and `ApplicationScope.DockMe
 Raven's taskbar and Dock. Spec: [8: Tray, notifications and taskbar](../spec.md#tray-notifications-and-taskbar-phase-5)
 and section 12. Planned in [Small widgets: notifications and tray](archive/0213-small-widgets-notifications-and-tray.md).
 
-**Depends on:** [Small widgets: Tray and notifications](0231-small-widgets-tray-and-notifications.md).
+**Depends on:** [Small widgets: Tray and notifications](archive/0231-small-widgets-tray-and-notifications.md).
 
 ## Deliverables
 

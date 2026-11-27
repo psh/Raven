@@ -761,12 +761,18 @@ they take no icons. Each is controlled.
 - **`ApplicationScope.Tray(icon: Painter, state = rememberTrayState(), tooltip: String? = null, onAction = {}, menu: @Composable MenuScope.() -> Unit = {})`**,
   Compose Desktop's shape over `Rtray_*`: the menu is made of the menu composables (`Item`,
   `CheckboxItem`, `Menu`, `Separator`); the icon is pixels, so only a `painterResource` can be one,
-  as for `Window(icon)`. While a tray is in the composition the app keeps running after its last
-  window closes, Raven's own rule. Where the system shows none (`Rtray_is_supported`), it does
-  nothing, with a warning.
+  as for `Window(icon)`, and another painter leaves it empty, with a warning. `onAction` is
+  Raven's clicked callback for the left button (the system shows the menu for the right one).
+  While a tray is in the composition the app keeps running after its last window closes, Raven's
+  own rule (the null window system takes a tray too, so the tests see it). Where the system shows
+  none (`Rtray_is_supported`), or refuses one, it does nothing, with a warning.
+  - The menu is a Raven Menu with no parent, composed in a composition of its own
+    (`rememberDetachedMenu`, internal API in compose-raven-ui) with the locals of where the tray
+    is; the Dock menu is made the same way.
 - **Notifications**: `TrayState.sendNotification(Notification(title, message, type))`, as Compose
   Desktop's, and `ApplicationScope.sendNotification(notification)` for an app with no tray, over
-  `Rnotification_show`; `Notification.Type` (None, Info, Warning, Error) maps to Raven's urgency.
+  `Rnotification_show`; `Notification.Type` maps to Raven's urgency: None to low, Info and Warning
+  to normal, Error to critical.
   Each returns whether the system took it, so an app can show its own message where it didn't.
   Raven's clicked callback, Windows only, isn't bound.
 - **Taskbar and Dock**: `Window(taskbarProgress: TaskbarProgress? = null)` (`Normal(value)`,
@@ -775,8 +781,8 @@ they take no icons. Each is controlled.
   when it leaves the composition, the last composed winning; `ApplicationScope.DockMenu { }`, the
   Dock icon's menu on macOS (`Rtaskbar_set_menu`), nothing elsewhere. Windows' jump list goes with
   the Windows target.
-- **Tests** record Raven's calls through a seam, as for the window operations, since the headless
-  window system shows none of it
+- **Tests** record Raven's calls through a seam (`ShellCalls` in foundation, `WindowCalls` for the
+  progress), as for the window operations, since the headless window system shows none of it
   ([Small widgets: notifications and tray](issues/archive/0213-small-widgets-notifications-and-tray.md)).
 
 ### ColorPicker (phase 3)

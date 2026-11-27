@@ -8,13 +8,13 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-27, with CodeEditor's phase 5 extras and Raven's token colours per editor (1,704 functions with its three).*
+*Last updated 2026-11-27, when the tray and notifications were bound.*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 536 of 1,704 (31%) |
+| Functions used | 370 of 1,157 (31%) | 544 of 1,704 (31%) |
 | Widget types bound | 36 of 51 | 42 of 58 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
@@ -44,8 +44,8 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_widget.h` | 54 | 81 | 67% | getters, style classes, free-form slots, drop targets on widgets |
 | `raven_xml.h` | 15 | 64 | 23% | the XML loader, replaced by the composition; `compose-raven-xml` reads documents with Raven's parser |
 | `raven_layout.h` | 34 | 61 | 56% | Switcher, SizeBox, Spacer (Compose idioms), layout direction |
-| `raven_shell.h` | 23 | 60 | 38% | tray, taskbar, parts of the header bar and dock area |
-| `raven_dialogs.h` | 26 | 47 | 55% | popups, system notifications |
+| `raven_shell.h` | 30 | 60 | 50% | taskbar, the tray's title and position, parts of the header bar and dock area |
+| `raven_dialogs.h` | 27 | 47 | 57% | popups; notifications with buttons, tags, icons and callbacks (`Rnotification_show_desc`) |
 | `raven_resources.h` | 18 | 36 | 50% | SVG, async and URL textures, animated images, text measuring |
 | `raven_locale.h` | 0 | 33 | 0% | translation, locales, dates and time zones |
 | `raven_testing.h` | 0 | 30 | 0% | C UI tests (the Kotlin harness replaces them) |
@@ -64,7 +64,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
 | `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
-| **Total** | **536** | **1,704** | **31%** | |
+| **Total** | **544** | **1,704** | **31%** | |
 
 ## Not needed by design
 
@@ -123,7 +123,7 @@ Found while doing them:
   roadmap under phase 5 gestures.
 - **Drag and drop inside the app**: no drag source (`Rdrag_begin`) and no drop target on a widget
   (`Rwidget_set_drop_callback`); only files dropped on the window from outside. Phase 5 gestures.
-- **Toasts, system notifications, tray, taskbar badges and jump lists**: about 25, none bound.
+- **Toasts, taskbar badges and jump lists**: the tray and plain system notifications are bound ([Small widgets: Tray and notifications](issues/archive/0231-small-widgets-tray-and-notifications.md)); Toast, the taskbar and the jump list aren't yet.
 - **Raven popups** (`Rpopup_open`): on the phase 5 list.
 
 ### Widgets with no composable

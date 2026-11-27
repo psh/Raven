@@ -38,8 +38,9 @@ public abstract class Painter internal constructor() {
     @InternalComposeRavenApi
     public open fun addViewer(widget: Rid) {}
 
-    /** The pixels of the whole image, for a window icon; null when they can't be read back. */
-    internal open fun readPixels(): Pixels? = null
+    /** The pixels of the whole image, for a window or tray icon; null when they can't be read back. */
+    @InternalComposeRavenApi
+    public open fun readPixels(): Pixels? = null
 
     /**
      * This image as a mask, its alpha only, which `Icon` draws so that its tint gives exactly its
@@ -58,7 +59,8 @@ public data class TextureRegion(val minU: Float, val minV: Float, val maxU: Floa
 }
 
 /** Straight RGBA pixels, row by row from the top. */
-internal class Pixels(val width: Int, val height: Int, val rgba: ByteArray)
+@InternalComposeRavenApi
+public class Pixels(public val width: Int, public val height: Int, public val rgba: ByteArray)
 
 /**
  * Shows [image], or the part of it [srcSize] pixels large at [srcOffset], for a sprite sheet or an
