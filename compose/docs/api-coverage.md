@@ -140,7 +140,7 @@ Found while doing them:
 | MapView | 34 | raster slippy-map tiles with markers; compose-raven's `MapView` binds the vector `Map` widget instead | charted: batch 8 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | DiffView | 32 | two texts or a patch compared | designed: [Documents: DiffView](issues/0266-documents-diffview.md) |
 | TileView | 29 | virtualised grid of items. With lazy virtualisation | designed: [Lists at scale: TileView](issues/0236-lists-at-scale-tileview.md) |
-| SystemWebView | 19 | the system's web engine in a view | charted: batch 7 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| SystemWebView | 19 | the system's web engine in a view | designed: [The web: WebView and WebViewState](issues/0269-the-web-webview-and-webviewstate.md) |
 | Carousel | 17 | pages swiped one at a time | designed: [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) |
 | TimePicker | 15 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
 | DatePicker | 13 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |

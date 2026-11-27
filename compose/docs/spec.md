@@ -1351,6 +1351,35 @@ between the changes ([Documents: DiffView](issues/archive/0248-documents-diffvie
 - The XML translator turns `<DiffView>` into `DiffView(...)`: `LeftSource`/`RightSource` as
   `DiffContent.Files`, `<Left>`/`<Right>` as `.Texts`, `<Patch>` or `PatchSource` as `.Patch`.
 
+### WebView (phase 5)
+
+Web pages shown by the system's engine (WKWebView, WebView2) over Raven's SystemWebView, with one
+`WebViewState` for what is observed and the commands ([The web: SystemWebView](issues/archive/0249-the-web-systemwebview.md), from [The web: how Compose web views shape their APIs](issues/archive/0246-the-web-how-compose-web-views-shape-their-apis.md)).
+
+- **`WebView(state: WebViewState, modifier = Modifier, onMessage: (String) -> Unit = {})`**. Raven
+  keeps a native view over the widget, following its place, size and visibility, clipped to a
+  scroll box. `onMessage` receives what the page sends with `window.raven.postMessage(value)`: a
+  string as it was sent, anything else as JSON. Every page the view shows can send one: check it as
+  any input.
+- **`WebViewState`** (`rememberWebViewState(url)`, `rememberWebViewStateWithHtml(html, baseUrl)`):
+  observable `url`, `title`, `isLoading`, `error`, `canGoBack` and `canGoForward`, read again on each
+  of Raven's events (which carry nothing); and the commands `loadUrl`, `loadHtml(html, baseUrl)`,
+  `loadFile(path)`, `reload`, `stop`, `goBack`, `goForward`, and `suspend
+  evaluateJavaScript(script): String`, the JSON of the script's last value (a promise awaited),
+  throwing `WebViewScriptException(message)` with Raven's error. The URL isn't a controlled
+  parameter: the state loads it, and follows the page.
+- **No progress**: `isLoading` only, as Raven reports.
+- **Where the system has no engine** (Linux, headless runs, Windows without WebView2's runtime) the
+  same composable shows Raven's message, `url` keeps what it was given and scripts throw;
+  `WebView.isSupported` tells which.
+- **Raven can't draw over the view**: menus, popups and tooltips that cross it go under it.
+- Not bound: navigation interception, replies to the page, the native view's handle, and the back
+  key.
+- Tests are headless: the unsupported path's state and scripts, and Raven's events and messages sent
+  as its callbacks; no new harness API.
+- The XML translator turns `<SystemWebView>` into `WebView(rememberWebViewState...)` from its
+  source, URL or HTML, with a comment where the app handles the page's messages.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -1981,6 +2010,16 @@ context controls, the whitespace and case toggles, Previous and Next with "chang
 note added where a line is clicked. The two files are read from Raven's `examples/diff_view` at a
 path the build writes into the sample. No port gaps; the headless test checks each control ([Documents: DiffView](issues/archive/0248-documents-diffview.md)).
 
+### `samples/web-view` (phase 5)
+
+A port of Raven's `examples/web_view`: Back, Forward (enabled from the state), Reload and Home; an
+address field loading on Enter; the title and the loading or error status; a colour picker setting
+a CSS variable of the bundled `welcome.html` through `evaluateJavaScript`; "Ask the page for its
+size" and its answer; and a log of the page's messages. The page is read from Raven's
+`examples/web_view/pages` at a path the build writes into the sample. Without an engine it shows
+Raven's message. No port gaps; the headless test checks the controls on the unsupported path
+([The web: SystemWebView](issues/archive/0249-the-web-systemwebview.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2170,6 +2209,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `Plot`, `PieChart`, `Gauge`, `Heatmap` and `Sparkline`, drawn by Raven; labels formatted by printf strings; the view and the legend's series visibility are Raven's | no charts (libraries format labels with lambdas, and hoist their views) | [8](#charts-phase-5) |
 | `PdfView` with a `PdfViewState`; no search | no PDF view | [8](#pdfview-phase-5) |
 | `DiffView` with a `DiffViewState` whose `currentChange` follows navigation only; Raven's rows unbound | no diff view | [8](#diffview-phase-5) |
+| `WebView(state)` with one `WebViewState` for observed values and commands; no progress, interception, replies, native handle or back key; popups go under the view | compose-webview-multiplatform's `WebViewState` and `WebViewNavigator`, loading progress, a request interceptor and a JS bridge with replies | [8](#webview-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |

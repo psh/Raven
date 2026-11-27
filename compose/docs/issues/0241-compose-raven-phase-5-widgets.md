@@ -56,6 +56,7 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 - [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md): one composable per kind; Plot's series in a keyed DSL over arrays compared by reference, the view Raven's behind a `PlotState`; printf formats; a controlled slice selection; bars ruled out. Filed as [Charts: Plot and PlotState](0259-charts-plot-and-plotstate.md), [samples/plot](0260-samples-plot.md), [Charts: PieChart, Gauge, Heatmap and Sparkline](0261-charts-piechart-gauge-heatmap-and-sparkline.md) and [samples/charts](0262-samples-charts.md).
 - [Documents: PdfView](archive/0247-documents-pdfview.md): `PdfView(source, state, password)` with a saveable `PdfViewState` (page, zoom and fit observable, over a Raven zoom callback), no search; the `pdf` port moved to batch ten. Filed as [Raven: PDF view zoom callback](0263-raven-pdf-view-zoom-callback.md), [Propose PDF view zoom callback upstream](0264-propose-pdf-view-zoom-callback-upstream.md) and [Documents: PdfView](0265-documents-pdfview.md).
 - [Documents: DiffView](archive/0248-documents-diffview.md): `DiffView(content: DiffContent, ...)` (texts, files or a patch) with the options as parameters, notes as a list, and a `DiffViewState` for navigation; `unifiedDiff` and `countChanges`. Filed as [Documents: DiffView](0266-documents-diffview.md) and [samples/diff-view](0267-samples-diff-view.md).
+- [The web: SystemWebView](archive/0249-the-web-systemwebview.md): `WebView(state, onMessage)` with one `WebViewState` (observed values and commands), scripts as a suspend call that throws, raw messages, the same composable where there is no engine. Filed as [The web: WebView and WebViewState](0269-the-web-webview-and-webviewstate.md) and [samples/web-view](0270-samples-web-view.md).
 - [Printing: Raven's printing and how Kotlin should expose it](archive/0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
 - [The web: how Compose web views shape their APIs](archive/0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](0249-the-web-systemwebview.md).
 - [Charts: how Compose chart libraries shape their APIs](archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md): lists of data classes are the norm, Vico's producer the exception; only Vico and KoalaPlot hoist pan and zoom; Raven's Plot streams by index and owns its view, and has no bar chart; seven trade-offs left for [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md).
@@ -74,6 +75,11 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
   ([Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md)).
 - **Search in a PDF**: finding text and highlighting the matches, which needs a Raven change; today
   only a page's text is given ([Documents: PdfView](archive/0247-documents-pdfview.md)).
+- **Web view extras**: calls from the page that wait for a reply (a layer over
+  `evaluateJavaScript`, no C change); intercepting a navigation (a Raven change crossing into
+  Kotlin on the UI thread); menus and popups over the view (hiding it while one is open, or Raven
+  compositing); the native view's handle from common Kotlin
+  ([The web: SystemWebView](archive/0249-the-web-systemwebview.md)).
 
 ## Out of scope
 
