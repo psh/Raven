@@ -924,7 +924,7 @@ RToken rvn_token_public(rvn_token_t token) {
 	return token < RVN_TOKEN_COUNT ? g_public_tokens[token] : R_TOKEN_TEXT;
 }
 
-static int rvn_token_internal(RToken token, rvn_token_t* internal) {
+int rvn_token_internal(RToken token, rvn_token_t* internal) {
 	int i;
 	for (i = 1; i < RVN_TOKEN_COUNT; i++) {
 		if (g_public_tokens[i] == token) {

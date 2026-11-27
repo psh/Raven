@@ -1100,6 +1100,9 @@ static struct {
 	void (*Rtheme_set_token_color)(RToken, float, float, float, float);
 	void (*Rtheme_get_token_color)(RToken, float*, float*, float*, float*);
 	void (*Rtheme_clear_token_colors)(void);
+	void (*Rtext_editor_set_token_color)(Rid, RToken, float, float, float, float);
+	void (*Rtext_editor_clear_token_colors)(Rid);
+	void (*Rtext_editor_get_token_color)(Rid, RToken, float*, float*, float*, float*);
 	void (*Rtext_editor_set_changed_callback)(Rid, RTextEditorChangedCallback, void*);
 	Rid (*Rheader_bar_create)(const char*);
 	void (*Rheader_bar_set_title)(Rid, const char*);
@@ -2768,6 +2771,9 @@ static const struct {
 	{"Rtheme_set_token_color", offsetof(__typeof__(rn), Rtheme_set_token_color)},
 	{"Rtheme_get_token_color", offsetof(__typeof__(rn), Rtheme_get_token_color)},
 	{"Rtheme_clear_token_colors", offsetof(__typeof__(rn), Rtheme_clear_token_colors)},
+	{"Rtext_editor_set_token_color", offsetof(__typeof__(rn), Rtext_editor_set_token_color)},
+	{"Rtext_editor_clear_token_colors", offsetof(__typeof__(rn), Rtext_editor_clear_token_colors)},
+	{"Rtext_editor_get_token_color", offsetof(__typeof__(rn), Rtext_editor_get_token_color)},
 	{"Rtext_editor_set_changed_callback", offsetof(__typeof__(rn), Rtext_editor_set_changed_callback)},
 	{"Rheader_bar_create", offsetof(__typeof__(rn), Rheader_bar_create)},
 	{"Rheader_bar_set_title", offsetof(__typeof__(rn), Rheader_bar_set_title)},
@@ -23346,6 +23352,72 @@ static napi_value rn_w_Rtheme_clear_token_colors(napi_env env, napi_callback_inf
 	return result_;
 }
 
+static napi_value rn_w_Rtext_editor_set_token_color(napi_env env, napi_callback_info info) {
+	size_t argc = 6;
+	napi_value argv[6];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	if (!rn_get_float(env, argv[2], &a2)) return NULL;
+	if (!rn_get_float(env, argv[3], &a3)) return NULL;
+	if (!rn_get_float(env, argv[4], &a4)) return NULL;
+	if (!rn_get_float(env, argv[5], &a5)) return NULL;
+	rn.Rtext_editor_set_token_color((Rid)a0, (RToken)a1, (float)a2, (float)a3, (float)a4, (float)a5);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_clear_token_colors(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	rn.Rtext_editor_clear_token_colors((Rid)a0);
+	return result_;
+}
+
+static napi_value rn_w_Rtext_editor_get_token_color(napi_env env, napi_callback_info info) {
+	size_t argc = 2;
+	napi_value argv[2];
+	napi_value result_ = NULL;
+	(void)env;
+	uint32_t a0;
+	int a1;
+	float a2 = 0;
+	float a3 = 0;
+	float a4 = 0;
+	float a5 = 0;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_get_uint32(env, argv[0], &a0)) return NULL;
+	if (!rn_get_int(env, argv[1], &a1)) return NULL;
+	rn.Rtext_editor_get_token_color((Rid)a0, (RToken)a1, &a2, &a3, &a4, &a5);
+	{
+		napi_value o0_;
+		napi_create_double(env, (double)a2, &o0_);
+		napi_value o1_;
+		napi_create_double(env, (double)a3, &o1_);
+		napi_value o2_;
+		napi_create_double(env, (double)a4, &o2_);
+		napi_value o3_;
+		napi_create_double(env, (double)a5, &o3_);
+		{
+			const napi_value values_[4] = {o0_, o1_, o2_, o3_};
+			result_ = rn_tuple(env, 4, values_);
+		}
+	}
+	return result_;
+}
+
 static napi_value rn_w_Rtext_editor_set_changed_callback(napi_env env, napi_callback_info info) {
 	size_t argc = 3;
 	napi_value argv[3];
@@ -34630,6 +34702,9 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtheme_set_token_color", NULL, rn_w_Rtheme_set_token_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_get_token_color", NULL, rn_w_Rtheme_get_token_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtheme_clear_token_colors", NULL, rn_w_Rtheme_clear_token_colors, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_set_token_color", NULL, rn_w_Rtext_editor_set_token_color, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_clear_token_colors", NULL, rn_w_Rtext_editor_clear_token_colors, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtext_editor_get_token_color", NULL, rn_w_Rtext_editor_get_token_color, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtext_editor_set_changed_callback", NULL, rn_w_Rtext_editor_set_changed_callback, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rheader_bar_create", NULL, rn_w_Rheader_bar_create, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rheader_bar_set_title", NULL, rn_w_Rheader_bar_set_title, NULL, NULL, NULL, napi_enumerable, NULL},

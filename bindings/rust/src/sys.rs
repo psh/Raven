@@ -5172,6 +5172,15 @@ extern "C" {
     pub fn Rtheme_get_token_color(token: RToken, r: *mut f32, g: *mut f32, b: *mut f32, a: *mut f32);
     /// Back to the colors Raven picks.
     pub fn Rtheme_clear_token_colors();
+    /// Color of a kind of token in this editor only. It wins over the
+    /// editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+    /// color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+    /// which is the color of the text) is an error.
+    pub fn Rtext_editor_set_token_color(editor: Rid, token: RToken, r: f32, g: f32, b: f32, a: f32);
+    /// Forgets the editor's own colors of tokens: its theme's are used again.
+    pub fn Rtext_editor_clear_token_colors(editor: Rid);
+    /// The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+    pub fn Rtext_editor_get_token_color(editor: Rid, token: RToken, r: *mut f32, g: *mut f32, b: *mut f32, a: *mut f32);
     pub fn Rtext_editor_set_changed_callback(editor: Rid, callback: RTextEditorChangedCallback, user_data: *mut c_void);
     /// title Text shown in the bar; NULL shows the title of the window.
     pub fn Rheader_bar_create(title: *const c_char) -> Rid;

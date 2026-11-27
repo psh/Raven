@@ -24896,6 +24896,62 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rtext_editor_set_token_color$;
+
+    /**
+     * Color of a kind of token in this editor only. It wins over the
+     * editor's theme (a theme file's &lt;Syntax&gt;, Rtheme_set_token_color, the
+     * color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+     * which is the color of the text) is an error.
+     */
+    public static void Rtext_editor_set_token_color(int editor, int token, float r, float g, float b, float a) {
+        MethodHandle $h = Rtext_editor_set_token_color$;
+        if ($h == null) Rtext_editor_set_token_color$ = $h = find("Rtext_editor_set_token_color", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT, JAVA_FLOAT));
+        try {
+            $h.invokeExact(editor, token, r, g, b, a);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rtext_editor_clear_token_colors$;
+
+    /**
+     * Forgets the editor's own colors of tokens: its theme's are used again.
+     */
+    public static void Rtext_editor_clear_token_colors(int editor) {
+        MethodHandle $h = Rtext_editor_clear_token_colors$;
+        if ($h == null) Rtext_editor_clear_token_colors$ = $h = find("Rtext_editor_clear_token_colors", FunctionDescriptor.ofVoid(JAVA_INT));
+        try {
+            $h.invokeExact(editor);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rtext_editor_get_token_color$;
+
+    /**
+     * The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+     */
+    public static void Rtext_editor_get_token_color(int editor, int token, float[] r, float[] g, float[] b, float[] a) {
+        MethodHandle $h = Rtext_editor_get_token_color$;
+        if ($h == null) Rtext_editor_get_token_color$ = $h = find("Rtext_editor_get_token_color", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment r$ = r == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment g$ = g == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment b$ = b == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            MemorySegment a$ = a == null ? MemorySegment.NULL : $a.allocate(JAVA_FLOAT);
+            $h.invokeExact(editor, token, r$, g$, b$, a$);
+            if (r != null && r.length > 0) r[0] = r$.get(JAVA_FLOAT, 0);
+            if (g != null && g.length > 0) g[0] = g$.get(JAVA_FLOAT, 0);
+            if (b != null && b.length > 0) b[0] = b$.get(JAVA_FLOAT, 0);
+            if (a != null && a.length > 0) a[0] = a$.get(JAVA_FLOAT, 0);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rtext_editor_set_changed_callback$;
 
     public static void Rtext_editor_set_changed_callback(int editor, RTextEditorChangedCallback callback, MemorySegment user_data) {

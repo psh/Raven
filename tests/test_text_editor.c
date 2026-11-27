@@ -3115,6 +3115,80 @@ static void test_fold_wrap(void) {
 	Rwindow_destroy(g_window);
 }
 
+/* ---- colors of tokens per editor ---- */
+
+static void token_color(Rid editor, RToken token, float* rgba) {
+	Rtext_editor_get_token_color(editor, token, &rgba[0], &rgba[1], &rgba[2], &rgba[3]);
+}
+
+static void test_token_colors(void) {
+	static const char xml[] =
+		"<Window Width=\"400\" Height=\"300\"><VBox>"
+		"<TextEditor Name=\"a\" Language=\"C\" Text=\"int main(void) { return 0; }\"/>"
+		"<TextEditor Name=\"b\" Language=\"C\" Text=\"int main(void) { return 0; }\"/>"
+		"</VBox></Window>";
+	float a[4], b[4], theme[4], string[4];
+	Rid editor_a, editor_b;
+	g_window = Rwindow_create_from_xml(xml, strlen(xml));
+	CHECK(Rwindow_is_valid(g_window));
+	editor_a = Rwidget_find(g_window, "a");
+	editor_b = Rwidget_find(g_window, "b");
+	Rdraw_frame();
+	/* "return" is a keyword in both */
+	CHECK(Rtext_editor_get_token(editor_a, 0, 17) == R_TOKEN_KEYWORD);
+	CHECK(Rtext_editor_get_token(editor_b, 0, 17) == R_TOKEN_KEYWORD);
+	token_color(editor_a, R_TOKEN_KEYWORD, a);
+	token_color(editor_b, R_TOKEN_KEYWORD, b);
+	Rtheme_get_token_color(R_TOKEN_KEYWORD, &theme[0], &theme[1], &theme[2], &theme[3]);
+	CHECK_NEAR(a[0], theme[0]);
+	CHECK_NEAR(a[2], theme[2]);
+	CHECK_NEAR(b[1], theme[1]);
+	token_color(editor_a, R_TOKEN_STRING, string);
+
+	/* one editor's own keyword color */
+	Rtext_editor_set_token_color(editor_a, R_TOKEN_KEYWORD, 1.0f, 0.0f, 0.0f, 1.0f);
+	Rdraw_frame();
+	token_color(editor_a, R_TOKEN_KEYWORD, a);
+	token_color(editor_b, R_TOKEN_KEYWORD, b);
+	CHECK_NEAR(a[0], 1.0f);
+	CHECK_NEAR(a[1], 0.0f);
+	CHECK_NEAR(a[2], 0.0f);
+	CHECK_NEAR(b[0], theme[0]);
+	CHECK_NEAR(b[2], theme[2]);
+	/* the other kinds keep the theme's */
+	token_color(editor_a, R_TOKEN_STRING, a);
+	CHECK_NEAR(a[0], string[0]);
+	CHECK_NEAR(a[1], string[1]);
+
+	/* it wins over the theme's own color too */
+	Rtheme_set_token_color(R_TOKEN_KEYWORD, 0.0f, 0.0f, 1.0f, 1.0f);
+	token_color(editor_a, R_TOKEN_KEYWORD, a);
+	token_color(editor_b, R_TOKEN_KEYWORD, b);
+	CHECK_NEAR(a[0], 1.0f);
+	CHECK_NEAR(b[2], 1.0f);
+	CHECK_NEAR(b[0], 0.0f);
+
+	/* cleared, the editor has its theme's again */
+	Rtext_editor_clear_token_colors(editor_a);
+	token_color(editor_a, R_TOKEN_KEYWORD, a);
+	CHECK_NEAR(a[0], 0.0f);
+	CHECK_NEAR(a[2], 1.0f);
+	Rtheme_clear_token_colors();
+	token_color(editor_a, R_TOKEN_KEYWORD, a);
+	CHECK_NEAR(a[0], theme[0]);
+	CHECK_NEAR(a[2], theme[2]);
+
+	/* an invalid kind of token is an error, and changes nothing */
+	EXPECT_ERRORS_BEGIN();
+	Rtext_editor_set_token_color(editor_a, R_TOKEN_TEXT, 1.0f, 0.0f, 0.0f, 1.0f);
+	Rtext_editor_set_token_color(editor_a, (RToken)12345, 1.0f, 0.0f, 0.0f, 1.0f);
+	EXPECT_ERRORS_END(2);
+	token_color(editor_a, R_TOKEN_KEYWORD, a);
+	CHECK_NEAR(a[0], theme[0]);
+	Rdraw_frame();
+	Rwindow_destroy(g_window);
+}
+
 int main(void) {
 	if (!test_init(0)) return 1;
 
@@ -3156,6 +3230,7 @@ int main(void) {
 	RUN(test_fold_view);
 	RUN(test_fold_edits);
 	RUN(test_fold_wrap);
+	RUN(test_token_colors);
 
 	Rshutdown();
 	return test_report("test_text_editor");

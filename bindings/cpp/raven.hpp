@@ -1712,6 +1712,18 @@ public:
 	/// by default. XML: FindBar="false".
 	void set_find_bar(int enabled) const { Rtext_editor_set_find_bar(id_, enabled); }
 
+	/// Color of a kind of token in this editor only. It wins over the
+	/// editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+	/// color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+	/// which is the color of the text) is an error.
+	void set_token_color(RToken token, float r, float g, float b, float a) const { Rtext_editor_set_token_color(id_, token, r, g, b, a); }
+
+	/// Forgets the editor's own colors of tokens: its theme's are used again.
+	void clear_token_colors() const { Rtext_editor_clear_token_colors(id_); }
+
+	/// The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+	void get_token_color(RToken token, float* r, float* g, float* b, float* a) const { Rtext_editor_get_token_color(id_, token, r, g, b, a); }
+
 	void set_changed_callback(RTextEditorChangedCallback callback, void* user_data) const { Rtext_editor_set_changed_callback(id_, callback, user_data); }
 	void set_changed_callback(std::function<void(Rid)> callback) const {
 		Rtext_editor_set_changed_callback(id_, [](Rid editor, void* kept_) -> void { return (*static_cast<std::function<void(Rid)>*>(kept_))(editor); }, detail::keep(id_, 32, std::move(callback)));

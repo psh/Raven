@@ -5450,6 +5450,15 @@ void Rtheme_set_token_color(RToken token, float r, float g, float b, float a);
 void Rtheme_get_token_color(RToken token, float* r, float* g, float* b, float* a);
 /// Back to the colors Raven picks.
 void Rtheme_clear_token_colors();
+/// Color of a kind of token in this editor only. It wins over the
+/// editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+/// color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+/// which is the color of the text) is an error.
+void Rtext_editor_set_token_color(Rid editor, RToken token, float r, float g, float b, float a);
+/// Forgets the editor's own colors of tokens: its theme's are used again.
+void Rtext_editor_clear_token_colors(Rid editor);
+/// The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+void Rtext_editor_get_token_color(Rid editor, RToken token, float* r, float* g, float* b, float* a);
 void Rtext_editor_set_changed_callback(Rid editor, RTextEditorChangedCallback callback, void* user_data);
 /// title Text shown in the bar; NULL shows the title of the window.
 Rid Rheader_bar_create(const(char)* title);

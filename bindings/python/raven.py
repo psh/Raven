@@ -13702,6 +13702,41 @@ def Rtheme_clear_token_colors():
     _lib.Rtheme_clear_token_colors()
 
 
+_lib.Rtext_editor_set_token_color.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]
+_lib.Rtext_editor_set_token_color.restype = None
+
+
+def Rtext_editor_set_token_color(editor, token, r, g, b, a):
+    """Color of a kind of token in this editor only. It wins over the
+    editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+    color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+    which is the color of the text) is an error."""
+    _lib.Rtext_editor_set_token_color(editor, int(token), r, g, b, a)
+
+
+_lib.Rtext_editor_clear_token_colors.argtypes = [ctypes.c_uint32]
+_lib.Rtext_editor_clear_token_colors.restype = None
+
+
+def Rtext_editor_clear_token_colors(editor):
+    """Forgets the editor's own colors of tokens: its theme's are used again."""
+    _lib.Rtext_editor_clear_token_colors(editor)
+
+
+_lib.Rtext_editor_get_token_color.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+_lib.Rtext_editor_get_token_color.restype = None
+
+
+def Rtext_editor_get_token_color(editor, token):
+    """The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind."""
+    r_ = ctypes.c_float()
+    g_ = ctypes.c_float()
+    b_ = ctypes.c_float()
+    a_ = ctypes.c_float()
+    _lib.Rtext_editor_get_token_color(editor, int(token), ctypes.byref(r_), ctypes.byref(g_), ctypes.byref(b_), ctypes.byref(a_))
+    return (r_.value, g_.value, b_.value, a_.value)
+
+
 _lib.Rtext_editor_set_changed_callback.argtypes = [ctypes.c_uint32, RTextEditorChangedCallback, ctypes.c_void_p]
 _lib.Rtext_editor_set_changed_callback.restype = None
 

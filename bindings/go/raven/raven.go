@@ -6870,6 +6870,33 @@ func ThemeClearTokenColors() {
 	C.Rtheme_clear_token_colors()
 }
 
+// TextEditorSetTokenColor: Color of a kind of token in this editor only. It wins over the editor's theme (a
+// theme file's <Syntax>, Rtheme_set_token_color, the color Raven picks); an invalid kind of token
+// (R_TOKEN_TEXT among them, which is the color of the text) is an error.
+func TextEditorSetTokenColor(editor ID, token RToken, r float32, g float32, b float32, a float32) {
+	C.Rtext_editor_set_token_color(C.Rid(editor), C.RToken(token), C.float(r), C.float(g), C.float(b), C.float(a))
+}
+
+// TextEditorClearTokenColors: Forgets the editor's own colors of tokens: its theme's are used again.
+func TextEditorClearTokenColors(editor ID) {
+	C.Rtext_editor_clear_token_colors(C.Rid(editor))
+}
+
+// TextEditorGetTokenColor: The color the editor paints a kind of token in: its own, else its theme's. 0 for
+// an invalid kind.
+func TextEditorGetTokenColor(editor ID, token RToken) (r float32, g float32, b float32, a float32) {
+	var r_ C.float
+	var g_ C.float
+	var b_ C.float
+	var a_ C.float
+	C.Rtext_editor_get_token_color(C.Rid(editor), C.RToken(token), &r_, &g_, &b_, &a_)
+	r = float32(r_)
+	g = float32(g_)
+	b = float32(b_)
+	a = float32(a_)
+	return
+}
+
 // HeaderBarCreate: title Text shown in the bar; NULL shows the title of the window.
 func HeaderBarCreate(title string) ID {
 	title_ := C.CString(title)

@@ -429,6 +429,8 @@ uint8_t rvn_syntax_line(const rvn_language_t* language, const char* text, int le
 	rvn_span_t* spans, int max, int* count);
 /** The public name of a kind of token. */
 RToken rvn_token_public(rvn_token_t token);
+/** The kind of token a public name is; R_FALSE for one that isn't (R_TOKEN_TEXT among them). */
+int rvn_token_internal(RToken token, rvn_token_t* internal);
 /** Color of a token in a theme; `text` is the color of plain text. */
 rvn_color_t rvn_syntax_color(const rvn_theme_t* theme, rvn_token_t token, rvn_color_t text);
 

@@ -14,7 +14,7 @@
 //     Raven, valid until the next call that changes it
 //   - numbers written through a pointer come back as results, after the result of the function
 //
-// 1207 of the 1662 functions of the C API are here, 32 are written by hand (the other files of this
+// 1210 of the 1665 functions of the C API are here, 32 are written by hand (the other files of this
 // folder), and 423 are raw only: call them through the package `raven`, imported as `raw`.
 // Raw only, and why:
 //
@@ -4572,6 +4572,25 @@ theme_get_token_color :: proc(token: Token) -> (r: f32, g: f32, b: f32, a: f32) 
 // Back to the colors Raven picks.
 theme_clear_token_colors :: proc() {
 	raw.Rtheme_clear_token_colors()
+}
+
+// Color of a kind of token in this editor only. It wins over the
+// editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+// color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+// which is the color of the text) is an error.
+text_editor_set_token_color :: proc(editor: Widget, token: Token, r: f32, g: f32, b: f32, a: f32) {
+	raw.Rtext_editor_set_token_color(raw.Rid(editor), raw.RToken(token), r, g, b, a)
+}
+
+// Forgets the editor's own colors of tokens: its theme's are used again.
+text_editor_clear_token_colors :: proc(editor: Widget) {
+	raw.Rtext_editor_clear_token_colors(raw.Rid(editor))
+}
+
+// The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+text_editor_get_token_color :: proc(editor: Widget, token: Token) -> (r: f32, g: f32, b: f32, a: f32) {
+	raw.Rtext_editor_get_token_color(raw.Rid(editor), raw.RToken(token), &r, &g, &b, &a)
+	return
 }
 
 // title Text shown in the bar; NULL shows the title of the window.

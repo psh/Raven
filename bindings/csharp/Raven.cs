@@ -10848,6 +10848,27 @@ namespace Raven
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rtheme_clear_token_colors();
 
+        /// <summary>
+        /// Color of a kind of token in this editor only. It wins over the
+        /// editor's theme (a theme file's &lt;Syntax&gt;, Rtheme_set_token_color, the
+        /// color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+        /// which is the color of the text) is an error.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtext_editor_set_token_color(uint editor, RToken token, float r, float g, float b, float a);
+
+        /// <summary>
+        /// Forgets the editor's own colors of tokens: its theme's are used again.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtext_editor_clear_token_colors(uint editor);
+
+        /// <summary>
+        /// The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtext_editor_get_token_color(uint editor, RToken token, out float r, out float g, out float b, out float a);
+
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rtext_editor_set_changed_callback(uint editor, RTextEditorChangedCallback callback, IntPtr user_data);
 

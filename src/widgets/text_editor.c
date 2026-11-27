@@ -272,6 +272,9 @@ typedef struct rvn_text_editor_t {
 	void* user_data;
 	/** Spell checking, off by default (widgets/spelling.c). */
 	rvn_spelling_t spelling;
+	/** Colors of kinds of token for this editor, over its theme's: those whose bit is in token_mask. */
+	rvn_color_t tokens[RVN_TOKEN_COUNT];
+	uint32_t token_mask;
 } rvn_text_editor_t;
 
 /** What is needed to measure and place text, computed once per function. */
@@ -288,8 +291,10 @@ typedef struct rvn_ed_metrics_t {
 	/** Where the text is drawn, in the widget. */
 	rvn_rect_t area;
 	float bar;
-	/** Theme of the editor: the colors of the code come from it. */
+	/** Theme of the editor: the colors of the code come from it, after the editor's own. */
 	const rvn_theme_t* theme;
+	const rvn_color_t* tokens;
+	uint32_t token_mask;
 	/** The bold and the italic of the font, for formatted text; the font itself otherwise. */
 	Rid bold_id;
 	Rid italic_id;
@@ -1003,6 +1008,8 @@ static void rvn_ed_metrics(const rvn_text_editor_t* ed, rvn_ed_metrics_t* m) {
 	uint32_t count;
 
 	m->theme = rvn_widget_theme(widget);
+	m->tokens = ed->tokens;
+	m->token_mask = ed->token_mask;
 	m->font_id = rvn_ed_font_id(ed);
 	m->font = rvn_font_resolve(m->font_id);
 	m->bold_id = m->italic_id = m->font_id;
@@ -1663,6 +1670,15 @@ static void rvn_ed_unfold_all(rvn_text_editor_t* ed) {
 	rvn_ed_folds_changed(ed);
 }
 
+/* The color of a token: the editor's own, else its theme's; `text` is the color of plain text, whose opacity it keeps. */
+static rvn_color_t rvn_ed_token_color(const rvn_theme_t* theme, const rvn_color_t* tokens, uint32_t mask, rvn_token_t token,
+	rvn_color_t text) {
+	if (token > RVN_TOKEN_TEXT && token < RVN_TOKEN_COUNT && (mask & (1u << token))) {
+		return rvn_color_fade(tokens[token], (float)rvn_color_a(text) / 255.0f);
+	}
+	return rvn_syntax_color(theme, token, text);
+}
+
 /* Draws text[begin..end) of a line at (x, y), tabs expanded, each span in its color. */
 static void rvn_ed_paint_text(RPainter* painter, const rvn_ed_metrics_t* m, const char* text, int begin, int end,
 	float x, float y, const rvn_span_t* spans, int span_count, rvn_color_t color) {
@@ -1679,7 +1695,7 @@ static void rvn_ed_paint_text(RPainter* painter, const rvn_ed_metrics_t* m, cons
 		if (span < span_count) {
 			if (spans[span].start <= i) {
 				rvn_token_t token = (rvn_token_t)spans[span].token;
-				run_color = rvn_syntax_color(m->theme, token, color);
+				run_color = rvn_ed_token_color(m->theme, m->tokens, m->token_mask, token, color);
 				/* formatted text: the styles have the advances of the font, so the columns do not move */
 				if (token == RVN_TOKEN_STRONG || token == RVN_TOKEN_HEADING) font = m->bold_id;
 				else if (token == RVN_TOKEN_EMPHASIS) font = m->italic_id;
@@ -5605,6 +5621,38 @@ void Rtext_editor_hide_find(Rid id) {
 int Rtext_editor_is_find_shown(Rid id) {
 	RVN_EDITOR(ed, id, R_FALSE);
 	return ed->find_open != 0;
+}
+
+/* ---- colors of tokens ---- */
+
+void Rtext_editor_set_token_color(Rid id, RToken token, float r, float g, float b, float a) {
+	rvn_token_t internal;
+	RVN_EDITOR_VOID(ed, id);
+	if (!rvn_token_internal(token, &internal)) {
+		rvn_error(R_ERROR_INVALID_ENUM, R_SEVERITY_ERROR, "Rtext_editor_set_token_color: invalid kind of token");
+		return;
+	}
+	ed->tokens[internal] = rvn_rgba(r, g, b, a);
+	ed->token_mask |= 1u << internal;
+	rvn_widget_invalidate_paint(&ed->base);
+}
+
+void Rtext_editor_clear_token_colors(Rid id) {
+	RVN_EDITOR_VOID(ed, id);
+	if (!ed->token_mask) return;
+	ed->token_mask = 0;
+	rvn_widget_invalidate_paint(&ed->base);
+}
+
+void Rtext_editor_get_token_color(Rid id, RToken token, float* r, float* g, float* b, float* a) {
+	rvn_token_t internal;
+	rvn_color_to_floats(0, r, g, b, a);
+	{
+		RVN_EDITOR_VOID(ed, id);
+		if (!rvn_token_internal(token, &internal)) return;
+		rvn_color_to_floats(rvn_ed_token_color(rvn_widget_theme(widget), ed->tokens, ed->token_mask, internal,
+			rvn_widget_color(widget, R_COLOR_TEXT)), r, g, b, a);
+	}
 }
 
 void Rtext_editor_set_find_bar(Rid id, int enabled) {

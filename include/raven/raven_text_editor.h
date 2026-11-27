@@ -535,6 +535,17 @@ extern "C" {
 	RAVEN_API void Rtheme_get_token_color(RToken token, float* r, float* g, float* b, float* a);
 	/** @brief Back to the colors Raven picks. */
 	RAVEN_API void Rtheme_clear_token_colors(void);
+	/**
+	 * @brief Color of a kind of token in this editor only. It wins over the
+	 * editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+	 * color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+	 * which is the color of the text) is an error.
+	 */
+	RAVEN_API void Rtext_editor_set_token_color(Rid editor, RToken token, float r, float g, float b, float a);
+	/** @brief Forgets the editor's own colors of tokens: its theme's are used again. */
+	RAVEN_API void Rtext_editor_clear_token_colors(Rid editor);
+	/** @brief The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind. */
+	RAVEN_API void Rtext_editor_get_token_color(Rid editor, RToken token, float* r, float* g, float* b, float* a);
 
 	/* ---- callback ---- */
 

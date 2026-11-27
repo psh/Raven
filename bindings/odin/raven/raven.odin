@@ -5125,6 +5125,15 @@ foreign lib {
 	Rtheme_get_token_color :: proc(token: RToken, r: ^f32, g: ^f32, b: ^f32, a: ^f32) ---
 	// Back to the colors Raven picks.
 	Rtheme_clear_token_colors :: proc() ---
+	// Color of a kind of token in this editor only. It wins over the
+	// editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+	// color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+	// which is the color of the text) is an error.
+	Rtext_editor_set_token_color :: proc(editor: Rid, token: RToken, r: f32, g: f32, b: f32, a: f32) ---
+	// Forgets the editor's own colors of tokens: its theme's are used again.
+	Rtext_editor_clear_token_colors :: proc(editor: Rid) ---
+	// The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
+	Rtext_editor_get_token_color :: proc(editor: Rid, token: RToken, r: ^f32, g: ^f32, b: ^f32, a: ^f32) ---
 	Rtext_editor_set_changed_callback :: proc(editor: Rid, callback: RTextEditorChangedCallback, user_data: rawptr) ---
 	// title Text shown in the bar; NULL shows the title of the window.
 	Rheader_bar_create :: proc(title: cstring) -> Rid ---

@@ -1146,6 +1146,9 @@ typedef struct rl_table {
 	void (*Rtheme_set_token_color)(RToken, float, float, float, float);
 	void (*Rtheme_get_token_color)(RToken, float*, float*, float*, float*);
 	void (*Rtheme_clear_token_colors)(void);
+	void (*Rtext_editor_set_token_color)(Rid, RToken, float, float, float, float);
+	void (*Rtext_editor_clear_token_colors)(Rid);
+	void (*Rtext_editor_get_token_color)(Rid, RToken, float*, float*, float*, float*);
 	void (*Rtext_editor_set_changed_callback)(Rid, RTextEditorChangedCallback, void*);
 	Rid (*Rheader_bar_create)(const char*);
 	void (*Rheader_bar_set_title)(Rid, const char*);
@@ -2816,6 +2819,9 @@ static const struct {
 	{"Rtheme_set_token_color", offsetof(rl_table, Rtheme_set_token_color)},
 	{"Rtheme_get_token_color", offsetof(rl_table, Rtheme_get_token_color)},
 	{"Rtheme_clear_token_colors", offsetof(rl_table, Rtheme_clear_token_colors)},
+	{"Rtext_editor_set_token_color", offsetof(rl_table, Rtext_editor_set_token_color)},
+	{"Rtext_editor_clear_token_colors", offsetof(rl_table, Rtext_editor_clear_token_colors)},
+	{"Rtext_editor_get_token_color", offsetof(rl_table, Rtext_editor_get_token_color)},
 	{"Rtext_editor_set_changed_callback", offsetof(rl_table, Rtext_editor_set_changed_callback)},
 	{"Rheader_bar_create", offsetof(rl_table, Rheader_bar_create)},
 	{"Rheader_bar_set_title", offsetof(rl_table, Rheader_bar_set_title)},
@@ -25317,6 +25323,65 @@ static int rl_w_Rtheme_clear_token_colors(lua_State* L) {
 	return results_;
 }
 
+static int rl_w_Rtext_editor_set_token_color(lua_State* L) {
+	uint32_t a0;
+	int a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	int results_ = 0;
+	(void)L;
+	lua_settop(L, 6);
+	a0 = rl_u32(L, 1, NULL);
+	a1 = rl_enum(L, 2, NULL);
+	a2 = (float)rl_number(L, 3, NULL);
+	a3 = (float)rl_number(L, 4, NULL);
+	a4 = (float)rl_number(L, 5, NULL);
+	a5 = (float)rl_number(L, 6, NULL);
+	RL(Rtext_editor_set_token_color)((Rid)a0, (RToken)a1, (float)a2, (float)a3, (float)a4, (float)a5);
+	return results_;
+}
+
+static int rl_w_Rtext_editor_clear_token_colors(lua_State* L) {
+	uint32_t a0;
+	int results_ = 0;
+	(void)L;
+	lua_settop(L, 1);
+	a0 = rl_u32(L, 1, NULL);
+	RL(Rtext_editor_clear_token_colors)((Rid)a0);
+	return results_;
+}
+
+static int rl_w_Rtext_editor_get_token_color(lua_State* L) {
+	uint32_t a0;
+	int a1;
+	float a2;
+	float a3;
+	float a4;
+	float a5;
+	int results_ = 0;
+	(void)L;
+	lua_settop(L, 2);
+	a0 = rl_u32(L, 1, NULL);
+	a1 = rl_enum(L, 2, NULL);
+	memset(&a2, 0, sizeof(a2));
+	memset(&a3, 0, sizeof(a3));
+	memset(&a4, 0, sizeof(a4));
+	memset(&a5, 0, sizeof(a5));
+	RL(Rtext_editor_get_token_color)((Rid)a0, (RToken)a1, &a2, &a3, &a4, &a5);
+	luaL_checkstack(L, 6, "raven");
+	lua_pushnumber(L, (lua_Number)a2);
+	results_++;
+	lua_pushnumber(L, (lua_Number)a3);
+	results_++;
+	lua_pushnumber(L, (lua_Number)a4);
+	results_++;
+	lua_pushnumber(L, (lua_Number)a5);
+	results_++;
+	return results_;
+}
+
 static int rl_w_Rtext_editor_set_changed_callback(lua_State* L) {
 	uint32_t a0;
 	void* a2;
@@ -35875,6 +35940,9 @@ static const luaL_Reg rl_functions[] = {
 	{"Rtheme_set_token_color", rl_w_Rtheme_set_token_color},
 	{"Rtheme_get_token_color", rl_w_Rtheme_get_token_color},
 	{"Rtheme_clear_token_colors", rl_w_Rtheme_clear_token_colors},
+	{"Rtext_editor_set_token_color", rl_w_Rtext_editor_set_token_color},
+	{"Rtext_editor_clear_token_colors", rl_w_Rtext_editor_clear_token_colors},
+	{"Rtext_editor_get_token_color", rl_w_Rtext_editor_get_token_color},
 	{"Rtext_editor_set_changed_callback", rl_w_Rtext_editor_set_changed_callback},
 	{"Rheader_bar_create", rl_w_Rheader_bar_create},
 	{"Rheader_bar_set_title", rl_w_Rheader_bar_set_title},

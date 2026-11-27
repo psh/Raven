@@ -5032,6 +5032,20 @@ fn bool TextEditor.is_find_shown(self) @inline => c::r_text_editor_is_find_shown
 *>
 fn void TextEditor.set_find_bar(self, bool enabled) @inline => c::r_text_editor_set_find_bar((c::Rid)self, (CInt)enabled);
 
+<*
+ Color of a kind of token in this editor only. It wins over the
+ editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+ color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+ which is the color of the text) is an error.
+*>
+fn void TextEditor.set_token_color(self, Token token, float r, float g, float b, float a) @inline => c::r_text_editor_set_token_color((c::Rid)self, (c::RToken)token, r, g, b, a);
+
+<* Forgets the editor's own colors of tokens: its theme's are used again. *>
+fn void TextEditor.clear_token_colors(self) @inline => c::r_text_editor_clear_token_colors((c::Rid)self);
+
+<* The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind. *>
+fn void TextEditor.get_token_color(self, Token token, float* r, float* g, float* b, float* a) @inline => c::r_text_editor_get_token_color((c::Rid)self, (c::RToken)token, r, g, b, a);
+
 fn void TextEditor.set_changed_callback(self, TextEditorChangedCallback callback, void* user_data) @inline => c::r_text_editor_set_changed_callback((c::Rid)self, (c::RTextEditorChangedCallback)callback, user_data);
 
 // ---- HeaderBar

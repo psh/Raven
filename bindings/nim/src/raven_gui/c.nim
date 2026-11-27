@@ -5143,6 +5143,15 @@ proc Rtheme_set_token_color*(token: RToken, r: cfloat, g: cfloat, b: cfloat, a: 
 proc Rtheme_get_token_color*(token: RToken, r: ptr cfloat, g: ptr cfloat, b: ptr cfloat, a: ptr cfloat) {.rapi.}
 proc Rtheme_clear_token_colors*() {.rapi.}
   ## Back to the colors Raven picks.
+proc Rtext_editor_set_token_color*(editor: Rid, token: RToken, r: cfloat, g: cfloat, b: cfloat, a: cfloat) {.rapi.}
+  ## Color of a kind of token in this editor only. It wins over the
+  ## editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+  ## color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+  ## which is the color of the text) is an error.
+proc Rtext_editor_clear_token_colors*(editor: Rid) {.rapi.}
+  ## Forgets the editor's own colors of tokens: its theme's are used again.
+proc Rtext_editor_get_token_color*(editor: Rid, token: RToken, r: ptr cfloat, g: ptr cfloat, b: ptr cfloat, a: ptr cfloat) {.rapi.}
+  ## The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind.
 proc Rtext_editor_set_changed_callback*(editor: Rid, callback: RTextEditorChangedCallback, user_data: pointer) {.rapi.}
 proc Rheader_bar_create*(title: cstring): Rid {.rapi.}
   ## title Text shown in the bar; NULL shows the title of the window.

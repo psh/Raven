@@ -1224,6 +1224,9 @@ const _symbols = {
 	Rtheme_set_token_color: { args: ["i32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rtheme_get_token_color: { args: ["i32", "ptr", "ptr", "ptr", "ptr"], returns: "void" },
 	Rtheme_clear_token_colors: { args: [], returns: "void" },
+	Rtext_editor_set_token_color: { args: ["u32", "i32", "f32", "f32", "f32", "f32"], returns: "void" },
+	Rtext_editor_clear_token_colors: { args: ["u32"], returns: "void" },
+	Rtext_editor_get_token_color: { args: ["u32", "i32", "ptr", "ptr", "ptr", "ptr"], returns: "void" },
 	Rtext_editor_set_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rheader_bar_create: { args: ["ptr"], returns: "u32" },
 	Rheader_bar_set_title: { args: ["u32", "ptr"], returns: "void" },
@@ -15814,6 +15817,31 @@ export function Rtheme_get_token_color(token: RToken): [r: number, g: number, b:
 /** Back to the colors Raven picks. */
 export function Rtheme_clear_token_colors(): void {
 	_lib.Rtheme_clear_token_colors();
+}
+
+/**
+ * Color of a kind of token in this editor only. It wins over the
+ * editor's theme (a theme file's <Syntax>, Rtheme_set_token_color, the
+ * color Raven picks); an invalid kind of token (R_TOKEN_TEXT among them,
+ * which is the color of the text) is an error.
+ */
+export function Rtext_editor_set_token_color(editor: Rid, token: RToken, r: number, g: number, b: number, a: number): void {
+	_lib.Rtext_editor_set_token_color(editor, token, r, g, b, a);
+}
+
+/** Forgets the editor's own colors of tokens: its theme's are used again. */
+export function Rtext_editor_clear_token_colors(editor: Rid): void {
+	_lib.Rtext_editor_clear_token_colors(editor);
+}
+
+/** The color the editor paints a kind of token in: its own, else its theme's. 0 for an invalid kind. */
+export function Rtext_editor_get_token_color(editor: Rid, token: RToken): [r: number, g: number, b: number, a: number] {
+	const r_ = new Float32Array(1);
+	const g_ = new Float32Array(1);
+	const b_ = new Float32Array(1);
+	const a_ = new Float32Array(1);
+	_lib.Rtext_editor_get_token_color(editor, token, r_, g_, b_, a_);
+	return [r_[0]!, g_[0]!, b_[0]!, a_[0]!];
 }
 
 export function Rtext_editor_set_changed_callback(editor: Rid, callback: RTextEditorChangedCallback | Pointer | null, user_data: RPointer = null): void {
