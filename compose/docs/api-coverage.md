@@ -130,7 +130,7 @@ Found while doing them:
 
 | Widget | Functions | Note | Status |
 |---|---:|---|---|
-| NodeGraph | 87 | specialist (`studio`) | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| NodeGraph | 87 | specialist (`studio`) | designed: [Specialist widgets: NodeGraph, the composable](issues/0281-specialist-widgets-nodegraph-the-composable.md) |
 | Timeline | 59 | specialist (`studio`) | fog: batch 9 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
 | Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation | designed: [Lists at scale: Table](issues/0235-lists-at-scale-table.md) |
 | Plot | 55 | charts; `examples/plot`. Needs a design decision first | designed: [Charts: Plot and PlotState](issues/0259-charts-plot-and-plotstate.md) |

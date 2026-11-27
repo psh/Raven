@@ -1440,6 +1440,45 @@ Raven prints PDFs only, so compose-raven prints PDFs and writes them with a buil
   `output` file; no new harness API. Whether Compose keeps drawing behind macOS's print panel is
   checked by hand when it is built.
 
+### NodeGraph (phase 5)
+
+Raven's NodeGraph over app-owned lists of nodes and links, the user's edits proposals the app takes,
+as `ListView`'s selection is ([Specialist widgets: NodeGraph](issues/archive/0276-specialist-widgets-nodegraph.md)).
+
+- **`NodeGraph(nodes: List<GraphNode>, links: List<GraphLink>, modifier = Modifier, state =
+  rememberNodeGraphState(), selection: Set<Any> = emptySet(), onSelectionChange: (Set<Any>) -> Unit
+  = {}, onNodeMove: (key: Any, position: Offset) -> Unit = { _, _ -> }, canLink: (from: PinRef, to:
+  PinRef) -> Boolean = { _, _ -> true }, onLink: (from: PinRef, to: PinRef) -> Unit = { _, _ -> },
+  onUnlink: (GraphLink) -> Unit = {}, onNodeDelete: ((key: Any) -> Unit)? = null, preset =
+  NodeGraphPreset.Auto, pinTypes: Map<String, PinType> = emptyMap(), readOnly = false, grid = true,
+  flow = false, content: (@Composable (GraphNode) -> Unit)? = null)`**, with the events below.
+  - **`GraphNode(key, title, position: Offset, inputs: List<GraphPin> = emptyList(), outputs:
+    List<GraphPin> = emptyList(), color = Color.Unspecified, icon: Painter? = null, badge: String? =
+    null, active = false, deletable = true)`**, positions in canvas units; **`GraphPin(key, label =
+    "", type = "", multiple = false)`** (`multiple`: an input taking several links);
+    **`GraphLink(from: PinRef, to: PinRef)`**, `PinRef(nodeKey, pinKey)`, a link being its two ends.
+    The lists are diffed by key against Raven's nodes, pins and links.
+  - **Controlled edits**: a node moved (on release), a link made (`canLink` answering Raven's
+    connect callback first), a link removed, a node deleted (the Delete key removes nodes only when
+    `onNodeDelete` is given, as in Raven), and the selection, a set of node keys. An edit the app
+    doesn't take reverts on the next composition.
+  - **`content`**: a node's body, composed in Raven's node content (`Rnode_graph_set_node_content`).
+- **Events**: `onNodeActivate(key)` (a double click), `onContextMenu(nodeKey: Any?, position)` (the
+  right button, which does nothing without it), `onCanvasActivate(position)` (a double click on the
+  empty canvas; without it Raven frames every node), `onWireDrop(from: PinRef, position)` (a wire
+  let go on the empty canvas, to add a node linked to it) and `onPinClick(pin: PinRef)`.
+- **`NodeGraphState`** (`rememberNodeGraphState()`): the view stays Raven's; `frameAll()`,
+  `setView(x, y, zoom)`, `view()` (read when asked: Raven reports no change of view), `toCanvas` and
+  `fromCanvas`.
+- **Styling**: `preset` (`Auto`, `Modern`, `Blueprint`, `Blender`, `Neon`) and `pinTypes`
+  (`PinType(color, shape)`); the finer parts (link shapes, pin sizes, grids, headers) stay with
+  Raven's theme styles (`<Style Widget="NodeGraph" Part=...>`).
+- Pin tags and emphasis, a pin's label width, hidden links and a badge's colour come in
+  [Specialist widgets: NodeGraph extras](issues/0282-specialist-widgets-nodegraph-extras.md).
+- Tests are headless: the user's edits sent as Raven's callbacks, refused edits reverting; no new
+  harness API. The XML translator turns `<NodeGraph>` with `<Type>`, `<Node>`, `<Input>`, `<Output>`
+  and `<Link>` into the lists, keyed by name. `studio` is ported with Timeline.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -2295,6 +2334,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `DiffView` with a `DiffViewState` whose `currentChange` follows navigation only; Raven's rows unbound | no diff view | [8](#diffview-phase-5) |
 | `WebView(state)` with one `WebViewState` for observed values and commands; no progress, interception, replies, native handle or back key; popups go under the view | compose-webview-multiplatform's `WebViewState` and `WebViewNavigator`, loading progress, a request interceptor and a JS bridge with replies | [8](#webview-phase-5) |
 | `MapView` (raster, markers) and `VectorMapView` (a MapLibre style), sharing `TileSource` | no maps | [8](#maps-phase-5) |
+| `NodeGraph` over app-owned nodes and links, edits controlled; its view not observable; pin tags and emphasis, label widths, hidden links and badge colours not yet bound | no node graph | [8](#nodegraph-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
