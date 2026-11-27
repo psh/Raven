@@ -1,4 +1,4 @@
-package raven.sample.xml
+package raven.compose.xml
 
 /**
  * One node of a Raven XML document, copied out of Raven so the translator works on plain Kotlin.

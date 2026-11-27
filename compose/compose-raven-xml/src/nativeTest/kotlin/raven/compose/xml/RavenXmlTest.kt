@@ -1,4 +1,4 @@
-package raven.sample.xml
+package raven.compose.xml
 
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer

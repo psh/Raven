@@ -9,7 +9,7 @@ Add the convention plugin `raven.compose-xml`, which translates an app's XML dur
 [10: build-time translation](../spec.md#compose-raven-xml-and-raven-xml2compose-phase-5-published-in-phase-4).
 Planned in [Icons and resources: build-time XML translation](archive/0209-icons-and-resources-build-time-xml-translation.md).
 
-**Depends on:** [XML translation: compose-raven-xml and raven-xml2compose](0225-xml-translation-compose-raven-xml-and-raven-xml2compose.md).
+**Depends on:** [XML translation: compose-raven-xml and raven-xml2compose](archive/0225-xml-translation-compose-raven-xml-and-raven-xml2compose.md).
 
 ## Deliverables
 

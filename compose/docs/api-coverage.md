@@ -8,13 +8,13 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-26, after merging upstream's `main` into compose-raven (`a0eaab62`).*
+*Last updated 2026-11-27, when the XML translator moved into `compose-raven-xml`, a library module the count includes (samples are left out).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 480 of 1,701 (28%) |
+| Functions used | 370 of 1,157 (31%) | 491 of 1,701 (28%) |
 | Widget types bound | 36 of 51 | 37 of 58 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
@@ -42,7 +42,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_text_editor.h` | 24 | 91 | 26% | undo/redo availability, selection, zoom, token colours, find bar, folding, spell checking |
 | `raven_core.h` | 40 | 85 | 47% | allocator and memory, async tasks, vsync, actions with parameters |
 | `raven_widget.h` | 54 | 81 | 67% | getters, style classes, free-form slots, drop targets on widgets |
-| `raven_xml.h` | 4 | 64 | 6% | the XML loader, replaced by the composition |
+| `raven_xml.h` | 15 | 64 | 23% | the XML loader, replaced by the composition; `compose-raven-xml` reads documents with Raven's parser |
 | `raven_layout.h` | 34 | 61 | 56% | Switcher, SizeBox, Spacer (Compose idioms), layout direction |
 | `raven_shell.h` | 23 | 60 | 38% | tray, taskbar, parts of the header bar and dock area |
 | `raven_dialogs.h` | 26 | 47 | 55% | popups, system notifications |
@@ -64,7 +64,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
 | `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
-| **Total** | **480** | **1,701** | **28%** | |
+| **Total** | **491** | **1,701** | **28%** | |
 
 ## Not needed by design
 

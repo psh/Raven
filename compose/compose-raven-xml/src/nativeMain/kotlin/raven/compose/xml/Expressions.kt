@@ -1,4 +1,4 @@
-package raven.sample.xml
+package raven.compose.xml
 
 // Raven's {...} expression language (src/xml/xml_components.c), compiled to typed Kotlin. Raven's
 // values are texts that are also numbers when they read as one; Kotlin's are static, so each

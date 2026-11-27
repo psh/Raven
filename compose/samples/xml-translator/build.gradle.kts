@@ -54,7 +54,8 @@ kotlin {
     }
     sourceSets.nativeMain.dependencies {
         implementation(project(":compose-raven-foundation"))
-        // parseRavenXml reads Raven's XML API through raven.cinterop
+        implementation(project(":compose-raven-xml"))
+        // translateFiles writes with Raven's file functions
         implementation(project(":compose-raven-native"))
     }
     sourceSets.nativeTest.dependencies { implementation(project(":compose-raven-test")) }

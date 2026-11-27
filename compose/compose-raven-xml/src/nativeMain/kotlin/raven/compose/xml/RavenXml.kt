@@ -1,4 +1,4 @@
-package raven.sample.xml
+package raven.compose.xml
 
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
@@ -6,7 +6,13 @@ import kotlinx.cinterop.cstr
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.toKString
+import raven.cinterop.RInitDesc
 import raven.cinterop.RXmlError
+import raven.cinterop.R_BACKEND_NULL
+import raven.cinterop.R_FALSE
+import raven.cinterop.R_TRUE
+import raven.cinterop.Rinit_ex
+import raven.cinterop.Rshutdown
 import raven.cinterop.R_INVALID_ID
 import raven.cinterop.Rid
 import raven.cinterop.Rxml_document_destroy
@@ -68,3 +74,28 @@ private fun copy(node: Rid): XmlElement = XmlElement(
     line = Rxml_node_get_line(node),
     children = List(Rxml_node_get_child_count(node)) { copy(Rxml_node_get_child(node, it)) },
 )
+
+/**
+ * Runs [block] with Raven started headless (no window, no GPU) and shut down after, for parsing
+ * outside an app: what [translate] and [translateFolder] need. Raven mustn't be running already.
+ */
+public fun <T> withHeadlessRaven(block: () -> T): T {
+    memScoped {
+        val desc = alloc<RInitDesc>().apply {
+            backend = R_BACKEND_NULL
+            app_name = null
+            worker_threads = -1
+            disable_render_thread = R_FALSE
+            disable_vsync = R_FALSE
+            enable_validation = R_FALSE
+            headless = R_TRUE
+            ui_scale = 0f
+        }
+        check(Rinit_ex(desc.ptr) == R_TRUE) { "Raven didn't start headless" }
+    }
+    try {
+        return block()
+    } finally {
+        Rshutdown()
+    }
+}

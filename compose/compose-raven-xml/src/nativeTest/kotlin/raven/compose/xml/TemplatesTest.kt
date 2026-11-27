@@ -1,4 +1,4 @@
-package raven.sample.xml
+package raven.compose.xml
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

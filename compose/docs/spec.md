@@ -47,14 +47,14 @@ compose-raven is a standalone Gradle build rooted at `compose/`, with these modu
 | `compose-raven-foundation` | The composables, in `raven.compose.foundation`: thin declarations over the binding layer | `compose-raven-ui` with `api`; `compose-raven-native` with `implementation`; from phase 5, `kotlinx-datetime` with `api`, for the date and time pickers |
 | `compose-raven-bom` (phase 4) | Version constraints for every module and `androidx.compose.runtime` | none |
 | `compose-raven-navigation3` (phase 3, opt-in) | Navigation 3's Scene layer and `NavDisplay`, adapted from AndroidX 1.2.1 (Apache-2.0, with NOTICE) ([section 8](#8-component-vocabulary)) | `compose-raven-foundation`, `androidx.navigation3:navigation3-runtime` |
-| `compose-raven-xml` (phase 4) | The XML translator as a library: the parse adapter and `translate()` ([section 10](#10-samples)) | `compose-raven-foundation`, `compose-raven-native` (`implementation`) |
-| `tools/raven-xml2compose` (phase 4) | Command-line translator over files and directories ([section 10](#10-samples)) | `compose-raven-xml` |
+| `compose-raven-xml` (phase 5; published in phase 4) | The XML translator as a library, package `raven.compose.xml`: the parse adapter, `translate()`, `translateFolder()` and `withHeadlessRaven` ([section 10](#compose-raven-xml-and-raven-xml2compose-phase-5-published-in-phase-4)). It generates source for `compose-raven-foundation` without depending on it | `compose-raven-native` (`implementation`) |
+| `tools/raven-xml2compose` (phase 5; published in phase 4) | Command-line translator over a folder ([section 10](#compose-raven-xml-and-raven-xml2compose-phase-5-published-in-phase-4)) | `compose-raven-xml` |
 | `compose-raven-ui-test` (Raven MCP) | The matchers (public, package `raven.compose.ui.test`), finding nodes and the actions on a host, headless or live (`@InternalComposeRavenApi`), with no `kotlin.test` ([section 9](#9-testing)) | `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
 | `compose-raven-mcp` (opt-in) | Raven MCP for apps, package `raven.compose.mcp`: `McpConfig` and the `mcp` overloads of `application`, `McpServer`, `McpTool`, `McpStatus`, and the UI tools over Compose semantics ([`mcp.md`](mcp.md#compose-raven-mcptool)) | `raven-mcp` (`api`, its klib), `compose-raven-foundation` (`api`), `kotlinx-serialization-json` (`api`), `compose-raven-ui-test` and `compose-raven-native` (`implementation`) |
 | `compose-raven-test` | The public test harness, package `raven.compose.ui.test`: `runRavenTest`, finders, actions, assertions, `mainClock`, leak checks ([section 9](#9-testing)) | `compose-raven-ui-test` (`api`), `compose-raven-foundation` (`api`), `compose-raven-native` (`implementation`) |
 | `compose-raven-vulkan` (phase 3, opt-in) | Cinterop over `raven_vulkan.h` (`raven.vulkan.cinterop`, public by design), `VulkanViewport`, Vulkan-backed textures, device access and sharing ([section 8](#8-component-vocabulary)) | `compose-raven-foundation` |
 | `compose-raven-opengl` (phase 3, opt-in) | `OpenGLViewport` with a managed context (EGL on Linux, `NSOpenGLContext` on macOS), `OpenGLTexture` | `compose-raven-foundation` |
-| `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 4 |
+| `samples/hello`, `samples/xml-translator` | Executable samples ([section 10](#10-samples)) | `compose-raven-foundation`, plus `compose-raven-xml` for `xml-translator` from phase 5 |
 
 The core and the composables are separate modules from the start: almost all of the complexity is
 in `compose-raven-ui`, and the composables stay thin declarations over its binding layer. Apps
@@ -1970,7 +1970,7 @@ This sample translates Raven XML into compose-raven source.
   - A `Text` below shows the warnings.
   - Translation reruns on every change.
 - **Parsing**: Raven's own parser, through `compose-raven-native`'s `raven.cinterop`, which already
-  binds `raven_xml.h` (in `compose-raven-xml` from phase 4, in the sample before that, as an
+  binds `raven_xml.h` (in `compose-raven-xml` from phase 5, in the sample before that, as an
   `implementation` dependency, so no Raven type is in its API). A single adapter,
   `parseRavenXml(text)`, calls `Rxml_document_parse` (UI thread, Raven running) and copies the
   result into a Kotlin `XmlElement(tag, attributes, text, line, children)` tree, then destroys the
@@ -2213,24 +2213,42 @@ pen up and down, repeat and if; a Run button stepping through the clicked script
 
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
-The translator moves out of the sample into the library module `compose-raven-xml`, and the
-sample depends on it. Both are built and tested in this repository in phase 5; publishing them
-stays with the release, phase 4. The command-line tool `raven-xml2compose` is built on the module and starts
-Raven headless, with no window.
+The translator moves out of the sample into the library module `compose-raven-xml` (package
+`raven.compose.xml`), and the sample depends on it. Both are built and tested in this repository in
+phase 5; publishing them stays with the release, phase 4. The command-line tool `raven-xml2compose`
+(`tools/raven-xml2compose`) is built on the module and starts Raven headless, with no window
+(`withHeadlessRaven`). The module's `translateFolder(files, packageName, main)` takes the folder's
+files as path and text and returns the Kotlin files and the diagnostics; the tool reads and writes
+the files.
 
 ```
 raven-xml2compose ui/ --out src/nativeMain/kotlin/app/ui --package app.ui [--main main.xml] [--werror]
 ```
 
 - **One Kotlin file per XML file**, named in PascalCase (`now_playing.xml` becomes
-  `NowPlaying.kt`). A file whose root is an element also becomes a composable named after the file.
-- **`<Include Source>`** resolves relative to the including file and becomes a call to that
-  file's composable. Shared files are translated once, and include cycles are errors.
-- **`main()`** is generated only for the `<Window>` root given with `--main`.
+  `NowPlaying.kt`), in the same subfolder of `--out`; a subfolder is a subpackage of `--package`.
+  A file whose root is an element also becomes a composable named after the file,
+  `NowPlaying(modifier: Modifier = Modifier)`, its root placed by whoever includes it as a
+  `<Widget>`'s root is by its call; `Ui` is added to a name its own declarations or the vocabulary
+  already take (`ButtonUi`). A `<Window>` root becomes a composable of the window's content. Two
+  files that would become the same Kotlin file are an error.
+- **`<Include Source>`** resolves relative to the including file, then the folder's root, and
+  becomes a call to that file's composable, imported from its package. Shared files are translated
+  once, include cycles are errors, and a file that isn't there is a warning. An included file's
+  declarations are known in the including file; a file of declarations only (root `<Widgets>`)
+  leaves a comment where it is included, and isn't a window's content.
+- **Declarations without an include**: Raven registers declarations for the whole app and finds
+  files of them where it looks for files, so a file of declarations only is known in every file
+  next to it or in a parent folder, included or not (Raven's `music` uses `widgets.xml` so).
+- **`main()`** is generated only for the `<Window>` root given with `--main`; a `--main` file that
+  isn't there or isn't a `<Window>` is an error.
 - **Overwriting**: generated files start with `// Generated by raven-xml2compose from <path>. Do not
   edit.`, and only files with that header are overwritten.
-- **Diagnostics** go to stderr as `file:line:column: message`. The exit code is non-zero on errors,
-  and `--werror` also fails on warnings.
+- **Diagnostics** go to stderr as `file:line:column: warning: message` (or `error:`), the column
+  1 when Raven gives only the line. A file that doesn't parse is an error, and the others are still
+  translated. The exit code is 1 on errors, and `--werror` also fails on warnings; a wrong command
+  line is 2. A file whose output path holds a file without the header is an error and isn't
+  written.
 
 **Build-time translation** (phase 5): the convention plugin `raven.compose-xml` in `build-logic`,
 separate from the resources plugin, translates an app's XML as part of its build:

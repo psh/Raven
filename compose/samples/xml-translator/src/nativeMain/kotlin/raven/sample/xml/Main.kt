@@ -18,6 +18,8 @@ import raven.compose.ui.singleWindowApplication
 import raven.compose.ui.testTag
 import raven.compose.ui.unit.DpSize
 import raven.compose.ui.unit.dp
+import raven.compose.xml.TranslationWarning
+import raven.compose.xml.translate
 
 // Raven XML on the left, the compose-raven code it translates to on the right, live.
 

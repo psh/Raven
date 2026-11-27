@@ -2,6 +2,7 @@
 
 package raven.sample.xml
 
+import kotlin.system.exitProcess
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.usePinned
@@ -10,8 +11,8 @@ import raven.cinterop.Rfile_read
 import raven.cinterop.Rfile_write
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
+import raven.compose.xml.translate
 import raven.native.takeRavenString
-import kotlin.system.exitProcess
 
 /**
  * The examples check's translator: for each `input output package` triple in [args], translates

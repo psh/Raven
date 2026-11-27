@@ -20,7 +20,7 @@ implementation tickets.
 
 Resolved on 2026-11-26 in conversation. Written into spec section 10 (`compose-raven-xml` and
 `raven-xml2compose`, now built in phase 5, and its build-time translation), and filed as
-[XML translation: compose-raven-xml and raven-xml2compose](../0225-xml-translation-compose-raven-xml-and-raven-xml2compose.md)
+[XML translation: compose-raven-xml and raven-xml2compose](0225-xml-translation-compose-raven-xml-and-raven-xml2compose.md)
 and [XML translation: the raven.compose-xml plugin](../0226-xml-translation-the-raven-compose-xml-plugin.md),
 in that order.
 

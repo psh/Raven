@@ -1,10 +1,10 @@
-package raven.sample.xml
+package raven.compose.xml
 
 /** Generated compose-raven source, and what couldn't be translated faithfully. */
-internal data class Translation(val code: String, val warnings: List<TranslationWarning>)
+public data class Translation(val code: String, val warnings: List<TranslationWarning>)
 
 /** One thing the translation left out or changed. [column] is 0 when only the line is known. */
-internal data class TranslationWarning(val line: Int, val message: String, val column: Int = 0) {
+public data class TranslationWarning(val line: Int, val message: String, val column: Int = 0) {
     override fun toString(): String = if (column > 0) "line $line, column $column: $message" else "line $line: $message"
 }
 
@@ -12,7 +12,7 @@ internal data class TranslationWarning(val line: Int, val message: String, val c
  * Translates a Raven XML text: parsed with [parseRavenXml] (Raven running, UI thread), then
  * [translate]d. A text that isn't well-formed gives no code and its parse error as the warning.
  */
-internal fun translate(xml: String): Translation {
+public fun translate(xml: String): Translation {
     val root = try {
         parseRavenXml(xml)
     } catch (e: XmlParseException) {
@@ -64,7 +64,7 @@ private val reservedTags = setOf(
  * What the parent does with a child's slot, which decides the child's Modifier, and the scope a
  * slot lambda placed there gets. [Passed] is a `<Widget>`'s root, which the call places.
  */
-private enum class Parent(val scope: String?) {
+internal enum class Parent(val scope: String?) {
     Column("ColumnScope"),
     Row("RowScope"),
     Box("BoxScope"),
@@ -142,8 +142,11 @@ private val imports = mapOf(
     "sp" to "raven.compose.ui.unit",
 )
 
-/** A `<Widget>` declaration, as a composable function. */
-private class WidgetFunction(
+/**
+ * A `<Widget>` declaration, as a composable function; or, with no parameters or slots, the
+ * composable a file's root element becomes, which an `<Include>` calls.
+ */
+internal class WidgetFunction(
     val xmlName: String,
     val name: String,
     val root: XmlElement,
@@ -152,11 +155,13 @@ private class WidgetFunction(
     val slots: Map<String, Slot>,
     /** The root's own placing attributes (expressions left out), by lowercased name, with a root's root's under them. */
     val rootLayout: Map<String, Pair<String, String>>,
+    /** The package it is declared in, when that is another file's; null within one translation. */
+    val packageName: String? = null,
 )
 
-private class Param(val xmlName: String, val name: String, val type: KType, val default: String)
+internal class Param(val xmlName: String, val name: String, val type: KType, val default: String)
 
-private class Slot(val name: String, val parent: Parent)
+internal class Slot(val name: String, val parent: Parent)
 
 /** The variables `{...}` can name here; none outside a `<Widget>`, `<Repeat>` or `<ForEach>`. */
 private class Scope(val parent: Scope?, val vars: Map<String, Variable>, private val function: WidgetFunction? = null) {
@@ -187,9 +192,41 @@ private sealed interface Value {
     class Code(val expr: KExpr) : Value
 }
 
+/**
+ * What a file translated among others knows: its package, the composable its root becomes, whether
+ * it has `main()`, the declarations of the files it includes, and what each `<Include>` names.
+ */
+internal class FileContext(
+    val packageName: String,
+    /** The composable's name, before any clash with this file's own declarations is resolved. */
+    val composableName: String,
+    val main: Boolean,
+    /** By lowercased tag. */
+    val included: Map<String, WidgetFunction>,
+    val include: (source: String) -> IncludeTarget,
+)
+
+/** What an `<Include Source>` names. */
+internal sealed interface IncludeTarget {
+    /** A file translated before this one: the call to its composable, or null for declarations only. */
+    class File(val composable: WidgetFunction?, val rootTag: String) : IncludeTarget
+    /** No such file, or one that couldn't be read: the reason. */
+    class Missing(val reason: String) : IncludeTarget
+    /** An include cycle, reported as an error by the caller. */
+    data object Cycle : IncludeTarget
+}
+
 /** One run of the translator: the functions, state, imports and warnings it collects. */
-private class Translator {
+internal class Translator(private val context: FileContext? = null) {
+    /** The `<Widget>` declarations of this file, once [run]. */
+    val declared: List<WidgetFunction> get() = functions.values.filter { it.packageName == null }
+
+    /** The composable the root became, once [run]; null for declarations only or a `<Window>`. */
+    var composable: WidgetFunction? = null
+        private set
+
     private val used = mutableSetOf<String>()
+    private val imported = mutableSetOf<String>()
     private val warnings = mutableListOf<TranslationWarning>()
     private val functions = LinkedHashMap<String, WidgetFunction>()
     private var out = CodeWriter()
@@ -198,22 +235,47 @@ private class Translator {
     private var scope: Scope? = null
 
     fun run(root: XmlElement): Translation {
+        context?.let { functions.putAll(it.included) }
         declare(root)
         val sections = mutableListOf<String>()
-        for (function in functions.values) sections += function(function)
+        for (function in declared) sections += function(function)
         var main: String? = null
         if (!root.tag.equals("Widgets", ignoreCase = true) && !root.tag.equals("Widget", ignoreCase = true)) {
             use("Composable")
             begin(Holder(), mutableSetOf(), null)
-            if (Tag.of(root.tag) == Tag.Window) main = window(root) else element(root, Parent.None)
-            sections += "@Composable\nfun TranslatedUi() {\n" + body() + "}\n"
+            val name = rootName()
+            if (Tag.of(root.tag) == Tag.Window) {
+                main = window(root, name).takeIf { context?.main != false }
+                sections += "@Composable\nfun $name() {\n" + body() + "}\n"
+            } else if (context == null) {
+                element(root, Parent.None)
+                sections += "@Composable\nfun $name() {\n" + body() + "}\n"
+            } else {
+                // Placed by whoever includes it, as a <Widget>'s root is by its call.
+                use("Modifier")
+                val rootLayout = LinkedHashMap<String, Pair<String, String>>()
+                for ((attribute, value) in root.attributes) {
+                    if (attribute.lowercase() in layoutKeys && '{' !in value && '}' !in value) rootLayout[attribute.lowercase()] = attribute to value
+                }
+                composable = WidgetFunction("", name, root, emptyList(), emptyMap(), rootLayout, context.packageName)
+                element(root, Parent.Passed)
+                sections += "@Composable\nfun $name(modifier: Modifier = Modifier) {\n" + body() + "}\n"
+            }
         }
         main?.let { sections += it }
         val code = buildString {
-            for (import in used.map { "${imports.getValue(it)}.$it" }.sorted()) append("import $import\n")
+            val lines = used.map { "${imports.getValue(it)}.$it" } + imported
+            for (import in lines.distinct().sorted()) append("import $import\n")
             if (sections.isNotEmpty()) append("\n" + sections.joinToString("\n"))
         }
         return Translation(code, warnings.toList())
+    }
+
+    /** `TranslatedUi` alone, else the file's name, kept clear of its declarations and the vocabulary. */
+    private fun rootName(): String {
+        var name = context?.composableName ?: return "TranslatedUi"
+        while (name in imports || functions.values.any { it.name == name }) name += "Ui"
+        return name
     }
 
     private fun begin(holder: Holder, names: MutableSet<String>, scope: Scope?) {
@@ -344,7 +406,7 @@ private class Translator {
     // ---- the window ----
 
     /** Emits the window's content, and returns `main()`. */
-    private fun window(window: XmlElement): String {
+    private fun window(window: XmlElement, name: String): String {
         val attrs = Attrs(window)
         val args = listOfNotNull(
             windowState(attrs.num("Width")?.constant, attrs.num("Height")?.constant)?.let { "state = $it" },
@@ -358,6 +420,8 @@ private class Translator {
                 child.tag.equals("Widget", ignoreCase = true) -> Unit
                 child.tag.equals("Shortcut", ignoreCase = true) || child.tag.equals("Island", ignoreCase = true) ->
                     todo(child, "<${child.tag}> has no composable yet")
+                // An included file of declarations, or of an <Island>, isn't the window's content.
+                child.tag.equals("Include", ignoreCase = true) && !includesContent(child) -> include(child, Attrs(child), Parent.Window)
                 content -> todo(child, "a window has one content widget; <${child.tag}> is a second one")
                 else -> {
                     content = true
@@ -367,7 +431,7 @@ private class Translator {
         }
         use("singleWindowApplication")
         val call = if (args.isEmpty()) "singleWindowApplication" else "singleWindowApplication(${args.joinToString(", ")})"
-        return "fun main() = $call {\n    TranslatedUi()\n}\n"
+        return "fun main() = $call {\n    $name()\n}\n"
     }
 
     /** The window's size as a `WindowState`, or null without one; a side left out keeps the default. */
@@ -407,7 +471,7 @@ private class Translator {
             tag == "if" -> ifTest(element, attrs, parent)
             tag == "repeat" -> repeat(element, attrs, parent)
             tag == "foreach" -> forEach(element, attrs, parent)
-            tag == "include" -> todo(element, "<Include Source=\"${attrs.peek("Source").orEmpty()}\"> isn't translated: the file isn't read")
+            tag == "include" -> include(element, attrs, parent)
             tag == "window" -> todo(element, "<Window> is only a root")
             Tag.of(tag) != null || functions[tag] != null -> {
                 val function = functions[tag]
@@ -623,6 +687,7 @@ private class Translator {
     /** A call to a `<Widget>`'s function: parameters, the modifier for its root, and its slots. */
     private fun call(element: XmlElement, attrs: Attrs, function: WidgetFunction, parent: Parent) {
         if (scope?.inside(function) == true) return todo(element, "<${element.tag}> uses itself, which a <Widget> can't")
+        function.packageName?.let { if (it != context?.packageName) imported += "$it.${function.name}" }
         val args = mutableListOf<String>()
         val modifier = if (parent == Parent.Passed) {
             modifier(attrs, parent)
@@ -679,6 +744,46 @@ private class Translator {
         }
         out.depth--
         if (content == null) out.line(")") else out.block(")") { children(content, function.slots.getValue("").parent) }
+    }
+
+    /** Whether [element], an `<Include>`, brings in an element a window takes as its content. */
+    private fun includesContent(element: XmlElement): Boolean {
+        val source = element.attributes.entries.firstOrNull { it.key.equals("Source", ignoreCase = true) }?.value ?: return true
+        val target = context?.include?.invoke(source) as? IncludeTarget.File ?: return true
+        return target.composable != null && !target.rootTag.equals("Island", ignoreCase = true)
+    }
+
+    /**
+     * `<Include Source>`: a call to the included file's composable, in this parent. Its declarations
+     * were known before this file was read; a file of declarations only leaves a comment.
+     */
+    private fun include(element: XmlElement, attrs: Attrs, parent: Parent) {
+        val source = attrs.raw("Source") ?: return todo(element, "<Include> needs Source=\"...\"")
+        val context = context ?: return todo(element, "<Include Source=\"$source\"> isn't translated: the file isn't read")
+        if (element.children.any { !it.isComment }) warn(element, "the children of <Include> are left out")
+        when (val target = context.include(source)) {
+            IncludeTarget.Cycle -> out.line("// TODO(raven-xml): <Include Source=\"$source\"> is part of an include cycle")
+            is IncludeTarget.Missing -> todo(element, "<Include Source=\"$source\">: ${target.reason}")
+            is IncludeTarget.File -> {
+                val function = target.composable
+                when {
+                    function != null && target.rootTag.equals("Island", ignoreCase = true) && parent == Parent.Window ->
+                        todo(element, "<Include Source=\"$source\">: <Island> has no composable yet")
+                    function != null -> {
+                        // (what is inside an <Include> was warned about above)
+                        val bare = element.copy(text = "", children = emptyList())
+                        if (parent == Parent.Window && !windowContentFills(attrs, function)) {
+                            use("Box", "Modifier", "fillMaxSize")
+                            out.block("Box(Modifier.fillMaxSize())") { call(bare, attrs, function, Parent.Box) }
+                        } else {
+                            call(bare, attrs, function, parent)
+                        }
+                    }
+                    target.rootTag.equals("Window", ignoreCase = true) -> todo(element, "<Include Source=\"$source\">: a <Window> can't be included")
+                    else -> out.line("// raven-xml: <Include Source=\"$source\"/> brings in its declarations")
+                }
+            }
+        }
     }
 
     /** `<Children/>` inside a `<Widget>`: a call to its slot. */
