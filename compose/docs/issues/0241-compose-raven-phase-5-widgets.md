@@ -20,10 +20,10 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 |---|---|---|
 | 5. Overlays and pagers | Toast, Carousel | the `carousel` port; a test app for Toast |
 | 6. Charts | Plot, Chart | the `plot` and `charts` ports |
-| 7. Documents and the web | PdfView, DiffView, SystemWebView | the `pdf`, `diff_view` and `web_view` ports |
+| 7. Documents and the web | PdfView, DiffView, SystemWebView | the `diff_view` and `web_view` ports; headless tests for PdfView |
 | 8. Maps | upstream's raster MapView, beside the vector map | the `map` port |
 | 9. Specialist widgets | NodeGraph, Timeline, BlockEditor | the `studio` port; a test app for BlockEditor |
-| 10. Printing and PDF documents | no widget: printing, and the PDF writing it needs | the `pdf` port's printing; a test |
+| 10. Printing and PDF documents | no widget: printing, and the PDF writing it needs | the `pdf` port (it writes, saves and prints its invoice) |
 
 ## Notes
 
@@ -54,6 +54,7 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 - [Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md): `HorizontalPager` and `VerticalPager` with a small `PagerState`, every page composed, Raven's loop, dots, arrows and autoplay as parameters. Filed as [Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) and [samples/carousel](0254-samples-carousel.md).
 - [Overlays and pagers: Toast](archive/0243-overlays-and-pagers-toast.md): Material 3's `SnackbarHost` and `SnackbarHostState.showSnackbar` over Raven's Toast, with its kinds and stacking, over a Raven change for message ids. Filed as [Raven: toast message ids](0255-raven-toast-message-ids.md), [Propose toast message ids upstream](0256-propose-toast-message-ids-upstream.md) and [Overlays and pagers: SnackbarHost](0257-overlays-and-pagers-snackbarhost.md).
 - [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md): one composable per kind; Plot's series in a keyed DSL over arrays compared by reference, the view Raven's behind a `PlotState`; printf formats; a controlled slice selection; bars ruled out. Filed as [Charts: Plot and PlotState](0259-charts-plot-and-plotstate.md), [samples/plot](0260-samples-plot.md), [Charts: PieChart, Gauge, Heatmap and Sparkline](0261-charts-piechart-gauge-heatmap-and-sparkline.md) and [samples/charts](0262-samples-charts.md).
+- [Documents: PdfView](archive/0247-documents-pdfview.md): `PdfView(source, state, password)` with a saveable `PdfViewState` (page, zoom and fit observable, over a Raven zoom callback), no search; the `pdf` port moved to batch ten. Filed as [Raven: PDF view zoom callback](0263-raven-pdf-view-zoom-callback.md), [Propose PDF view zoom callback upstream](0264-propose-pdf-view-zoom-callback-upstream.md) and [Documents: PdfView](0265-documents-pdfview.md).
 - [Printing: Raven's printing and how Kotlin should expose it](archive/0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
 - [The web: how Compose web views shape their APIs](archive/0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](0249-the-web-systemwebview.md).
 - [Charts: how Compose chart libraries shape their APIs](archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md): lists of data classes are the norm, Vico's producer the exception; only Vico and KoalaPlot hoist pan and zoom; Raven's Plot streams by index and owns its view, and has no bar chart; seven trade-offs left for [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md).
@@ -70,6 +71,8 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 - **Plot extras**: appends detected, so live data isn't copied whole on each update; series
   visibility as controlled state rather than Raven's
   ([Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md)).
+- **Search in a PDF**: finding text and highlighting the matches, which needs a Raven change; today
+  only a page's text is given ([Documents: PdfView](archive/0247-documents-pdfview.md)).
 
 ## Out of scope
 

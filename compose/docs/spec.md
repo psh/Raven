@@ -1296,6 +1296,34 @@ when it changes; Raven keeps drawing, pan and zoom, the legend and the glides ([
   (a remembered value for each drag line), and `<Chart Kind=...>` into its composable, its
   `<Slice>`, `<Band>` and `<Row>` children into lists.
 
+### PdfView (phase 5)
+
+The pages of a PDF document over Raven's PdfView, drawn by PDFium when it is installed, with a
+`PdfViewState` as the pagers have, over Raven change 16 ([Documents: PdfView](issues/archive/0247-documents-pdfview.md)). Printing and writing PDF documents
+are decided with batch ten.
+
+- **`PdfView(source: PdfSource?, modifier = Modifier, state = rememberPdfViewState(), password:
+  String? = null)`**: `PdfSource.File(path)` or `PdfSource.Bytes(ByteArray)` (`Rpdf_view_load_file`,
+  `_load_memory`); a `Res` file comes in through its path or its bytes. A changed source reloads,
+  a file compared by value and bytes by reference; `null` shows no document. Raven scrolls, zooms
+  (Ctrl + wheel, the keys, a pinch) and drags the pages itself.
+- **`PdfViewState`** (`rememberPdfViewState(initialPage = 0, fit = PdfFit.Width, zoom = 1f)`,
+  saveable): observable `currentPage` (Raven's page callback), `pageCount`, `title` and `status`;
+  `suspend scrollToPage(page)`; `fit` (`Width`, `Page`, `None`) and `zoom`, observable and set by
+  the app, setting a zoom making the fit `None`, as Raven does; `pageSize(page): DpSize` (points at
+  96 logical units per inch); `pageText(page): String`. The page is put back once a document has
+  loaded; a different source starts at page 0 and keeps the zoom and the fit.
+- **`PdfStatus`**: `None`, `Loaded`, `NeedsPassword`, `Unreadable`, `NoPdfium`. Raven draws its own
+  message in the view for the last three; on `NeedsPassword` the app asks the user and passes
+  `password`, which reloads.
+- No search: Raven has none (page text only).
+- Tests are headless: the `NoPdfium` status always; the tests of a loaded document return early,
+  saying so, when `Rpdf_is_available()` is false, as Raven's `test_pdf` skips.
+- The XML translator turns `<PdfView Source Fit Zoom Page Password>` into
+  `PdfView(PdfSource.File(...), password = ..., state = rememberPdfViewState(...))`, its `Page`
+  counted from 1 there and from 0 in the state.
+- The `pdf` port writes, saves and prints its invoice, so it is batch ten's.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -2073,6 +2101,13 @@ for change 6, which only a real macOS window reaches.
     button. Raven reports only the button today, and a message has no identity, so the end of one
     message among several can't be told. Planned in [Overlays and pagers: Toast](issues/archive/0243-overlays-and-pagers-toast.md).
 
+16. **`Rpdf_view_set_zoom_changed_callback(Rid view, RPdfZoomChangedCallback callback, void*
+    user_data)`**, `typedef void (*RPdfZoomChangedCallback)(Rid view, float zoom, RPdfFit fit, void*
+    user_data)` (required for `PdfViewState`'s observable zoom, to be made): called when the user
+    zooms or picks a fit, and when a fit's zoom changes after a resize; not for
+    `Rpdf_view_set_zoom` and `Rpdf_view_set_fit`. Raven reports only the page today, so the
+    `pdf` example polls the zoom on a timer. Planned in [Documents: PdfView](issues/archive/0247-documents-pdfview.md).
+
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
 [Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md),
@@ -2099,6 +2134,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `PagerState` has only `currentPage`, `pageCount`, `scrollToPage` and `animateScrollToPage` | `currentPageOffsetFraction`, `settledPage`, `targetPage`, `isScrollInProgress` and more | [8](#pagers-phase-5) |
 | `showSnackbar` takes a `kind` (`SnackbarKind`), `SnackbarHost` a `maxVisible` that stacks messages; no `withDismissAction`, `currentSnackbarData` or `snackbar` slot | no kinds, one message at a time, a dismiss button and custom snackbars | [8](#snackbars-phase-5) |
 | `Plot`, `PieChart`, `Gauge`, `Heatmap` and `Sparkline`, drawn by Raven; labels formatted by printf strings; the view and the legend's series visibility are Raven's | no charts (libraries format labels with lambdas, and hoist their views) | [8](#charts-phase-5) |
+| `PdfView` with a `PdfViewState`; no search | no PDF view | [8](#pdfview-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |

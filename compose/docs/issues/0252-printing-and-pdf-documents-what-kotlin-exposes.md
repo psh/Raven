@@ -19,4 +19,5 @@ compose-raven takes (PDFs only; plus the window printed; plus a PDF document bui
 beside the native dialogs, a print result that tells cancelled from failed if Raven can), how a
 PdfView's document is printed, and whether Compose keeps drawing behind the macOS print panel (check
 it). The answer is the spec section and its implementation tickets: batch ten, printing and PDF
-documents.
+documents, with the `pdf` port, which writes, saves and prints its invoice (moved here by
+[Documents: PdfView](archive/0247-documents-pdfview.md)).
