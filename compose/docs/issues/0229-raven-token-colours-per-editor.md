@@ -10,7 +10,7 @@ over its theme's, so `SyntaxTheme` can scope as a composition local. Raven's tok
 otherwise only the global theme's. Spec: [11: change 13](../spec.md#11-required-raven-changes).
 Planned in [Small widgets: the CodeEditor extras](archive/0212-small-widgets-the-codeeditor-extras.md).
 
-**Depends on:** [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md),
+**Depends on:** [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](archive/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md),
 the ticket before it in phase 5's implementation sequence.
 
 ## Deliverables

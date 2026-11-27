@@ -19,7 +19,7 @@ The answer is the spec section and its implementation tickets.
 
 Resolved on 2026-11-26 in conversation. Written into spec section 8 (Rating, Pagination,
 Breadcrumb and VerticalSlider) and section 12, and filed as
-[Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](../0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md).
+[Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md).
 
 - **No icons**: Raven draws the stars, chevrons and arrows itself, so none of them takes an icon
   parameter (the batch had expected them to use the vector icons).

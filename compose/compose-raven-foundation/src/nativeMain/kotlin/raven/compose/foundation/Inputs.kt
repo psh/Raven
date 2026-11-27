@@ -20,9 +20,12 @@ import raven.cinterop.R_COLOR_SELECTION
 import raven.cinterop.R_COLOR_TEXT
 import raven.cinterop.R_COLOR_TEXT_PLACEHOLDER
 import raven.cinterop.R_COLOR_TRACK
+import raven.cinterop.ROrientation
 import raven.cinterop.R_FALSE
+import raven.cinterop.R_HORIZONTAL
 import raven.cinterop.R_METRIC_FONT_SIZE
 import raven.cinterop.R_TRUE
+import raven.cinterop.R_VERTICAL
 import raven.cinterop.R_WIDGET_COMBO_BOX
 import raven.cinterop.R_WIDGET_SLIDER
 import raven.cinterop.R_WIDGET_SPIN_BOX
@@ -32,6 +35,7 @@ import raven.cinterop.Rcombo_box_clear_items
 import raven.cinterop.Rcombo_box_get_selected
 import raven.cinterop.Rcombo_box_set_selected
 import raven.cinterop.Rid
+import raven.cinterop.Rslider_set_orientation
 import raven.cinterop.Rslider_set_range
 import raven.cinterop.Rslider_set_step
 import raven.cinterop.Rspin_box_set_decimals
@@ -85,6 +89,7 @@ import raven.compose.ui.unit.isSpecified
 
 private val TextFieldDescriptor = WidgetDescriptor("TextField", R_WIDGET_TEXT_INPUT, events = listOf(TextChanged, TextCommitted))
 private val SliderWidget = WidgetDescriptor("Slider", R_WIDGET_SLIDER, events = listOf(SliderChanged))
+private val SliderOrientation = Property<ROrientation> { widget, orientation -> Rslider_set_orientation(widget, orientation) }
 private val ComboBoxWidget = WidgetDescriptor("ComboBox", R_WIDGET_COMBO_BOX, events = listOf(ComboBoxChanged))
 private val SpinBoxWidget = WidgetDescriptor("SpinBox", R_WIDGET_SPIN_BOX, events = listOf(SpinBoxChanged))
 private val IntSpinBoxWidget = WidgetDescriptor("SpinBox", R_WIDGET_SPIN_BOX, events = listOf(IntSpinBoxChanged))
@@ -367,6 +372,38 @@ public fun Slider(
     steps: Int = 0,
     colors: SliderColors = SliderDefaults.colors(),
 ) {
+    RavenSlider(R_HORIZONTAL, value, onValueChange, modifier, enabled, valueRange, steps, colors)
+}
+
+/**
+ * A [Slider] standing upright, its minimum at the bottom, as Material 3's `VerticalSlider` is;
+ * controlled by [value] as [Slider] is.
+ */
+@Composable
+public fun VerticalSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0,
+    colors: SliderColors = SliderDefaults.colors(),
+) {
+    // (Raven's vertical slider grows upwards already: nothing is flipped)
+    RavenSlider(R_VERTICAL, value, onValueChange, modifier, enabled, valueRange, steps, colors)
+}
+
+@Composable
+private fun RavenSlider(
+    orientation: ROrientation,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier,
+    enabled: Boolean,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    colors: SliderColors,
+) {
     require(steps >= 0) { "steps must not be negative" }
     val step = if (steps == 0) 0f else (valueRange.endInclusive - valueRange.start) / (steps + 1)
     val roleColors = roleColors(
@@ -377,6 +414,7 @@ public fun Slider(
         R_COLOR_ACCENT_PRESSED to colors.pressedActiveTrackColor,
     )
     RavenWidget(SliderWidget, modifier, {
+        bind(orientation, SliderOrientation)
         bind(enabled, Enabled)
         bind(roleColors, WidgetColors)
         // The range and step before the value: Raven snaps the value to them.

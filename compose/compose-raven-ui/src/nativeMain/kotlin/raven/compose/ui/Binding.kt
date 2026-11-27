@@ -58,10 +58,17 @@ import raven.cinterop.Risland_is_expanded
 import raven.cinterop.Risland_set_changed_callback
 import raven.cinterop.Risland_set_expanded
 import raven.cinterop.Rlabel_set_link_callback
+import raven.cinterop.Rbreadcrumb_set_clicked_callback
 import raven.cinterop.Rdate_picker_get_date
 import raven.cinterop.Rdate_picker_set_changed_callback
 import raven.cinterop.Rdate_picker_set_date
 import raven.cinterop.Rmenu_item_is_checked
+import raven.cinterop.Rpagination_get_page
+import raven.cinterop.Rpagination_set_changed_callback
+import raven.cinterop.Rpagination_set_page
+import raven.cinterop.Rrating_get_value
+import raven.cinterop.Rrating_set_changed_callback
+import raven.cinterop.Rrating_set_value
 import raven.cinterop.Rmenu_item_set_checked
 import raven.cinterop.Rmenu_item_set_clicked_callback
 import raven.cinterop.Rmenu_item_set_shortcut
@@ -680,6 +687,50 @@ public val TimePickerChanged: Event<(Int) -> Unit> = Event(marks = TimePickerTim
 
 private val onTimePickerChanged = staticCFunction { _: Rid, hour: Int, minute: Int, second: Int, userData: COpaquePointer? ->
     dispatchEvent(userData, TimePickerChanged) { it(hour * 3600 + minute * 60 + second) }
+}
+
+// Rating, Pagination and Breadcrumb: their controlled values and event kinds.
+
+/** A rating's score, 0 to its number of stars. Raven snaps what is written to whole or half stars. */
+@InternalComposeRavenApi
+public val RatingValue: ControlledValue<Float> = ControlledValue(
+    read = { Rrating_get_value(it) },
+    write = { widget, value -> Rrating_set_value(widget, value) },
+)
+
+@InternalComposeRavenApi
+public val RatingChanged: Event<(Float) -> Unit> = Event(marks = RatingValue) { widget, userData ->
+    Rrating_set_changed_callback(widget, onRatingChanged, userData)
+}
+
+private val onRatingChanged = staticCFunction { _: Rid, value: Float, userData: COpaquePointer? ->
+    dispatchEvent(userData, RatingChanged) { it(value) }
+}
+
+/** A pagination's page, from 0. Raven keeps what is written within its page count. */
+@InternalComposeRavenApi
+public val PaginationPage: ControlledValue<Int> = ControlledValue(
+    read = { Rpagination_get_page(it) },
+    write = { widget, page -> Rpagination_set_page(widget, page) },
+)
+
+@InternalComposeRavenApi
+public val PaginationChanged: Event<(Int) -> Unit> = Event(marks = PaginationPage) { widget, userData ->
+    Rpagination_set_changed_callback(widget, onPaginationChanged, userData)
+}
+
+private val onPaginationChanged = staticCFunction { _: Rid, page: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, PaginationChanged) { it(page) }
+}
+
+/** A breadcrumb item clicked, by index: one of the links before the last item. Raven changes nothing itself. */
+@InternalComposeRavenApi
+public val BreadcrumbClicked: Event<(Int) -> Unit> = Event { widget, userData ->
+    Rbreadcrumb_set_clicked_callback(widget, onBreadcrumbClicked, userData)
+}
+
+private val onBreadcrumbClicked = staticCFunction { _: Rid, index: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, BreadcrumbClicked) { it(index) }
 }
 
 /** A map moved or zoomed by the user (compose-raven-map reads where it now looks). */

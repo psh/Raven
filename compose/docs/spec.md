@@ -740,16 +740,17 @@ Raven draws these itself, the stars, the chevrons (mirrored right to left) and t
 they take no icons. Each is controlled.
 
 - **`Rating(value: Float, onValueChange, modifier, enabled, readOnly = false, max = 5, allowHalf = false, starSize: Dp = 18.dp)`**
-  over `Rrating_*`: `value` from 0 to `max`, `max` from 1 to 20, `readOnly` as `TextField`'s.
+  over `Rrating_*`: `value` from 0 to `max` (coerced into it), `max` from 1 to 20 (else it
+  throws), `readOnly` as `TextField`'s.
 - **`Pagination(page: Int, pageCount: Int, onPageChange, modifier, enabled, siblings = 1)`** over
   `Rpagination_*`: pages count from 0, as Raven's and Compose's `PagerState.currentPage` do, and
-  are shown from 1.
+  are shown from 1. `pageCount` is at least 1, and `page` is coerced into it.
 - **`Breadcrumb(items: List<String>, onItemClick: (index: Int) -> Unit, modifier)`** over
   `Rbreadcrumb_*`: the app owns the list and shortens it when an earlier item is clicked; the items
   are given to Raven one by one (`Rbreadcrumb_add_item`), so a text may hold `|`.
 - **`VerticalSlider(value, onValueChange, modifier, enabled, valueRange, steps, colors)`**:
-  `Slider`'s parameters with `Rslider_set_orientation(R_VERTICAL)`, the minimum at the bottom
-  ([Small widgets: Rating, Pagination, Breadcrumb and a vertical Slider](issues/archive/0211-small-widgets-rating-pagination-breadcrumb-and-a-vertical-slider.md)).
+  `Slider`'s parameters with `Rslider_set_orientation(R_VERTICAL)`, the minimum at the bottom,
+  where Raven's vertical slider already puts it, so the binding flips nothing ([Small widgets: Rating, Pagination, Breadcrumb and a vertical Slider](issues/archive/0211-small-widgets-rating-pagination-breadcrumb-and-a-vertical-slider.md)).
 
 ### Tray, notifications and taskbar (phase 5)
 
