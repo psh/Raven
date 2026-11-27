@@ -248,8 +248,11 @@ those gaps have tickets or wait here.
 its first four batches (designed samples, icons and resources, small widgets, lists at scale) are
 designed there, and the rest is fog on that map. Batches five to nine, the widgets with no
 composable yet (overlays and pagers, charts, documents and the web, maps, specialist widgets), are
-charted on [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md); `browser`
-is out of scope there, since SystemWebView covers its web pages. The list below is the fog as it
+designed on [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) (closed
+2026-11-27), with printing and PDF documents as batch ten; their implementation tickets run from
+[Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
+to [samples/blocks](issues/0286-samples-blocks.md). `browser` is out of scope there, since
+SystemWebView covers its web pages. The list below is the fog as it
 stood when the first map was charted.
 
 **Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom

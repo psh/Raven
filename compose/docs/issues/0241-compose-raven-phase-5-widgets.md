@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 wayfinder: map
 ---
 
@@ -63,11 +63,20 @@ Batch ten is built straight after batch eight; batch nine's tickets follow it, o
 - [Printing and PDF documents: what Kotlin exposes](archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md): print PDFs with a suspend `printPdf` and write them with `buildPdf { page { } }` returning bytes; `PdfViewState.print`; the `pdf` port without port gaps. Filed as [Printing and PDF documents: buildPdf and printPdf](0279-printing-and-pdf-documents-buildpdf-and-printpdf.md) and [samples/pdf](0280-samples-pdf.md); built after batch eight, before batch nine.
 - [Specialist widgets: NodeGraph](archive/0276-specialist-widgets-nodegraph.md): app-owned keyed nodes and links with controlled edits and selection, composable node content, the view Raven's behind a `NodeGraphState`; the rarer extras filed apart. Filed as [Specialist widgets: NodeGraph, the composable](0281-specialist-widgets-nodegraph-the-composable.md) and [Specialist widgets: NodeGraph extras](0282-specialist-widgets-nodegraph-extras.md).
 - [Specialist widgets: Timeline](archive/0277-specialist-widgets-timeline.md): app-owned keyed tracks and items with controlled edits, the playhead in a `TimelineState` Raven plays; the `studio` port. Filed as [Specialist widgets: Timeline, the composable](0283-specialist-widgets-timeline-the-composable.md) and [samples/studio](0284-samples-studio.md).
+- [Specialist widgets: BlockEditor](archive/0278-specialist-widgets-blockeditor.md): Raven's Scratch-style editor, its program controlled as text (Raven's saved form), a snapshot of the scripts for running them, kinds as a list; proved by a turtle of compose-raven's own. Filed as [Specialist widgets: BlockEditor, the composable](0285-specialist-widgets-blockeditor-the-composable.md) and [samples/blocks](0286-samples-blocks.md).
 - [Printing: Raven's printing and how Kotlin should expose it](archive/0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md).
 - [The web: how Compose web views shape their APIs](archive/0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](archive/0249-the-web-systemwebview.md).
 - [Charts: how Compose chart libraries shape their APIs](archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md): lists of data classes are the norm, Vico's producer the exception; only Vico and KoalaPlot hoist pan and zoom; Raven's Plot streams by index and owns its view, and has no bar chart; seven trade-offs left for [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md).
 
 ## Not yet specified
+
+Closed on 2026-11-27 with the destination reached: batches five to ten (overlays and pagers,
+charts, documents and the web, maps, specialist widgets, printing and PDF documents) are designed
+into `compose/docs/spec.md`, every decision ticket is archived, and their implementation tickets are
+filed in sequence, from
+[Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
+to [samples/blocks](0286-samples-blocks.md), batch ten built before batch nine. The patches below
+are the fog that remains, for a later map.
 
 - **Lazy pages**: composing only the pages near the one shown, for pagers of many pages; today
   every page is composed ([Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md)).

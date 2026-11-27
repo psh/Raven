@@ -1508,6 +1508,34 @@ and its playhead in a `TimelineState`, as a pager's position is ([Specialist wid
   harness API. The XML translator turns `<Timeline>` with `<Track>`, `<Clip>`, `<Key>` and `<Marker>`
   into the lists, keyed by their order.
 
+### BlockEditor (phase 5)
+
+Raven's BlockEditor, programs of blocks that snap into each other in the style of Scratch, its
+program controlled as text, as `CodeEditor`'s is ([Specialist widgets: BlockEditor](issues/archive/0278-specialist-widgets-blockeditor.md)). Raven reports only that the program changed,
+not how, so the program is Raven's saved form rather than lists the app keys.
+
+- **`BlockEditor(program: String, onProgramChange: (String) -> Unit, kinds: List<BlockKind>,
+  modifier = Modifier, state = rememberBlockEditorState(), categoryColors: Map<String, Color> =
+  emptyMap(), palette = true, onScriptClick: (topBlock: Int) -> Unit = {}, onContextMenu: (block:
+  Int?, position: Offset) -> Unit = { _, _ -> })`**. On each change the binding reads
+  `Rblock_editor_save` and calls `onProgramChange`; a `program` different from the one shown is
+  loaded (`Rblock_editor_load`), so a change the app doesn't take goes back.
+- **`BlockKind(name, label, shape: BlockShape, category, slotOptions: Map<Int, List<String>> =
+  emptyMap(), visible = true)`**: Raven's label syntax (`%n`, `%s`, `%b`, `%r`, `%m`, `{default}`,
+  `|` between a C block's sections: `"repeat %n{10}"`, `"if %b then|else"`); `BlockShape`:
+  `Statement`, `Hat`, `Cap`, `C`, `Reporter`, `Boolean`. A changed list adds, relabels or hides kinds
+  by name.
+- **`BlockEditorState`** (`rememberBlockEditorState()`): `scripts(): List<Block>`, a read-only
+  snapshot of the tree from Raven's getters (`Block(id, kind, values, inputs, next, bodies)`), for an
+  app that runs the program; `glow(block, on)` for the running blocks; `select`; `setView` and
+  `view()`, read when asked.
+- A block marked undeletable (`Rblock_editor_set_block_deletable`) isn't bound: it isn't part of the
+  saved program.
+- Tests are headless: a program loaded and read back, a user's change made through Raven's calls and
+  its callback reaching `onProgramChange`, a refused change loaded back, the snapshot, glow, kinds
+  added and relabelled; no new harness API. The XML translator turns `<BlockEditor>` with `<Kind>`
+  and `<Category>` into `kinds` and `categoryColors`, with a remembered program.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -2175,6 +2203,14 @@ and the presets of both picked from a `ComboBox`. The C example's XML live reloa
 headless test checks each control ([Specialist widgets: Timeline](issues/archive/0277-specialist-widgets-timeline.md), with
 [Specialist widgets: NodeGraph](issues/archive/0276-specialist-widgets-nodegraph.md)).
 
+### `samples/blocks` (phase 5)
+
+A sample of compose-raven's own, as no C example uses BlockEditor: a turtle. Kinds for move, turn,
+pen up and down, repeat and if; a Run button stepping through the clicked script
+(`onScriptClick`), each running block glowing (`state.glow`), its program read through
+`state.scripts()`; and a `Canvas` drawing the turtle's path. The program is held in a
+`rememberSaveable` string. The headless test runs a script and checks the path ([Specialist widgets: BlockEditor](issues/archive/0278-specialist-widgets-blockeditor.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2375,6 +2411,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `MapView` (raster, markers) and `VectorMapView` (a MapLibre style), sharing `TileSource` | no maps | [8](#maps-phase-5) |
 | `NodeGraph` over app-owned nodes and links, edits controlled; its view not observable; pin tags and emphasis, label widths, hidden links and badge colours not yet bound | no node graph | [8](#nodegraph-phase-5) |
 | `Timeline` over app-owned tracks and items, edits controlled; the playhead in a `TimelineState` Raven plays; its view not observable | no timeline | [8](#timeline-phase-5) |
+| `BlockEditor` controlled by its program as text, the tree read through a snapshot; undeletable blocks not bound | no block editor | [8](#blockeditor-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
