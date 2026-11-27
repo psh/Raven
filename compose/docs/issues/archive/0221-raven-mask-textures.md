@@ -37,7 +37,7 @@ lost device it is remade from its file as a mask. `Rtexture_update` refuses it, 
   nothing; a PNG keeps its alpha whatever the colour; a missing file is reported and uploads nothing,
   a NULL path refused; shown four times bigger it is drawn again at 96 pixels, still a mask, and so
   after `Rbackend_device_lost`. The fixtures are inline shapes of Google's formats; the real
-  downloaded and repository icons are [Icon and Google's icons](../0222-icon-and-googles-icons.md)'s.
+  downloaded and repository icons are [Icon and Google's icons](0222-icon-and-googles-icons.md)'s.
 - The full C suite: all pass but `test_shell` and `test_themes`, which fail the same way without the
   change (`test_themes`: this machine's macOS 26 look names its theme `MacOSGlassLight`).
 - The bindings regenerated; spec section 11's change 12 marked made; `api-coverage.md` updated

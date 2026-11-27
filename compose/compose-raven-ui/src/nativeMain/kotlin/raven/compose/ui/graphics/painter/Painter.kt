@@ -14,6 +14,7 @@ import raven.cinterop.Rid
 import raven.cinterop.Rimage_decode
 import raven.cinterop.Rmemory_free
 import raven.cinterop.Rpixels_free
+import raven.cinterop.Rtexture_create_mask_from_file_async
 import raven.compose.ui.HostEpoch
 import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.graphics.ImageBitmap
@@ -39,6 +40,13 @@ public abstract class Painter internal constructor() {
 
     /** The pixels of the whole image, for a window icon; null when they can't be read back. */
     internal open fun readPixels(): Pixels? = null
+
+    /**
+     * This image as a mask, its alpha only, which `Icon` draws so that its tint gives exactly its
+     * colour; null when there is none, and `Icon` multiplies this painter by its tint as `Image` does.
+     */
+    @InternalComposeRavenApi
+    public open val mask: Painter? get() = null
 }
 
 /** A part of a texture in Raven's UV coordinates, 0 to 1 from the top left. */
@@ -109,6 +117,13 @@ internal class ResourcePainter(val path: String, private val ravenTexture: Rid, 
 
     override val region: TextureRegion get() = TextureRegion.Whole
 
+    /**
+     * The file's alpha, decoded on a worker the first time an `Icon` asks
+     * (`Rtexture_create_mask_from_file_async`); kept beside the colour texture, so the host's one
+     * painter per path serves `Image` and `Icon` alike.
+     */
+    override val mask: Painter by lazy { MaskPainter(path, Rtexture_create_mask_from_file_async(path), epoch) }
+
     /** The file read and decoded again, since a texture can't be read back. */
     override fun readPixels(): Pixels? = memScoped {
         val size = alloc<ULongVar>()
@@ -128,4 +143,19 @@ internal class ResourcePainter(val path: String, private val ravenTexture: Rid, 
     }
 
     override fun toString(): String = "painterResource($path)"
+}
+
+/** An image file's alpha as a mask texture: [ResourcePainter.mask]. */
+internal class MaskPainter(val path: String, private val ravenTexture: Rid, private val epoch: Int) : Painter() {
+    override val texture: Rid
+        get() {
+            HostEpoch.checkCurrent(epoch)
+            return ravenTexture
+        }
+
+    override val region: TextureRegion get() = TextureRegion.Whole
+
+    override val mask: Painter get() = this
+
+    override fun toString(): String = "painterResource($path).mask"
 }

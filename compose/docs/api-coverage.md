@@ -8,13 +8,13 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-26, after [Raven: mask textures](issues/archive/0221-raven-mask-textures.md), which added a function `Icon` will bind.*
+*Last updated 2026-11-26, after [Icon and Google's icons](issues/archive/0222-icon-and-googles-icons.md).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 479 of 1,223 (39%) |
+| Functions used | 370 of 1,157 (31%) | 480 of 1,223 (39%) |
 | Widget types bound | 36 of 51 | 37 of 52 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 300 of the
@@ -40,7 +40,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_shell.h` | 23 | 56 | 41% | tray, taskbar, parts of the header bar and dock area |
 | `raven_text_editor.h` | 24 | 53 | 45% | undo/redo availability, selection, zoom, token colours |
 | `raven_dialogs.h` | 26 | 41 | 63% | popups, system notifications |
-| `raven_resources.h` | 17 | 29 | 59% | SVG and async textures, text measuring; mask textures until `Icon` |
+| `raven_resources.h` | 18 | 29 | 62% | SVG and async textures, text measuring |
 | `raven_style.h` | 17 | 27 | 63% | per-style theme overrides, wallpaper |
 | `raven_touch.h` | 0 | 23 | 0% | touch, pen and gestures |
 | `raven_accessibility.h` | 18 | 22 | 82% | colour filters, getters |
@@ -54,7 +54,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_viewport.h` | 8 | 9 | 89% | |
 | `raven_emscripten.h` | 0 | 7 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
-| **Total** | **479** | **1,223** | **39%** | |
+| **Total** | **480** | **1,223** | **39%** | |
 
 ## Not needed by design
 
@@ -98,6 +98,7 @@ Found while doing them:
 |---|---|---|
 | Leading and trailing icons on `TextField` (a password toggle, a search glass, a clear button) | two Raven changes: `Rtext_input_set_insets`, `Rwidget_set_focus_on_click` | **Done** ([0200](issues/archive/0200-leading-and-trailing-icons-on-textfield.md)) |
 | The XML translator emitting `Password`, `MaxLength` and a TextInput's action | translator only | **Done** ([0201](issues/archive/0201-textinputs-password-maxlength-and-action-in-the-translator.md)) |
+| `Icon`, tinted exactly, for any icon from fonts.google.com/icons | a Raven change: `Rtexture_create_mask_from_file_async` | **Done** ([0221](issues/archive/0221-raven-mask-textures.md), [0222](issues/archive/0222-icon-and-googles-icons.md)) |
 | Scroll-linked effects (collapsing toolbars) | two Raven changes: a pre-scroll callback for `Modifier.nestedScroll`, and the drawn scroll offset | Roadmap, phase 5 gestures |
 | Raven's HTML copy | `Rclipboard_set_html`; Compose's `ClipboardManager` has nothing for it | Not planned |
 
@@ -143,8 +144,8 @@ SizeBox and Canvas are the other unbound widget types, which Compose idioms cove
   The selected item is controlled state already; the item at a point waits for drags inside the
   app.
 - **Slider**: no vertical orientation (`Rslider_set_orientation`).
-- **Textures**: no SVG or async loading (`Rtexture_create_from_svg`, `_create_async`), which vector
-  icons need.
+- **Textures**: no SVG data in memory or async loading from bytes (`Rtexture_create_from_svg`,
+  `_create_async`); `painterResource` reads SVG files, and `Icon` draws them as masks.
 
 ## What this means for phase 5
 

@@ -211,8 +211,14 @@ private val FontSizeMetric = Property<TextUnit> { widget, size ->
  * ```
  * var hidden by remember { mutableStateOf(true) }
  * TextField(password, { password = it },
+ *     leadingIcon = { Icon(painterResource("icons/lock.svg"), contentDescription = null) },
  *     visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
- *     trailingIcon = { TextButton(onClick = { hidden = !hidden }) { Text(if (hidden) "Show" else "Hide") } })
+ *     trailingIcon = {
+ *         TextButton(onClick = { hidden = !hidden }) {
+ *             Icon(painterResource(if (hidden) "icons/visibility.svg" else "icons/visibility_off.svg"),
+ *                 contentDescription = if (hidden) "Show password" else "Hide password")
+ *         }
+ *     })
  * ```
  *
  * Only single-line fields exist: `CodeEditor` edits several lines.
