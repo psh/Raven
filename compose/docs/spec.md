@@ -1380,6 +1380,37 @@ Web pages shown by the system's engine (WKWebView, WebView2) over Raven's System
 - The XML translator turns `<SystemWebView>` into `WebView(rememberWebViewState...)` from its
   source, URL or HTML, with a comment where the app handles the page's messages.
 
+### Maps (phase 5)
+
+`compose-raven-map` holds two maps over two Raven widgets: `MapView` over upstream's raster
+MapView, which landed in Raven first and so keeps the name, and `VectorMapView` over the fork's
+vector map ([Maps: raster tiles beside the vector map](issues/archive/0250-maps-raster-tiles-beside-the-vector-map.md)). They share a vocabulary (a camera of latitude, longitude and zoom, and a
+`TileSource` by z/x/y), not a widget.
+
+- **`TileSource`** (`suspend tile(z, x, y): ByteArray?`, `minZoom`, `maxZoom`): the bytes of a
+  tile in its map's format, vector tiles for `VectorMapView` and PNG or JPEG for `MapView`; null
+  where there is none, a throw to be asked again later. Called on `Dispatchers.Default` and
+  cancelled when the map no longer needs the tile. **`TileSource.files(pathTemplate)`** has Raven
+  read the tiles from files (`Rmap_view_set_tile_path`), for `MapView`.
+- **`MapView(tiles: TileSource, modifier = Modifier, state = rememberMapViewState(latitude,
+  longitude, zoom), markers: List<MapMarker> = emptyList(), onMarkerClick: (key: Any) -> Unit = {},
+  attribution: String? = null, zoomRange = 0.0..19.0, tileSize = 256, cacheSize)`** over
+  `Rmap_view_*`. **`MapViewState`**: `latitude`, `longitude` and `zoom`, written by the app and by
+  the user's drags, wheel and pinches (Raven's view callback); `suspend animateTo(latitude,
+  longitude, zoom)` (`Rmap_view_animate_to`, returning when the flight ends); `latLonToScreen`,
+  `screenToLatLon` and `cacheUsage()`. **`MapMarker(key, latitude, longitude, label = "", color =
+  Color.Unspecified)`**: a changed list moves, relabels, adds or removes markers by key.
+- **`VectorMapView(style: MapStyle, tiles: TileSource, modifier, state =
+  rememberVectorMapViewState(...), attribution, zoomRange, capacity)`** with `VectorMapViewState`
+  (`latitude`, `longitude`, `zoom`, `stats()`): what `compose-raven-map` called `MapView` until
+  phase 5, renamed. `MapStyle` keeps its name: only the vector map has a style. What the vector map
+  lacks beside `MapView` is ported in
+  [Vector map: features from upstream's MapView](issues/0271-vector-map-features-from-upstreams-mapview.md).
+- Tests are headless: tiles from a Kotlin `TileSource`, marker clicks and view changes sent as
+  Raven's callbacks; no new harness API.
+- The XML translator turns `<MapView>` (`<Map>`, `<TileMap>`) and its `<Marker>` children into
+  `MapView(...)` and a list of markers keyed by their order.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -2020,6 +2051,15 @@ size" and its answer; and a log of the page's messages. The page is read from Ra
 Raven's message. No port gaps; the headless test checks the controls on the unsupported path
 ([The web: SystemWebView](issues/archive/0249-the-web-systemwebview.md)).
 
+### `samples/map` (phase 5)
+
+A port of Raven's `examples/map`: tiles it draws itself, offline, from a Kotlin `TileSource` as the
+C example draws them from `world.h` (or tiles read from files with `TileSource.files`), the cities'
+markers, World, Europe, Americas and Asia flying there with `animateTo`, zoom in and out, a click
+on a marker flying to it, and the place and cache usage in a label. `RAVEN_MAP_DEMO`'s tour, the C
+example faking a drag and the wheel to show itself, isn't ported: the headless test covers the same
+paths through the state. No port gaps ([Maps: raster tiles beside the vector map](issues/archive/0250-maps-raster-tiles-beside-the-vector-map.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2181,6 +2221,12 @@ for change 6, which only a real macOS window reaches.
     `Rpdf_view_set_zoom` and `Rpdf_view_set_fit`. Raven reports only the page today, so the
     `pdf` example polls the zoom on a timer. Planned in [Documents: PdfView](issues/archive/0247-documents-pdfview.md).
 
+17. **The vector map's own names** (required so that upstream's map keeps `Map`, to be made): the
+    fork's vector map widget, already the class `VectorMap`, has its C API renamed from `Rmap_*` to
+    `Rvector_map_*`, `R_WIDGET_MAP` to `R_WIDGET_VECTOR_MAP` and `RAVEN_WITH_MAP` to
+    `RAVEN_WITH_VECTOR_MAP`, with `test_vector_map` and `vector_map_benchmark`; upstream's MapView
+    owns `<Map>` and `Rmap_view_*`. Planned in [Maps: raster tiles beside the vector map](issues/archive/0250-maps-raster-tiles-beside-the-vector-map.md).
+
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
 [Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md),
@@ -2210,6 +2256,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `PdfView` with a `PdfViewState`; no search | no PDF view | [8](#pdfview-phase-5) |
 | `DiffView` with a `DiffViewState` whose `currentChange` follows navigation only; Raven's rows unbound | no diff view | [8](#diffview-phase-5) |
 | `WebView(state)` with one `WebViewState` for observed values and commands; no progress, interception, replies, native handle or back key; popups go under the view | compose-webview-multiplatform's `WebViewState` and `WebViewNavigator`, loading progress, a request interceptor and a JS bridge with replies | [8](#webview-phase-5) |
+| `MapView` (raster, markers) and `VectorMapView` (a MapLibre style), sharing `TileSource` | no maps | [8](#maps-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
