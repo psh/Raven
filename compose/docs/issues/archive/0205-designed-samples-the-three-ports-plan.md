@@ -23,8 +23,8 @@ and their implementation tickets, the first of the map's implementation order.
 Resolved on 2026-11-25 in conversation. The three ports are written into spec section 10
 (`samples/effects`, `samples/viewport-opengl`, `samples/viewport-vulkan`) and filed as
 implementation tickets, built in this order:
-[samples/effects](../0218-samples-effects.md), [samples/viewport-opengl](../0219-samples-viewport-opengl.md),
-[samples/viewport-vulkan](../0220-samples-viewport-vulkan.md).
+[samples/effects](0218-samples-effects.md), [samples/viewport-opengl](0219-samples-viewport-opengl.md),
+[samples/viewport-vulkan](0220-samples-viewport-vulkan.md).
 
 - **`effects`** ports as it is, with no library change: `Surface(effect, effectStyle)` and
   `ShaderEffect.fromFile(backdrop, animated)` cover every card, and a `Card` composable stands for

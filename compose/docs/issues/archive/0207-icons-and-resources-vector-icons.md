@@ -29,8 +29,8 @@ another way), and whether Material Icons' two-tone `opacity` layers keep their o
 
 Resolved on 2026-11-25 in conversation. Written into spec section 8 (the `Icon` bullet under
 Images and resources), section 11 (change 12, to be made) and section 12 (two rows), and filed as
-[Raven: mask textures](../0221-raven-mask-textures.md) and
-[Icon and Google's icons](../0222-icon-and-googles-icons.md), in that order.
+[Raven: mask textures](0221-raven-mask-textures.md) and
+[Icon and Google's icons](0222-icon-and-googles-icons.md), in that order.
 
 - **Tint**: an icon is drawn as a **mask**, its alpha only, so the tint gives exactly its colour.
   This is a Raven change, `Rtexture_create_mask_from_file_async(path)`, into the existing

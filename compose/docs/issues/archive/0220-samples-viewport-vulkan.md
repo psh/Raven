@@ -7,10 +7,10 @@ status: closed
 Port Raven's `examples/viewport_vulkan` to `compose/samples/viewport-vulkan`, over
 `compose-raven-vulkan`: the scene rendered into the app's own image and shown as a texture, and
 drawn in Raven's frame by `VulkanViewport(onDraw)`. Spec:
-[10: `samples/viewport-vulkan`](../spec.md#samples-viewport-vulkan-phase-5). Planned in
-[Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md).
+[10: `samples/viewport-vulkan`](../../spec.md#samples-viewport-vulkan-phase-5). Planned in
+[Designed samples: the three ports' plan](0205-designed-samples-the-three-ports-plan.md).
 
-**Depends on:** [samples/viewport-opengl](archive/0219-samples-viewport-opengl.md).
+**Depends on:** [samples/viewport-opengl](0219-samples-viewport-opengl.md).
 
 ## Deliverables
 

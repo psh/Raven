@@ -6,10 +6,10 @@ status: closed
 
 Port Raven's `examples/viewport_opengl` to `compose/samples/viewport-opengl`, over
 `compose-raven-opengl`'s `OpenGLViewport`. Spec:
-[10: `samples/viewport-opengl`](../spec.md#samples-viewport-opengl-phase-5). Planned in
-[Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md).
+[10: `samples/viewport-opengl`](../../spec.md#samples-viewport-opengl-phase-5). Planned in
+[Designed samples: the three ports' plan](0205-designed-samples-the-three-ports-plan.md).
 
-**Depends on:** [samples/effects](archive/0218-samples-effects.md).
+**Depends on:** [samples/effects](0218-samples-effects.md).
 
 ## Deliverables
 

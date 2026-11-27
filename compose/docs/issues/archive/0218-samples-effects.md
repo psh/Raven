@@ -6,8 +6,8 @@ status: closed
 
 Port Raven's `examples/effects` to `compose/samples/effects`: Raven's eight built-in effects as
 cards, and the app's own `wave.spv` and `liquid.spv`. Spec:
-[10: `samples/effects`](../spec.md#samples-effects-phase-5). Planned in
-[Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md).
+[10: `samples/effects`](../../spec.md#samples-effects-phase-5). Planned in
+[Designed samples: the three ports' plan](0205-designed-samples-the-three-ports-plan.md).
 
 **Depends on:** nothing open. This is the first ticket of phase 5's implementation sequence.
 

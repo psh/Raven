@@ -43,4 +43,4 @@ Resolved on 2026-11-26 by research: the findings are on the local branch `resear
   builder; or a `Printable`-style page callback, which needs new Raven C.
 
 Since printing needs PDF writing, the two are designed together as one batch:
-[Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
+[Printing and PDF documents: what Kotlin exposes](../0252-printing-and-pdf-documents-what-kotlin-exposes.md).

@@ -6,10 +6,10 @@ status: closed
 
 Add the `raven.compose-resources` convention plugin in `build-logic`, which copies an app's
 `composeResources/` beside its executables and generates `Res`, and the runtime that takes it.
-Spec: [8: Generated resources](../spec.md#generated-resources-phase-5). Planned in
-[Icons and resources: generated resources](archive/0208-icons-and-resources-generated-resources.md).
+Spec: [8: Generated resources](../../spec.md#generated-resources-phase-5). Planned in
+[Icons and resources: generated resources](0208-icons-and-resources-generated-resources.md).
 
-**Depends on:** [Icon and Google's icons](archive/0222-icon-and-googles-icons.md), the ticket before it in
+**Depends on:** [Icon and Google's icons](0222-icon-and-googles-icons.md), the ticket before it in
 phase 5's implementation sequence.
 
 ## Deliverables

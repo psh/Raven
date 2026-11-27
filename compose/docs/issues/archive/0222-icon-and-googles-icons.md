@@ -7,10 +7,10 @@ status: closed
 Add `Icon(painter, contentDescription, modifier, tint)` to compose-raven-foundation, drawing a
 `painterResource` as a mask, and prove that any icon downloaded from
 <https://fonts.google.com/icons> renders correctly. Spec:
-[8: Images and resources](../spec.md#images-and-resources-phase-3) (the `Icon` bullet) and section
-12. Planned in [Icons and resources: vector icons](archive/0207-icons-and-resources-vector-icons.md).
+[8: Images and resources](../../spec.md#images-and-resources-phase-3) (the `Icon` bullet) and section
+12. Planned in [Icons and resources: vector icons](0207-icons-and-resources-vector-icons.md).
 
-**Depends on:** [Raven: mask textures](archive/0221-raven-mask-textures.md).
+**Depends on:** [Raven: mask textures](0221-raven-mask-textures.md).
 
 ## Deliverables
 

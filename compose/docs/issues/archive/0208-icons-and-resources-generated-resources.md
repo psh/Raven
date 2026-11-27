@@ -19,8 +19,8 @@ take them. The answer is the spec section and its implementation tickets.
 ## Resolution
 
 Resolved on 2026-11-26 in conversation. Written into spec section 8 (Generated resources) and
-section 12, and filed as [Generated resources: Res and the plugin](../0223-generated-resources-res-and-the-plugin.md)
-and [Generated resources: embedding](../0224-generated-resources-embedding.md), in that order.
+section 12, and filed as [Generated resources: Res and the plugin](0223-generated-resources-res-and-the-plugin.md)
+and [Generated resources: embedding](0224-generated-resources-embedding.md), in that order.
 
 - **Shipping**: copied beside the executable into `resources/`, the default resource root, by
   default; embedding is opt-in (`embed = true`), through generated `registerResource` calls, since
