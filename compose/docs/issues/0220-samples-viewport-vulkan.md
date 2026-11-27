@@ -10,7 +10,7 @@ drawn in Raven's frame by `VulkanViewport(onDraw)`. Spec:
 [10: `samples/viewport-vulkan`](../spec.md#samples-viewport-vulkan-phase-5). Planned in
 [Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md).
 
-**Depends on:** [samples/viewport-opengl](0219-samples-viewport-opengl.md).
+**Depends on:** [samples/viewport-opengl](archive/0219-samples-viewport-opengl.md).
 
 ## Deliverables
 

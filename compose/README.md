@@ -79,7 +79,7 @@ samples/notepad/launch-notepad README.md
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-notes`, `launch-overlay`,
 `launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
-`launch-music`, `launch-effects` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
+`launch-music`, `launch-effects`, `launch-viewport-opengl` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 `samples/notes` is the list of notes every language's samples have. Started with `RAVEN_MCP=1`, it
@@ -124,6 +124,12 @@ as its first argument. Edit those files while it runs and the window follows.
 and two shaders of the application, one reading what is behind it), runs the same way:
 `./gradlew :samples:effects:runReleaseExecutableMacosArm64`, or `effects.kexe`. It reads `wave.spv`
 and `liquid.spv` from Raven's `examples/effects`, whose path the build writes into it.
+
+`samples/viewport-opengl`, the port of Raven's `examples/viewport_opengl` (a cube drawn with
+OpenGL on a native child window over the viewport, a speed slider, a wireframe switch and the GL
+renderer), runs the same way on macOS: `./gradlew :samples:viewport-opengl:runReleaseExecutableMacosArm64`,
+or `viewport-opengl.kexe`. It draws in OpenGL 3.2 core, as `compose-raven-opengl`'s context is, where
+the C example uses OpenGL 1.1. Linux waits for GLX.
 
 `samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion

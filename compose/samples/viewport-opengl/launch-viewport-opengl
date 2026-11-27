@@ -1,0 +1,3 @@
+#!/bin/sh
+# Builds samples/viewport-opengl for this machine and runs it (macOS: Linux waits for GLX).
+exec "$(dirname "$0")/../launch-sample" viewport-opengl "$@"
