@@ -76,7 +76,8 @@ into `compose/docs/spec.md`, every decision ticket is archived, and their implem
 filed in sequence, from
 [Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
 to [samples/blocks](0286-samples-blocks.md), batch ten built before batch nine. The patches below
-are the fog that remains, for a later map.
+are the fog that remains, moved on 2026-11-27 to
+[compose-raven phase 5 remaining fog](0287-compose-raven-phase-5-remaining-fog.md), which holds them now.
 
 - **Lazy pages**: composing only the pages near the one shown, for pagers of many pages; today
   every page is composed ([Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md)).

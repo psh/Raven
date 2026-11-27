@@ -61,7 +61,8 @@ resources, small widgets, lists at scale) are designed into `compose/docs/spec.m
 ticket is archived, and their implementation tickets are filed in sequence, from
 [samples/effects](archive/0218-samples-effects.md) to
 [Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md).
-The patches below are the fog that remains, for a later map.
+The patches below are the fog that remains, moved on 2026-11-27 to
+[compose-raven phase 5 remaining fog](0287-compose-raven-phase-5-remaining-fog.md), which holds them now.
 
 - **Gestures and drag**: Compose's coroutine `pointerInput { awaitPointerEventScope { } }`,
   `draggable`/`detectDragGestures` and long press beyond `onPointerEvent`; drop targets on widgets

@@ -252,8 +252,10 @@ designed on [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-wi
 2026-11-27), with printing and PDF documents as batch ten; their implementation tickets run from
 [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
 to [samples/blocks](issues/0286-samples-blocks.md). `browser` is out of scope there, since
-SystemWebView covers its web pages. The list below is the fog as it
-stood when the first map was charted.
+SystemWebView covers its web pages. The fog both maps left is charted on
+[compose-raven phase 5 remaining fog](issues/0287-compose-raven-phase-5-remaining-fog.md)
+(2026-11-27) as batches eleven to eighteen. The list below is the fog as it stood when the first
+map was charted.
 
 **Phase 5 fog** (not yet designed): specialist widgets (for `studio` and `browser`), custom
 `Layout {}`, graphics extras, generated resources, vector icons, right-to-left layout, lazy
