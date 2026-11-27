@@ -51,6 +51,7 @@ fog and [Raven API coverage](../api-coverage.md).
 - [Small widgets: notifications and tray](archive/0213-small-widgets-notifications-and-tray.md): Compose Desktop's `Tray` and notifications (also without a tray, returning whether shown); taskbar progress as a `Window` parameter, `TaskbarBadge` and `DockMenu` composables; no jump list. Filed as [Small widgets: Tray and notifications](0231-small-widgets-tray-and-notifications.md) and [Small widgets: taskbar progress, badge and Dock menu](0232-small-widgets-taskbar-progress-badge-and-dock-menu.md).
 - [Lists at scale: lazy virtualisation](archive/0214-lists-at-scale-lazy-virtualisation.md): only the items in view, between two Spacers in the ScrollBox, sizes cached by key with estimates, the place held by key, focus pinned; `layoutInfo` and `canScroll*`; no Raven change. Filed as [Lists at scale: the lazy list window](0233-lists-at-scale-the-lazy-list-window.md) and [Lists at scale: layoutInfo and contentType](0234-lists-at-scale-layoutinfo-and-contenttype.md).
 - [Lists at scale: Table](archive/0215-lists-at-scale-table.md): Raven's Table in virtual mode, text cells from a `column(...) { text }` DSL; sorting and selection controlled, the app sorting its items; widths the user's. Filed as [Lists at scale: Table](0235-lists-at-scale-table.md).
+- [Lists at scale: TileView](archive/0216-lists-at-scale-tileview.md): Raven's TileView wrapped, the app's items and a controlled selection of keys as the model, a `tile: (T) -> TileContent` for what each tile shows; the lazy grids left alone. Filed as [Lists at scale: TileView](0236-lists-at-scale-tileview.md).
 
 ## Not yet specified
 
@@ -73,7 +74,11 @@ fog and [Raven API coverage](../api-coverage.md).
   `Layout { }`, which needs a Raven change (custom widgets that take children, measure and arrange
   callbacks). Each needs its scope and API shape decided before it can be ticketed.
 - **Lazy extras**: sticky headers, `Modifier.animateItem` and prefetching ahead of the scroll for
-  `LazyColumn`/`LazyRow`.
+  `LazyColumn`/`LazyRow`; a DSL that keeps intervals and asks for keys and content by index only
+  near the view, so `items(count) { }` over paged data costs only what is on screen (today every
+  key is computed on each composition).
+- **Grids**: virtualising `LazyVerticalGrid`, a `LazyHorizontalGrid`, and a virtual grid scrolling
+  both ways (spreadsheet style); left alone by [Lists at scale: TileView](archive/0216-lists-at-scale-tileview.md).
 - **Table extras**: composable cells (a table over the lazy lists), several rows selected, a
   context menu, and widths the app controls (a Raven change to report a resize).
 - **Lottie**: an opt-in `compose-raven-lottie` module over ThorVG; the spike passes, and the

@@ -1056,7 +1056,7 @@ is.
 
 From phase 5, `LazyColumn` and `LazyRow` compose only the items in view, so a list of thousands
 of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](issues/archive/0214-lists-at-scale-lazy-virtualisation.md)).
-`LazyVerticalGrid`'s virtualisation is decided with TileView.
+`LazyVerticalGrid` still composes every item.
 
 - **Spacers in the ScrollBox**: the list stays a `VerticalScroll`/`HorizontalScroll` holding a
   Spacer, the visible items (each in its internal Box), and a Spacer, each Spacer sized to the items
@@ -1126,6 +1126,45 @@ Compose has no data table, so the shape follows `ListView`'s.
   menu, and widths the app controls, which would need Raven to report a resize.
 - The XML translator maps `<Table>` and its `<Column>`s onto `Table`, its stored `<Row>`s
   becoming a `listOf` of each row's texts.
+
+### TileView (phase 5)
+
+`TileView` is Raven's virtualised grid of tiles, an icon over a name, for collections such as a
+folder of files or a library of assets: Raven asks for the tiles in view only, while it paints,
+so ten thousand tiles cost what ten do ([Lists at scale: TileView](issues/archive/0216-lists-at-scale-tileview.md)).
+The app's items and selection are the model; one function says what each item's tile shows.
+
+- **`TileView(items: List<T>, key: (T) -> Any, selection: Set<Any>, onSelectionChange: (Set<Any>) -> Unit,
+  modifier, tileSize = DpSize(112.dp, 112.dp), iconSize = 64.dp, spacing: Dp? = null,
+  layout = TileLayout.Tiles, emptyText: String? = null, onActivate: (T) -> Unit = {},
+  contextMenuItems: ((T?) -> List<ContextMenuItem>)? = null, state = rememberTileViewState(),
+  tile: (T) -> TileContent)`**:
+  ```kotlin
+  TileView(files, key = { it.path }, selection, { selection = it }, onActivate = { open(it) }) { file ->
+      TileContent(file.name, icon = icons[file.kind], detail = file.sizeText)
+  }
+  ```
+- **`TileContent(text, icon: Painter? = null, detail: String? = null, badge: String? = null)`**:
+  the name, the icon over it, a dimmer second line and a small text at the top right. `tile` isn't
+  `@Composable`: Raven calls it while painting, for the tiles in view, reading the latest `items`.
+  Painters are made in composition beforehand, as for `TreeView`'s `itemIcon`. The tint, the
+  icon's corner radius and the name's colour stay the theme's.
+- **`TileLayout.Tiles`** is the grid; **`TileLayout.Rows`** one item a line, as wide as the view,
+  the icon on the left. It and `spacing` (null: Raven's) go through `Rwidget_set_attribute`, as
+  Raven has no C setter for them.
+- **Selection** is a controlled set of keys, as `TreeView`'s, so it survives the items being
+  reordered: the user's change (a click, Ctrl or Shift and a click, a rubber band, Ctrl + A, a right
+  click selecting first) calls `onSelectionChange`, and one the app doesn't take reverts. Raven
+  always selects several, so there is no `multiSelect`.
+- **Changes**: the same number of items redraws the tiles (`Rtile_view_refresh`); a new number gives
+  them again (`Rtile_view_set_items`), selecting the app's keys again as Raven clears its selection.
+- `onActivate` gets a tile double-clicked or Enter pressed on it; `contextMenuItems`, given the
+  tile right-clicked or null for the empty space, lists the menu opened at the pointer.
+- **`TileViewState`** (`rememberTileViewState()`) has only `suspend revealItem(index)`
+  (`Rtile_view_scroll_to`); Raven can't report the position, so it isn't saveable.
+- **Not yet**: dragging tiles out and the drop highlight (with drags inside the app), and
+  `Rtile_view_get_item_at`, which only drops need.
+- The XML translator maps `<TileView>`'s attributes onto the parameters; the app gives the items.
 
 ### Tabs and grids (phase 3)
 
@@ -1916,6 +1955,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `VulkanViewport.onDraw` runs on Raven's render thread | drawing happens on the UI thread | [8](#8-component-vocabulary) |
 | `LazyColumn`/`LazyRow` compose every item in phase 3; from phase 5 the items in view and one past each edge, sized by estimate until measured | only visible items are composed, measured as they are | [8](#lazy-virtualisation-phase-5) |
 | `Table` has text cells only, one selected row, no context menu, and widths the user sets, not the app; the app sorts its items | no data table in Compose | [8](#table-phase-5) |
+| `TileView`'s tiles are described by data (`TileContent`), not composed; no drags out yet | no tile view in Compose | [8](#tileview-phase-5) |
 | `contentType` is accepted and ignored, and there are no sticky headers, `animateItem` or prefetching | compositions reused by content type | [8](#lazy-virtualisation-phase-5) |
 | `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
 | `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
