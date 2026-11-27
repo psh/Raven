@@ -10,7 +10,7 @@ multiplies, so they can't be coloured today. Spec:
 [11: change 12](../spec.md#11-required-raven-changes). Planned in
 [Icons and resources: vector icons](archive/0207-icons-and-resources-vector-icons.md).
 
-**Depends on:** [samples/viewport-vulkan](0220-samples-viewport-vulkan.md), the ticket before it in
+**Depends on:** [samples/viewport-vulkan](archive/0220-samples-viewport-vulkan.md), the ticket before it in
 phase 5's implementation sequence.
 
 ## Deliverables
