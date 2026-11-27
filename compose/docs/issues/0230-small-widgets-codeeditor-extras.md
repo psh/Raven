@@ -9,7 +9,7 @@ selection, scrolling to a line, zoom, four editing options, and `SyntaxTheme` th
 `LocalSyntaxTheme`. Spec: [8: CodeEditor's phase 5 extras](../spec.md#phase-2-codeeditors-editing-extras)
 and section 12. Planned in [Small widgets: the CodeEditor extras](archive/0212-small-widgets-the-codeeditor-extras.md).
 
-**Depends on:** [Raven: token colours per editor](0229-raven-token-colours-per-editor.md).
+**Depends on:** [Raven: token colours per editor](archive/0229-raven-token-colours-per-editor.md).
 
 ## Deliverables
 

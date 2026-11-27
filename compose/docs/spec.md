@@ -2297,7 +2297,7 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 ## 11. Required Raven changes
 
 These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
-6, 7, 8, 9, 10 and 11 are made, one commit each on the `compose-raven` branch, with a C test except
+6, 7, 8, 9, 10, 11 and 13 are made, one commit each on the `compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -2378,9 +2378,12 @@ for change 6, which only a real macOS window reaches.
     samples as white with that alpha, so a tint gives exactly its colour; an SVG is redrawn at each
     scale as a colour texture is. Planned in [Icons and resources: vector icons](issues/archive/0207-icons-and-resources-vector-icons.md).
 13. **`Rtext_editor_set_token_color(Rid editor, RToken token, float r, float g, float b, float a)`**
-    and `Rtext_editor_clear_token_colors(Rid editor)` (required for `SyntaxTheme`, to be made): a
-    colour for one kind of token in one editor, over its theme's; Raven's are otherwise only the
-    global theme's (`Rtheme_set_token_color`). Planned in
+    and `Rtext_editor_clear_token_colors(Rid editor)` (required for `SyntaxTheme`, made in
+    `c3d5a2b`): a colour for one kind of token in one editor, over its theme's; Raven's are
+    otherwise only the global theme's (`Rtheme_set_token_color`). With
+    `Rtext_editor_get_token_color`, the colour the editor paints a kind of token in, for the tests;
+    an invalid kind (`R_TOKEN_TEXT` among them) is an error. With a C test in
+    `tests/test_text_editor.c`. Planned in
     [Small widgets: the CodeEditor extras](issues/archive/0212-small-widgets-the-codeeditor-extras.md).
 14. **`Rtree_view_set_expanded_callback(Rid tree, RTreeExpandCallback callback, void* user_data)`**,
     `typedef void (*RTreeExpandCallback)(Rid tree, Rid item, int expanded, void* user_data)`

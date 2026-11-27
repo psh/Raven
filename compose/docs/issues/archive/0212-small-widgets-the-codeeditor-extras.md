@@ -20,7 +20,7 @@ section and its implementation tickets.
 
 Resolved on 2026-11-26 in conversation. Written into spec section 8 (CodeEditor's phase 5 extras),
 section 11 (change 13, to be made) and section 12, and filed as
-[Raven: token colours per editor](../0229-raven-token-colours-per-editor.md) and
+[Raven: token colours per editor](0229-raven-token-colours-per-editor.md) and
 [Small widgets: CodeEditor extras](../0230-small-widgets-codeeditor-extras.md), in that order.
 
 - **On the state**: `canUndo`, `canRedo` and `selection: EditorSelection?` (`TextPosition`s in
