@@ -144,7 +144,7 @@ Found while doing them:
 | Carousel | 17 | pages swiped one at a time | designed: [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md) |
 | TimePicker | 15 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
 | DatePicker | 13 | | designed: [Small widgets: DatePicker and TimePicker](issues/0227-small-widgets-datepicker-and-timepicker.md) |
-| Toast | 13 | transient messages | charted: batch 5 of [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) |
+| Toast | 13 | transient messages | designed: [Overlays and pagers: SnackbarHost](issues/0257-overlays-and-pagers-snackbarhost.md) |
 | Rating | 8 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 | Pagination | 6 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 | Breadcrumb | 6 | | designed: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |

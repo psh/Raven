@@ -1218,6 +1218,32 @@ shaped after Compose Foundation's pagers, with Raven's dots, arrows, loop and au
   `Orientation`, `Page` as `initialPage`, and `Loop`, `Autoplay`, `Indicators` and `Arrows` as their
   parameters.
 
+### Snackbars (phase 5)
+
+Short messages over the content, shown through Material 3's `SnackbarHost` and `SnackbarHostState`
+over Raven's Toast, with Raven's kinds, and stacking when asked, over Raven change 15 ([Overlays and pagers: Toast](issues/archive/0243-overlays-and-pagers-toast.md)).
+
+- **`SnackbarHost(hostState: SnackbarHostState, modifier = Modifier, maxVisible = 1)`** is a Toast
+  the app places where the messages should appear, as Raven's Toast is placed in an Overlay:
+  `Box { content; SnackbarHost(state, Modifier.align(Alignment.BottomCenter).padding(16.dp)) }`.
+  With `maxVisible = 1` the messages wait their turn (`R_TOAST_SEQUENCE`), as Material's do; above
+  1 they stack (`R_TOAST_STACK`, `Rtoast_set_max_visible`), the newest at the bottom, so a host at
+  the bottom grows upwards. Raven's replace mode isn't used: cancelling the earlier call does it.
+- **`SnackbarHostState`** (`remember { SnackbarHostState() }`) has only
+  `suspend showSnackbar(message: String, actionLabel: String? = null, kind: SnackbarKind =
+  SnackbarKind.Info, duration: SnackbarDuration = if (actionLabel == null) Short else Indefinite):
+  SnackbarResult`. It returns `ActionPerformed` when the message's button is clicked and `Dismissed`
+  when it times out or is cleared. Cancelling the calling coroutine hides the message, or takes it
+  out of the queue if it waits (`Rtoast_hide_message`).
+- **`SnackbarKind`**: `Info`, `Success`, `Warning`, `Error` (`RToastKind`), coloured as Raven colours
+  them. **`SnackbarDuration`**: `Short` (4 s), `Long` (10 s), `Indefinite`.
+- No `currentSnackbarData` (ambiguous once messages stack), no `withDismissAction` (Raven's messages
+  have only their one button), and no `snackbar` slot (Raven draws the messages).
+- Tests are headless: a message timing out, its action, queuing, a stack of three, cancelling, and
+  the kinds. There is no sample: no example shows a Toast alone.
+- The XML translator turns `<Toast>` into a `SnackbarHost` at its place, with a remembered
+  `SnackbarHostState` and a comment where the app's code shows its messages.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -1973,6 +1999,15 @@ for change 6, which only a real macOS window reaches.
     also calls the selection-changed callback, which it skips today. Planned in
     [Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md).
 
+15. **Toast message ids**: `int Rtoast_show_message(Rid toast, const char* text, RToastKind kind,
+    double seconds)` returning the message's id, `Rtoast_hide_message(Rid toast, int id)` hiding it
+    or taking it out of the queue, and `Rtoast_set_message_ended_callback(Rid toast,
+    RToastEndedCallback callback, void* user_data)`, `typedef void (*RToastEndedCallback)(Rid toast,
+    int id, int by_action, void* user_data)` (required for `showSnackbar`'s result, to be made):
+    called once for every message that goes, timed out, hidden, cleared, replaced or ended by its
+    button. Raven reports only the button today, and a message has no identity, so the end of one
+    message among several can't be told. Planned in [Overlays and pagers: Toast](issues/archive/0243-overlays-and-pagers-toast.md).
+
 Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.md),
 [Testing strategy](issues/archive/0012-testing-strategy.md),
 [Kotlin highlighting in CodeEditor](issues/archive/0017-kotlin-highlighting.md),
@@ -1997,6 +2032,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `VerticalSlider` is controlled by a `value` | Material 3's `VerticalSlider(state: SliderState)` | [8](#rating-pagination-breadcrumb-and-verticalslider-phase-5) |
 | `HorizontalPager`/`VerticalPager` compose every page, and take `loop`, `indicators`, `arrows` and `autoplay`; no `contentPadding`, `pageSpacing`, `pageSize`, `beyondViewportPageCount`, `flingBehavior`, `key` or `userScrollEnabled` | lazy pages and those parameters; dots, loops and autoplay are the app's to build | [8](#pagers-phase-5) |
 | `PagerState` has only `currentPage`, `pageCount`, `scrollToPage` and `animateScrollToPage` | `currentPageOffsetFraction`, `settledPage`, `targetPage`, `isScrollInProgress` and more | [8](#pagers-phase-5) |
+| `showSnackbar` takes a `kind` (`SnackbarKind`), `SnackbarHost` a `maxVisible` that stacks messages; no `withDismissAction`, `currentSnackbarData` or `snackbar` slot | no kinds, one message at a time, a dismiss button and custom snackbars | [8](#snackbars-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
