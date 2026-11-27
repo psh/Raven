@@ -18,7 +18,7 @@ controlled values (a node moved, a link made or broken) and which stay Raven's, 
 content is composable, and the view's state, following the patterns the earlier batches settled
 (`PlotState`, `TreeView`'s controlled expansion). `studio` uses it with Timeline. The answer is
 the spec section and its implementation tickets, and with
-[Specialist widgets: Timeline](../0277-specialist-widgets-timeline.md) the `studio` port.
+[Specialist widgets: Timeline](0277-specialist-widgets-timeline.md) the `studio` port.
 
 ## Resolution
 

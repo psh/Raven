@@ -1479,6 +1479,35 @@ as `ListView`'s selection is ([Specialist widgets: NodeGraph](issues/archive/027
   harness API. The XML translator turns `<NodeGraph>` with `<Type>`, `<Node>`, `<Input>`, `<Output>`
   and `<Link>` into the lists, keyed by name. `studio` is ported with Timeline.
 
+### Timeline (phase 5)
+
+Raven's Timeline over app-owned tracks and items, the user's edits controlled as `NodeGraph`'s are,
+and its playhead in a `TimelineState`, as a pager's position is ([Specialist widgets: Timeline](issues/archive/0277-specialist-widgets-timeline.md)).
+
+- **`Timeline(tracks: List<TimelineTrack>, modifier = Modifier, state = rememberTimelineState(),
+  markers: List<TimelineMarker> = emptyList(), selection: Set<Any> = emptySet(), onSelectionChange:
+  (Set<Any>) -> Unit = {}, onItemChange: (key: Any, trackKey: Any, start: Double, length: Double)
+  -> Unit = { _, _, _, _ -> }, onItemDelete: ((key: Any) -> Unit)? = null, onItemActivate: (key:
+  Any) -> Unit = {}, duration: Double, frameRate = 24.0, snapping = true, preset =
+  TimelinePreset.Auto, headerWidth: Dp? = null, rulerHeight: Dp? = null, trackHeight: Dp? = null)`**.
+  - **`TimelineTrack(key, name, color = Color.Unspecified, height = 0f, locked = false, muted =
+    false, items: List<TimelineItem>)`**, muted drawn dimmed, what it means the app's;
+    **`TimelineItem`**: `Clip(key, start, length, label = "", color = Color.Unspecified)` or
+    `Key(key, time)`; **`TimelineMarker(key, time, label = "")`**. Times in seconds; the lists are
+    diffed by key against Raven's tracks and items.
+  - **Controlled edits**: an item moved or trimmed (once per gesture, on release) calls
+    `onItemChange`; the Delete key removes items only when `onItemDelete` is given, as in Raven; the
+    selection is a set of item keys. An edit the app doesn't take reverts.
+- **`TimelineState`** (`rememberTimelineState(time = 0.0)`): observable `time` (Raven's time
+  callback: scrubbed or playing) and `isPlaying`; `play()`, `pause()`, `seek(seconds)`, `loop`; the
+  view `setView(start, end)` and `view()`, read when asked (Raven reports no change of view). Raven
+  runs the playback.
+- The finer parts (clips, keys, the playhead, the ruler) stay with Raven's theme styles, as
+  `NodeGraph`'s do.
+- Tests are headless: edits and the time sent as Raven's callbacks, refused edits reverting; no new
+  harness API. The XML translator turns `<Timeline>` with `<Track>`, `<Clip>`, `<Key>` and `<Marker>`
+  into the lists, keyed by their order.
+
 ### Tabs and grids (phase 3)
 
 - **`TabView(selectedIndex, onSelectedIndexChange, modifier, documents = false) { Tab(title,
@@ -2136,6 +2165,16 @@ M", zoom out and in with its percentage (over `PdfViewState`'s observable zoom),
 document's title. No port gaps; the headless test checks each control, those needing PDFium
 returning early without it ([Printing and PDF documents: what Kotlin exposes](issues/archive/0252-printing-and-pdf-documents-what-kotlin-exposes.md)).
 
+### `samples/studio` (phase 5)
+
+A port of Raven's `examples/studio`: the node graph with its typed pins, links refusing a loop
+(`canLink`), the selected nodes shown in a label and coloured from the `ColorPicker`; the timeline's
+tracks, clips, keys and markers, Play, Pause and Loop over `TimelineState`, the time in a label;
+and the presets of both picked from a `ComboBox`. The C example's XML live reload
+(`Rxml_set_reload_callback`) has no counterpart: the composition is the source. No port gaps; the
+headless test checks each control ([Specialist widgets: Timeline](issues/archive/0277-specialist-widgets-timeline.md), with
+[Specialist widgets: NodeGraph](issues/archive/0276-specialist-widgets-nodegraph.md)).
+
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
 
 The translator moves out of the sample into the library module `compose-raven-xml`, and the
@@ -2335,6 +2374,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `WebView(state)` with one `WebViewState` for observed values and commands; no progress, interception, replies, native handle or back key; popups go under the view | compose-webview-multiplatform's `WebViewState` and `WebViewNavigator`, loading progress, a request interceptor and a JS bridge with replies | [8](#webview-phase-5) |
 | `MapView` (raster, markers) and `VectorMapView` (a MapLibre style), sharing `TileSource` | no maps | [8](#maps-phase-5) |
 | `NodeGraph` over app-owned nodes and links, edits controlled; its view not observable; pin tags and emphasis, label widths, hidden links and badge colours not yet bound | no node graph | [8](#nodegraph-phase-5) |
+| `Timeline` over app-owned tracks and items, edits controlled; the playhead in a `TimelineState` Raven plays; its view not observable | no timeline | [8](#timeline-phase-5) |
 | `SyntaxTheme` and `LocalSyntaxTheme` colour `CodeEditor`'s tokens | no code editor | [8](#phase-2-codeeditors-editing-extras) |
 | `ApplicationScope.sendNotification` beside `TrayState.sendNotification`, each returning whether the system took it | notifications only through a `TrayState` | [8](#tray-notifications-and-taskbar-phase-5) |
 | `Window(taskbarProgress)`, `TaskbarBadge` and `DockMenu` | AWT's `Taskbar` | [8](#tray-notifications-and-taskbar-phase-5) |
