@@ -2,7 +2,8 @@
 #
 #   test_layout, test_widgets, test_xml, test_threads, test_memory, test_animation,
 #   test_text_editor, test_shell, test_dialogs, test_themes, test_markdown, test_tools,
-#   test_locale, test_fonts, test_touch, test_more_widgets, test_deep_trees
+#   test_locale, test_fonts, test_touch, test_more_widgets, test_deep_trees,
+#   test_mask_textures (with a backend of its own that records the textures)
 #       run headless (null platform + null backend): no display and no GPU are
 #       needed, so they run on any build machine.
 #   test_wayland
@@ -57,6 +58,7 @@ raven_add_test(test_driver)
 raven_add_test(test_raven_test)
 target_compile_definitions(test_driver PRIVATE "RAVEN_EXAMPLES_DIR=\"${PROJECT_SOURCE_DIR}/examples\"")
 raven_add_test(test_more_widgets)
+raven_add_test(test_mask_textures)
 if(NOT RAVEN_WITH_SVG)
 	target_compile_definitions(test_more_widgets PRIVATE RAVEN_TEST_NO_SVG)
 endif()

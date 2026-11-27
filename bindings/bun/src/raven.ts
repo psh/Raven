@@ -370,6 +370,7 @@ const _symbols = {
 	Rtexture_get_density: { args: ["u32"], returns: "f32" },
 	Rtexture_create_from_file: { args: ["ptr"], returns: "u32" },
 	Rtexture_create_from_file_async: { args: ["ptr"], returns: "u32" },
+	Rtexture_create_mask_from_file_async: { args: ["ptr"], returns: "u32" },
 	Rtexture_create_from_pixels: { args: ["ptr", "i32", "i32"], returns: "u32" },
 	Rtexture_update: { args: ["u32", "ptr", "i32", "i32"], returns: "void" },
 	Rimage_decode: { args: ["ptr", "usize", "ptr", "ptr"], returns: "ptr" },
@@ -8342,6 +8343,25 @@ export function Rtexture_create_from_file(path: string | null): Rid {
 /** Reads and decodes the file on a worker thread. */
 export function Rtexture_create_from_file_async(path: string | null): Rid {
 	return _lib.Rtexture_create_from_file_async(_s(path));
+}
+
+/**
+ * Reads an image file as a mask, on a worker thread: only its alpha
+ * is kept, in an R_TEXTURE_ALPHA8 texture, which is drawn as white with that
+ * alpha. The tint of the Image showing it (Rimage_set_tint_color, or the text
+ * colour with Rimage_set_tint_text) then gives exactly its colour, where a
+ * colour texture's pixels are multiplied by it: an icon drawn in black, as
+ * the Material icons are, is coloured this way. What is see-through stays
+ * so, and a part drawn half see-through (a two-tone icon's lighter layer)
+ * is the tint, lighter. Any image Rtexture_create_from_file reads: an SVG is
+ * drawn again at the size it is shown, as Rtexture_create_from_svg says; a
+ * raster image keeps its alpha channel, and one with none is a solid
+ * rectangle. A file that can't be read or decoded is reported as
+ * Rtexture_create_from_file_async does, and the texture stays empty.
+ * Rtexture_update refuses a mask.
+ */
+export function Rtexture_create_mask_from_file_async(path: string | null): Rid {
+	return _lib.Rtexture_create_mask_from_file_async(_s(path));
 }
 
 /** Creates a texture from tightly packed RGBA8 pixels (straight alpha). Its filter is R_FILTER_LINEAR. */

@@ -5612,6 +5612,28 @@ fn Texture? texture_create_from_file_async(ZString path)
 	return (Texture)result;
 }
 
+<*
+ Reads an image file as a mask, on a worker thread: only its alpha
+ is kept, in an R_TEXTURE_ALPHA8 texture, which is drawn as white with that
+ alpha. The tint of the Image showing it (Rimage_set_tint_color, or the text
+ colour with Rimage_set_tint_text) then gives exactly its colour, where a
+ colour texture's pixels are multiplied by it: an icon drawn in black, as
+ the Material icons are, is coloured this way. What is see-through stays
+ so, and a part drawn half see-through (a two-tone icon's lighter layer)
+ is the tint, lighter. Any image Rtexture_create_from_file reads: an SVG is
+ drawn again at the size it is shown, as Rtexture_create_from_svg says; a
+ raster image keeps its alpha channel, and one with none is a solid
+ rectangle. A file that can't be read or decoded is reported as
+ Rtexture_create_from_file_async does, and the texture stays empty.
+ Rtexture_update refuses a mask.
+*>
+fn Texture? texture_create_mask_from_file_async(ZString path)
+{
+	Id result = (Id)c::r_texture_create_mask_from_file_async((char*)path);
+	if (result == INVALID_ID) return last_fault()~;
+	return (Texture)result;
+}
+
 <* Creates a texture from tightly packed RGBA8 pixels (straight alpha). Its filter is R_FILTER_LINEAR. *>
 fn Texture? texture_create_from_pixels(char* rgba, CInt width, CInt height)
 {

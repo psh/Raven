@@ -55,6 +55,23 @@ static void rvn_texture_keep_source(rvn_texture_t* texture, const char* path, co
 	}
 }
 
+/*
+ * A mask keeps only the alpha of the image it is decoded from: `rgba` (width x height
+ * pixels of 4 bytes) becomes one byte per pixel, in place, for an R_TEXTURE_ALPHA8
+ * texture, which is sampled as white with that alpha, so a tint gives exactly its colour.
+ */
+static uint8_t* rvn_texture_alpha_of(uint8_t* rgba, int width, int height) {
+	size_t i, count = (size_t)width * (size_t)height;
+	if (!rgba) return NULL;
+	for (i = 0; i < count; i++) rgba[i] = rgba[i * 4 + 3];
+	return rgba;
+}
+
+/* A texture decoded from an image as a mask (Rtexture_create_mask_from_file_async), not the glyph atlas. */
+static int rvn_texture_is_mask(const rvn_texture_t* texture) {
+	return texture->format == R_TEXTURE_ALPHA8 && !texture->external && (texture->source_path || texture->source_data);
+}
+
 static void rvn_texture_free(rvn_texture_t* texture) {
 	rvn_free(texture->source_path);
 	rvn_free(texture->source_data);
@@ -144,6 +161,7 @@ void rvn_texture_restore(rvn_texture_t* texture) {
 			rvn_free(pixels);
 			pixels = NULL;
 		}
+		if (pixels && rvn_texture_is_mask(texture)) pixels = rvn_texture_alpha_of(pixels, w, h);
 	}
 	/* no pixels: the backend makes it transparent */
 	rvn_texture_upload(texture, width, height, pixels);
@@ -166,6 +184,8 @@ typedef struct rvn_texture_job_t {
 	int svg;
 	/** Drawing an SVG again at another scale (rvn_textures_update_svg), not making the texture. */
 	int redraw;
+	/** A mask: only the alpha of the pixels is kept (R_TEXTURE_ALPHA8). */
+	int mask;
 } rvn_texture_job_t;
 
 /* UI thread: the decoded pixels become the texture, unless it was deleted meanwhile. */
@@ -213,6 +233,7 @@ static void rvn_texture_job_run(void* arg) {
 	if (job->data) {
 		job->svg = rvn_svg_detect(job->data, job->size);
 		job->pixels = rvn_image_decode_at(job->data, job->size, job->svg_scale, &job->width, &job->height, &job->density);
+		if (job->mask) job->pixels = rvn_texture_alpha_of(job->pixels, job->width, job->height);
 	}
 	rvn_free(job->data);
 	job->data = NULL;
@@ -299,14 +320,16 @@ static void rvn_web_image_start(rvn_texture_job_t* job) {
 }
 #endif
 
-static Rid rvn_texture_create_async(const char* data, size_t size, const char* path) {
+static Rid rvn_texture_create_async(const char* data, size_t size, const char* path, int mask) {
 	rvn_texture_t* texture = rvn_texture_register();
 	rvn_texture_job_t* job;
 	if (!texture) return R_INVALID_ID;
 	/* a picture from a file: it may well be shown smaller than it is */
 	texture->filter = R_FILTER_MIPMAP;
+	if (mask) texture->format = R_TEXTURE_ALPHA8;
 	job = (rvn_texture_job_t*)rvn_calloc(sizeof(rvn_texture_job_t));
 	job->id = texture->id;
+	job->mask = mask;
 	rvn_texture_keep_source(texture, path, data, size);
 	if (path) {
 		job->path = rvn_strdup(path);
@@ -379,7 +402,7 @@ Rid Rtexture_create_async(const char* data, size_t data_size) {
 		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rtexture_create_async: empty buffer");
 		return R_INVALID_ID;
 	}
-	return rvn_texture_create_async(data, data_size, NULL);
+	return rvn_texture_create_async(data, data_size, NULL, R_FALSE);
 }
 
 
@@ -389,7 +412,7 @@ Rid rvn_texture_create_from_url_async(const char* url) {
 		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rtexture_create_from_url_async: URL must use http:// or https://");
 		return R_INVALID_ID;
 	}
-	return rvn_texture_create_async(NULL, 0, url);
+	return rvn_texture_create_async(NULL, 0, url, R_FALSE);
 }
 
 Rid Rtexture_create_from_file(const char* path) {
@@ -428,7 +451,16 @@ Rid Rtexture_create_from_file_async(const char* path) {
 		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rtexture_create_from_file_async: NULL path");
 		return R_INVALID_ID;
 	}
-	return rvn_texture_create_async(NULL, 0, path);
+	return rvn_texture_create_async(NULL, 0, path, R_FALSE);
+}
+
+Rid Rtexture_create_mask_from_file_async(const char* path) {
+	RVN_API_GUARD(R_INVALID_ID);
+	if (!path) {
+		rvn_error(R_ERROR_INVALID_VALUE, R_SEVERITY_ERROR, "Rtexture_create_mask_from_file_async: NULL path");
+		return R_INVALID_ID;
+	}
+	return rvn_texture_create_async(NULL, 0, path, R_TRUE);
 }
 
 Rid Rtexture_create_from_pixels(const uint8_t* rgba, int width, int height) {
@@ -596,6 +628,7 @@ void rvn_textures_update_svg(void) {
 		job->id = texture->id;
 		job->redraw = R_TRUE;
 		job->svg_scale = target;
+		job->mask = rvn_texture_is_mask(texture);
 		if (texture->source_data) {
 			job->data = (uint8_t*)rvn_alloc(texture->source_size);
 			memcpy(job->data, texture->source_data, texture->source_size);

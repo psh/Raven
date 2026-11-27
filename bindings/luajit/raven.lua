@@ -1394,6 +1394,7 @@ Rid Rtexture_create_from_svg(const char* svg, size_t svg_size, float scale);
 float Rtexture_get_density(Rid texture);
 Rid Rtexture_create_from_file(const char* path);
 Rid Rtexture_create_from_file_async(const char* path);
+Rid Rtexture_create_mask_from_file_async(const char* path);
 Rid Rtexture_create_from_pixels(const uint8_t* rgba, int width, int height);
 void Rtexture_update(Rid texture, const uint8_t* rgba, int width, int height);
 uint8_t* Rimage_decode(const void* data, size_t data_size, int* width, int* height);

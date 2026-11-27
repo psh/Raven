@@ -3365,6 +3365,7 @@ export const Rtexture_create_from_svg = _lib.Rtexture_create_from_svg;
 export const Rtexture_get_density = _lib.Rtexture_get_density;
 export const Rtexture_create_from_file = _lib.Rtexture_create_from_file;
 export const Rtexture_create_from_file_async = _lib.Rtexture_create_from_file_async;
+export const Rtexture_create_mask_from_file_async = _lib.Rtexture_create_mask_from_file_async;
 export const Rtexture_create_from_pixels = _lib.Rtexture_create_from_pixels;
 export const Rtexture_update = _lib.Rtexture_update;
 export const Rimage_decode = _lib.Rimage_decode;

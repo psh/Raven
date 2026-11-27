@@ -246,6 +246,7 @@ static struct {
 	float (*Rtexture_get_density)(Rid);
 	Rid (*Rtexture_create_from_file)(const char*);
 	Rid (*Rtexture_create_from_file_async)(const char*);
+	Rid (*Rtexture_create_mask_from_file_async)(const char*);
 	Rid (*Rtexture_create_from_pixels)(const uint8_t*, int, int);
 	void (*Rtexture_update)(Rid, const uint8_t*, int, int);
 	uint8_t* (*Rimage_decode)(const void*, size_t, int*, int*);
@@ -1437,6 +1438,7 @@ static const struct {
 	{"Rtexture_get_density", offsetof(__typeof__(rn), Rtexture_get_density)},
 	{"Rtexture_create_from_file", offsetof(__typeof__(rn), Rtexture_create_from_file)},
 	{"Rtexture_create_from_file_async", offsetof(__typeof__(rn), Rtexture_create_from_file_async)},
+	{"Rtexture_create_mask_from_file_async", offsetof(__typeof__(rn), Rtexture_create_mask_from_file_async)},
 	{"Rtexture_create_from_pixels", offsetof(__typeof__(rn), Rtexture_create_from_pixels)},
 	{"Rtexture_update", offsetof(__typeof__(rn), Rtexture_update)},
 	{"Rimage_decode", offsetof(__typeof__(rn), Rimage_decode)},
@@ -7824,6 +7826,22 @@ static napi_value rn_w_Rtexture_create_from_file_async(napi_env env, napi_callba
 	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 	if (!rn_str_get(env, argv[0], &a0)) goto done;
 	Rid value_ = rn.Rtexture_create_from_file_async(a0.p);
+	napi_create_uint32(env, value_, &result_);
+done:
+	free(a0.heap);
+	return result_;
+}
+
+static napi_value rn_w_Rtexture_create_mask_from_file_async(napi_env env, napi_callback_info info) {
+	size_t argc = 1;
+	napi_value argv[1];
+	napi_value result_ = NULL;
+	(void)env;
+	rn_str a0;
+	a0.heap = NULL;
+	napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+	if (!rn_str_get(env, argv[0], &a0)) goto done;
+	Rid value_ = rn.Rtexture_create_mask_from_file_async(a0.p);
 	napi_create_uint32(env, value_, &result_);
 done:
 	free(a0.heap);
@@ -24378,6 +24396,7 @@ static const napi_property_descriptor rn_properties[] = {
 	{"Rtexture_get_density", NULL, rn_w_Rtexture_get_density, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_file", NULL, rn_w_Rtexture_create_from_file, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_file_async", NULL, rn_w_Rtexture_create_from_file_async, NULL, NULL, NULL, napi_enumerable, NULL},
+	{"Rtexture_create_mask_from_file_async", NULL, rn_w_Rtexture_create_mask_from_file_async, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_create_from_pixels", NULL, rn_w_Rtexture_create_from_pixels, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rtexture_update", NULL, rn_w_Rtexture_update, NULL, NULL, NULL, napi_enumerable, NULL},
 	{"Rimage_decode", NULL, rn_w_Rimage_decode, NULL, NULL, NULL, napi_enumerable, NULL},
