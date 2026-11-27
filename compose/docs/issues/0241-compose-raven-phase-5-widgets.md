@@ -52,6 +52,7 @@ TileView, DatePicker, TimePicker, Rating, Pagination, Breadcrumb) aren't part of
 ## Decisions so far
 
 - [Printing: Raven's printing and how Kotlin should expose it](0251-printing-ravens-printing-and-how-kotlin-should-expose-it.md): Raven prints PDFs only, blocking on the UI thread; anything else must be written as a PDF first, so printing and PDF writing are batch ten together, decided by [Printing and PDF documents: what Kotlin exposes](0252-printing-and-pdf-documents-what-kotlin-exposes.md).
+- [The web: how Compose web views shape their APIs](0246-the-web-how-compose-web-views-shape-their-apis.md): a state of observable fields plus a navigator is the common shape; Raven's SystemWebView has the events, better script results and one-way messages, but no interception and nothing drawn over it; nine trade-offs left for [The web: SystemWebView](0249-the-web-systemwebview.md).
 
 ## Not yet specified
 
