@@ -35,6 +35,7 @@ include(
     ":samples:editor",
     ":samples:effects",
     ":samples:viewport-opengl",
+    ":samples:viewport-vulkan",
     ":samples:glass",
     ":samples:notepad",
     ":samples:notes",

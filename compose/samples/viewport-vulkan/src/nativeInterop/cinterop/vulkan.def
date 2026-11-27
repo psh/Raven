@@ -1,0 +1,6 @@
+# The Vulkan API, for the sample's own calls, from the headers Raven's build uses (vulkan/vulkan.h).
+# No prototypes: like Raven, the sample links no Vulkan library. It opens the one Raven opened and
+# resolves each function through vkGetInstanceProcAddr and vkGetDeviceProcAddr (VulkanLoader).
+headers = vulkan/vulkan.h
+compilerOpts = -DVK_NO_PROTOTYPES
+package = raven.sample.viewportvulkan.vk

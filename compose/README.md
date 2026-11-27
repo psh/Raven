@@ -79,7 +79,7 @@ samples/notepad/launch-notepad README.md
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-notes`, `launch-overlay`,
 `launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
-`launch-music`, `launch-effects`, `launch-viewport-opengl` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
+`launch-music`, `launch-effects`, `launch-viewport-opengl`, `launch-viewport-vulkan` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 `samples/notes` is the list of notes every language's samples have. Started with `RAVEN_MCP=1`, it
@@ -130,6 +130,12 @@ OpenGL on a native child window over the viewport, a speed slider, a wireframe s
 renderer), runs the same way on macOS: `./gradlew :samples:viewport-opengl:runReleaseExecutableMacosArm64`,
 or `viewport-opengl.kexe`. It draws in OpenGL 3.2 core, as `compose-raven-opengl`'s context is, where
 the C example uses OpenGL 1.1. Linux waits for GLX.
+
+`samples/viewport-vulkan`, the port of Raven's `examples/viewport_vulkan` (a Vulkan scene in the UI
+two ways: the app's own image shown as a texture, and drawn in Raven's render pass), runs the same
+way: `./gradlew :samples:viewport-vulkan:runReleaseExecutableMacosArm64`, or `viewport-vulkan.kexe`.
+It compiles against the Vulkan headers Raven's build found or fetched; `-PravenVulkanInclude=<folder>`
+names others.
 
 `samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion

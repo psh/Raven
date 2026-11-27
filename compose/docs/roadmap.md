@@ -19,7 +19,7 @@ for a phase 5 map. The split between phases 2, 3 and 4 follows [ADR 0001](adr/00
 | [3. Phase 2](#3-phase-2) | the finished single `Window` (`WindowState`), menus and the header bar, native dialogs, the CodeEditor extras, ComboBox/SpinBox, Surface/FlowRow/Expander, theming, glass, `MarkdownText`, `appearTransition` | `notepad`, `components`, `themes`, `overlay` |
 | [4. Phase 3](#4-phase-3) | the app vocabulary: windows that come and go, dialogs, input, accessibility, fonts, drawing and graphics modules, lists, tabs and grids, images, transitions, docking, toolbar, navigation | `editor`, `workspace`, `music`, `animations`, `glass` |
 | [5. Phase 4](#5-phase-4-release) | the release: CI and the Linux build finished, the public test module, publishing the translator tool (built in phase 5), packaging and publishing, the Windows target | none new |
-| [Later](#later) | phase 5 | `effects` (built), `viewport_opengl` (built, macOS), `viewport_vulkan`, `studio`, `browser` |
+| [Later](#later) | phase 5 | `effects` (built), `viewport_opengl` (built, macOS), `viewport_vulkan` (built), `studio`, `browser` |
 
 Not ported: `memory` (it demonstrates the C-level allocator), `languages` and `bevy_editor` (they
 show the other bindings and Bevy, not Raven UIs).
@@ -267,8 +267,11 @@ opt-in `compose-raven-lottie` module over ThorVG ([A compose-raven-lottie module
   and planned in [Designed samples: the three ports' plan](issues/archive/0205-designed-samples-the-three-ports-plan.md);
   filed as [samples/effects](issues/archive/0218-samples-effects.md) (built),
   [samples/viewport-opengl](issues/archive/0219-samples-viewport-opengl.md) (built) and
-  [samples/viewport-vulkan](issues/0220-samples-viewport-vulkan.md), the first of phase 5's
-  implementation sequence. `viewport_opengl`'s Linux port waits for GLX on Linux.
+  [samples/viewport-vulkan](issues/archive/0220-samples-viewport-vulkan.md) (built), the first of phase 5's
+  implementation sequence. `viewport_opengl`'s Linux port waits for GLX on Linux. `viewport_vulkan`
+  found two gaps in `compose-raven-vulkan`, for graphics extras: no queue lock for Raven's own device
+  (only `VulkanSetup.External` takes one), and no public way to redraw a bitmap whose Vulkan image
+  changed on the GPU (`textureChanged` is internal, and foundation's `Viewport` has no `realtime`).
 - `studio`, `browser`: after the specialist widgets (Timeline, NodeGraph, WebView, BlockEditor),
   which are still fog on the phase 3 map. `ColorPicker` left that list for phase 3
   ([Music's accent picker](issues/archive/0100-musics-accent-picker.md)).

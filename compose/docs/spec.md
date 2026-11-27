@@ -1769,9 +1769,11 @@ viewport's warning; with `RAVEN_GPU_TESTS=1`, a frame is drawn and read back.
 A port of Raven's `examples/viewport_vulkan` over `compose-raven-vulkan`: the scene shown both ways,
 rendered into the app's own image and shown as a texture (`ImageBitmap.fromVulkanImageView`), and
 drawn in Raven's frame by `VulkanViewport(onDraw)`, on Raven's device with the queue lock. The Vulkan
-calls come from a cinterop local to the sample, against the system's Vulkan headers (MoltenVK's on
-macOS, `vulkan-headers` on Linux), found through a Gradle property with Homebrew's path as the
-default; shipping Vulkan bindings with the module stays in graphics extras. The headless test checks
+calls come from a cinterop local to the sample (`VK_NO_PROTOTYPES`), against the Vulkan headers
+Raven's own build found or fetched, which `-PravenVulkanInclude` overrides; Homebrew's MoltenVK
+ships no `vulkan/vulkan.h`. As Raven links no Vulkan library, the sample links none either: it opens
+the library Raven opened and resolves each function on Raven's device. Shipping Vulkan bindings with
+the module stays in graphics extras. The headless test checks
 the controls and that neither view draws; with `RAVEN_GPU_TESTS=1`, both views draw a frame.
 
 ### `compose-raven-xml` and `raven-xml2compose` (phase 5; published in phase 4)
