@@ -1,0 +1,3 @@
+#!/bin/sh
+# Builds samples/effects for this machine and runs it.
+exec "$(dirname "$0")/../launch-sample" effects "$@"

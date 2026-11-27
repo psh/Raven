@@ -40,7 +40,7 @@ fog and [Raven API coverage](../api-coverage.md).
 
 ## Decisions so far
 
-- [Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md): `effects` ports as is; `viewport_opengl` redrawn in core GL, macOS only; `viewport_vulkan` over a cinterop local to the sample. Filed as [samples/effects](0218-samples-effects.md), [samples/viewport-opengl](0219-samples-viewport-opengl.md), [samples/viewport-vulkan](0220-samples-viewport-vulkan.md).
+- [Designed samples: the three ports' plan](archive/0205-designed-samples-the-three-ports-plan.md): `effects` ports as is; `viewport_opengl` redrawn in core GL, macOS only; `viewport_vulkan` over a cinterop local to the sample. Filed as [samples/effects](archive/0218-samples-effects.md), [samples/viewport-opengl](0219-samples-viewport-opengl.md), [samples/viewport-vulkan](0220-samples-viewport-vulkan.md).
 - [Icons and resources: SVG facts](archive/0206-icons-and-resources-svg-facts.md): Raven reads every Google icon and redraws SVGs per scale already; only tinting is missing, since Raven's tint multiplies and the icons are black.
 - [Icons and resources: vector icons](archive/0207-icons-and-resources-vector-icons.md): `Icon` draws a resource painter as a mask (a Raven change to `R_TEXTURE_ALPHA8`), `Unspecified` tint is the text colour, no `ImageVector`; Google fixtures prove it. Filed as [Raven: mask textures](0221-raven-mask-textures.md) and [Icon and Google's icons](0222-icon-and-googles-icons.md).
 - [Icons and resources: generated resources](archive/0208-icons-and-resources-generated-resources.md): Compose's `composeResources/` and `Res` (drawables, fonts, files; no strings or qualifiers) from an in-repo convention plugin; copied beside the executable, embedding opt-in. Filed as [Generated resources: Res and the plugin](0223-generated-resources-res-and-the-plugin.md) and [Generated resources: embedding](0224-generated-resources-embedding.md).
@@ -59,7 +59,7 @@ fog and [Raven API coverage](../api-coverage.md).
 Closed on 2026-11-26 with the destination reached: the four batches (designed samples, icons and
 resources, small widgets, lists at scale) are designed into `compose/docs/spec.md`, every decision
 ticket is archived, and their implementation tickets are filed in sequence, from
-[samples/effects](0218-samples-effects.md) to
+[samples/effects](archive/0218-samples-effects.md) to
 [Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md).
 The patches below are the fog that remains, for a later map.
 

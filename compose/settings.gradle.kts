@@ -33,6 +33,7 @@ include(
     ":samples:music",
     ":samples:components",
     ":samples:editor",
+    ":samples:effects",
     ":samples:glass",
     ":samples:notepad",
     ":samples:notes",

@@ -79,7 +79,7 @@ samples/notepad/launch-notepad README.md
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-notes`, `launch-overlay`,
 `launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
-`launch-music` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
+`launch-music`, `launch-effects` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 `samples/notes` is the list of notes every language's samples have. Started with `RAVEN_MCP=1`, it
@@ -119,6 +119,11 @@ a theme of its own, Markdown), runs the same way: `./gradlew :samples:themes:run
 or `samples/themes/build/bin/<target>/releaseExecutable/themes.kexe`. It reads the theme files and
 `notes.md` from Raven's `examples/themes`, whose path the build writes into it; give another folder
 as its first argument. Edit those files while it runs and the window follows.
+
+`samples/effects`, the port of Raven's `examples/effects` (Raven's eight built-in effects as cards,
+and two shaders of the application, one reading what is behind it), runs the same way:
+`./gradlew :samples:effects:runReleaseExecutableMacosArm64`, or `effects.kexe`. It reads `wave.spv`
+and `liquid.spv` from Raven's `examples/effects`, whose path the build writes into it.
 
 `samples/animations`, the port of Raven's `examples/animations` (transitions played on demand, cards
 that pop in, springs that follow the pointer, the island with the speed and reduce-motion
