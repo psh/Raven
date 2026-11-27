@@ -8,7 +8,7 @@ Add Compose Desktop's `Tray` and notifications over Raven's tray and system noti
 [8: Tray, notifications and taskbar](../spec.md#tray-notifications-and-taskbar-phase-5) and section
 12. Planned in [Small widgets: notifications and tray](archive/0213-small-widgets-notifications-and-tray.md).
 
-**Depends on:** [Small widgets: CodeEditor extras](0230-small-widgets-codeeditor-extras.md), the
+**Depends on:** [Small widgets: CodeEditor extras](archive/0230-small-widgets-codeeditor-extras.md), the
 ticket before it in phase 5's implementation sequence.
 
 ## Deliverables

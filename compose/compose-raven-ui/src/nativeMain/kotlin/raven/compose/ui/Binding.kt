@@ -84,6 +84,7 @@ import raven.cinterop.Rtime_picker_set_changed_callback
 import raven.cinterop.Rtime_picker_set_time
 import raven.cinterop.Rtext_editor_set_changed_callback
 import raven.cinterop.Rtext_editor_set_completion_callback
+import raven.cinterop.Rtext_editor_set_zoom_callback
 import raven.cinterop.Rtext_editor_set_text
 import raven.cinterop.Rtext_input_get_text
 import raven.cinterop.Rtext_input_set_changed_callback
@@ -581,6 +582,16 @@ public val TextEditorCompletion: Event<(editor: Rid, prefix: String) -> Unit> = 
 
 private val onTextEditorCompletion = staticCFunction { editor: Rid, prefix: CPointer<ByteVar>?, userData: COpaquePointer? ->
     dispatchEvent(userData, TextEditorCompletion) { it(editor, prefix.toRavenString()) }
+}
+
+/** A text editor zoomed by the user (Ctrl + wheel, Ctrl + '+', '-' or 0), with the new zoom. Not called for `Rtext_editor_set_zoom`. */
+@InternalComposeRavenApi
+public val TextEditorZoomed: Event<(Float) -> Unit> = Event { widget, userData ->
+    Rtext_editor_set_zoom_callback(widget, onTextEditorZoomed, userData)
+}
+
+private val onTextEditorZoomed = staticCFunction { _: Rid, zoom: Float, userData: COpaquePointer? ->
+    dispatchEvent(userData, TextEditorZoomed) { it(zoom) }
 }
 
 /**

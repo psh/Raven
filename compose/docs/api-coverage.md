@@ -8,13 +8,13 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-27, when Rating, Pagination, Breadcrumb and VerticalSlider were bound.*
+*Last updated 2026-11-27, with CodeEditor's phase 5 extras and Raven's token colours per editor (1,704 functions with its three).*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 520 of 1,701 (30%) |
+| Functions used | 370 of 1,157 (31%) | 536 of 1,704 (31%) |
 | Widget types bound | 36 of 51 | 42 of 58 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
@@ -39,7 +39,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_controls.h` | 129 | 557 | 23% | Table, TileView, Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Toast unbound; the pickers' time zones and instants; getters |
 | `raven_tools.h` | 8 | 231 | 3% | NodeGraph, Timeline, BlockEditor, DiffView unbound (phase 5 fog) |
 | `raven_window.h` | 46 | 108 | 43% | drag and drop inside the app, window themes, shortcuts, the inspector, mobile insets and keyboard, getters |
-| `raven_text_editor.h` | 24 | 91 | 26% | undo/redo availability, selection, zoom, token colours, find bar, folding, spell checking |
+| `raven_text_editor.h` | 40 | 94 | 43% | find bar, folding, spell checking, several cursors, search, the language server; the token at a position, lines and length, `set_syntax`, `set_markdown`, `is_completing` (not needed) |
 | `raven_core.h` | 40 | 85 | 47% | allocator and memory, async tasks, vsync, actions with parameters |
 | `raven_widget.h` | 54 | 81 | 67% | getters, style classes, free-form slots, drop targets on widgets |
 | `raven_xml.h` | 15 | 64 | 23% | the XML loader, replaced by the composition; `compose-raven-xml` reads documents with Raven's parser |
@@ -64,7 +64,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
 | `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
-| **Total** | **520** | **1,701** | **30%** | |
+| **Total** | **536** | **1,704** | **31%** | |
 
 ## Not needed by design
 
@@ -158,9 +158,14 @@ SizeBox and Canvas are the other unbound widget types, which Compose idioms cove
 
 ### Partial bindings
 
-- **CodeEditor**: undo/redo availability (`Rtext_editor_can_undo`), the selection, scrolling to a
-  line, zoom, tab size and auto pairs, and token colours (`Rtheme_set_token_color`) are unbound.
-  Its markers are bound.
+- **CodeEditor**: its markers, undo and redo availability, the selection, scrolling to a line,
+  zoom, the tab size, spaces for tabs, auto pairs and auto completion, and per-editor token colours
+  (`SyntaxTheme`, over fork change 13) are bound
+  ([Small widgets: CodeEditor extras](issues/archive/0230-small-widgets-codeeditor-extras.md)).
+  Left unbound on purpose: the token at a position, the line count, a line and the length (the app
+  has the text), `set_syntax` and `set_markdown` (`language` covers them) and `is_completing`.
+  Not yet bound: the find bar, folding, spell checking, several cursors, search and replace, and
+  the language server.
 - **TreeView, ListView**: item-level operations. `ListViewState.revealItem` covers scrolling a
   ListView row into view; `TreeViewState.revealItem`, controlled expansion and its Raven change are
   filed ([Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md)).

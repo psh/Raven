@@ -1,8 +1,12 @@
 package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -15,6 +19,7 @@ import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
 import raven.cinterop.RLanguageDesc
 import raven.cinterop.RMarkerKind
+import raven.cinterop.RToken
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_LANGUAGE_CHAR_LITERALS
 import raven.cinterop.R_LANGUAGE_EMBEDS
@@ -27,6 +32,20 @@ import raven.cinterop.R_LANGUAGE_STYLE_SHEET
 import raven.cinterop.R_MARKER_ERROR
 import raven.cinterop.R_MARKER_INFO
 import raven.cinterop.R_MARKER_WARNING
+import raven.cinterop.R_TOKEN_ATTRIBUTE
+import raven.cinterop.R_TOKEN_COMMENT
+import raven.cinterop.R_TOKEN_DIRECTIVE
+import raven.cinterop.R_TOKEN_EMPHASIS
+import raven.cinterop.R_TOKEN_FUNCTION
+import raven.cinterop.R_TOKEN_HEADING
+import raven.cinterop.R_TOKEN_KEYWORD
+import raven.cinterop.R_TOKEN_LINK
+import raven.cinterop.R_TOKEN_NUMBER
+import raven.cinterop.R_TOKEN_PUNCTUATION
+import raven.cinterop.R_TOKEN_STRING
+import raven.cinterop.R_TOKEN_STRONG
+import raven.cinterop.R_TOKEN_TAG
+import raven.cinterop.R_TOKEN_TYPE
 import raven.cinterop.R_TRUE
 import raven.cinterop.R_WIDGET_TEXT_EDITOR
 import raven.cinterop.Rid
@@ -37,6 +56,21 @@ import raven.cinterop.Rlanguage_get_name
 import raven.cinterop.Rlanguage_register
 import raven.cinterop.Rtext_editor_add_completion
 import raven.cinterop.Rtext_editor_add_marker
+import raven.cinterop.Rtext_editor_can_redo
+import raven.cinterop.Rtext_editor_can_undo
+import raven.cinterop.Rtext_editor_clear_token_colors
+import raven.cinterop.Rtext_editor_get_selected_text
+import raven.cinterop.Rtext_editor_get_selection
+import raven.cinterop.Rtext_editor_get_zoom
+import raven.cinterop.Rtext_editor_scroll_to_line
+import raven.cinterop.Rtext_editor_select
+import raven.cinterop.Rtext_editor_set_auto_pairs
+import raven.cinterop.Rtext_editor_set_completion
+import raven.cinterop.Rtext_editor_set_tab_inserts_spaces
+import raven.cinterop.Rtext_editor_set_tab_size
+import raven.cinterop.Rtext_editor_set_token_color
+import raven.cinterop.Rtext_editor_set_zoom
+import raven.cinterop.Rtext_editor_set_zoomable
 import raven.cinterop.Rtext_editor_clear_markers
 import raven.cinterop.Rtext_editor_get_cursor
 import raven.cinterop.Rtext_editor_get_marker_count
@@ -64,6 +98,10 @@ import raven.compose.ui.RavenWidget
 import raven.compose.ui.TextEditorChanged
 import raven.compose.ui.TextEditorCompletion
 import raven.compose.ui.TextEditorText
+import raven.compose.ui.TextEditorZoomed
+import raven.compose.ui.graphics.Color
+import raven.compose.ui.graphics.isSpecified
+import raven.compose.ui.graphics.toRaven
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.WidgetFollower
 import raven.compose.ui.bind
@@ -73,7 +111,7 @@ import raven.native.toRavenString
 private val CodeEditorWidget = WidgetDescriptor(
     "CodeEditor",
     R_WIDGET_TEXT_EDITOR,
-    events = listOf(TextEditorChanged, TextEditorCompletion),
+    events = listOf(TextEditorChanged, TextEditorCompletion, TextEditorZoomed),
 )
 
 /**
@@ -92,6 +130,21 @@ private val EditorPlaceholder = Property<String> { widget, text -> editorPlaceho
 /** R_INVALID_ID is the theme's font, or the fixed-width one with a language; 0 the theme's size. */
 private val EditorFont = Property<Pair<Rid, TextUnit>> { widget, (font, size) ->
     Rtext_editor_set_font(widget, font, if (size.isSpecified) size.value else 0f)
+}
+
+private fun flag(on: Boolean) = if (on) R_TRUE else R_FALSE
+private val Zoomable = Property<Boolean> { widget, zoomable -> Rtext_editor_set_zoomable(widget, flag(zoomable)) }
+private val TabSize = Property<Int> { widget, spaces -> Rtext_editor_set_tab_size(widget, spaces) }
+private val TabInsertsSpaces = Property<Boolean> { widget, spaces -> Rtext_editor_set_tab_inserts_spaces(widget, flag(spaces)) }
+private val AutoPairs = Property<Boolean> { widget, pairs -> Rtext_editor_set_auto_pairs(widget, flag(pairs)) }
+private val AutoCompletion = Property<Boolean> { widget, completes -> Rtext_editor_set_completion(widget, flag(completes)) }
+
+/** The editor's own token colours: what [theme] specifies, the rest left to the editor's Raven theme. */
+private val TokenColors = Property<SyntaxTheme> { widget, theme ->
+    Rtext_editor_clear_token_colors(widget)
+    for ((token, color) in theme.colors()) {
+        if (color.isSpecified) color.toRaven { r, g, b, a -> Rtext_editor_set_token_color(widget, token, r, g, b, a) }
+    }
 }
 
 /** Sets an editor's placeholder. Raven has no getter for it, so tests wrap this to record it. */
@@ -117,7 +170,13 @@ internal var editorPlaceholderSetter: (Rid, String) -> Unit = ::Rtext_editor_set
  *
  * [textStyle] gives the text its font, size and colour; the default is the typography's `code`, the
  * theme's size in the fixed-width font. Bold or italic without a family is the fixed-width font's. The editor has no
- * alignment, so `textAlign` is ignored.
+ * alignment, so `textAlign` is ignored. The colours of its code are the [LocalSyntaxTheme] around it.
+ *
+ * [zoomable] lets the user zoom with Ctrl + wheel and Ctrl + '+', '-' and 0 ([CodeEditorState.zoom]
+ * follows). A tab is [tabSize] spaces wide, and with [insertSpacesForTab] the Tab key types spaces.
+ * [autoPairs] closes brackets and quotes, with a language. [autoCompletion] proposes words as the
+ * user types; Ctrl+Space and [CodeEditorState.showCompletions] work without it. The defaults are
+ * Raven's.
  */
 @Composable
 public fun CodeEditor(
@@ -133,8 +192,16 @@ public fun CodeEditor(
     completions: ((prefix: String) -> List<Completion>)? = null,
     markers: List<EditorMarker> = emptyList(),
     textStyle: TextStyle = RavenTheme.typography.code,
+    zoomable: Boolean = true,
+    tabSize: Int = 4,
+    insertSpacesForTab: Boolean = false,
+    autoPairs: Boolean = true,
+    autoCompletion: Boolean = true,
 ) {
+    require(tabSize >= 1) { "tabSize must be at least 1, not $tabSize" }
     val follower = remember { EditorFollower() }
+    val syntax = LocalSyntaxTheme.current
+    val zoomed: (Float) -> Unit = remember(state) { { zoom -> state.zoomedByUser(zoom) } }
     val font = rememberRavenFont(textStyle.fontFamily, textStyle.fontWeight, textStyle.fontStyle, BaseFont.Monospace)
     val textColor = roleColors(R_COLOR_TEXT to textStyle.color)
     RavenWidget(CodeEditorWidget, modifier, {
@@ -147,6 +214,13 @@ public fun CodeEditor(
         bind(lineNumbers, LineNumbers)
         bind(wordWrap, WordWrap)
         bind(placeholder, EditorPlaceholder)
+        bind(zoomable, Zoomable)
+        bind(tabSize, TabSize)
+        bind(insertSpacesForTab, TabInsertsSpaces)
+        bind(autoPairs, AutoPairs)
+        bind(autoCompletion, AutoCompletion)
+        bind(syntax, TokenColors)
+        bind(zoomed, TextEditorZoomed)
         bind(value, TextEditorText)
         // Writing the text drops every marker, so they are shown again after it.
         set(markers) { follower.markers = it }
@@ -166,9 +240,13 @@ public fun CodeEditor(
 /** A place in a [CodeEditor]'s text: a [line] and a [column], both from 0, the column in UTF-8 bytes. */
 public data class TextPosition(val line: Int, val column: Int)
 
+/** What is selected in a [CodeEditor], from [start] to [end] in the order of the text. */
+public data class EditorSelection(val start: TextPosition, val end: TextPosition)
+
 /**
- * A [CodeEditor]'s commands, and its [cursor]. It holds no text: the editor shows its `value`.
- * Commands on a state no editor shows do nothing.
+ * A [CodeEditor]'s commands, and what it follows of the editor: [cursor], [selection], [canUndo],
+ * [canRedo] and [zoom]. It holds no text: the editor shows its `value`. Commands on a state no
+ * editor shows do nothing.
  */
 @Stable
 public class CodeEditorState internal constructor() {
@@ -177,6 +255,47 @@ public class CodeEditorState internal constructor() {
     /** Where the editor's cursor is, read once a frame: its readers recompose only when it moves. */
     public var cursor: TextPosition by mutableStateOf(TextPosition(0, 0))
         private set
+
+    /** What is selected, null when nothing is; read once a frame, as [cursor] is. */
+    public var selection: EditorSelection? by mutableStateOf(null)
+        private set
+
+    /** Whether [undo] has an edit to undo; read once a frame. */
+    public var canUndo: Boolean by mutableStateOf(false)
+        private set
+
+    /** Whether [redo] has an edit to redo; read once a frame. */
+    public var canRedo: Boolean by mutableStateOf(false)
+        private set
+
+    private var zoomState by mutableFloatStateOf(1f)
+
+    /**
+     * The zoom of the text, a factor of its size from 0.5 to 4 (1 is 100 %). It follows the user's
+     * zooming, and setting it zooms the editor, within that range.
+     */
+    public var zoom: Float
+        get() = zoomState
+        set(value) {
+            zoomState = value.coerceIn(MIN_ZOOM, MAX_ZOOM)
+            editor?.let { Rtext_editor_set_zoom(it, zoomState) }
+        }
+
+    /** Selects from [start] to [end]; the cursor goes to [end]. */
+    public fun select(start: TextPosition, end: TextPosition) {
+        val widget = editor ?: return
+        Rtext_editor_select(widget, start.line, start.column, end.line, end.column)
+        follow(widget)
+    }
+
+    /** The selected text, "" when nothing is selected. Read when asked, not copied each frame. */
+    public fun selectedText(): String = editor?.let { Rtext_editor_get_selected_text(it).toRavenString() } ?: ""
+
+    /** Scrolls the editor so that [line] (from 0) is in view, at once. */
+    @Suppress("RedundantSuspendModifier") // a suspend call, as LazyListState.scrollToItem is
+    public suspend fun scrollToLine(line: Int) {
+        editor?.let { Rtext_editor_scroll_to_line(it, line) }
+    }
 
     /** Undoes the last edit, which calls `onValueChange`. */
     public fun undo() {
@@ -189,7 +308,9 @@ public class CodeEditorState internal constructor() {
     }
 
     public fun selectAll() {
-        editor?.let(::Rtext_editor_select_all)
+        val widget = editor ?: return
+        Rtext_editor_select_all(widget)
+        follow(widget)
     }
 
     /** Proposes words for what is before the cursor, as Ctrl+Space does. */
@@ -204,14 +325,21 @@ public class CodeEditorState internal constructor() {
 
     internal fun attach(widget: Rid) {
         editor = widget
-        followCursor(widget)
+        // A zoom set before the editor was shown is the editor's.
+        if (zoomState != Rtext_editor_get_zoom(widget)) Rtext_editor_set_zoom(widget, zoomState)
+        follow(widget)
+    }
+
+    internal fun zoomedByUser(zoom: Float) {
+        zoomState = zoom
     }
 
     internal fun detach(widget: Rid) {
         if (editor == widget) editor = null
     }
 
-    internal fun followCursor(widget: Rid) {
+    /** Reads what the editor has no callback for: the cursor, the selection and the undo history. */
+    internal fun follow(widget: Rid) {
         val position = memScoped {
             val line = alloc<IntVar>()
             val column = alloc<IntVar>()
@@ -219,6 +347,27 @@ public class CodeEditorState internal constructor() {
             TextPosition(line.value, column.value)
         }
         if (position != cursor) cursor = position
+        val selected = memScoped {
+            val fromLine = alloc<IntVar>()
+            val fromColumn = alloc<IntVar>()
+            val toLine = alloc<IntVar>()
+            val toColumn = alloc<IntVar>()
+            if (Rtext_editor_get_selection(widget, fromLine.ptr, fromColumn.ptr, toLine.ptr, toColumn.ptr) == R_TRUE) {
+                EditorSelection(TextPosition(fromLine.value, fromColumn.value), TextPosition(toLine.value, toColumn.value))
+            } else {
+                null
+            }
+        }
+        if (selected != selection) selection = selected
+        val undo = Rtext_editor_can_undo(widget) == R_TRUE
+        if (undo != canUndo) canUndo = undo
+        val redo = Rtext_editor_can_redo(widget) == R_TRUE
+        if (redo != canRedo) canRedo = redo
+    }
+
+    private companion object {
+        const val MIN_ZOOM = 0.5f
+        const val MAX_ZOOM = 4f
     }
 }
 
@@ -274,7 +423,7 @@ private class EditorFollower : WidgetFollower {
 
     // An edit shows the markers again at once; a text the host wrote back is caught here.
     override fun follow(widget: Rid) {
-        state?.followCursor(widget)
+        state?.follow(widget)
         if (Rtext_editor_get_marker_count(widget) != markers.size) showMarkers()
     }
 
@@ -399,3 +548,53 @@ private fun register(language: CodeEditorLanguage) = memScoped {
     }
     check(Rlanguage_register(desc.ptr) == R_TRUE) { "Raven refused the language ${language.name}" }
 }
+
+/**
+ * The colours of the code in [CodeEditor]s, one per kind of token. [Color.Unspecified], the
+ * default, leaves a kind to the editor's Raven theme: a theme file's `<Syntax>`, else the colour
+ * Raven picks for a dark or a light theme. Provide it with [LocalSyntaxTheme]; nested providers
+ * scope as any composition local does.
+ */
+@Immutable
+public data class SyntaxTheme(
+    val comment: Color = Color.Unspecified,
+    val string: Color = Color.Unspecified,
+    val number: Color = Color.Unspecified,
+    val keyword: Color = Color.Unspecified,
+    /** A type, or a name that is always there. */
+    val type: Color = Color.Unspecified,
+    /** A name followed by an opening parenthesis. */
+    val function: Color = Color.Unspecified,
+    /** An element's name, in markup and in a style sheet's selectors. */
+    val tag: Color = Color.Unspecified,
+    /** An attribute's name (markup), a class or property (style sheets), a key (JSON). */
+    val attribute: Color = Color.Unspecified,
+    val punctuation: Color = Color.Unspecified,
+    /** A preprocessor line, an annotation, a document's declaration. */
+    val directive: Color = Color.Unspecified,
+    /** Formatted text (Markdown): a title. */
+    val heading: Color = Color.Unspecified,
+    val strong: Color = Color.Unspecified,
+    val emphasis: Color = Color.Unspecified,
+    val link: Color = Color.Unspecified,
+) {
+    internal fun colors(): List<Pair<RToken, Color>> = listOf(
+        R_TOKEN_COMMENT to comment,
+        R_TOKEN_STRING to string,
+        R_TOKEN_NUMBER to number,
+        R_TOKEN_KEYWORD to keyword,
+        R_TOKEN_TYPE to type,
+        R_TOKEN_FUNCTION to function,
+        R_TOKEN_TAG to tag,
+        R_TOKEN_ATTRIBUTE to attribute,
+        R_TOKEN_PUNCTUATION to punctuation,
+        R_TOKEN_DIRECTIVE to directive,
+        R_TOKEN_HEADING to heading,
+        R_TOKEN_STRONG to strong,
+        R_TOKEN_EMPHASIS to emphasis,
+        R_TOKEN_LINK to link,
+    )
+}
+
+/** The [SyntaxTheme] the [CodeEditor]s below take their colours of code from; every colour the editor's theme's by default. */
+public val LocalSyntaxTheme: ProvidableCompositionLocal<SyntaxTheme> = compositionLocalOf { SyntaxTheme() }

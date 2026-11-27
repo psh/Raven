@@ -679,17 +679,21 @@ Languages:
 - **Phase 5 extras** ([Small widgets: the CodeEditor extras](issues/archive/0212-small-widgets-the-codeeditor-extras.md)):
   - `CodeEditorState` gains `canUndo` and `canRedo` (`Rtext_editor_can_undo`/`_can_redo`) and
     `selection: EditorSelection?` (`start` and `end` `TextPosition`s in text order, null when
-    nothing is selected), followed once a frame as `cursor` is; `select(start, end)`,
-    `selectedText()` (a function, not copied each frame), `suspend scrollToLine(line)` (a jump);
-    and `zoom: Float` (0.5 to 4), written by Raven's zoom callback and calling
-    `Rtext_editor_set_zoom` when set.
+    nothing is selected), followed once a frame as `cursor` is (and at once after `select` and
+    `selectAll`); `select(start, end)`, the cursor at `end`; `selectedText()` (a function, not
+    copied each frame), `suspend scrollToLine(line)` (a jump, the line a third of the way down);
+    and `zoom: Float` (0.5 to 4, coerced), written by Raven's zoom callback (`TextEditorZoomed`) and
+    calling `Rtext_editor_set_zoom` when set; a zoom set before the editor is shown is its first.
   - `CodeEditor` gains `zoomable = true`, `tabSize = 4`, `insertSpacesForTab = false`,
     `autoPairs = true` and `autoCompletion = true` (proposals that pop up by themselves; Ctrl+Space
-    and `showCompletions()` still work without it), Raven's defaults.
+    and `showCompletions()` still work without it), Raven's defaults; `tabSize` is at least 1.
+    Raven has no getters for these, so the tests check what they do: Tab typing spaces, a bracket
+    closed, proposals while typing, Ctrl + '=' ignored.
   - **`SyntaxTheme(comment, string, number, keyword, type, function, tag, attribute, punctuation,
     directive, heading, strong, emphasis, link)`**, one `Color` per token kind, provided as
     `LocalSyntaxTheme` (every colour `Unspecified` by default). Each `CodeEditor` applies the one
-    around it with `Rtext_editor_set_token_color`, so nested providers scope as a local does; an
+    around it with `Rtext_editor_set_token_color`, clearing first (`Rtext_editor_clear_token_colors`),
+    so nested providers scope as a local does and a colour no longer specified goes back; an
     unspecified colour is the editor's Raven theme's, a theme file's `<Syntax>` or Raven's own pick.
   - Left unbound: the token at a position, the line count, a line and the length (the app has the
     text), `set_syntax` and `set_markdown` (`language` covers them, Markdown being Raven's
