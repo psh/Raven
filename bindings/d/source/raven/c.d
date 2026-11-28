@@ -1981,6 +1981,12 @@ alias RDateChangedCallback = extern (C) void function(Rid date_picker, int year,
 alias RTimeChangedCallback = extern (C) void function(Rid time_picker, int hour, int minute, int second, void* user_data);
 /// Called by the button of a message, which then hides. This also fires the action of the widget.
 alias RToastCallback = extern (C) void function(Rid toast, void* user_data);
+/// Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+/// Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+/// button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+/// Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+/// ids too). It is called once the toast is done changing; it may show, hide or destroy.
+alias RToastEndedCallback = extern (C) void function(Rid toast, int id, int by_action, void* user_data);
 /// Called when the user clicks an item. This also fires the action of the widget.
 alias RBreadcrumbCallback = extern (C) void function(Rid breadcrumb, int index, void* user_data);
 /// Called when the user changes the score. This also fires the action of the widget.
@@ -4732,6 +4738,11 @@ double Rtime_picker_get_instant(Rid time_picker);
 void Rtoast_show(Rid toast, const(char)* text, double seconds);
 /// Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is).
 void Rtoast_show_kind(Rid toast, const(char)* text, RToastKind kind, double seconds);
+/// Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+/// error), for Rtoast_hide_message and the message ended callback.
+int Rtoast_show_message(Rid toast, const(char)* text, RToastKind kind, double seconds);
+/// Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
+void Rtoast_hide_message(Rid toast, int id);
 /// Hides the newest message shown; the next one waiting comes.
 void Rtoast_hide(Rid toast);
 /// Hides every message, and forgets those waiting.
@@ -4750,6 +4761,7 @@ void Rtoast_set_kind(Rid toast, RToastKind kind);
 /// A button at the end of the next messages ("Undo"); NULL or "" removes it.
 void Rtoast_set_action_text(Rid toast, const(char)* text);
 void Rtoast_set_action_callback(Rid toast, RToastCallback callback, void* user_data);
+void Rtoast_set_message_ended_callback(Rid toast, RToastEndedCallback callback, void* user_data);
 /// Replaces the items: their texts separated by '|'.
 void Rbreadcrumb_set_items(Rid breadcrumb, const(char)* items);
 /// Returns: The index of the new item, at the end.

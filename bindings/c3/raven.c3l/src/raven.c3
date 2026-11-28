@@ -2176,6 +2176,14 @@ alias DateChangedCallback = fn void(Id date_picker, CInt year, CInt month, CInt 
 alias TimeChangedCallback = fn void(Id time_picker, CInt hour, CInt minute, CInt second, void* user_data);
 <* Called by the button of a message, which then hides. This also fires the action of the widget. *>
 alias ToastCallback = fn void(Id toast, void* user_data);
+<*
+ Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+ Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+ button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+ Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+ ids too). It is called once the toast is done changing; it may show, hide or destroy.
+*>
+alias ToastEndedCallback = fn void(Id toast, CInt id, CInt by_action, void* user_data);
 <* Called when the user clicks an item. This also fires the action of the widget. *>
 alias BreadcrumbCallback = fn void(Id breadcrumb, CInt index, void* user_data);
 <* Called when the user changes the score. This also fires the action of the widget. *>
@@ -6478,6 +6486,15 @@ fn void Toast.show(self, ZString text, double seconds) @inline => c::r_toast_sho
 <* Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is). *>
 fn void Toast.show_kind(self, ZString text, ToastKind kind, double seconds) @inline => c::r_toast_show_kind((c::Rid)self, (char*)text, (c::RToastKind)kind, seconds);
 
+<*
+ Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+ error), for Rtoast_hide_message and the message ended callback.
+*>
+fn CInt Toast.show_message(self, ZString text, ToastKind kind, double seconds) @inline => c::r_toast_show_message((c::Rid)self, (char*)text, (c::RToastKind)kind, seconds);
+
+<* Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone. *>
+fn void Toast.hide_message(self, CInt id) @inline => c::r_toast_hide_message((c::Rid)self, id);
+
 <* Hides the newest message shown; the next one waiting comes. *>
 fn void Toast.hide(self) @inline => c::r_toast_hide((c::Rid)self);
 
@@ -6506,6 +6523,8 @@ fn void Toast.set_kind(self, ToastKind kind) @inline => c::r_toast_set_kind((c::
 fn void Toast.set_action_text(self, ZString text) @inline => c::r_toast_set_action_text((c::Rid)self, (char*)text);
 
 fn void Toast.set_action_callback(self, ToastCallback callback, void* user_data) @inline => c::r_toast_set_action_callback((c::Rid)self, (c::RToastCallback)callback, user_data);
+
+fn void Toast.set_message_ended_callback(self, ToastEndedCallback callback, void* user_data) @inline => c::r_toast_set_message_ended_callback((c::Rid)self, (c::RToastEndedCallback)callback, user_data);
 
 // ---- Breadcrumb
 

@@ -4221,6 +4221,16 @@ namespace Raven
     public delegate void RToastCallback(uint toast, IntPtr user_data);
 
     /// <summary>
+    /// Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+    /// Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+    /// button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+    /// Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+    /// ids too). It is called once the toast is done changing; it may show, hide or destroy.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RToastEndedCallback(uint toast, int id, int by_action, IntPtr user_data);
+
+    /// <summary>
     /// Called when the user clicks an item. This also fires the action of the widget.
     /// </summary>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -8917,6 +8927,19 @@ namespace Raven
         public static extern void Rtoast_show_kind(uint toast, [MarshalAs(Utf8.Str)] string text, RToastKind kind, double seconds);
 
         /// <summary>
+        /// Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+        /// error), for Rtoast_hide_message and the message ended callback.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Rtoast_show_message(uint toast, [MarshalAs(Utf8.Str)] string text, RToastKind kind, double seconds);
+
+        /// <summary>
+        /// Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
+        /// </summary>
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtoast_hide_message(uint toast, int id);
+
+        /// <summary>
         /// Hides the newest message shown; the next one waiting comes.
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
@@ -8970,6 +8993,9 @@ namespace Raven
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rtoast_set_action_callback(uint toast, RToastCallback callback, IntPtr user_data);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtoast_set_message_ended_callback(uint toast, RToastEndedCallback callback, IntPtr user_data);
 
         /// <summary>
         /// Replaces the items: their texts separated by '|'.

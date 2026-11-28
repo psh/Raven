@@ -1291,6 +1291,13 @@ extern "C" {
 	RAVEN_API void Rtoast_show(Rid toast, const char* text, double seconds);
 	/** @brief Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is). */
 	RAVEN_API void Rtoast_show_kind(Rid toast, const char* text, RToastKind kind, double seconds);
+	/**
+	 * @brief Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+	 * error), for Rtoast_hide_message and the message ended callback.
+	 */
+	RAVEN_API int Rtoast_show_message(Rid toast, const char* text, RToastKind kind, double seconds);
+	/** @brief Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone. */
+	RAVEN_API void Rtoast_hide_message(Rid toast, int id);
 	/** @brief Hides the newest message shown; the next one waiting comes. */
 	RAVEN_API void Rtoast_hide(Rid toast);
 	/** @brief Hides every message, and forgets those waiting. */
@@ -1311,6 +1318,15 @@ extern "C" {
 	/** @brief Called by the button of a message, which then hides. This also fires the action of the widget. */
 	typedef void (*RToastCallback)(Rid toast, void* user_data);
 	RAVEN_API void Rtoast_set_action_callback(Rid toast, RToastCallback callback, void* user_data);
+	/**
+	 * Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+	 * Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+	 * button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+	 * Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+	 * ids too). It is called once the toast is done changing; it may show, hide or destroy.
+	 */
+	typedef void (*RToastEndedCallback)(Rid toast, int id, int by_action, void* user_data);
+	RAVEN_API void Rtoast_set_message_ended_callback(Rid toast, RToastEndedCallback callback, void* user_data);
 
 
 	/* ============================================================================

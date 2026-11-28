@@ -5022,6 +5022,20 @@ func ToastShowKind(toast ID, text string, kind RToastKind, seconds float64) {
 	C.Rtoast_show_kind(C.Rid(toast), text_, C.RToastKind(kind), C.double(seconds))
 }
 
+// ToastShowMessage: Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+// error), for Rtoast_hide_message and the message ended callback.
+func ToastShowMessage(toast ID, text string, kind RToastKind, seconds float64) int {
+	text_ := C.CString(text)
+	defer C.free(unsafe.Pointer(text_))
+	return int(C.Rtoast_show_message(C.Rid(toast), text_, C.RToastKind(kind), C.double(seconds)))
+}
+
+// ToastHideMessage: Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has
+// gone.
+func ToastHideMessage(toast ID, id int) {
+	C.Rtoast_hide_message(C.Rid(toast), C.int(id))
+}
+
 // ToastHide: Hides the newest message shown; the next one waiting comes.
 func ToastHide(toast ID) {
 	C.Rtoast_hide(C.Rid(toast))
@@ -9959,10 +9973,10 @@ func TestGetScriptError() string {
 // Rtile_view_set_context_callback, Rtable_set_virtual_rows, Rtable_set_cell_color_callback
 // Rtable_set_selection_changed_callback, Rtable_set_activated_callback, Rtable_set_sort_callback
 // Rtable_set_cell_edited_callback, Rdate_picker_set_changed_callback, Rtime_picker_set_changed_callback
-// Rtoast_set_action_callback, Rbreadcrumb_set_clicked_callback, Rrating_set_changed_callback
-// Rpagination_set_changed_callback, Rplot_set_view_changed_callback, Rplot_set_drag_line_callback
-// Rplot_set_series_toggled_callback, Rmap_set_sprite, Rmap_set_tile_source, Rmap_set_tile_data
-// Rmap_get_stats, Rmap_set_camera_changed_callback, Rchart_set_slice_clicked_callback
+// Rtoast_set_action_callback, Rtoast_set_message_ended_callback, Rbreadcrumb_set_clicked_callback
+// Rrating_set_changed_callback, Rpagination_set_changed_callback, Rplot_set_view_changed_callback
+// Rplot_set_drag_line_callback, Rplot_set_series_toggled_callback, Rmap_set_sprite, Rmap_set_tile_source
+// Rmap_set_tile_data, Rmap_get_stats, Rmap_set_camera_changed_callback, Rchart_set_slice_clicked_callback
 // Rchart_set_cell_clicked_callback, Rpdf_view_set_page_changed_callback, Rcarousel_set_page_changed_callback
 // Rpdf_view_print, Rmap_view_set_tile_callback, Rmap_view_set_tile_cancel_callback, Rmap_view_set_tile
 // Rmap_view_set_marker_clicked_callback, Rmap_view_set_view_changed_callback

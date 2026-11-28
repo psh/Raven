@@ -410,6 +410,12 @@ type
     ## Called when the user changes the time. This also fires the action of the widget.
   RToastCallback* = proc (toast: Rid, user_data: pointer) {.cdecl.}
     ## Called by the button of a message, which then hides. This also fires the action of the widget.
+  RToastEndedCallback* = proc (toast: Rid, id: cint, by_action: cint, user_data: pointer) {.cdecl.}
+    ## Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+    ## Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+    ## button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+    ## Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+    ## ids too). It is called once the toast is done changing; it may show, hide or destroy.
   RBreadcrumbCallback* = proc (breadcrumb: Rid, index: cint, user_data: pointer) {.cdecl.}
     ## Called when the user clicks an item. This also fires the action of the widget.
   RRatingChangedCallback* = proc (rating: Rid, value: cfloat, user_data: pointer) {.cdecl.}
@@ -4425,6 +4431,11 @@ proc Rtoast_show*(toast: Rid, text: cstring, seconds: cdouble) {.rapi.}
   ## Shows a message for `seconds` (0 or less: until Rtoast_hide), with the kind and button set now.
 proc Rtoast_show_kind*(toast: Rid, text: cstring, kind: RToastKind, seconds: cdouble) {.rapi.}
   ## Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is).
+proc Rtoast_show_message*(toast: Rid, text: cstring, kind: RToastKind, seconds: cdouble): cint {.rapi.}
+  ## Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+  ## error), for Rtoast_hide_message and the message ended callback.
+proc Rtoast_hide_message*(toast: Rid, id: cint) {.rapi.}
+  ## Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
 proc Rtoast_hide*(toast: Rid) {.rapi.}
   ## Hides the newest message shown; the next one waiting comes.
 proc Rtoast_clear*(toast: Rid) {.rapi.}
@@ -4443,6 +4454,7 @@ proc Rtoast_set_kind*(toast: Rid, kind: RToastKind) {.rapi.}
 proc Rtoast_set_action_text*(toast: Rid, text: cstring) {.rapi.}
   ## A button at the end of the next messages ("Undo"); NULL or "" removes it.
 proc Rtoast_set_action_callback*(toast: Rid, callback: RToastCallback, user_data: pointer) {.rapi.}
+proc Rtoast_set_message_ended_callback*(toast: Rid, callback: RToastEndedCallback, user_data: pointer) {.rapi.}
 proc Rbreadcrumb_set_items*(breadcrumb: Rid, items: cstring) {.rapi.}
   ## Replaces the items: their texts separated by '\|'.
 proc Rbreadcrumb_add_item*(breadcrumb: Rid, text: cstring): cint {.rapi.}

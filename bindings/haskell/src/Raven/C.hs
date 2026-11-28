@@ -2922,6 +2922,17 @@ type RToastCallback = FunPtr (Rid -> Ptr () -> IO ())
 -- no longer calls it.
 foreign import ccall "wrapper" mkRToastCallback :: (Rid -> Ptr () -> IO ()) -> IO RToastCallback
 
+-- | Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+-- Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+-- button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+-- Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+-- ids too). It is called once the toast is done changing; it may show, hide or destroy.
+type RToastEndedCallback = FunPtr (Rid -> CInt -> CInt -> Ptr () -> IO ())
+
+-- | Makes a 'RToastEndedCallback' of a Haskell function; free it with 'freeHaskellFunPtr' once the library
+-- no longer calls it.
+foreign import ccall "wrapper" mkRToastEndedCallback :: (Rid -> CInt -> CInt -> Ptr () -> IO ()) -> IO RToastEndedCallback
+
 -- | Called when the user clicks an item. This also fires the action of the widget.
 type RBreadcrumbCallback = FunPtr (Rid -> CInt -> Ptr () -> IO ())
 
@@ -7654,6 +7665,13 @@ foreign import ccall safe "Rtoast_show" rtoast_show :: Rid -> CString -> CDouble
 -- | Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is).
 foreign import ccall safe "Rtoast_show_kind" rtoast_show_kind :: Rid -> CString -> RToastKind -> CDouble -> IO ()
 
+-- | Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+-- error), for Rtoast_hide_message and the message ended callback.
+foreign import ccall safe "Rtoast_show_message" rtoast_show_message :: Rid -> CString -> RToastKind -> CDouble -> IO CInt
+
+-- | Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
+foreign import ccall safe "Rtoast_hide_message" rtoast_hide_message :: Rid -> CInt -> IO ()
+
 -- | Hides the newest message shown; the next one waiting comes.
 foreign import ccall safe "Rtoast_hide" rtoast_hide :: Rid -> IO ()
 
@@ -7682,6 +7700,8 @@ foreign import ccall safe "Rtoast_set_kind" rtoast_set_kind :: Rid -> RToastKind
 foreign import ccall safe "Rtoast_set_action_text" rtoast_set_action_text :: Rid -> CString -> IO ()
 
 foreign import ccall safe "Rtoast_set_action_callback" rtoast_set_action_callback :: Rid -> RToastCallback -> Ptr () -> IO ()
+
+foreign import ccall safe "Rtoast_set_message_ended_callback" rtoast_set_message_ended_callback :: Rid -> RToastEndedCallback -> Ptr () -> IO ()
 
 -- | Replaces the items: their texts separated by '|'.
 foreign import ccall safe "Rbreadcrumb_set_items" rbreadcrumb_set_items :: Rid -> CString -> IO ()

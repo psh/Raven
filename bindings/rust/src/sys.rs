@@ -1665,6 +1665,12 @@ pub type RDateChangedCallback = Option<unsafe extern "C" fn(date_picker: Rid, ye
 pub type RTimeChangedCallback = Option<unsafe extern "C" fn(time_picker: Rid, hour: c_int, minute: c_int, second: c_int, user_data: *mut c_void)>;
 /// Called by the button of a message, which then hides. This also fires the action of the widget.
 pub type RToastCallback = Option<unsafe extern "C" fn(toast: Rid, user_data: *mut c_void)>;
+/// Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+/// Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+/// button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+/// Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+/// ids too). It is called once the toast is done changing; it may show, hide or destroy.
+pub type RToastEndedCallback = Option<unsafe extern "C" fn(toast: Rid, id: c_int, by_action: c_int, user_data: *mut c_void)>;
 /// Called when the user clicks an item. This also fires the action of the widget.
 pub type RBreadcrumbCallback = Option<unsafe extern "C" fn(breadcrumb: Rid, index: c_int, user_data: *mut c_void)>;
 /// Called when the user changes the score. This also fires the action of the widget.
@@ -4454,6 +4460,11 @@ extern "C" {
     pub fn Rtoast_show(toast: Rid, text: *const c_char, seconds: f64);
     /// Same, with a kind of its own (the kind set by Rtoast_set_kind is left as it is).
     pub fn Rtoast_show_kind(toast: Rid, text: *const c_char, kind: RToastKind, seconds: f64);
+    /// Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+    /// error), for Rtoast_hide_message and the message ended callback.
+    pub fn Rtoast_show_message(toast: Rid, text: *const c_char, kind: RToastKind, seconds: f64) -> c_int;
+    /// Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
+    pub fn Rtoast_hide_message(toast: Rid, id: c_int);
     /// Hides the newest message shown; the next one waiting comes.
     pub fn Rtoast_hide(toast: Rid);
     /// Hides every message, and forgets those waiting.
@@ -4472,6 +4483,7 @@ extern "C" {
     /// A button at the end of the next messages ("Undo"); NULL or "" removes it.
     pub fn Rtoast_set_action_text(toast: Rid, text: *const c_char);
     pub fn Rtoast_set_action_callback(toast: Rid, callback: RToastCallback, user_data: *mut c_void);
+    pub fn Rtoast_set_message_ended_callback(toast: Rid, callback: RToastEndedCallback, user_data: *mut c_void);
     /// Replaces the items: their texts separated by '|'.
     pub fn Rbreadcrumb_set_items(breadcrumb: Rid, items: *const c_char);
     /// Returns: The index of the new item, at the end.

@@ -872,6 +872,8 @@ const _symbols = {
 	Rtime_picker_get_instant: { args: ["u32"], returns: "f64" },
 	Rtoast_show: { args: ["u32", "ptr", "f64"], returns: "void" },
 	Rtoast_show_kind: { args: ["u32", "ptr", "i32", "f64"], returns: "void" },
+	Rtoast_show_message: { args: ["u32", "ptr", "i32", "f64"], returns: "i32" },
+	Rtoast_hide_message: { args: ["u32", "i32"], returns: "void" },
 	Rtoast_hide: { args: ["u32"], returns: "void" },
 	Rtoast_clear: { args: ["u32"], returns: "void" },
 	Rtoast_is_shown: { args: ["u32"], returns: "i32" },
@@ -883,6 +885,7 @@ const _symbols = {
 	Rtoast_set_kind: { args: ["u32", "i32"], returns: "void" },
 	Rtoast_set_action_text: { args: ["u32", "ptr"], returns: "void" },
 	Rtoast_set_action_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtoast_set_message_ended_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rbreadcrumb_set_items: { args: ["u32", "ptr"], returns: "void" },
 	Rbreadcrumb_add_item: { args: ["u32", "ptr"], returns: "i32" },
 	Rbreadcrumb_truncate: { args: ["u32", "i32"], returns: "void" },
@@ -8439,6 +8442,28 @@ function _adapt_RToastCallback(function_: RToastCallback | Pointer | null, threa
 	}, { args: ["u32", "ptr"], returns: "void", threadsafe }));
 }
 
+/**
+ * Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+ * Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+ * button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+ * Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+ * ids too). It is called once the toast is done changing; it may show, hide or destroy.
+ */
+export type RToastEndedCallback = (toast: Rid, id: number, by_action: number, user_data: Pointer | null) => void;
+
+function _adapt_RToastEndedCallback(function_: RToastEndedCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((toast: number, id: number, by_action: number, user_data: Pointer | null): void => {
+		try {
+			function_(toast, id, by_action, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "i32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
 /** Called when the user clicks an item. This also fires the action of the widget. */
 export type RBreadcrumbCallback = (breadcrumb: Rid, index: number, user_data: Pointer | null) => void;
 
@@ -13881,6 +13906,19 @@ export function Rtoast_show_kind(toast: Rid, text: string | null, kind: RToastKi
 	_lib.Rtoast_show_kind(toast, _s(text), kind, seconds);
 }
 
+/**
+ * Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+ * error), for Rtoast_hide_message and the message ended callback.
+ */
+export function Rtoast_show_message(toast: Rid, text: string | null, kind: RToastKind, seconds: number): number {
+	return _lib.Rtoast_show_message(toast, _s(text), kind, seconds);
+}
+
+/** Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone. */
+export function Rtoast_hide_message(toast: Rid, id: number): void {
+	_lib.Rtoast_hide_message(toast, id);
+}
+
 /** Hides the newest message shown; the next one waiting comes. */
 export function Rtoast_hide(toast: Rid): void {
 	_lib.Rtoast_hide(toast);
@@ -13930,6 +13968,10 @@ export function Rtoast_set_action_text(toast: Rid, text: string | null): void {
 
 export function Rtoast_set_action_callback(toast: Rid, callback: RToastCallback | Pointer | null, user_data: RPointer = null): void {
 	_lib.Rtoast_set_action_callback(toast, _adapt_RToastCallback(callback), user_data);
+}
+
+export function Rtoast_set_message_ended_callback(toast: Rid, callback: RToastEndedCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtoast_set_message_ended_callback(toast, _adapt_RToastEndedCallback(callback), user_data);
 }
 
 /** Replaces the items: their texts separated by '|'. */

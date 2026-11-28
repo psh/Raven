@@ -14,8 +14,8 @@
 //     Raven, valid until the next call that changes it
 //   - numbers written through a pointer come back as results, after the result of the function
 //
-// 1210 of the 1666 functions of the C API are here, 32 are written by hand (the other files of this
-// folder), and 424 are raw only: call them through the package `raven`, imported as `raw`.
+// 1212 of the 1669 functions of the C API are here, 32 are written by hand (the other files of this
+// folder), and 425 are raw only: call them through the package `raven`, imported as `raw`.
 // Raw only, and why:
 //
 //   a handle that is not known (184):
@@ -66,7 +66,7 @@
 //     Rtest_drag_to Rtest_key Rtest_type_text Rtest_expect_golden Rtest_dump_tree Rtest_save_tree
 //     Rtest_save_png
 //
-//   a callback (116):
+//   a callback (117):
 //     Rset_app_event_callback Rtask_post Rtask_run_async Rparallel_for Raction_set_list_callback
 //     Raction_set_default_handler Raction_bind_with_parameters Rset_device_reset_callback
 //     Rwindow_set_keyboard_callback Rwindow_set_back_callback Rwindow_set_close_callback
@@ -87,26 +87,26 @@
 //     Rtile_view_set_context_callback Rtable_set_virtual_rows Rtable_set_cell_color_callback
 //     Rtable_set_selection_changed_callback Rtable_set_activated_callback Rtable_set_sort_callback
 //     Rtable_set_cell_edited_callback Rdate_picker_set_changed_callback Rtime_picker_set_changed_callback
-//     Rtoast_set_action_callback Rbreadcrumb_set_clicked_callback Rrating_set_changed_callback
-//     Rpagination_set_changed_callback Rplot_set_view_changed_callback Rplot_set_drag_line_callback
-//     Rplot_set_series_toggled_callback Rtext_editor_set_zoom_callback Rtext_editor_set_completion_callback
-//     Rtext_editor_set_hover_callback Rtext_editor_set_changed_callback Rdock_area_set_close_callback
-//     Rdock_area_set_float_window Rdock_area_set_changed_callback Risland_set_changed_callback
-//     Rtray_set_clicked_callback Rcolor_picker_set_changed_callback Rtimeline_set_time_callback
-//     Rtimeline_set_changed_callback Rtimeline_set_selection_callback Rtimeline_set_activated_callback
-//     Rtimeline_set_removed_callback Rnode_graph_set_connect_callback Rnode_graph_set_linked_callback
-//     Rnode_graph_set_unlinked_callback Rnode_graph_set_moved_callback Rnode_graph_set_selection_callback
-//     Rnode_graph_set_removed_callback Rnode_graph_set_activated_callback Rnode_graph_set_context_callback
-//     Rnode_graph_set_canvas_activated_callback Rnode_graph_set_wire_dropped_callback
-//     Rnode_graph_set_pin_clicked_callback Rblock_editor_set_changed_callback
-//     Rblock_editor_set_clicked_callback Rblock_editor_set_context_callback Rdialog_open
-//     Rdialog_set_dismiss_callback Rpopup_open Rfile_browser_set_accepted_callback
-//     Rfile_browser_set_cancelled_callback Rfile_browser_set_selection_changed_callback
-//     Rnotification_set_fallback Rnotification_set_clicked_callback Rnotification_set_callback
-//     Rpermission_request Rcamera_take_photo Rphoto_pick Rviewport_set_draw_callback
-//     Rviewport_set_resize_callback Rcustom_set_paint_callback Rcustom_set_measure_callback
-//     Rxml_set_reload_callback Rxml_register_tag Rscript_set_log_callback Rscript_set_diagnostic_callback
-//     Rlocale_set_changed_callback Rwidget_set_accessible_action
+//     Rtoast_set_action_callback Rtoast_set_message_ended_callback Rbreadcrumb_set_clicked_callback
+//     Rrating_set_changed_callback Rpagination_set_changed_callback Rplot_set_view_changed_callback
+//     Rplot_set_drag_line_callback Rplot_set_series_toggled_callback Rtext_editor_set_zoom_callback
+//     Rtext_editor_set_completion_callback Rtext_editor_set_hover_callback Rtext_editor_set_changed_callback
+//     Rdock_area_set_close_callback Rdock_area_set_float_window Rdock_area_set_changed_callback
+//     Risland_set_changed_callback Rtray_set_clicked_callback Rcolor_picker_set_changed_callback
+//     Rtimeline_set_time_callback Rtimeline_set_changed_callback Rtimeline_set_selection_callback
+//     Rtimeline_set_activated_callback Rtimeline_set_removed_callback Rnode_graph_set_connect_callback
+//     Rnode_graph_set_linked_callback Rnode_graph_set_unlinked_callback Rnode_graph_set_moved_callback
+//     Rnode_graph_set_selection_callback Rnode_graph_set_removed_callback Rnode_graph_set_activated_callback
+//     Rnode_graph_set_context_callback Rnode_graph_set_canvas_activated_callback
+//     Rnode_graph_set_wire_dropped_callback Rnode_graph_set_pin_clicked_callback
+//     Rblock_editor_set_changed_callback Rblock_editor_set_clicked_callback
+//     Rblock_editor_set_context_callback Rdialog_open Rdialog_set_dismiss_callback Rpopup_open
+//     Rfile_browser_set_accepted_callback Rfile_browser_set_cancelled_callback
+//     Rfile_browser_set_selection_changed_callback Rnotification_set_fallback
+//     Rnotification_set_clicked_callback Rnotification_set_callback Rpermission_request Rcamera_take_photo
+//     Rphoto_pick Rviewport_set_draw_callback Rviewport_set_resize_callback Rcustom_set_paint_callback
+//     Rcustom_set_measure_callback Rxml_set_reload_callback Rxml_register_tag Rscript_set_log_callback
+//     Rscript_set_diagnostic_callback Rlocale_set_changed_callback Rwidget_set_accessible_action
 //
 //   a parameter of type RPainter* (19):
 //     Rdraw_rect Rdraw_shadow Rdraw_rect_outline Rdraw_circle Rdraw_line Rdraw_polyline Rdraw_curve
@@ -3583,6 +3583,18 @@ toast_show :: proc(toast: Widget, text: string, seconds: f64) {
 toast_show_kind :: proc(toast: Widget, text: string, kind: Toast_Kind, seconds: f64) {
 	buffer_text: [cstring_buffer_size]u8
 	raw.Rtoast_show_kind(raw.Rid(toast), to_cstring(text, &buffer_text), raw.RToastKind(kind), seconds)
+}
+
+// Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+// error), for Rtoast_hide_message and the message ended callback.
+toast_show_message :: proc(toast: Widget, text: string, kind: Toast_Kind, seconds: f64) -> i32 {
+	buffer_text: [cstring_buffer_size]u8
+	return raw.Rtoast_show_message(raw.Rid(toast), to_cstring(text, &buffer_text), raw.RToastKind(kind), seconds)
+}
+
+// Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
+toast_hide_message :: proc(toast: Widget, id: i32) {
+	raw.Rtoast_hide_message(raw.Rid(toast), id)
 }
 
 // Hides the newest message shown; the next one waiting comes.

@@ -3048,6 +3048,14 @@ def _adapt_RToastCallback(function):
         function(toast, user_data)
     return call
 
+RToastEndedCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RToastEndedCallback(function):
+    def call(toast, id_, by_action, user_data):
+        function(toast, id_, by_action, user_data)
+    return call
+
 RBreadcrumbCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
 
 
@@ -10454,6 +10462,25 @@ def Rtoast_show_kind(toast, text, kind, seconds):
     _lib.Rtoast_show_kind(toast, _s(text), int(kind), seconds)
 
 
+_lib.Rtoast_show_message.argtypes = [ctypes.c_uint32, ctypes.c_char_p, ctypes.c_int, ctypes.c_double]
+_lib.Rtoast_show_message.restype = ctypes.c_int
+
+
+def Rtoast_show_message(toast, text, kind, seconds):
+    """Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+    error), for Rtoast_hide_message and the message ended callback."""
+    return _lib.Rtoast_show_message(toast, _s(text), int(kind), seconds)
+
+
+_lib.Rtoast_hide_message.argtypes = [ctypes.c_uint32, ctypes.c_int]
+_lib.Rtoast_hide_message.restype = None
+
+
+def Rtoast_hide_message(toast, id_):
+    """Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone."""
+    _lib.Rtoast_hide_message(toast, id_)
+
+
 _lib.Rtoast_hide.argtypes = [ctypes.c_uint32]
 _lib.Rtoast_hide.restype = None
 
@@ -10547,6 +10574,14 @@ _lib.Rtoast_set_action_callback.restype = None
 
 def Rtoast_set_action_callback(toast, callback, user_data=None):
     _lib.Rtoast_set_action_callback(toast, _callback(RToastCallback, _adapt_RToastCallback, callback), user_data)
+
+
+_lib.Rtoast_set_message_ended_callback.argtypes = [ctypes.c_uint32, RToastEndedCallback, ctypes.c_void_p]
+_lib.Rtoast_set_message_ended_callback.restype = None
+
+
+def Rtoast_set_message_ended_callback(toast, callback, user_data=None):
+    _lib.Rtoast_set_message_ended_callback(toast, _callback(RToastEndedCallback, _adapt_RToastEndedCallback, callback), user_data)
 
 
 _lib.Rbreadcrumb_set_items.argtypes = [ctypes.c_uint32, ctypes.c_char_p]

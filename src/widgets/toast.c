@@ -32,6 +32,9 @@ typedef enum rvn_toast_state_t {
 
 /* One message: shown, waiting its turn, or going. */
 typedef struct rvn_toast_message_t {
+	/** Its id, from 1 (Rtoast_show_message); `ended` once its end is reported. */
+	int id;
+	int ended;
 	char* text;
 	char* action_text;
 	RToastKind kind;
@@ -86,6 +89,14 @@ typedef struct rvn_toast_t {
 	void* user_data;
 	rvn_toast_report_t* reports;
 	uint32_t report_count, report_capacity;
+	/** The id the next message gets. */
+	int next_id;
+	/** The messages that went, reported once the toast is done changing: their ids, and whether by their button. */
+	RToastEndedCallback ended_callback;
+	void* ended_user;
+	int* ended_ids;
+	int* ended_by_action;
+	uint32_t ended_count, ended_capacity;
 } rvn_toast_t;
 
 static void rvn_toast_init(rvn_widget_t* widget) {
@@ -139,11 +150,54 @@ static void rvn_toast_report(rvn_toast_t* toast, const rvn_toast_message_t* mess
 	report->action = action ? rvn_strdup(action) : NULL;
 }
 
-/* Reports what happened to the notifications. The callbacks may change the toast, or destroy it: it is not touched afterwards. */
+/* A message goes (timed out, hidden, cleared, replaced, or by its button): its end, kept until rvn_toast_report_flush, once. */
+static void rvn_toast_ended(rvn_toast_t* toast, rvn_toast_message_t* message, int by_action) {
+	if (message->ended) return;
+	message->ended = R_TRUE;
+	if (!toast->ended_callback) return;
+	if (toast->ended_count == toast->ended_capacity) {
+		toast->ended_capacity = toast->ended_capacity ? toast->ended_capacity * 2 : 4;
+		toast->ended_ids = (int*)rvn_realloc(toast->ended_ids, toast->ended_capacity * sizeof(int));
+		toast->ended_by_action = (int*)rvn_realloc(toast->ended_by_action, toast->ended_capacity * sizeof(int));
+	}
+	toast->ended_ids[toast->ended_count] = message->id;
+	toast->ended_by_action[toast->ended_count] = by_action ? R_TRUE : R_FALSE;
+	toast->ended_count++;
+}
+
+/*
+ * Reports the messages that went, then what happened to the notifications. The callbacks may
+ * change the toast, or destroy it: it is not touched afterwards, but to see that it is alive.
+ */
 static void rvn_toast_report_flush(rvn_widget_t* widget) {
 	rvn_toast_t* toast = (rvn_toast_t*)widget;
 	rvn_toast_report_t* reports = toast->reports;
 	uint32_t i, count = toast->report_count;
+	if (toast->ended_count > 0) {
+		Rid id = widget->id;
+		int* ids = toast->ended_ids;
+		int* by_action = toast->ended_by_action;
+		uint32_t ended = toast->ended_count;
+		RToastEndedCallback callback = toast->ended_callback;
+		void* user = toast->ended_user;
+		toast->ended_ids = NULL;
+		toast->ended_by_action = NULL;
+		toast->ended_count = toast->ended_capacity = 0;
+		for (i = 0; i < ended && callback && rvn_widget_get(id) == widget; i++) callback(id, ids[i], by_action[i], user);
+		rvn_free(ids);
+		rvn_free(by_action);
+		/* (destroyed by a callback: what was left to report goes with it) */
+		if (rvn_widget_get(id) != widget) {
+			for (i = 0; i < count; i++) {
+				rvn_free(reports[i].tag);
+				rvn_free(reports[i].action);
+			}
+			rvn_free(reports);
+			return;
+		}
+		reports = toast->reports;
+		count = toast->report_count;
+	}
 	if (count == 0) return;
 	toast->reports = NULL;
 	toast->report_count = toast->report_capacity = 0;
@@ -174,6 +228,8 @@ static void rvn_toast_destroy(rvn_widget_t* widget) {
 		rvn_free(toast->reports[i].action);
 	}
 	rvn_free(toast->reports);
+	rvn_free(toast->ended_ids);
+	rvn_free(toast->ended_by_action);
 }
 
 static uint32_t rvn_toast_shown_count(const rvn_toast_t* toast) {
@@ -233,7 +289,8 @@ static void rvn_toast_promote(rvn_widget_t* widget) {
 	rvn_toast_refresh(widget);
 }
 
-static void rvn_toast_dismiss(rvn_widget_t* widget, rvn_toast_message_t* message) {
+static void rvn_toast_dismiss(rvn_widget_t* widget, rvn_toast_message_t* message, int by_action) {
+	rvn_toast_ended((rvn_toast_t*)widget, message, by_action);
 	rvn_toast_stop_timer(message);
 	if (message->state == RVN_TOAST_WAITING) {
 		rvn_toast_remove_at((rvn_toast_t*)widget, (uint32_t)(message - ((rvn_toast_t*)widget)->messages));
@@ -249,6 +306,7 @@ static void rvn_toast_clear(rvn_widget_t* widget) {
 	while (i > 0) {
 		rvn_toast_message_t* message = &toast->messages[--i];
 		if (message->state != RVN_TOAST_LEAVING) rvn_toast_report(toast, message, R_NOTIFICATION_DISMISSED, NULL);
+		rvn_toast_ended(toast, message, R_FALSE);
 		rvn_toast_stop_timer(message);
 		if (message->state == RVN_TOAST_WAITING) rvn_toast_remove_at(toast, i);
 		else message->state = RVN_TOAST_LEAVING;
@@ -266,7 +324,7 @@ static void rvn_toast_timer(Rid timer, void* user_data) {
 		if (toast->messages[i].timer == timer) {
 			toast->messages[i].timer = R_INVALID_ID;
 			rvn_toast_report(toast, &toast->messages[i], R_NOTIFICATION_DISMISSED, NULL);
-			rvn_toast_dismiss(widget, &toast->messages[i]);
+			rvn_toast_dismiss(widget, &toast->messages[i], R_FALSE);
 			rvn_toast_report_flush(widget);
 			return;
 		}
@@ -283,6 +341,7 @@ static rvn_toast_message_t* rvn_toast_append(rvn_toast_t* toast) {
 			i--;
 			if (toast->messages[i].state == RVN_TOAST_LEAVING) continue;
 			rvn_toast_report(toast, &toast->messages[i], R_NOTIFICATION_DISMISSED, NULL);
+			rvn_toast_ended(toast, &toast->messages[i], R_FALSE);
 			rvn_toast_remove_at(toast, i);
 		}
 	}
@@ -295,17 +354,21 @@ static rvn_toast_message_t* rvn_toast_append(rvn_toast_t* toast) {
 	message->state = RVN_TOAST_WAITING;
 	message->timer = R_INVALID_ID;
 	message->icon = R_INVALID_ID;
+	message->id = ++toast->next_id;
 	return message;
 }
 
-static void rvn_toast_show(rvn_widget_t* widget, const char* text, RToastKind kind, double seconds) {
+/* Shows (or queues) a message, and returns its id. */
+static int rvn_toast_show(rvn_widget_t* widget, const char* text, RToastKind kind, double seconds) {
 	rvn_toast_t* toast = (rvn_toast_t*)widget;
 	rvn_toast_message_t* message = rvn_toast_append(toast);
+	int id = message->id;
 	message->text = rvn_strdup(text ? text : "");
 	message->action_text = toast->action_text ? rvn_strdup(toast->action_text) : NULL;
 	message->kind = kind;
 	message->seconds = seconds;
 	rvn_toast_promote(widget);
+	return id;
 }
 
 static float rvn_toast_padding(const rvn_widget_t* widget) {
@@ -564,13 +627,15 @@ static void rvn_toast_click_action(rvn_widget_t* widget, int index, int button) 
 	if (message->tag) {
 		/* a button of a notification: reported as its action, not to the callback of the toast */
 		rvn_toast_report(toast, message, R_NOTIFICATION_ACTION_INVOKED, message->button_ids[button]);
-		rvn_toast_dismiss(widget, message);
+		rvn_toast_dismiss(widget, message, R_TRUE);
 		rvn_toast_report_flush(widget);
 		return;
 	}
-	rvn_toast_dismiss(widget, message);
+	rvn_toast_dismiss(widget, message, R_TRUE);
 	if (toast->callback) toast->callback(widget->id, toast->user_data);
 	if (rvn_widget_alive(widget)) rvn_widget_fire_action(widget);
+	/* (then the message's end, by its button) */
+	if (rvn_widget_alive(widget)) rvn_toast_report_flush(widget);
 }
 
 /* A click on a notification itself (not on a button): reported, and it goes. */
@@ -579,7 +644,7 @@ static void rvn_toast_click_body(rvn_widget_t* widget, int index) {
 	rvn_toast_message_t* message = &toast->messages[index];
 	rvn_str_set(&toast->text, rvn_toast_message_text(message));
 	rvn_toast_report(toast, message, R_NOTIFICATION_ACTIVATED, NULL);
-	rvn_toast_dismiss(widget, message);
+	rvn_toast_dismiss(widget, message, R_FALSE);
 	rvn_toast_report_flush(widget);
 }
 
@@ -734,8 +799,42 @@ void Rtoast_hide(Rid id) {
 	message = rvn_toast_current((rvn_toast_t*)widget);
 	if (!message) return;
 	rvn_toast_report((rvn_toast_t*)widget, message, R_NOTIFICATION_DISMISSED, NULL);
-	rvn_toast_dismiss(widget, message);
+	rvn_toast_dismiss(widget, message, R_FALSE);
 	rvn_toast_report_flush(widget);
+}
+
+int Rtoast_show_message(Rid id, const char* text, RToastKind kind, double seconds) {
+	int message;
+	RVN_WIDGET(widget, id, R_WIDGET_TOAST, 0);
+	if (kind < R_TOAST_INFO || kind > R_TOAST_ERROR) {
+		rvn_error(R_ERROR_INVALID_ENUM, R_SEVERITY_ERROR, "Rtoast_show_message: invalid kind");
+		return 0;
+	}
+	message = rvn_toast_show(widget, text, kind, seconds);
+	rvn_toast_report_flush(widget);
+	return message;
+}
+
+void Rtoast_hide_message(Rid id, int message_id) {
+	rvn_toast_t* toast;
+	uint32_t i;
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TOAST);
+	toast = (rvn_toast_t*)widget;
+	for (i = 0; i < toast->count; i++) {
+		rvn_toast_message_t* message = &toast->messages[i];
+		if (message->id != message_id || message->state == RVN_TOAST_LEAVING) continue;
+		/* shown, it fades; waiting, it is taken out of the queue */
+		rvn_toast_report(toast, message, R_NOTIFICATION_DISMISSED, NULL);
+		rvn_toast_dismiss(widget, message, R_FALSE);
+		rvn_toast_report_flush(widget);
+		return;
+	}
+}
+
+void Rtoast_set_message_ended_callback(Rid id, RToastEndedCallback callback, void* user_data) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TOAST);
+	((rvn_toast_t*)widget)->ended_callback = callback;
+	((rvn_toast_t*)widget)->ended_user = user_data;
 }
 
 void Rtoast_clear(Rid id) {
@@ -873,5 +972,6 @@ void rvn_toast_close_notification(Rid id, const char* tag) {
 	rvn_toast_message_t* message;
 	if (!widget || widget->cls->type != R_WIDGET_TOAST) return;
 	message = rvn_toast_find_tag((rvn_toast_t*)widget, tag);
-	if (message) rvn_toast_dismiss(widget, message);
+	if (message) rvn_toast_dismiss(widget, message, R_FALSE);
+	rvn_toast_report_flush(widget);
 }

@@ -443,6 +443,116 @@ static void test_toast(void) {
 	Rtoast_set_queue(toast, R_TOAST_REPLACE);
 }
 
+/* The messages that ended, as the message ended callback reports them, in order. */
+static int g_ended_ids[16];
+static int g_ended_by_action[16];
+static int g_ended_count;
+
+static void on_toast_ended(Rid toast, int id, int by_action, void* user_data) {
+	(void)toast;
+	CHECK(user_data == &g_ended_count);
+	if (g_ended_count < 16) {
+		g_ended_ids[g_ended_count] = id;
+		g_ended_by_action[g_ended_count] = by_action;
+	}
+	g_ended_count++;
+}
+
+/* The `n`th end reported is `id`'s, by its button or not. */
+static int ended_was(int n, int id, int by_action) {
+	return n < g_ended_count && g_ended_ids[n] == id && g_ended_by_action[n] == by_action;
+}
+
+static void test_toast_message_ids(void) {
+	Rid root = content(
+		"<Overlay><Button Name=\"under\" Text=\"Under\"/>"
+		"<Toast Name=\"toast\" Slot.HAlign=\"Center\" Slot.VAlign=\"Bottom\"/></Overlay>");
+	Rid toast = Rwidget_find(root, "toast");
+	float x, y, w, h;
+	int a, b, c, d, i;
+	double start;
+	Rtoast_set_message_ended_callback(toast, on_toast_ended, &g_ended_count);
+
+	/* ids: distinct, from 1 */
+	g_ended_count = 0;
+	a = Rtoast_show_message(toast, "A", R_TOAST_INFO, 0.0);
+	CHECK(a >= 1 && g_ended_count == 0);
+	/* replaced (the default queue): each new message ends the one shown */
+	b = Rtoast_show_message(toast, "B", R_TOAST_SUCCESS, 0.0);
+	c = Rtoast_show_message(toast, "C", R_TOAST_INFO, 0.0);
+	CHECK(b > a && c > b);
+	CHECK(g_ended_count == 2 && ended_was(0, a, R_FALSE) && ended_was(1, b, R_FALSE));
+	/* hidden by id */
+	g_ended_count = 0;
+	Rtoast_hide_message(toast, c);
+	CHECK(g_ended_count == 1 && ended_was(0, c, R_FALSE));
+	Rtoast_hide_message(toast, c);
+	Rtoast_hide_message(toast, 999);
+	CHECK(g_ended_count == 1);
+	/* hidden as the newest */
+	g_ended_count = 0;
+	d = Rtoast_show_message(toast, "D", R_TOAST_INFO, 0.0);
+	Rtoast_hide(toast);
+	CHECK(g_ended_count == 1 && ended_was(0, d, R_FALSE));
+	Rdraw_frame();
+
+	/* by its button: after the action callback */
+	Rtoast_set_action_text(toast, "Undo");
+	Rtoast_set_action_callback(toast, on_toast, NULL);
+	a = Rtoast_show_message(toast, "Saved", R_TOAST_INFO, 0.0);
+	Rdraw_frame();
+	g_calls = 0;
+	g_ended_count = 0;
+	Rwidget_get_rect(toast, &x, &y, &w, &h);
+	test_click_at(g_window, x + w - 20, y + h * 0.5f);
+	CHECK(g_calls == 1);
+	CHECK(g_ended_count == 1 && ended_was(0, a, R_TRUE));
+	Rtoast_set_action_text(toast, NULL);
+	Rdraw_frame();
+
+	/* timed out */
+	g_ended_count = 0;
+	a = Rtoast_show_message(toast, "Soon gone", R_TOAST_INFO, 0.05);
+	start = Rget_time();
+	while (g_ended_count == 0 && Rget_time() - start < 3.0) Rdraw_frame();
+	CHECK(g_ended_count == 1 && ended_was(0, a, R_FALSE));
+
+	/* one after the other: a waiting message taken out of the queue, then the rest cleared */
+	Rtoast_set_queue(toast, R_TOAST_SEQUENCE);
+	g_ended_count = 0;
+	a = Rtoast_show_message(toast, "First", R_TOAST_INFO, 0.0);
+	b = Rtoast_show_message(toast, "Second", R_TOAST_INFO, 0.0);
+	c = Rtoast_show_message(toast, "Third", R_TOAST_INFO, 0.0);
+	Rtoast_hide_message(toast, b);
+	CHECK(g_ended_count == 1 && ended_was(0, b, R_FALSE));
+	CHECK(Rtoast_get_count(toast) == 2);
+	CHECK_STR(Rtoast_get_text(toast), "First");
+	Rtoast_clear(toast);
+	CHECK(g_ended_count == 3);
+	for (i = 1; i < 3; i++) CHECK(g_ended_ids[i] == a || g_ended_ids[i] == c);
+	CHECK(g_ended_ids[1] != g_ended_ids[2]);
+	Rdraw_frame();
+
+	/* a stack of three, ending out of order */
+	Rtoast_set_queue(toast, R_TOAST_STACK);
+	g_ended_count = 0;
+	a = Rtoast_show_message(toast, "One", R_TOAST_INFO, 0.0);
+	b = Rtoast_show_message(toast, "Two", R_TOAST_INFO, 0.0);
+	c = Rtoast_show_message(toast, "Three", R_TOAST_INFO, 0.0);
+	Rtoast_hide_message(toast, b);
+	Rtoast_hide_message(toast, a);
+	Rtoast_hide_message(toast, c);
+	CHECK(g_ended_count == 3 && ended_was(0, b, R_FALSE) && ended_was(1, a, R_FALSE) && ended_was(2, c, R_FALSE));
+	Rdraw_frame();
+
+	/* an invalid kind: an error, no id */
+	EXPECT_ERRORS_BEGIN();
+	CHECK(Rtoast_show_message(toast, "x", (RToastKind)0, 0.0) == 0);
+	EXPECT_ERRORS_END(1);
+	Rtoast_set_queue(toast, R_TOAST_REPLACE);
+	Rtoast_set_message_ended_callback(toast, NULL, NULL);
+}
+
 static void on_crumb(Rid crumbs, int index, void* user_data) {
 	(void)crumbs;
 	(void)user_data;
@@ -1092,6 +1202,7 @@ int main(void) {
 	RUN(test_date_picker_opens_over);
 	RUN(test_time_picker);
 	RUN(test_toast);
+	RUN(test_toast_message_ids);
 	RUN(test_breadcrumb);
 	RUN(test_items_from_own_strings);
 	RUN(test_rating);

@@ -794,6 +794,8 @@ typedef struct rl_table {
 	double (*Rtime_picker_get_instant)(Rid);
 	void (*Rtoast_show)(Rid, const char*, double);
 	void (*Rtoast_show_kind)(Rid, const char*, RToastKind, double);
+	int (*Rtoast_show_message)(Rid, const char*, RToastKind, double);
+	void (*Rtoast_hide_message)(Rid, int);
 	void (*Rtoast_hide)(Rid);
 	void (*Rtoast_clear)(Rid);
 	int (*Rtoast_is_shown)(Rid);
@@ -805,6 +807,7 @@ typedef struct rl_table {
 	void (*Rtoast_set_kind)(Rid, RToastKind);
 	void (*Rtoast_set_action_text)(Rid, const char*);
 	void (*Rtoast_set_action_callback)(Rid, RToastCallback, void*);
+	void (*Rtoast_set_message_ended_callback)(Rid, RToastEndedCallback, void*);
 	void (*Rbreadcrumb_set_items)(Rid, const char*);
 	int (*Rbreadcrumb_add_item)(Rid, const char*);
 	void (*Rbreadcrumb_truncate)(Rid, int);
@@ -2468,6 +2471,8 @@ static const struct {
 	{"Rtime_picker_get_instant", offsetof(rl_table, Rtime_picker_get_instant)},
 	{"Rtoast_show", offsetof(rl_table, Rtoast_show)},
 	{"Rtoast_show_kind", offsetof(rl_table, Rtoast_show_kind)},
+	{"Rtoast_show_message", offsetof(rl_table, Rtoast_show_message)},
+	{"Rtoast_hide_message", offsetof(rl_table, Rtoast_hide_message)},
 	{"Rtoast_hide", offsetof(rl_table, Rtoast_hide)},
 	{"Rtoast_clear", offsetof(rl_table, Rtoast_clear)},
 	{"Rtoast_is_shown", offsetof(rl_table, Rtoast_is_shown)},
@@ -2479,6 +2484,7 @@ static const struct {
 	{"Rtoast_set_kind", offsetof(rl_table, Rtoast_set_kind)},
 	{"Rtoast_set_action_text", offsetof(rl_table, Rtoast_set_action_text)},
 	{"Rtoast_set_action_callback", offsetof(rl_table, Rtoast_set_action_callback)},
+	{"Rtoast_set_message_ended_callback", offsetof(rl_table, Rtoast_set_message_ended_callback)},
 	{"Rbreadcrumb_set_items", offsetof(rl_table, Rbreadcrumb_set_items)},
 	{"Rbreadcrumb_add_item", offsetof(rl_table, Rbreadcrumb_add_item)},
 	{"Rbreadcrumb_truncate", offsetof(rl_table, Rbreadcrumb_truncate)},
@@ -7711,6 +7717,37 @@ static void rl_t_RToastCallback(Rid a0, void* a1) {
 	c.a0 = a0;
 	if (!rl_cb_enter(cb)) return;
 	rl_run(cb, rl_k_RToastCallback, &c);
+	rl_cb_leave(cb);
+}
+
+typedef struct rl_c_RToastEndedCallback {
+	rl_cb* cb;
+	Rid a0;
+	int a1;
+	int a2;
+} rl_c_RToastEndedCallback;
+
+static int rl_k_RToastEndedCallback(lua_State* L) {
+	rl_c_RToastEndedCallback* c = (rl_c_RToastEndedCallback*)lua_touserdata(L, 1);
+	luaL_checkstack(L, 12, "raven");
+	if (!rl_push_fn(L, c->cb, 0)) return 0;
+	rl_push_u32(L, (uint32_t)c->a0);
+	lua_pushinteger(L, (lua_Integer)c->a1);
+	lua_pushinteger(L, (lua_Integer)c->a2);
+	rl_push_user(L, c->cb);
+	lua_call(L, 4, 0);
+	return 0;
+}
+
+static void rl_t_RToastEndedCallback(Rid a0, int a1, int a2, void* a3) {
+	rl_cb* cb = (rl_cb*)a3;
+	rl_c_RToastEndedCallback c;
+	c.cb = cb;
+	c.a0 = a0;
+	c.a1 = a1;
+	c.a2 = a2;
+	if (!rl_cb_enter(cb)) return;
+	rl_run(cb, rl_k_RToastEndedCallback, &c);
 	rl_cb_leave(cb);
 }
 
@@ -20030,6 +20067,38 @@ static int rl_w_Rtoast_show_kind(lua_State* L) {
 	return results_;
 }
 
+static int rl_w_Rtoast_show_message(lua_State* L) {
+	uint32_t a0;
+	const char* a1;
+	int a2;
+	double a3;
+	int results_ = 0;
+	(void)L;
+	lua_settop(L, 4);
+	a0 = rl_u32(L, 1, NULL);
+	a1 = rl_str(L, 2, NULL);
+	a2 = rl_enum(L, 3, NULL);
+	a3 = rl_number(L, 4, NULL);
+	{
+		int value_ = RL(Rtoast_show_message)((Rid)a0, a1, (RToastKind)a2, (double)a3);
+		lua_pushinteger(L, (lua_Integer)value_);
+		results_++;
+	}
+	return results_;
+}
+
+static int rl_w_Rtoast_hide_message(lua_State* L) {
+	uint32_t a0;
+	int a1;
+	int results_ = 0;
+	(void)L;
+	lua_settop(L, 2);
+	a0 = rl_u32(L, 1, NULL);
+	a1 = rl_int(L, 2, NULL);
+	RL(Rtoast_hide_message)((Rid)a0, (int)a1);
+	return results_;
+}
+
 static int rl_w_Rtoast_hide(lua_State* L) {
 	uint32_t a0;
 	int results_ = 0;
@@ -20174,6 +20243,26 @@ static int rl_w_Rtoast_set_action_callback(lua_State* L) {
 	return results_;
 }
 
+static int rl_w_Rtoast_set_message_ended_callback(lua_State* L) {
+	uint32_t a0;
+	void* a2;
+	rl_cb* cb_ = NULL;
+	void* n0_;
+	int k0_;
+	int results_ = 0;
+	(void)L;
+	lua_settop(L, 3);
+	a0 = rl_u32(L, 1, NULL);
+	k0_ = rl_callback_arg(L, 2, &n0_);
+	a2 = lua_touserdata(L, 3);
+	if ((k0_ == RL_CALLBACK_FUNCTION) && RL(Rwidget_is_valid)(a0)) {
+		cb_ = rl_cb_new(L, 2, 0, 3);
+	}
+	RL(Rtoast_set_message_ended_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RToastEndedCallback)rl_t_RToastEndedCallback : (RToastEndedCallback)n0_, cb_ ? (void*)cb_ : a2);
+	rl_bind(a0, RL_OWNER_WIDGET, 64, NULL, cb_);
+	return results_;
+}
+
 static int rl_w_Rbreadcrumb_set_items(lua_State* L) {
 	uint32_t a0;
 	const char* a1;
@@ -20260,7 +20349,7 @@ static int rl_w_Rbreadcrumb_set_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rbreadcrumb_set_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RBreadcrumbCallback)rl_t_RBreadcrumbCallback : (RBreadcrumbCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 64, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 65, NULL, cb_);
 	return results_;
 }
 
@@ -20368,7 +20457,7 @@ static int rl_w_Rrating_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rrating_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RRatingChangedCallback)rl_t_RRatingChangedCallback : (RRatingChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 65, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 66, NULL, cb_);
 	return results_;
 }
 
@@ -20452,7 +20541,7 @@ static int rl_w_Rpagination_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rpagination_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RPageChangedCallback)rl_t_RPageChangedCallback : (RPageChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 66, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 67, NULL, cb_);
 	return results_;
 }
 
@@ -21275,7 +21364,7 @@ static int rl_w_Rplot_set_view_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rplot_set_view_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RPlotViewCallback)rl_t_RPlotViewCallback : (RPlotViewCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 67, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 68, NULL, cb_);
 	return results_;
 }
 
@@ -21295,7 +21384,7 @@ static int rl_w_Rplot_set_drag_line_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rplot_set_drag_line_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RPlotDragLineCallback)rl_t_RPlotDragLineCallback : (RPlotDragLineCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 68, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 69, NULL, cb_);
 	return results_;
 }
 
@@ -21315,7 +21404,7 @@ static int rl_w_Rplot_set_series_toggled_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rplot_set_series_toggled_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RPlotSeriesCallback)rl_t_RPlotSeriesCallback : (RPlotSeriesCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 69, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 70, NULL, cb_);
 	return results_;
 }
 
@@ -21401,7 +21490,7 @@ static int rl_w_Rmap_set_tile_source(lua_State* L) {
 		cb_ = rl_cb_new(L, 4, 5, 6);
 	}
 	RL(Rmap_set_tile_source)((Rid)a0, (int)a1, (int)a2, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMapTileRequestCallback)rl_t_RMapTileRequestCallback : (RMapTileRequestCallback)n0_, cb_ && k1_ == RL_CALLBACK_FUNCTION ? (RMapTileCancelCallback)rl_t_RMapTileCancelCallback : (RMapTileCancelCallback)n1_, cb_ ? (void*)cb_ : a5);
-	rl_bind(a0, RL_OWNER_WIDGET, 70, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 71, NULL, cb_);
 	return results_;
 }
 
@@ -21580,7 +21669,7 @@ static int rl_w_Rmap_set_camera_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rmap_set_camera_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMapCameraCallback)rl_t_RMapCameraCallback : (RMapCameraCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 71, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 72, NULL, cb_);
 	return results_;
 }
 
@@ -21922,7 +22011,7 @@ static int rl_w_Rchart_set_slice_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rchart_set_slice_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RChartSliceCallback)rl_t_RChartSliceCallback : (RChartSliceCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 72, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 73, NULL, cb_);
 	return results_;
 }
 
@@ -22211,7 +22300,7 @@ static int rl_w_Rchart_set_cell_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rchart_set_cell_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RChartCellCallback)rl_t_RChartCellCallback : (RChartCellCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 73, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 74, NULL, cb_);
 	return results_;
 }
 
@@ -22529,7 +22618,7 @@ static int rl_w_Rpdf_view_set_page_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rpdf_view_set_page_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RPdfPageChangedCallback)rl_t_RPdfPageChangedCallback : (RPdfPageChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 74, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 75, NULL, cb_);
 	return results_;
 }
 
@@ -22752,7 +22841,7 @@ static int rl_w_Rcarousel_set_page_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rcarousel_set_page_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RCarouselPageChangedCallback)rl_t_RCarouselPageChangedCallback : (RCarouselPageChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 75, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 76, NULL, cb_);
 	return results_;
 }
 
@@ -22959,7 +23048,7 @@ static int rl_w_Rmap_view_set_tile_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rmap_view_set_tile_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMapTileCallback)rl_t_RMapTileCallback : (RMapTileCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 76, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 77, NULL, cb_);
 	return results_;
 }
 
@@ -22979,7 +23068,7 @@ static int rl_w_Rmap_view_set_tile_cancel_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rmap_view_set_tile_cancel_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMapTileCallback)rl_t_RMapTileCallback : (RMapTileCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 77, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 78, NULL, cb_);
 	return results_;
 }
 
@@ -23273,7 +23362,7 @@ static int rl_w_Rmap_view_set_marker_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rmap_view_set_marker_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMapMarkerCallback)rl_t_RMapMarkerCallback : (RMapMarkerCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 78, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 79, NULL, cb_);
 	return results_;
 }
 
@@ -23293,7 +23382,7 @@ static int rl_w_Rmap_view_set_view_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rmap_view_set_view_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMapViewCallback)rl_t_RMapViewCallback : (RMapViewCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 79, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 80, NULL, cb_);
 	return results_;
 }
 
@@ -23525,7 +23614,7 @@ static int rl_w_Rsystem_web_view_run_javascript(lua_State* L) {
 		cb_ = rl_cb_new(L, 3, 0, 4);
 	}
 	RL(Rsystem_web_view_run_javascript)((Rid)a0, a1, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RSystemWebViewResultCallback)rl_t_RSystemWebViewResultCallback : (RSystemWebViewResultCallback)n0_, cb_ ? (void*)cb_ : a3);
-	rl_bind(a0, RL_OWNER_WIDGET, 80, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 81, NULL, cb_);
 	return results_;
 }
 
@@ -23545,7 +23634,7 @@ static int rl_w_Rsystem_web_view_set_message_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rsystem_web_view_set_message_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RSystemWebViewMessageCallback)rl_t_RSystemWebViewMessageCallback : (RSystemWebViewMessageCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 81, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 82, NULL, cb_);
 	return results_;
 }
 
@@ -23565,7 +23654,7 @@ static int rl_w_Rsystem_web_view_set_event_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rsystem_web_view_set_event_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RSystemWebViewEventCallback)rl_t_RSystemWebViewEventCallback : (RSystemWebViewEventCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 82, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 83, NULL, cb_);
 	return results_;
 }
 
@@ -24730,7 +24819,7 @@ static int rl_w_Rtext_editor_set_zoom_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtext_editor_set_zoom_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTextEditorZoomCallback)rl_t_RTextEditorZoomCallback : (RTextEditorZoomCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 83, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 84, NULL, cb_);
 	return results_;
 }
 
@@ -24979,7 +25068,7 @@ static int rl_w_Rtext_editor_set_completion_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtext_editor_set_completion_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RCompletionCallback)rl_t_RCompletionCallback : (RCompletionCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 84, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 85, NULL, cb_);
 	return results_;
 }
 
@@ -25097,7 +25186,7 @@ static int rl_w_Rtext_editor_set_hover_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtext_editor_set_hover_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTextEditorHoverCallback)rl_t_RTextEditorHoverCallback : (RTextEditorHoverCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 85, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 86, NULL, cb_);
 	return results_;
 }
 
@@ -25451,7 +25540,7 @@ static int rl_w_Rtext_editor_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtext_editor_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTextEditorChangedCallback)rl_t_RTextEditorChangedCallback : (RTextEditorChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 86, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 87, NULL, cb_);
 	return results_;
 }
 
@@ -25792,7 +25881,7 @@ static int rl_w_Rdock_area_set_close_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rdock_area_set_close_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDockCloseCallback)rl_t_RDockCloseCallback : (RDockCloseCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 87, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 88, NULL, cb_);
 	return results_;
 }
 
@@ -25852,7 +25941,7 @@ static int rl_w_Rdock_area_set_float_window(lua_State* L) {
 		cb_ = rl_cb_new(L, 3, 0, 4);
 	}
 	RL(Rdock_area_set_float_window)((Rid)a0, (Ruint)a1, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDockFloatWindowCallback)rl_t_RDockFloatWindowCallback : (RDockFloatWindowCallback)n0_, cb_ ? (void*)cb_ : a3);
-	rl_bind(a0, RL_OWNER_WIDGET, 88, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 89, NULL, cb_);
 	return results_;
 }
 
@@ -25920,7 +26009,7 @@ static int rl_w_Rdock_area_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rdock_area_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDockChangedCallback)rl_t_RDockChangedCallback : (RDockChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 89, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 90, NULL, cb_);
 	return results_;
 }
 
@@ -26065,7 +26154,7 @@ static int rl_w_Risland_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Risland_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RIslandChangedCallback)rl_t_RIslandChangedCallback : (RIslandChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 90, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 91, NULL, cb_);
 	return results_;
 }
 
@@ -26289,7 +26378,7 @@ static int rl_w_Rtray_set_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtray_set_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTrayClickedCallback)rl_t_RTrayClickedCallback : (RTrayClickedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_PLAIN, 91, NULL, cb_);
+	rl_bind(a0, RL_OWNER_PLAIN, 92, NULL, cb_);
 	return results_;
 }
 
@@ -26573,7 +26662,7 @@ static int rl_w_Rcolor_picker_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rcolor_picker_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RColorChangedCallback)rl_t_RColorChangedCallback : (RColorChangedCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 92, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 93, NULL, cb_);
 	return results_;
 }
 
@@ -27437,7 +27526,7 @@ static int rl_w_Rtimeline_set_time_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtimeline_set_time_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTimelineTimeCallback)rl_t_RTimelineTimeCallback : (RTimelineTimeCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 93, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 94, NULL, cb_);
 	return results_;
 }
 
@@ -27457,7 +27546,7 @@ static int rl_w_Rtimeline_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtimeline_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTimelineItemCallback)rl_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 94, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 95, NULL, cb_);
 	return results_;
 }
 
@@ -27477,7 +27566,7 @@ static int rl_w_Rtimeline_set_selection_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtimeline_set_selection_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTimelineItemCallback)rl_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 95, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 96, NULL, cb_);
 	return results_;
 }
 
@@ -27497,7 +27586,7 @@ static int rl_w_Rtimeline_set_activated_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtimeline_set_activated_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTimelineItemCallback)rl_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 96, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 97, NULL, cb_);
 	return results_;
 }
 
@@ -27517,7 +27606,7 @@ static int rl_w_Rtimeline_set_removed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rtimeline_set_removed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RTimelineItemCallback)rl_t_RTimelineItemCallback : (RTimelineItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 97, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 98, NULL, cb_);
 	return results_;
 }
 
@@ -28450,7 +28539,7 @@ static int rl_w_Rnode_graph_set_connect_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_connect_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphConnectCallback)rl_t_RNodeGraphConnectCallback : (RNodeGraphConnectCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 98, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 99, NULL, cb_);
 	return results_;
 }
 
@@ -28470,7 +28559,7 @@ static int rl_w_Rnode_graph_set_linked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_linked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphItemCallback)rl_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 99, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 100, NULL, cb_);
 	return results_;
 }
 
@@ -28490,7 +28579,7 @@ static int rl_w_Rnode_graph_set_unlinked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_unlinked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphItemCallback)rl_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 100, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 101, NULL, cb_);
 	return results_;
 }
 
@@ -28510,7 +28599,7 @@ static int rl_w_Rnode_graph_set_moved_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_moved_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphItemCallback)rl_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 101, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 102, NULL, cb_);
 	return results_;
 }
 
@@ -28530,7 +28619,7 @@ static int rl_w_Rnode_graph_set_selection_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_selection_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphItemCallback)rl_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 102, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 103, NULL, cb_);
 	return results_;
 }
 
@@ -28550,7 +28639,7 @@ static int rl_w_Rnode_graph_set_removed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_removed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphItemCallback)rl_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 103, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 104, NULL, cb_);
 	return results_;
 }
 
@@ -28570,7 +28659,7 @@ static int rl_w_Rnode_graph_set_activated_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_activated_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphItemCallback)rl_t_RNodeGraphItemCallback : (RNodeGraphItemCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 104, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 105, NULL, cb_);
 	return results_;
 }
 
@@ -28590,7 +28679,7 @@ static int rl_w_Rnode_graph_set_context_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_context_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphContextCallback)rl_t_RNodeGraphContextCallback : (RNodeGraphContextCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 105, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 106, NULL, cb_);
 	return results_;
 }
 
@@ -28610,7 +28699,7 @@ static int rl_w_Rnode_graph_set_canvas_activated_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_canvas_activated_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphPointCallback)rl_t_RNodeGraphPointCallback : (RNodeGraphPointCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 106, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 107, NULL, cb_);
 	return results_;
 }
 
@@ -28630,7 +28719,7 @@ static int rl_w_Rnode_graph_set_wire_dropped_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_wire_dropped_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphPointCallback)rl_t_RNodeGraphPointCallback : (RNodeGraphPointCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 107, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 108, NULL, cb_);
 	return results_;
 }
 
@@ -28650,7 +28739,7 @@ static int rl_w_Rnode_graph_set_pin_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rnode_graph_set_pin_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNodeGraphPointCallback)rl_t_RNodeGraphPointCallback : (RNodeGraphPointCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 108, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 109, NULL, cb_);
 	return results_;
 }
 
@@ -29351,7 +29440,7 @@ static int rl_w_Rblock_editor_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rblock_editor_set_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RBlockEditorCallback)rl_t_RBlockEditorCallback : (RBlockEditorCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 109, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 110, NULL, cb_);
 	return results_;
 }
 
@@ -29371,7 +29460,7 @@ static int rl_w_Rblock_editor_set_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rblock_editor_set_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RBlockEditorCallback)rl_t_RBlockEditorCallback : (RBlockEditorCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 110, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 111, NULL, cb_);
 	return results_;
 }
 
@@ -29391,7 +29480,7 @@ static int rl_w_Rblock_editor_set_context_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rblock_editor_set_context_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RBlockEditorContextCallback)rl_t_RBlockEditorContextCallback : (RBlockEditorContextCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 111, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 112, NULL, cb_);
 	return results_;
 }
 
@@ -30032,7 +30121,7 @@ static int rl_w_Rdiff_view_set_line_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rdiff_view_set_line_clicked_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDiffViewLineCallback)rl_t_RDiffViewLineCallback : (RDiffViewLineCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 112, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 113, NULL, cb_);
 	return results_;
 }
 
@@ -30050,13 +30139,13 @@ static int rl_w_Rdialog_open(lua_State* L) {
 	a1 = rl_u32(L, 2, NULL);
 	k0_ = rl_callback_arg(L, 3, &n0_);
 	a3 = lua_touserdata(L, 4);
-	if ((k0_ == RL_CALLBACK_FUNCTION) && RL(Rwindow_is_valid)(a0) && RL(Rwidget_is_valid)(a1) && !rl_dialog_pending(a1, 113)) {
+	if ((k0_ == RL_CALLBACK_FUNCTION) && RL(Rwindow_is_valid)(a0) && RL(Rwidget_is_valid)(a1) && !rl_dialog_pending(a1, 114)) {
 		cb_ = rl_cb_new(L, 3, 0, 4);
 	}
 	RL(Rdialog_open)((Rid)a0, (Rid)a1, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDialogClosedCallback)rl_t_RDialogClosedCallback : (RDialogClosedCallback)n0_, cb_ ? (void*)cb_ : a3);
 	if (cb_) {
 		cb_->once = 1;
-		rl_bind(a1, RL_OWNER_WIDGET, 113, NULL, cb_);
+		rl_bind(a1, RL_OWNER_WIDGET, 114, NULL, cb_);
 	}
 	return results_;
 }
@@ -30089,7 +30178,7 @@ static int rl_w_Rdialog_set_dismiss_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rdialog_set_dismiss_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDialogDismissCallback)rl_t_RDialogDismissCallback : (RDialogDismissCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 114, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 115, NULL, cb_);
 	return results_;
 }
 
@@ -30131,7 +30220,7 @@ static int rl_w_Rpopup_open(lua_State* L) {
 		cb_ = rl_cb_new(L, 5, 0, 6);
 	}
 	RL(Rpopup_open)((Rid)a0, (Rid)a1, (float)a2, (float)a3, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RDialogClosedCallback)rl_t_RDialogClosedCallback : (RDialogClosedCallback)n0_, cb_ ? (void*)cb_ : a5);
-	rl_bind(a0, RL_OWNER_WIDGET, 115, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 116, NULL, cb_);
 	return results_;
 }
 
@@ -30581,7 +30670,7 @@ static int rl_w_Rfile_browser_set_accepted_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rfile_browser_set_accepted_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RFileBrowserCallback)rl_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 116, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 117, NULL, cb_);
 	return results_;
 }
 
@@ -30601,7 +30690,7 @@ static int rl_w_Rfile_browser_set_cancelled_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rfile_browser_set_cancelled_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RFileBrowserCallback)rl_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 117, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 118, NULL, cb_);
 	return results_;
 }
 
@@ -30621,7 +30710,7 @@ static int rl_w_Rfile_browser_set_selection_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rfile_browser_set_selection_changed_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RFileBrowserCallback)rl_t_RFileBrowserCallback : (RFileBrowserCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 118, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 119, NULL, cb_);
 	return results_;
 }
 
@@ -30668,7 +30757,7 @@ static int rl_w_Rnotification_set_fallback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rnotification_set_fallback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNotificationFallback)rl_t_RNotificationFallback : (RNotificationFallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 119, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 120, NULL, cb_);
 	return results_;
 }
 
@@ -30686,7 +30775,7 @@ static int rl_w_Rnotification_set_clicked_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rnotification_set_clicked_callback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNotificationClickedCallback)rl_t_RNotificationClickedCallback : (RNotificationClickedCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 120, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 121, NULL, cb_);
 	return results_;
 }
 
@@ -30734,7 +30823,7 @@ static int rl_w_Rnotification_set_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rnotification_set_callback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RNotificationCallback)rl_t_RNotificationCallback : (RNotificationCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 121, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 122, NULL, cb_);
 	return results_;
 }
 
@@ -31206,7 +31295,7 @@ static int rl_w_Rviewport_set_resize_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rviewport_set_resize_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RViewportResizeCallback)rl_t_RViewportResizeCallback : (RViewportResizeCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 130, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 131, NULL, cb_);
 	return results_;
 }
 
@@ -31238,7 +31327,7 @@ static int rl_w_Rcustom_set_paint_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rcustom_set_paint_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RPaintCallback)rl_t_RPaintCallback : (RPaintCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 131, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 132, NULL, cb_);
 	return results_;
 }
 
@@ -31258,7 +31347,7 @@ static int rl_w_Rcustom_set_measure_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rcustom_set_measure_callback)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RMeasureCallback)rl_t_RMeasureCallback : (RMeasureCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 132, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 133, NULL, cb_);
 	return results_;
 }
 
@@ -32184,7 +32273,7 @@ static int rl_w_Rxml_set_reload_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rxml_set_reload_callback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RXmlReloadCallback)rl_t_RXmlReloadCallback : (RXmlReloadCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 133, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 134, NULL, cb_);
 	return results_;
 }
 
@@ -32305,7 +32394,7 @@ static int rl_w_Rxml_register_tag(lua_State* L) {
 			rl_cb_release(cb_);
 			cb_ = NULL;
 		}
-		if (a0 && a0[0]) rl_bind(rl_name_key(a0), RL_OWNER_PLAIN, 134, a0, cb_);
+		if (a0 && a0[0]) rl_bind(rl_name_key(a0), RL_OWNER_PLAIN, 135, a0, cb_);
 		lua_pushinteger(L, (lua_Integer)value_);
 		results_++;
 	}
@@ -32319,7 +32408,7 @@ static int rl_w_Rxml_unregister_tag(lua_State* L) {
 	lua_settop(L, 1);
 	a0 = rl_str(L, 1, NULL);
 	RL(Rxml_unregister_tag)(a0);
-	if (a0 && a0[0]) rl_bind(rl_name_key(a0), RL_OWNER_PLAIN, 134, a0, NULL);
+	if (a0 && a0[0]) rl_bind(rl_name_key(a0), RL_OWNER_PLAIN, 135, a0, NULL);
 	return results_;
 }
 
@@ -33150,7 +33239,7 @@ static int rl_w_Rscript_set_log_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rscript_set_log_callback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RScriptLogCallback)rl_t_RScriptLogCallback : (RScriptLogCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 135, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 136, NULL, cb_);
 	return results_;
 }
 
@@ -33168,7 +33257,7 @@ static int rl_w_Rscript_set_diagnostic_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rscript_set_diagnostic_callback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RScriptDiagnosticCallback)rl_t_RScriptDiagnosticCallback : (RScriptDiagnosticCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 136, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 137, NULL, cb_);
 	return results_;
 }
 
@@ -33319,7 +33408,7 @@ static int rl_w_Rlocale_set_changed_callback(lua_State* L) {
 		cb_ = rl_cb_new(L, 1, 0, 2);
 	}
 	RL(Rlocale_set_changed_callback)(cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RLocaleChangedCallback)rl_t_RLocaleChangedCallback : (RLocaleChangedCallback)n0_, cb_ ? (void*)cb_ : a1);
-	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 137, NULL, cb_);
+	rl_bind(RL_KEY_APPLICATION, RL_OWNER_PLAIN, 138, NULL, cb_);
 	return results_;
 }
 
@@ -33923,7 +34012,7 @@ static int rl_w_Rwidget_set_accessible_action(lua_State* L) {
 		cb_ = rl_cb_new(L, 2, 0, 3);
 	}
 	RL(Rwidget_set_accessible_action)((Rid)a0, cb_ && k0_ == RL_CALLBACK_FUNCTION ? (RAccessiblePressCallback)rl_t_RAccessiblePressCallback : (RAccessiblePressCallback)n0_, cb_ ? (void*)cb_ : a2);
-	rl_bind(a0, RL_OWNER_WIDGET, 138, NULL, cb_);
+	rl_bind(a0, RL_OWNER_WIDGET, 139, NULL, cb_);
 	return results_;
 }
 
@@ -35641,6 +35730,8 @@ static const luaL_Reg rl_functions[] = {
 	{"Rtime_picker_get_instant", rl_w_Rtime_picker_get_instant},
 	{"Rtoast_show", rl_w_Rtoast_show},
 	{"Rtoast_show_kind", rl_w_Rtoast_show_kind},
+	{"Rtoast_show_message", rl_w_Rtoast_show_message},
+	{"Rtoast_hide_message", rl_w_Rtoast_hide_message},
 	{"Rtoast_hide", rl_w_Rtoast_hide},
 	{"Rtoast_clear", rl_w_Rtoast_clear},
 	{"Rtoast_is_shown", rl_w_Rtoast_is_shown},
@@ -35652,6 +35743,7 @@ static const luaL_Reg rl_functions[] = {
 	{"Rtoast_set_kind", rl_w_Rtoast_set_kind},
 	{"Rtoast_set_action_text", rl_w_Rtoast_set_action_text},
 	{"Rtoast_set_action_callback", rl_w_Rtoast_set_action_callback},
+	{"Rtoast_set_message_ended_callback", rl_w_Rtoast_set_message_ended_callback},
 	{"Rbreadcrumb_set_items", rl_w_Rbreadcrumb_set_items},
 	{"Rbreadcrumb_add_item", rl_w_Rbreadcrumb_add_item},
 	{"Rbreadcrumb_truncate", rl_w_Rbreadcrumb_truncate},

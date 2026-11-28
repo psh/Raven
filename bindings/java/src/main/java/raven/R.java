@@ -6710,6 +6710,31 @@ public final class R {
     }
 
     /**
+     * Called once for every message that goes, whichever way: its time out, Rtoast_hide,
+     * Rtoast_hide_message, Rtoast_clear, a new message in its place (R_TOAST_REPLACE), or its
+     * button (`by_action` R_TRUE, after the action callback). `id` is the message's, as
+     * Rtoast_show_message gave it (the messages of Rtoast_show and of the notifications have
+     * ids too). It is called once the toast is done changing; it may show, hide or destroy.
+     */
+    @FunctionalInterface
+    public interface RToastEndedCallback {
+        void invoke(int toast, int id, int by_action, MemorySegment user_data);
+    }
+
+    private static void RToastEndedCallback$raw(RToastEndedCallback f, int toast, int id, int by_action, MemorySegment user_data) {
+        try {
+            f.invoke(toast, id, by_action, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RToastEndedCallback f) {
+        return stub(f, RToastEndedCallback.class, "RToastEndedCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
      * Called when the user clicks an item. This also fires the action of the widget.
      */
     @FunctionalInterface
@@ -19459,6 +19484,39 @@ public final class R {
         }
     }
 
+    private static MethodHandle Rtoast_show_message$;
+
+    /**
+     * Same, and gives the message's id (from 1, never the same twice for a toast; 0 on an
+     * error), for Rtoast_hide_message and the message ended callback.
+     */
+    public static int Rtoast_show_message(int toast, String text, int kind, double seconds) {
+        MethodHandle $h = Rtoast_show_message$;
+        if ($h == null) Rtoast_show_message$ = $h = find("Rtoast_show_message", FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT, JAVA_DOUBLE));
+        try (Arena $a = Arena.ofConfined()) {
+            MemorySegment text$ = text == null ? MemorySegment.NULL : utf8($a, text);
+            int $r = (int) $h.invokeExact(toast, text$, kind, seconds);
+            return $r;
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    private static MethodHandle Rtoast_hide_message$;
+
+    /**
+     * Hides the message `id` if it is shown, or takes it out of the queue; nothing once it has gone.
+     */
+    public static void Rtoast_hide_message(int toast, int id) {
+        MethodHandle $h = Rtoast_hide_message$;
+        if ($h == null) Rtoast_hide_message$ = $h = find("Rtoast_hide_message", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT));
+        try {
+            $h.invokeExact(toast, id);
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
     private static MethodHandle Rtoast_hide$;
 
     /**
@@ -19619,6 +19677,22 @@ public final class R {
 
     public static void Rtoast_set_action_callback(int toast, RToastCallback callback) {
         Rtoast_set_action_callback(toast, callback, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rtoast_set_message_ended_callback$;
+
+    public static void Rtoast_set_message_ended_callback(int toast, RToastEndedCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rtoast_set_message_ended_callback$;
+        if ($h == null) Rtoast_set_message_ended_callback$ = $h = find("Rtoast_set_message_ended_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(toast, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    public static void Rtoast_set_message_ended_callback(int toast, RToastEndedCallback callback) {
+        Rtoast_set_message_ended_callback(toast, callback, (MemorySegment) null);
     }
 
     private static MethodHandle Rbreadcrumb_set_items$;
