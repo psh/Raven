@@ -7,7 +7,7 @@ status: open
 Port Raven's `examples/carousel`. Spec: [10: samples/carousel](../spec.md#samplescarousel-phase-5).
 Planned in [Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md).
 
-**Depends on:** [Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md).
+**Depends on:** [Overlays and pagers: HorizontalPager and VerticalPager](archive/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md).
 
 ## Deliverables
 

@@ -253,7 +253,7 @@ designed there, and built (the last, lists at scale, on 2026-11-27), and the res
 composable yet (overlays and pagers, charts, documents and the web, maps, specialist widgets), are
 designed on [compose-raven phase 5 widgets](issues/maps/0241-compose-raven-phase-5-widgets.md) (closed
 2026-11-27), with printing and PDF documents as batch ten; their implementation tickets run from
-[Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
+[Overlays and pagers: HorizontalPager and VerticalPager](issues/archive/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
 to [samples/blocks](issues/0286-samples-blocks.md). `browser` is out of scope there, since
 SystemWebView covers its web pages. The fog both maps left is charted on
 [compose-raven phase 5 remaining fog](issues/0287-compose-raven-phase-5-remaining-fog.md)

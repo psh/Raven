@@ -48,7 +48,8 @@ private enum class Tag(vararg val names: String) {
     Spacer("Spacer"),
     Table("Table"),
     TileView("TileView"),
-    TreeView("TreeView");
+    TreeView("TreeView"),
+    Carousel("Carousel");
 
     companion object {
         // (SizeBox's alias Box is Raven's SizeBox, not Overlay: it isn't in the vocabulary)
@@ -110,6 +111,10 @@ private val imports = mapOf(
     "TileLayout" to "raven.compose.foundation",
     "TileView" to "raven.compose.foundation",
     "TreeView" to "raven.compose.foundation",
+    "HorizontalPager" to "raven.compose.foundation.pager",
+    "VerticalPager" to "raven.compose.foundation.pager",
+    "rememberPagerState" to "raven.compose.foundation.pager",
+    "seconds" to "kotlin.time.Duration.Companion",
     "Switch" to "raven.compose.foundation",
     "Text" to "raven.compose.foundation",
     "TextButton" to "raven.compose.foundation",
@@ -591,6 +596,7 @@ internal class Translator(private val context: FileContext? = null) {
             Tag.Table -> table(element, attrs, modifier)
             Tag.TileView -> tileView(element, attrs, modifier)
             Tag.TreeView -> treeView(element, attrs, modifier)
+            Tag.Carousel -> carousel(element, attrs, modifier)
             Tag.Window -> error("handled by the caller")
         }
     }
@@ -859,6 +865,42 @@ internal class Translator(private val context: FileContext? = null) {
         modifier?.let { args += "modifier = $it" }
         out.line(call("TreeView", args), attrs.reportUnused("TreeView"))
         use("TreeView")
+    }
+
+    /**
+     * `<Carousel>`: a `HorizontalPager` or `VerticalPager` by its `Orientation`, over a hoisted
+     * `rememberPagerState` with `Page` as its initial page; each child element is a page, chosen by
+     * a `when (page)`.
+     */
+    private fun carousel(element: XmlElement, attrs: Attrs, modifier: String?) {
+        val pages = element.children.filter { !it.isComment }
+        val vertical = orientation(attrs, vertical = false) == "vertical"
+        val written = attrs.raw("Name", "Id")
+        val name = unique((written?.let(::identifier) ?: "pager") + "State", names)
+        val initial = attrs.num("Page")?.let { page ->
+            page.constant?.let { it.toInt().coerceIn(0, (pages.size - 1).coerceAtLeast(0)).takeIf { it > 0 }?.toString() } ?: page.expr.to(KType.Int).code
+        }
+        holder.state += "val $name = rememberPagerState(${initial?.let { "initialPage = $it" } ?: ""}) { ${pages.size} }"
+        use("rememberPagerState")
+        val args = mutableListOf(name)
+        modifier?.let { args += "modifier = $it" }
+        attrs.truth("Loop")?.let { flag("loop", it, unless = false)?.let { args += it } }
+        attrs.truth("Indicators")?.let { flag("indicators", it, unless = true)?.let { args += it } }
+        attrs.truth("Arrows")?.let { flag("arrows", it, unless = true)?.let { args += it } }
+        attrs.num("Autoplay")?.let { every ->
+            if (every.constant == null || every.constant > 0f) args += "autoplay = ${every.constant?.let(::number) ?: every.expr.parenthesized}.seconds".also { use("seconds") }
+        }
+        action(attrs)?.let { attrs.note("OnChanged", "the page shown is $name.currentPage, which a LaunchedEffect can follow") }
+        val composable = if (vertical) "VerticalPager" else "HorizontalPager"
+        use(composable)
+        val comment = attrs.reportUnused(composable)
+        out.line(call(composable, args) + " { page ->", comment)
+        out.depth++
+        out.block("when (page)") {
+            pages.forEachIndexed { index, page -> out.block("$index ->") { element(page, Parent.Box) } }
+        }
+        out.depth--
+        out.line("}")
     }
 
     // ---- templates ----

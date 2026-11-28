@@ -364,6 +364,34 @@ class TranslatorTest {
     }
 
     @Test
+    fun aCarouselIsAPagerOfItsChildren() {
+        val translation = translate(
+            el(
+                "Carousel", "Name" to "pages", "Page" to "1", "Loop" to "true", "Autoplay" to "5", "Arrows" to "false", "OnChanged" to "carousel.changed",
+                children = listOf(el("Label", text = "One"), el("Label", text = "Two")),
+            ),
+        )
+        assertEquals(
+            """
+            val pagesState = rememberPagerState(initialPage = 1) { 2 }
+            HorizontalPager(pagesState, loop = true, arrows = false, autoplay = 5.seconds) { page -> // raven-xml: OnChanged: the page shown is pagesState.currentPage, which a LaunchedEffect can follow left out
+                when (page) {
+                    0 -> {
+                        Text("One", modifier = Modifier.fillMaxSize())
+                    }
+                    1 -> {
+                        Text("Two", modifier = Modifier.fillMaxSize())
+                    }
+                }
+            }
+            """.trimIndent(),
+            body(translation),
+        )
+        assertTrue("import kotlin.time.Duration.Companion.seconds" in translation.code)
+        assertTrue("VerticalPager(" in body(translate(el("Carousel", "Orientation" to "Vertical"))))
+    }
+
+    @Test
     fun aTextInputsPasswordMaxLengthAndActionAreTranslated() {
         val translation = translate(el("TextInput", "Password" to "true", "MaxLength" to "20", "OnCommitted" to "login.submit"))
         val code = translation.code

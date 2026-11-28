@@ -1283,9 +1283,17 @@ shaped after Compose Foundation's pagers, with Raven's dots, arrows, loop and au
   to the pages, as Compose's do: `loop` doesn't make them wrap.
 - Tests drive a pager through its `PagerState` and the keys and clicks the harness already has
   (the arrows, Home and End, a dot).
+- **Built**: the pagers and `PagerState` are in `raven.compose.foundation.pager`, as Compose's.
+  Each page is in an internal Box the size of the pager. A page asked for before Raven has it
+  (`initialPage`, a restored page, a move before the pages are composed) is shown as the frame
+  settles, once the page is there; it is clamped to `pageCount` first, so an `initialPage` past
+  the pages shows the last. When pages go, Raven keeps the page shown or clamps it, and the state
+  reads it as the frame settles. `autoplay` is given in seconds; Raven takes 50 ms at least. A
+  state given to a second pager logs an error, as the scroll states do.
 - The XML translator turns `<Carousel>` into `HorizontalPager` or `VerticalPager` by its
-  `Orientation`, `Page` as `initialPage`, and `Loop`, `Autoplay`, `Indicators` and `Arrows` as their
-  parameters.
+  `Orientation`, over a hoisted `rememberPagerState` with `Page` as `initialPage`, and `Loop`,
+  `Autoplay` (as `.seconds`), `Indicators` and `Arrows` as their parameters. Each child element is
+  a page, chosen by a `when (page)`; `OnChanged` is a warning pointing at `currentPage`.
 
 ### Snackbars (phase 5)
 
