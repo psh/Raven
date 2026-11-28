@@ -37,8 +37,8 @@ it easy to scan, each ticket keeping its filename when it moves:
 - **`maps/`**: wayfinder maps (`wayfinder: map`) once they are closed. They are never archived and
   stay there permanently as tables of contents. A map still open stays here.
 
-A ticket only partly on hold (one deliverable waiting, the rest workable) stays here, `open`, and
-says which part waits.
+While nothing is released beyond the local machine, every ticket that proposes a change upstream
+is on hold, even when part of it (building the change on the fork) could go ahead.
 
 ## Archive
 
