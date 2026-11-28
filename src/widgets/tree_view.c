@@ -56,6 +56,8 @@ struct rvn_tree_view_t {
 	void* activated_user;
 	RTreeContextCallback context_callback;
 	void* context_user;
+	RTreeExpandCallback expand_callback;
+	void* expand_user;
 	/** Several items can be selected (Ctrl toggles, Shift extends). */
 	int multi;
 	/** Where a Shift + click range starts. */
@@ -291,6 +293,8 @@ static void rvn_tree_reveal(rvn_widget_t* widget, int row) {
 static void rvn_tree_select_ex(rvn_widget_t* widget, rvn_tree_item_t* item, int notify, int keep_others) {
 	rvn_tree_view_t* tree = (rvn_tree_view_t*)widget;
 	rvn_tree_item_t* walk;
+	Rid* ids = NULL;
+	int opened = 0;
 	if (tree->multi && !keep_others) {
 		int others = R_FALSE;
 		int count = 0;
@@ -309,14 +313,34 @@ static void rvn_tree_select_ex(rvn_widget_t* widget, rvn_tree_item_t* item, int 
 	tree->selected = item;
 	if (!tree->multi) tree->anchor = item;
 	/* an item hidden in a collapsed branch becomes visible */
-	for (walk = item ? item->parent : NULL; walk; walk = walk->parent) {
-		if (!walk->expanded) {
+	for (walk = item ? item->parent : NULL; walk && walk != &tree->root; walk = walk->parent) {
+		if (!walk->expanded) opened++;
+	}
+	if (opened > 0) {
+		/* (their ids, innermost first: the callbacks may change the tree) */
+		if (tree->expand_callback) ids = (Rid*)rvn_alloc(sizeof(Rid) * (size_t)opened);
+		opened = 0;
+		for (walk = item->parent; walk && walk != &tree->root; walk = walk->parent) {
+			if (walk->expanded) continue;
 			walk->expanded = R_TRUE;
-			rvn_tree_changed(tree);
+			if (ids) ids[opened] = walk->id;
+			opened++;
 		}
+		rvn_tree_changed(tree);
 	}
 	if (item) rvn_tree_reveal(widget, rvn_tree_row_of(tree, item));
 	rvn_widget_invalidate_paint(widget);
+	if (ids) {
+		/* the branches the selection opened are told of, outermost first, whoever selected it */
+		Rid selected = item->id;
+		RTreeExpandCallback callback = tree->expand_callback;
+		void* user = tree->expand_user;
+		Rid id = widget->id;
+		int i;
+		for (i = opened - 1; i >= 0 && rvn_widget_alive(widget); i--) callback(id, ids[i], R_TRUE, user);
+		rvn_free(ids);
+		if (!rvn_widget_alive(widget) || rvn_tree_item_get(selected) != item) return;
+	}
 	if (notify && tree->selection_callback) {
 		tree->selection_callback(widget->id, item ? item->id : R_INVALID_ID, tree->selection_user);
 	}
@@ -355,6 +379,13 @@ static void rvn_tree_set_expanded(rvn_tree_item_t* item, int expanded, int notif
 	if (item->expanded == expanded) return;
 	item->expanded = expanded;
 	rvn_tree_changed(tree);
+	if (notify && tree->expand_callback) {
+		rvn_widget_t* widget = &tree->base;
+		Rid id = item->id;
+		tree->expand_callback(widget->id, id, expanded, tree->expand_user);
+		/* (the callback may have destroyed the tree view, or the item) */
+		if (!rvn_widget_alive(widget) || rvn_tree_item_get(id) != item) return;
+	}
 	/* the selection never stays inside a branch that is being closed: it moves to the branch */
 	if (!expanded && tree->selected && tree->selected != item && rvn_tree_item_is_inside(tree->selected, item)) {
 		if (tree->multi) {
@@ -851,6 +882,12 @@ void Rtree_view_set_selection_changed_callback(Rid id, RTreeEventCallback callba
 	RVN_WIDGET_VOID(widget, id, R_WIDGET_TREE_VIEW);
 	((rvn_tree_view_t*)widget)->selection_callback = callback;
 	((rvn_tree_view_t*)widget)->selection_user = user_data;
+}
+
+void Rtree_view_set_expanded_callback(Rid id, RTreeExpandCallback callback, void* user_data) {
+	RVN_WIDGET_VOID(widget, id, R_WIDGET_TREE_VIEW);
+	((rvn_tree_view_t*)widget)->expand_callback = callback;
+	((rvn_tree_view_t*)widget)->expand_user = user_data;
 }
 
 void Rtree_view_set_activated_callback(Rid id, RTreeEventCallback callback, void* user_data) {

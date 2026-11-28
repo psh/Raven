@@ -790,6 +790,87 @@ static void test_list_and_tree(void) {
 	CHECK(Rtree_item_get_child_count(root) == 0);
 }
 
+/* The tree view's expansion changes, as its expanded callback reports them. */
+static Rid g_expand_items[16];
+static int g_expand_states[16];
+static int g_expand_count;
+
+static void on_tree_expand(Rid tree, Rid item, int expanded, void* user_data) {
+	(void)tree;
+	CHECK(user_data == &g_expand_count);
+	if (g_expand_count < 16) {
+		g_expand_items[g_expand_count] = item;
+		g_expand_states[g_expand_count] = expanded;
+	}
+	g_expand_count++;
+}
+
+/* One reported change: the `n`th is `item` going to `expanded`. */
+static int expand_was(int n, Rid item, int expanded) {
+	return n < g_expand_count && g_expand_items[n] == item && g_expand_states[n] == expanded;
+}
+
+static void test_tree_expand_callback(void) {
+	Rid box = column();
+	Rid tree = Rwidget_add_child(box, Rwidget_create(R_WIDGET_TREE_VIEW));
+	Rid world, player, camera;
+	float x, y, w, h, row = Rtheme_get_metric(R_METRIC_ROW_HEIGHT);
+	Rslot_set_fill(tree, 1.0f);
+	world = Rtree_view_add_item(tree, R_INVALID_ID, "World");
+	player = Rtree_view_add_item(tree, world, "Player");
+	camera = Rtree_view_add_item(tree, player, "Camera");
+	Rtree_view_add_item(tree, R_INVALID_ID, "Sky");
+	Rtree_view_set_expanded_callback(tree, on_tree_expand, &g_expand_count);
+	Rtree_view_set_selection_changed_callback(tree, on_tree, NULL);
+	Rdraw_frame();
+	Rwidget_get_rect(tree, &x, &y, &w, &h);
+
+	/* the arrow: once each way, with the item and its new state */
+	g_expand_count = 0;
+	test_click_at(g_window, x + 9, y + 1 + row * 0.5f);
+	CHECK(Rtree_item_is_expanded(world) && g_expand_count == 1 && expand_was(0, world, R_TRUE));
+	test_click_at(g_window, x + 9, y + 1 + row * 0.5f);
+	CHECK(!Rtree_item_is_expanded(world) && g_expand_count == 2 && expand_was(1, world, R_FALSE));
+
+	/* a double click on the row */
+	g_expand_count = 0;
+	test_click_at(g_window, x + 60, y + 1 + row * 0.5f);
+	test_click_at(g_window, x + 60, y + 1 + row * 0.5f);
+	CHECK(Rtree_item_is_expanded(world) && g_expand_count == 1 && expand_was(0, world, R_TRUE));
+
+	/* Left closes, Right opens */
+	g_expand_count = 0;
+	Rtree_view_set_selected_item(tree, world);
+	test_key(g_window, R_KEY_LEFT, 0);
+	test_key(g_window, R_KEY_RIGHT, 0);
+	CHECK(g_expand_count == 2 && expand_was(0, world, R_FALSE) && expand_was(1, world, R_TRUE));
+
+	/* the app's own change is not reported */
+	g_expand_count = 0;
+	Rtree_item_set_expanded(world, R_FALSE);
+	Rtree_item_set_expanded(player, R_FALSE);
+	Rtree_item_set_expanded(world, R_TRUE);
+	Rtree_item_set_expanded(world, R_FALSE);
+	CHECK(g_expand_count == 0);
+
+	/* selecting a hidden item opens its branches, and each is reported, outermost first */
+	Rtree_view_set_selected_item(tree, camera);
+	CHECK(Rtree_item_is_expanded(world) && Rtree_item_is_expanded(player));
+	CHECK(g_expand_count == 2 && expand_was(0, world, R_TRUE) && expand_was(1, player, R_TRUE));
+
+	/* closing the branch around the selection: the collapse, then the selection moved to it */
+	g_expand_count = 0;
+	g_clicks = 0;
+	test_click_at(g_window, x + 9, y + 1 + row * 0.5f);
+	CHECK(g_expand_count == 1 && expand_was(0, world, R_FALSE));
+	CHECK(Rtree_view_get_selected_item(tree) == world && g_clicks == 1 && g_last_id == world);
+
+	/* no callback, nothing reported */
+	Rtree_view_set_expanded_callback(tree, NULL, NULL);
+	test_click_at(g_window, x + 9, y + 1 + row * 0.5f);
+	CHECK(Rtree_item_is_expanded(world) && g_expand_count == 1);
+}
+
 static int g_quit_actions;
 
 static void on_quit_action(Rid sender, const char* action, void* user_data) {
@@ -1770,6 +1851,7 @@ int main(void) {
 	RUN(test_combo_box);
 	RUN(test_highlight_follows_pointer);
 	RUN(test_list_and_tree);
+	RUN(test_tree_expand_callback);
 	RUN(test_menus);
 	RUN(test_shortcut_hints);
 	RUN(test_tabs_and_expander);

@@ -4109,6 +4109,16 @@ namespace Raven
     public delegate void RTreeEventCallback(uint tree_view, uint item, IntPtr user_data);
 
     /// <summary>
+    /// Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+    /// Left and Right, and each closed branch above an item that is selected (a click, the keys or
+    /// Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+    /// called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+    /// selection to the branch, and the selection-changed callback is called for that too.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void RTreeExpandCallback(uint tree_view, uint item, int expanded, IntPtr user_data);
+
+    /// <summary>
     /// Right click: `item` is the item under the pointer (selected
     /// first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
     /// </summary>
@@ -8152,6 +8162,9 @@ namespace Raven
         /// </summary>
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Rtree_view_set_activated_callback(uint tree_view, RTreeEventCallback callback, IntPtr user_data);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Rtree_view_set_expanded_callback(uint tree_view, RTreeExpandCallback callback, IntPtr user_data);
 
         /// <summary>
         /// Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.

@@ -698,6 +698,15 @@ extern "C" {
 	RAVEN_API void Rtree_view_set_selection_changed_callback(Rid tree_view, RTreeEventCallback callback, void* user_data);
 	/** @brief Called on double click or Enter. This also fires the action of the widget. */
 	RAVEN_API void Rtree_view_set_activated_callback(Rid tree_view, RTreeEventCallback callback, void* user_data);
+	/**
+	 * Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+	 * Left and Right, and each closed branch above an item that is selected (a click, the keys or
+	 * Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+	 * called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+	 * selection to the branch, and the selection-changed callback is called for that too.
+	 */
+	typedef void (*RTreeExpandCallback)(Rid tree_view, Rid item, int expanded, void* user_data);
+	RAVEN_API void Rtree_view_set_expanded_callback(Rid tree_view, RTreeExpandCallback callback, void* user_data);
 
 	/**
 	 * @brief Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.

@@ -358,6 +358,12 @@ type
     ## kept on a selected or hovered row. NULL removes the callback.
   RListEventCallback* = proc (list_view: Rid, index: cint, user_data: pointer) {.cdecl.}
   RTreeEventCallback* = proc (tree_view: Rid, item: Rid, user_data: pointer) {.cdecl.}
+  RTreeExpandCallback* = proc (tree_view: Rid, item: Rid, expanded: cint, user_data: pointer) {.cdecl.}
+    ## Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+    ## Left and Right, and each closed branch above an item that is selected (a click, the keys or
+    ## Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+    ## called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+    ## selection to the branch, and the selection-changed callback is called for that too.
   RTreeContextCallback* = proc (tree_view: Rid, item: Rid, x: cfloat, y: cfloat, user_data: pointer) {.cdecl.}
     ## Right click: `item` is the item under the pointer (selected
     ## first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
@@ -4133,6 +4139,7 @@ proc Rtree_view_get_selected_item*(tree_view: Rid): Rid {.rapi.}
 proc Rtree_view_set_selection_changed_callback*(tree_view: Rid, callback: RTreeEventCallback, user_data: pointer) {.rapi.}
 proc Rtree_view_set_activated_callback*(tree_view: Rid, callback: RTreeEventCallback, user_data: pointer) {.rapi.}
   ## Called on double click or Enter. This also fires the action of the widget.
+proc Rtree_view_set_expanded_callback*(tree_view: Rid, callback: RTreeExpandCallback, user_data: pointer) {.rapi.}
 proc Rtree_item_set_icon*(item: Rid, texture: Rid, u0: cfloat, v0: cfloat, u1: cfloat, v1: cfloat) {.rapi.}
   ## Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.
   ## An SVG in currentColor (Ricon_get) takes the color of the text. XML: Icon on an Item.

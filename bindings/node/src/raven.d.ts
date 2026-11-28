@@ -3892,6 +3892,15 @@ export type RListEventCallback = (list_view: Rid, index: number, user_data: Poin
 export type RTreeEventCallback = (tree_view: Rid, item: Rid, user_data: Pointer | null) => void;
 
 /**
+ * Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+ * Left and Right, and each closed branch above an item that is selected (a click, the keys or
+ * Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+ * called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+ * selection to the branch, and the selection-changed callback is called for that too.
+ */
+export type RTreeExpandCallback = (tree_view: Rid, item: Rid, expanded: number, user_data: Pointer | null) => void;
+
+/**
  * Right click: `item` is the item under the pointer (selected
  * first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
  */
@@ -6615,6 +6624,8 @@ export function Rtree_view_set_selection_changed_callback(tree_view: Rid, callba
 
 /** Called on double click or Enter. This also fires the action of the widget. */
 export function Rtree_view_set_activated_callback(tree_view: Rid, callback: RTreeEventCallback | Pointer | null, user_data?: RPointer): void;
+
+export function Rtree_view_set_expanded_callback(tree_view: Rid, callback: RTreeExpandCallback | Pointer | null, user_data?: RPointer): void;
 
 /**
  * Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.

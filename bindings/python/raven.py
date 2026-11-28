@@ -2916,6 +2916,14 @@ def _adapt_RTreeEventCallback(function):
         function(tree_view, item, user_data)
     return call
 
+RTreeExpandCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int, ctypes.c_void_p)
+
+
+def _adapt_RTreeExpandCallback(function):
+    def call(tree_view, item, expanded, user_data):
+        function(tree_view, item, expanded, user_data)
+    return call
+
 RTreeContextCallback = ctypes.CFUNCTYPE(None, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_void_p)
 
 
@@ -9100,6 +9108,14 @@ _lib.Rtree_view_set_activated_callback.restype = None
 def Rtree_view_set_activated_callback(tree_view, callback, user_data=None):
     """Called on double click or Enter. This also fires the action of the widget."""
     _lib.Rtree_view_set_activated_callback(tree_view, _callback(RTreeEventCallback, _adapt_RTreeEventCallback, callback), user_data)
+
+
+_lib.Rtree_view_set_expanded_callback.argtypes = [ctypes.c_uint32, RTreeExpandCallback, ctypes.c_void_p]
+_lib.Rtree_view_set_expanded_callback.restype = None
+
+
+def Rtree_view_set_expanded_callback(tree_view, callback, user_data=None):
+    _lib.Rtree_view_set_expanded_callback(tree_view, _callback(RTreeExpandCallback, _adapt_RTreeExpandCallback, callback), user_data)
 
 
 _lib.Rtree_item_set_icon.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float]

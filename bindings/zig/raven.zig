@@ -1629,6 +1629,12 @@ pub const RListItemTextCallback = ?*const fn (list_view: Rid, index: c_int, user
 pub const RListItemColorCallback = ?*const fn (list_view: Rid, index: c_int, r: ?*f32, g: ?*f32, b: ?*f32, a: ?*f32, user_data: ?*anyopaque) callconv(.c) c_int;
 pub const RListEventCallback = ?*const fn (list_view: Rid, index: c_int, user_data: ?*anyopaque) callconv(.c) void;
 pub const RTreeEventCallback = ?*const fn (tree_view: Rid, item: Rid, user_data: ?*anyopaque) callconv(.c) void;
+/// Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+/// Left and Right, and each closed branch above an item that is selected (a click, the keys or
+/// Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+/// called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+/// selection to the branch, and the selection-changed callback is called for that too.
+pub const RTreeExpandCallback = ?*const fn (tree_view: Rid, item: Rid, expanded: c_int, user_data: ?*anyopaque) callconv(.c) void;
 /// Right click: `item` is the item under the pointer (selected
 /// first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
 pub const RTreeContextCallback = ?*const fn (tree_view: Rid, item: Rid, x: f32, y: f32, user_data: ?*anyopaque) callconv(.c) void;
@@ -4103,6 +4109,7 @@ pub extern fn Rtree_view_get_selected_item(tree_view: Rid) Rid;
 pub extern fn Rtree_view_set_selection_changed_callback(tree_view: Rid, callback: RTreeEventCallback, user_data: ?*anyopaque) void;
 /// Called on double click or Enter. This also fires the action of the widget.
 pub extern fn Rtree_view_set_activated_callback(tree_view: Rid, callback: RTreeEventCallback, user_data: ?*anyopaque) void;
+pub extern fn Rtree_view_set_expanded_callback(tree_view: Rid, callback: RTreeExpandCallback, user_data: ?*anyopaque) void;
 /// Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.
 /// An SVG in currentColor (Ricon_get) takes the color of the text. XML: Icon on an Item.
 pub extern fn Rtree_item_set_icon(item: Rid, texture: Rid, u0: f32, v0: f32, u1: f32, v1: f32) void;

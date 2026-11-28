@@ -1783,6 +1783,14 @@ alias RListItemColorCallback = fn CInt(Rid list_view, CInt index, float* r, floa
 alias RListEventCallback = fn void(Rid list_view, CInt index, void* user_data);
 alias RTreeEventCallback = fn void(Rid tree_view, Rid item, void* user_data);
 <*
+ Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+ Left and Right, and each closed branch above an item that is selected (a click, the keys or
+ Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+ called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+ selection to the branch, and the selection-changed callback is called for that too.
+*>
+alias RTreeExpandCallback = fn void(Rid tree_view, Rid item, CInt expanded, void* user_data);
+<*
  Right click: `item` is the item under the pointer (selected
  first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
 *>
@@ -5453,6 +5461,8 @@ extern fn void r_tree_view_set_selection_changed_callback(Rid tree_view, RTreeEv
 
 <* Called on double click or Enter. This also fires the action of the widget. *>
 extern fn void r_tree_view_set_activated_callback(Rid tree_view, RTreeEventCallback callback, void* user_data) @cname("Rtree_view_set_activated_callback");
+
+extern fn void r_tree_view_set_expanded_callback(Rid tree_view, RTreeExpandCallback callback, void* user_data) @cname("Rtree_view_set_expanded_callback");
 
 <*
  Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.

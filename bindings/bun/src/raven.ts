@@ -723,6 +723,7 @@ const _symbols = {
 	Rtree_view_get_selected_item: { args: ["u32"], returns: "u32" },
 	Rtree_view_set_selection_changed_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rtree_view_set_activated_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
+	Rtree_view_set_expanded_callback: { args: ["u32", "ptr", "ptr"], returns: "void" },
 	Rtree_item_set_icon: { args: ["u32", "u32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rtree_item_set_text_color: { args: ["u32", "f32", "f32", "f32", "f32"], returns: "void" },
 	Rtree_view_set_multi_select: { args: ["u32", "i32"], returns: "void" },
@@ -8141,6 +8142,28 @@ function _adapt_RTreeEventCallback(function_: RTreeEventCallback | Pointer | nul
 }
 
 /**
+ * Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+ * Left and Right, and each closed branch above an item that is selected (a click, the keys or
+ * Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+ * called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+ * selection to the branch, and the selection-changed callback is called for that too.
+ */
+export type RTreeExpandCallback = (tree_view: Rid, item: Rid, expanded: number, user_data: Pointer | null) => void;
+
+function _adapt_RTreeExpandCallback(function_: RTreeExpandCallback | Pointer | null, threadsafe = false): Pointer | null {
+	if (typeof function_ !== "function") {
+		return function_;
+	}
+	return _keep(new _JSCallback((tree_view: number, item: number, expanded: number, user_data: Pointer | null): void => {
+		try {
+			function_(tree_view, item, expanded, user_data);
+		} catch (error) {
+			_report(error as Error);
+		}
+	}, { args: ["u32", "u32", "i32", "ptr"], returns: "void", threadsafe }));
+}
+
+/**
  * Right click: `item` is the item under the pointer (selected
  * first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
  */
@@ -13058,6 +13081,10 @@ export function Rtree_view_set_selection_changed_callback(tree_view: Rid, callba
 /** Called on double click or Enter. This also fires the action of the widget. */
 export function Rtree_view_set_activated_callback(tree_view: Rid, callback: RTreeEventCallback | Pointer | null, user_data: RPointer = null): void {
 	_lib.Rtree_view_set_activated_callback(tree_view, _adapt_RTreeEventCallback(callback), user_data);
+}
+
+export function Rtree_view_set_expanded_callback(tree_view: Rid, callback: RTreeExpandCallback | Pointer | null, user_data: RPointer = null): void {
+	_lib.Rtree_view_set_expanded_callback(tree_view, _adapt_RTreeExpandCallback(callback), user_data);
 }
 
 /**

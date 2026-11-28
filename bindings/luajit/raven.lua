@@ -1067,6 +1067,7 @@ typedef const char* (*RListItemTextCallback)(Rid list_view, int index, void* use
 typedef int (*RListItemColorCallback)(Rid list_view, int index, float* r, float* g, float* b, float* a, void* user_data);
 typedef void (*RListEventCallback)(Rid list_view, int index, void* user_data);
 typedef void (*RTreeEventCallback)(Rid tree_view, Rid item, void* user_data);
+typedef void (*RTreeExpandCallback)(Rid tree_view, Rid item, int expanded, void* user_data);
 typedef void (*RTreeContextCallback)(Rid tree_view, Rid item, float x, float y, void* user_data);
 typedef void (*RMenuItemClickedCallback)(Rid item, void* user_data);
 typedef void (*RTileSectionCallback)(Rid tile_view, int section, RTileSection* out, void* user_data);
@@ -2105,6 +2106,7 @@ void Rtree_view_set_selected_item(Rid tree_view, Rid item);
 Rid Rtree_view_get_selected_item(Rid tree_view);
 void Rtree_view_set_selection_changed_callback(Rid tree_view, RTreeEventCallback callback, void* user_data);
 void Rtree_view_set_activated_callback(Rid tree_view, RTreeEventCallback callback, void* user_data);
+void Rtree_view_set_expanded_callback(Rid tree_view, RTreeExpandCallback callback, void* user_data);
 void Rtree_item_set_icon(Rid item, Rid texture, float u0, float v0, float u1, float v1);
 void Rtree_item_set_text_color(Rid item, float r, float g, float b, float a);
 void Rtree_view_set_multi_select(Rid tree_view, int enabled);

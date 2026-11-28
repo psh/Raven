@@ -4839,6 +4839,7 @@ export const Rtree_view_set_selected_item = _lib.Rtree_view_set_selected_item;
 export const Rtree_view_get_selected_item = _lib.Rtree_view_get_selected_item;
 export const Rtree_view_set_selection_changed_callback = _lib.Rtree_view_set_selection_changed_callback;
 export const Rtree_view_set_activated_callback = _lib.Rtree_view_set_activated_callback;
+export const Rtree_view_set_expanded_callback = _lib.Rtree_view_set_expanded_callback;
 export const Rtree_item_set_icon = _lib.Rtree_item_set_icon;
 export const Rtree_item_set_text_color = _lib.Rtree_item_set_text_color;
 export const Rtree_view_set_multi_select = _lib.Rtree_view_set_multi_select;

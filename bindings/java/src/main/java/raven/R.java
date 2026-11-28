@@ -6346,6 +6346,31 @@ public final class R {
     }
 
     /**
+     * Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+     * Left and Right, and each closed branch above an item that is selected (a click, the keys or
+     * Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+     * called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+     * selection to the branch, and the selection-changed callback is called for that too.
+     */
+    @FunctionalInterface
+    public interface RTreeExpandCallback {
+        void invoke(int tree_view, int item, int expanded, MemorySegment user_data);
+    }
+
+    private static void RTreeExpandCallback$raw(RTreeExpandCallback f, int tree_view, int item, int expanded, MemorySegment user_data) {
+        try {
+            f.invoke(tree_view, item, expanded, user_data);
+        } catch (Throwable t) {
+            // an exception must not cross C: it is reported here
+            t.printStackTrace();
+        }
+    }
+
+    private static MemorySegment upcall(RTreeExpandCallback f) {
+        return stub(f, RTreeExpandCallback.class, "RTreeExpandCallback$raw", FunctionDescriptor.ofVoid(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    }
+
+    /**
      * Right click: `item` is the item under the pointer (selected
      * first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
      */
@@ -17154,6 +17179,22 @@ public final class R {
      */
     public static void Rtree_view_set_activated_callback(int tree_view, RTreeEventCallback callback) {
         Rtree_view_set_activated_callback(tree_view, callback, (MemorySegment) null);
+    }
+
+    private static MethodHandle Rtree_view_set_expanded_callback$;
+
+    public static void Rtree_view_set_expanded_callback(int tree_view, RTreeExpandCallback callback, MemorySegment user_data) {
+        MethodHandle $h = Rtree_view_set_expanded_callback$;
+        if ($h == null) Rtree_view_set_expanded_callback$ = $h = find("Rtree_view_set_expanded_callback", FunctionDescriptor.ofVoid(JAVA_INT, ADDRESS, ADDRESS));
+        try {
+            $h.invokeExact(tree_view, upcall(callback), (MemorySegment) (user_data == null ? MemorySegment.NULL : user_data));
+        } catch (Throwable $t) {
+            throw fail($t);
+        }
+    }
+
+    public static void Rtree_view_set_expanded_callback(int tree_view, RTreeExpandCallback callback) {
+        Rtree_view_set_expanded_callback(tree_view, callback, (MemorySegment) null);
     }
 
     private static MethodHandle Rtree_item_set_icon$;

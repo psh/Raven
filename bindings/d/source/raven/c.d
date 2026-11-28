@@ -1929,6 +1929,12 @@ alias RListItemTextCallback = extern (C) const(char)* function(Rid list_view, in
 alias RListItemColorCallback = extern (C) int function(Rid list_view, int index, float* r, float* g, float* b, float* a, void* user_data);
 alias RListEventCallback = extern (C) void function(Rid list_view, int index, void* user_data);
 alias RTreeEventCallback = extern (C) void function(Rid tree_view, Rid item, void* user_data);
+/// Called for each item the tree view opens or closes itself: its arrow clicked, a double click,
+/// Left and Right, and each closed branch above an item that is selected (a click, the keys or
+/// Rtree_view_set_selected_item) and so opened. `expanded` is the item's new state. It is not
+/// called for Rtree_item_set_expanded. A branch closed around the selected item moves the
+/// selection to the branch, and the selection-changed callback is called for that too.
+alias RTreeExpandCallback = extern (C) void function(Rid tree_view, Rid item, int expanded, void* user_data);
 /// Right click: `item` is the item under the pointer (selected
 /// first), or R_INVALID_ID in the empty space; x, y in the window, for Rmenu_open.
 alias RTreeContextCallback = extern (C) void function(Rid tree_view, Rid item, float x, float y, void* user_data);
@@ -4440,6 +4446,7 @@ Rid Rtree_view_get_selected_item(Rid tree_view);
 void Rtree_view_set_selection_changed_callback(Rid tree_view, RTreeEventCallback callback, void* user_data);
 /// Called on double click or Enter. This also fires the action of the widget.
 void Rtree_view_set_activated_callback(Rid tree_view, RTreeEventCallback callback, void* user_data);
+void Rtree_view_set_expanded_callback(Rid tree_view, RTreeExpandCallback callback, void* user_data);
 /// Icon drawn before the text of the item (a region u0,v0,u1,v1 of the texture). R_INVALID_ID removes it.
 /// An SVG in currentColor (Ricon_get) takes the color of the text. XML: Icon on an Item.
 void Rtree_item_set_icon(Rid item, Rid texture, float u0, float v0, float u1, float v1);
