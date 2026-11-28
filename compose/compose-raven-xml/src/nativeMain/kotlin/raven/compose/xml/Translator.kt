@@ -46,7 +46,8 @@ private enum class Tag(vararg val names: String) {
     ProgressBar("ProgressBar"),
     Separator("Separator"),
     Spacer("Spacer"),
-    Table("Table");
+    Table("Table"),
+    TileView("TileView");
 
     companion object {
         // (SizeBox's alias Box is Raven's SizeBox, not Overlay: it isn't in the vocabulary)
@@ -104,6 +105,9 @@ private val imports = mapOf(
     "Slider" to "raven.compose.foundation",
     "Table" to "raven.compose.foundation",
     "TableSort" to "raven.compose.foundation",
+    "TileContent" to "raven.compose.foundation",
+    "TileLayout" to "raven.compose.foundation",
+    "TileView" to "raven.compose.foundation",
     "Switch" to "raven.compose.foundation",
     "Text" to "raven.compose.foundation",
     "TextButton" to "raven.compose.foundation",
@@ -583,6 +587,7 @@ internal class Translator(private val context: FileContext? = null) {
             }
             Tag.Spacer -> leaf(element, attrs, "Spacer", listOf(modifier ?: "Modifier".also { use("Modifier") }))
             Tag.Table -> table(element, attrs, modifier)
+            Tag.TileView -> tileView(element, attrs, modifier)
             Tag.Window -> error("handled by the caller")
         }
     }
@@ -766,6 +771,32 @@ internal class Translator(private val context: FileContext? = null) {
         out.block(call("Table", args), comment) {
             columns.forEachIndexed { i, (column, note) -> out.line("$column { it[$i] }", note) }
         }
+    }
+
+    /**
+     * `<TileView>`: its attributes become the parameters, and its selection hoisted state. Raven's
+     * XML gives no tiles, the app does, so the items are an empty list to fill.
+     */
+    private fun tileView(element: XmlElement, attrs: Attrs, modifier: String?) {
+        val name = state(attrs, "tiles", "emptySet<Any>()")
+        val args = mutableListOf("items = emptyList<String>()", "key = { it }", "selection = $name", "onSelectionChange = { $name = it }")
+        modifier?.let { args += "modifier = $it" }
+        val width = attrs.num("TileWidth")
+        val height = attrs.num("TileHeight")
+        if (width != null || height != null) {
+            val default = Num(112f, KExpr("112", KType.Int, atomic = true))
+            args += "tileSize = DpSize(${dp(width ?: default)}, ${dp(height ?: default)})".also { use("DpSize") }
+        }
+        attrs.num("IconSize")?.let { args += "iconSize = ${dp(it)}" }
+        attrs.num("Spacing")?.let { args += "spacing = ${dp(it)}" }
+        when (attrs.choice("Layout", "tiles", "rows")) {
+            "rows" -> args += "layout = TileLayout.Rows".also { use("TileLayout") }
+        }
+        attrs.str("EmptyText")?.let { args += "emptyText = $it" }
+        action(attrs)?.let { args += "onActivate = ${stub(it)}" }
+        out.line("// TODO(raven-xml): <TileView>'s items are the app's to give")
+        use("TileContent")
+        leaf(element, attrs, "TileView", args, trailing = "{ TileContent(it) }")
     }
 
     // ---- templates ----

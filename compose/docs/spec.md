@@ -1212,7 +1212,15 @@ The app's items and selection are the model; one function says what each item's 
   (`Rtile_view_scroll_to`); Raven can't report the position, so it isn't saveable.
 - **Not yet**: dragging tiles out and the drop highlight (with drags inside the app), and
   `Rtile_view_get_item_at`, which only drops need.
-- The XML translator maps `<TileView>`'s attributes onto the parameters; the app gives the items.
+- **Built over** ui's `TileViewItem` handler, which fills Raven's `RTileItem` (its texts live until
+  the next tile is asked for) and calls `addViewer` on each icon, so an icon still loading redraws
+  the view. The selection is a controlled set of indices in ui, which `TileView` maps to and from
+  keys. `spacing = null` sets Raven's 8 dp. Tests read a tile with ui's `readTile`, which calls
+  the same C callback Raven calls.
+- The XML translator maps `<TileView>`'s attributes onto the parameters (`TileWidth` and
+  `TileHeight` to `tileSize`, Raven's 112 dp for the one not written, `IconSize`, `Spacing`,
+  `Layout`, `EmptyText`), hoists the selection, and leaves a TODO for the items, which the app
+  gives. `DragType`, `IconWidth` and `HeaderHeight` are warnings.
 
 ### TreeView expansion (phase 5)
 
@@ -2049,6 +2057,7 @@ This sample translates Raven XML into compose-raven source.
   | `Separator` | `HorizontalDivider` / `VerticalDivider` |
   | `Spacer` | `Spacer` |
   | `Table`, with `<Column>`s and `<Row>`s (phase 5) | `Table`, the rows a `listOf` ([Table](#table-phase-5)) |
+  | `TileView` (phase 5) | `TileView`, its items left to the app ([TileView](#tileview-phase-5)) |
   | `Slot.*`, `Width`/`Height`, `Min*`/`Max*` | Modifiers |
   | `Spacing` | `Arrangement.spacedBy` |
 - **Faithful output**: wherever the XML relies on Raven's `Fill` default, the output adds

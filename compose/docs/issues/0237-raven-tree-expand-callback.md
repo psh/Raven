@@ -9,7 +9,7 @@ expansion change Raven makes itself, so `TreeView`'s expansion can be the app's 
 [11: change 14](../spec.md#11-required-raven-changes). Planned in
 [Lists at scale: TreeView expansion and item operations](archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md).
 
-**Depends on:** [Lists at scale: TileView](0236-lists-at-scale-tileview.md), the ticket before it in
+**Depends on:** [Lists at scale: TileView](archive/0236-lists-at-scale-tileview.md), the ticket before it in
 phase 5's implementation sequence.
 
 ## Deliverables

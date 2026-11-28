@@ -295,6 +295,32 @@ class TranslatorTest {
     }
 
     @Test
+    fun aTileViewsAttributesBecomeItsParameters() {
+        val translation = translate(
+            el("TileView", "Name" to "swatches", "TileWidth" to "124", "IconSize" to "96", "Spacing" to "12", "Layout" to "Rows", "EmptyText" to "None", "DragType" to "swatch"),
+        )
+        assertEquals(
+            """
+            var swatches by remember { mutableStateOf(emptySet<Any>()) }
+            // TODO(raven-xml): <TileView>'s items are the app's to give
+            TileView( // raven-xml: DragType="swatch" left out
+                items = emptyList<String>(),
+                key = { it },
+                selection = swatches,
+                onSelectionChange = { swatches = it },
+                tileSize = DpSize(124.dp, 112.dp),
+                iconSize = 96.dp,
+                spacing = 12.dp,
+                layout = TileLayout.Rows,
+                emptyText = "None",
+            ) { TileContent(it) }
+            """.trimIndent(),
+            body(translation),
+        )
+        assertEquals(listOf("DragType=\"swatch\" has no equivalent on TileView"), translation.warnings.map { it.message })
+    }
+
+    @Test
     fun aTextInputsPasswordMaxLengthAndActionAreTranslated() {
         val translation = translate(el("TextInput", "Password" to "true", "MaxLength" to "20", "OnCommitted" to "login.submit"))
         val code = translation.code

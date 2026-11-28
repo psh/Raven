@@ -34,4 +34,4 @@ Resolved on 2026-11-26, with the user, in two rounds: designed into
   per-tile tint and colours.
 - **Tests** in the headless host; the XML translator maps `<TileView>`'s attributes.
 
-Filed as [Lists at scale: TileView](../0236-lists-at-scale-tileview.md).
+Filed as [Lists at scale: TileView](0236-lists-at-scale-tileview.md).
