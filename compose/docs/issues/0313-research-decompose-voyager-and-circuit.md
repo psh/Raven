@@ -28,6 +28,21 @@ Each answer comes from reading the published artifacts and from a spike. It ends
 recommendation on which to support (likely as `compose-raven-decompose`, and so on) and in tickets
 for those.
 
+**The aim** (added 2026-11-27, at the user's request) is a `compose/navigation/` folder holding
+compose-raven's navigation modules as peers:
+
+- `compose-raven-navigation3`, moved there from `compose/`;
+- one module for each library supported: `compose-raven-decompose`, `compose-raven-voyager` and
+  `compose-raven-circuit`, with the code each needs to work under compose-raven.
+
+The research says how close each library can get to that, and what each module would hold. The
+tickets it files include the move of `compose-raven-navigation3`, which changes:
+
+- its folder, and whether its Gradle path changes too (`:navigation:compose-raven-navigation3`, or
+  the old path kept with a `projectDir`);
+- `settings.gradle.kts`, the samples that depend on it (`music`) and the publishing coordinates;
+- the docs that name its path (the spec, the roadmap, the README, `api-coverage.md`).
+
 The libraries, with what was believed when this was filed (2026-11-27), to be checked:
 
 - **Decompose** (`com.arkivanov.decompose`) is the likeliest fit. Its core `decompose` module (components,
