@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -43,6 +44,18 @@ public class LazyListState(firstVisibleItemIndex: Int = 0, firstVisibleItemScrol
         private set
 
     public var firstVisibleItemScrollOffset: Int by mutableIntStateOf(firstVisibleItemScrollOffset)
+        private set
+
+    /** The items in view and where they are, read once a frame, once the list is laid out. */
+    public var layoutInfo: LazyListLayoutInfo by mutableStateOf(LazyListLayoutInfo.Empty)
+        private set
+
+    /** Whether there is content past the viewport's end to scroll to. */
+    public var canScrollForward: Boolean by mutableStateOf(false)
+        private set
+
+    /** Whether the list is scrolled past its start. */
+    public var canScrollBackward: Boolean by mutableStateOf(false)
         private set
 
     // Where the viewport starts, by index and, once known, by key.
@@ -168,6 +181,7 @@ public class LazyListState(firstVisibleItemIndex: Int = 0, firstVisibleItemScrol
         // Clamped to the content: the start is somewhere else now.
         if (abs(offset - target) >= 0.5f) anchorAt(offset, composed, spans)
         readFirstVisible(offset, composed, spans)
+        readLayout(offset, span(widget).let { it.second - it.first }, composed, spans)
         // What this frame composed is measured, for the next frame.
         observe(widget)
     }
@@ -248,6 +262,23 @@ public class LazyListState(firstVisibleItemIndex: Int = 0, firstVisibleItemScrol
         if (index != firstVisibleItemIndex) firstVisibleItemIndex = index
         val scrolled = past.roundToInt()
         if (scrolled != firstVisibleItemScrollOffset) firstVisibleItemScrollOffset = scrolled
+    }
+
+    /** The items composed in the [viewport] from [offset], by their real places, and whether there is more each way. */
+    private fun readLayout(offset: Float, viewport: Float, composed: Composed, spans: List<Span>?) {
+        val items = composed.items
+        val end = offset + viewport
+        val visible = if (spans != null) {
+            spans.filter { it.slot is LazySlot.Item && it.end > offset && it.start < end }.map {
+                val index = (it.slot as LazySlot.Item).index
+                LazyListItemInfo(index, items.keyOf(index), (it.start - offset).roundToInt(), (it.end - it.start).roundToInt())
+            }
+        } else {
+            windowOf(items, composed.gap).visibleItems.map { LazyListItemInfo(it.index, it.key, it.offset.roundToInt(), it.size.roundToInt()) }
+        }
+        layoutInfo = LazyListLayoutInfo(visible, items.count, 0, viewport.roundToInt())
+        canScrollBackward = offset >= 0.5f
+        canScrollForward = (spans?.lastOrNull()?.end ?: composed.window.totalSize) > end + 0.5f
     }
 
     /** The key of the item holding the window's focus, if one does. */

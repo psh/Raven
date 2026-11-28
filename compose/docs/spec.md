@@ -1104,13 +1104,18 @@ of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](is
   Its `rememberSaveable` is kept by a `SaveableStateHolder` under the item's key and comes back
   with it. A `BringIntoViewRequester` in an item that isn't composed does nothing; `scrollToItem`
   reaches it.
-- **`contentType`** on `item` and `items` is accepted, for Compose's code, and ignored: Raven has
-  no compositions to reuse.
+- **`contentType`** on `item`, `items` and the `items(list)` and `itemsIndexed` extensions is
+  accepted, for Compose's code, and ignored: Raven has no compositions to reuse.
+  `LazyVerticalGrid`'s DSL doesn't take it yet.
 - **`LazyListState`** gains:
-  - `layoutInfo: LazyListLayoutInfo`, snapshot state read once a frame: `visibleItemsInfo` (each
-    composed item in view, with `index`, `key`, `offset` and `size`), `totalItemsCount`,
-    `viewportStartOffset` and `viewportEndOffset`, in dp;
-  - `canScrollForward` and `canScrollBackward`.
+  - `layoutInfo: LazyListLayoutInfo`, snapshot state read once a frame, as the list settles:
+    `visibleItemsInfo` (each composed item in view, with `index`, `key`, `offset` from the
+    viewport's start and `size`, from its real place), `totalItemsCount`, `viewportStartOffset`
+    (0, as there is no content padding) and `viewportEndOffset` (the viewport's length), in whole
+    dp. An item given no key has an internal one, as in Compose. Both classes are data classes, so a
+    frame that changes nothing writes nothing;
+  - `canScrollForward` (content past the viewport's end) and `canScrollBackward` (the offset past
+    0), read with it.
   
   `firstVisibleItemIndex` and its offset come from the items composed, and the cached sizes for a
   place within a Spacer, rather than every item's widget. `scrollToItem` to an item never measured

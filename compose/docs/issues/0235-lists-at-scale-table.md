@@ -8,7 +8,7 @@ Add `Table`, Raven's sortable data grid in virtual mode, with a `column` DSL, co
 and selection, and `TableState.revealRow`. Spec: [8: Table](../spec.md#table-phase-5) and section 12.
 Planned in [Lists at scale: Table](archive/0215-lists-at-scale-table.md).
 
-**Depends on:** [Lists at scale: layoutInfo and contentType](0234-lists-at-scale-layoutinfo-and-contenttype.md).
+**Depends on:** [Lists at scale: layoutInfo and contentType](archive/0234-lists-at-scale-layoutinfo-and-contenttype.md).
 
 ## Deliverables
 

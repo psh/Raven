@@ -39,4 +39,4 @@ Resolved on 2026-11-26, with the user, in one round: designed into
   prefetching to fog.
 
 Filed as [Lists at scale: the lazy list window](0233-lists-at-scale-the-lazy-list-window.md) and
-[Lists at scale: layoutInfo and contentType](../0234-lists-at-scale-layoutinfo-and-contenttype.md).
+[Lists at scale: layoutInfo and contentType](0234-lists-at-scale-layoutinfo-and-contenttype.md).

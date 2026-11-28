@@ -34,28 +34,38 @@ public interface LazyItemScope
 
 private object LazyItemScopeInstance : LazyItemScope
 
-/** The DSL of [LazyColumn] and [LazyRow]: the items, in order. */
+/**
+ * The DSL of [LazyColumn] and [LazyRow]: the items, in order. A `contentType` is accepted, for
+ * Compose's code, and ignored: Raven has no compositions to reuse between items of one type.
+ */
 public interface LazyListScope {
     /** One item. A [key] keeps it, and what it holds, when the items around it change. */
-    public fun item(key: Any? = null, content: @Composable LazyItemScope.() -> Unit)
+    public fun item(key: Any? = null, contentType: Any? = null, content: @Composable LazyItemScope.() -> Unit)
 
     /** [count] items, each composed by [itemContent] with its index. */
-    public fun items(count: Int, key: ((index: Int) -> Any)? = null, itemContent: @Composable LazyItemScope.(index: Int) -> Unit)
+    public fun items(
+        count: Int,
+        key: ((index: Int) -> Any)? = null,
+        contentType: (index: Int) -> Any? = { null },
+        itemContent: @Composable LazyItemScope.(index: Int) -> Unit,
+    )
 }
 
 /** An item for each of [items]. */
 public inline fun <T> LazyListScope.items(
     items: List<T>,
     noinline key: ((item: T) -> Any)? = null,
+    crossinline contentType: (item: T) -> Any? = { null },
     crossinline itemContent: @Composable LazyItemScope.(item: T) -> Unit,
-): Unit = items(items.size, key?.let { { index: Int -> it(items[index]) } }) { itemContent(items[it]) }
+): Unit = items(items.size, key?.let { { index: Int -> it(items[index]) } }, { contentType(items[it]) }) { itemContent(items[it]) }
 
 /** An item for each of [items], with its index. */
 public inline fun <T> LazyListScope.itemsIndexed(
     items: List<T>,
     noinline key: ((index: Int, item: T) -> Any)? = null,
+    crossinline contentType: (index: Int, item: T) -> Any? = { _, _ -> null },
     crossinline itemContent: @Composable LazyItemScope.(index: Int, item: T) -> Unit,
-): Unit = items(items.size, key?.let { { index: Int -> it(index, items[index]) } }) { itemContent(it, items[it]) }
+): Unit = items(items.size, key?.let { { index: Int -> it(index, items[index]) } }, { contentType(it, items[it]) }) { itemContent(it, items[it]) }
 
 /** [count] items from [start], as one call of the DSL gave them. */
 private class LazyInterval(
@@ -75,12 +85,17 @@ internal class LazyListItems(content: LazyListScope.() -> Unit) : LazyListScope 
     var count: Int = 0
         private set
 
-    override fun item(key: Any?, content: @Composable LazyItemScope.() -> Unit) {
+    override fun item(key: Any?, contentType: Any?, content: @Composable LazyItemScope.() -> Unit) {
         intervals += LazyInterval(count, 1, key?.let { k -> { _: Int -> k } }) { content() }
         count++
     }
 
-    override fun items(count: Int, key: ((index: Int) -> Any)?, itemContent: @Composable LazyItemScope.(index: Int) -> Unit) {
+    override fun items(
+        count: Int,
+        key: ((index: Int) -> Any)?,
+        contentType: (index: Int) -> Any?,
+        itemContent: @Composable LazyItemScope.(index: Int) -> Unit,
+    ) {
         require(count >= 0) { "count must not be negative, not $count" }
         if (count == 0) return
         intervals += LazyInterval(this.count, count, key, itemContent)
