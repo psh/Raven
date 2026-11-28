@@ -7,7 +7,7 @@ status: open
 Bind Raven's Plot as `Plot { series(...); dragLine(...) }` with `PlotAxis` and a `PlotState`.
 Spec: [8: Charts](../spec.md#charts-phase-5) and section 12. Planned in [Charts: one model for Plot and Chart](archive/0245-charts-one-model-for-plot-and-chart.md).
 
-**Depends on:** [Overlays and pagers: SnackbarHost](0257-overlays-and-pagers-snackbarhost.md), the ticket before it in phase 5's implementation sequence.
+**Depends on:** [Overlays and pagers: SnackbarHost](archive/0257-overlays-and-pagers-snackbarhost.md), the ticket before it in phase 5's implementation sequence.
 
 ## Deliverables
 

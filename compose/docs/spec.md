@@ -1320,8 +1320,16 @@ over Raven's Toast, with Raven's kinds, and stacking when asked, over Raven chan
   have only their one button), and no `snackbar` slot (Raven draws the messages).
 - Tests are headless: a message timing out, its action, queuing, a stack of three, cancelling, and
   the kinds. There is no sample: no example shows a Toast alone.
+- **Built**: in `raven.compose.foundation`, over ui's `ToastMessageEnded` (change 15's callback).
+  Each call is a request: shown at once with `Rtoast_show_message`, its button set just before
+  (each message keeps its own), and resumed by the message's end. A call made while no host shows
+  the state waits for one; a host that leaves takes its messages with it, and the next host shows
+  them again. A state given to two hosts at once logs an error.
 - The XML translator turns `<Toast>` into a `SnackbarHost` at its place, with a remembered
-  `SnackbarHostState` and a comment where the app's code shows its messages.
+  `SnackbarHostState` and a comment where the app's code shows its messages. `Queue="Stack"`
+  gives `maxVisible` (its `MaxVisible`, 3 by default); `Queue="Replace"` is a warning. A `Text`
+  written in the XML becomes a `LaunchedEffect` showing it, with its `Kind`, `ActionText` and
+  `Duration` (4 s unless written, as Raven shows it, button or not).
 
 ### Charts (phase 5)
 

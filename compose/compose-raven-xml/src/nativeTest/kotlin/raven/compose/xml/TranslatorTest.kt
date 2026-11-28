@@ -392,6 +392,26 @@ class TranslatorTest {
     }
 
     @Test
+    fun aToastIsASnackbarHost() {
+        val translation = translate(
+            el("Toast", "Name" to "toast", "Queue" to "Stack", "MaxVisible" to "2", "Text" to "Saved", "Kind" to "Success", "ActionText" to "Undo"),
+        )
+        assertEquals(
+            """
+            val toastState = remember { SnackbarHostState() }
+            // raven-xml: the app shows its messages with toastState.showSnackbar(message, actionLabel, kind)
+            LaunchedEffect(toastState) { toastState.showSnackbar("Saved", actionLabel = "Undo", kind = SnackbarKind.Success, duration = SnackbarDuration.Short) }
+            SnackbarHost(toastState, maxVisible = 2)
+            """.trimIndent(),
+            body(translation),
+        )
+        assertTrue("import androidx.compose.runtime.LaunchedEffect" in translation.code)
+        val plain = translate(el("Toast", "Queue" to "Replace"))
+        assertTrue("SnackbarHost(snackbarState)" in body(plain), body(plain))
+        assertEquals(listOf("Queue: messages wait their turn; cancelling the earlier showSnackbar replaces it"), plain.warnings.map { it.message })
+    }
+
+    @Test
     fun aTextInputsPasswordMaxLengthAndActionAreTranslated() {
         val translation = translate(el("TextInput", "Password" to "true", "MaxLength" to "20", "OnCommitted" to "login.submit"))
         val code = translation.code

@@ -34,4 +34,4 @@ Resolved on 2026-11-27, with the user, in four rounds: designed into
 
 Filed as [Raven: toast message ids](0255-raven-toast-message-ids.md),
 [Propose toast message ids upstream](../on-hold/0256-propose-toast-message-ids-upstream.md) (on hold) and
-[Overlays and pagers: SnackbarHost](../0257-overlays-and-pagers-snackbarhost.md).
+[Overlays and pagers: SnackbarHost](0257-overlays-and-pagers-snackbarhost.md).

@@ -49,7 +49,8 @@ private enum class Tag(vararg val names: String) {
     Table("Table"),
     TileView("TileView"),
     TreeView("TreeView"),
-    Carousel("Carousel");
+    Carousel("Carousel"),
+    Toast("Toast");
 
     companion object {
         // (SizeBox's alias Box is Raven's SizeBox, not Overlay: it isn't in the vocabulary)
@@ -115,6 +116,11 @@ private val imports = mapOf(
     "VerticalPager" to "raven.compose.foundation.pager",
     "rememberPagerState" to "raven.compose.foundation.pager",
     "seconds" to "kotlin.time.Duration.Companion",
+    "SnackbarHost" to "raven.compose.foundation",
+    "SnackbarHostState" to "raven.compose.foundation",
+    "SnackbarKind" to "raven.compose.foundation",
+    "SnackbarDuration" to "raven.compose.foundation",
+    "LaunchedEffect" to "androidx.compose.runtime",
     "Switch" to "raven.compose.foundation",
     "Text" to "raven.compose.foundation",
     "TextButton" to "raven.compose.foundation",
@@ -597,6 +603,7 @@ internal class Translator(private val context: FileContext? = null) {
             Tag.TileView -> tileView(element, attrs, modifier)
             Tag.TreeView -> treeView(element, attrs, modifier)
             Tag.Carousel -> carousel(element, attrs, modifier)
+            Tag.Toast -> toast(element, attrs, modifier)
             Tag.Window -> error("handled by the caller")
         }
     }
@@ -901,6 +908,52 @@ internal class Translator(private val context: FileContext? = null) {
         }
         out.depth--
         out.line("}")
+    }
+
+    /**
+     * `<Toast>`: a `SnackbarHost` at its place, over a remembered `SnackbarHostState`, and a comment
+     * where the app shows its messages. A `Text` written in the XML, shown when the window opens,
+     * becomes a `LaunchedEffect` showing it, with its `Kind`, `ActionText` and `Duration`.
+     */
+    private fun toast(element: XmlElement, attrs: Attrs, modifier: String?) {
+        val written = attrs.raw("Name", "Id")
+        val name = unique((written?.let(::identifier) ?: "snackbar") + "State", names)
+        holder.state += "val $name = remember { SnackbarHostState() }"
+        use("SnackbarHost", "SnackbarHostState", "remember")
+        val args = mutableListOf(name)
+        modifier?.let { args += "modifier = $it" }
+        when (attrs.choice("Queue", "replace", "sequence", "stack")) {
+            "stack" -> args += "maxVisible = ${attrs.num("MaxVisible")?.constant?.toInt()?.coerceAtLeast(1) ?: 3}"
+            "replace", null -> {
+                attrs.raw("MaxVisible")
+                if (attrs.peek("Queue") != null) attrs.note("Queue", "messages wait their turn; cancelling the earlier showSnackbar replaces it")
+            }
+            else -> attrs.raw("MaxVisible")
+        }
+        val text = attrs.str("Text")
+        val kind = attrs.choice("Kind", "info", "success", "warning", "error")
+        val action = attrs.str("ActionText")?.takeIf { it != "\"\"" }
+        val duration = attrs.num("Duration")?.constant?.let { seconds ->
+            when (seconds) {
+                4f -> null
+                10f -> "SnackbarDuration.Long"
+                0f -> "SnackbarDuration.Indefinite"
+                else -> null.also { attrs.note("Duration", "a snackbar stays 4 s, 10 s or until its button") }
+            }
+        }
+        out.line("// raven-xml: the app shows its messages with $name.showSnackbar(message, actionLabel, kind)")
+        if (text != null) {
+            val show = mutableListOf(text)
+            action?.let { show += "actionLabel = $it" }
+            kind?.takeIf { it != "info" }?.let { show += "kind = SnackbarKind.${it.replaceFirstChar(Char::uppercase)}".also { use("SnackbarKind") } }
+            // (Raven shows it for its Duration, 4 s by default, button or not; showSnackbar's default with a button is Indefinite)
+            (duration ?: if (action != null) "SnackbarDuration.Short" else null)?.let { show += "duration = $it".also { use("SnackbarDuration") } }
+            use("LaunchedEffect")
+            out.line("LaunchedEffect($name) { $name.showSnackbar(${show.joinToString(", ")}) }")
+        } else if (kind != null || action != null) {
+            attrs.note(if (action != null) "ActionText" else "Kind", "each showSnackbar call gives its own")
+        }
+        leaf(element, attrs, "SnackbarHost", args)
     }
 
     // ---- templates ----
