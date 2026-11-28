@@ -2345,7 +2345,7 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 ## 11. Required Raven changes
 
 These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
-6, 7, 8, 9, 10, 11 and 13 are made, one commit each on the `compose-raven` branch, with a C test except
+6, 7, 8, 9, 10, 11, 13 and 14 are made, one commit each on the `compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -2435,10 +2435,12 @@ for change 6, which only a real macOS window reaches.
     [Small widgets: the CodeEditor extras](issues/archive/0212-small-widgets-the-codeeditor-extras.md).
 14. **`Rtree_view_set_expanded_callback(Rid tree, RTreeExpandCallback callback, void* user_data)`**,
     `typedef void (*RTreeExpandCallback)(Rid tree, Rid item, int expanded, void* user_data)`
-    (required for `TreeView`'s controlled expansion, to be made): called for each expansion change
-    Raven makes itself (the arrow, a double click, Left and Right, the ancestors a selection opens),
-    not for `Rtree_item_set_expanded`. A collapse that moves the selection to the collapsed item
-    also calls the selection-changed callback, which it skips today. Planned in
+    (required for `TreeView`'s controlled expansion, made in `41af6b4`): called for each expansion
+    change Raven makes itself (the arrow, a double click, Left and Right, the ancestors a selection
+    opens, outermost first, whether the user or `Rtree_view_set_selected_item` selected), not for
+    `Rtree_item_set_expanded`. A collapse that moves the selection to the collapsed item reports
+    the collapse and then calls the selection-changed callback, which it already did (the plan
+    thought it skipped it). With a C test in `tests/test_widgets.c`. Planned in
     [Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md).
 
 15. **Toast message ids**: `int Rtoast_show_message(Rid toast, const char* text, RToastKind kind,

@@ -33,5 +33,5 @@ Resolved on 2026-11-26, with the user, in one round: designed into
 - **Item operations**: renaming a tab already works through `Tab(title)` (a test only); the selected
   item is already controlled; the item at a point waits for drags inside the app.
 
-Filed as [Raven: tree expand callback](../0237-raven-tree-expand-callback.md) and
+Filed as [Raven: tree expand callback](0237-raven-tree-expand-callback.md) and
 [Lists at scale: TreeView expansion and revealItem](../0238-lists-at-scale-treeview-expansion-and-revealitem.md).

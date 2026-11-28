@@ -8,7 +8,7 @@ Make `TreeView`'s expansion controlled (`expanded`, `onExpandedChange`), ask for
 and add `TreeViewState.revealItem(key)`. Spec: [8: TreeView expansion](../spec.md#treeview-expansion-phase-5)
 and section 12. Planned in [Lists at scale: TreeView expansion and item operations](archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md).
 
-**Depends on:** [Raven: tree expand callback](0237-raven-tree-expand-callback.md).
+**Depends on:** [Raven: tree expand callback](archive/0237-raven-tree-expand-callback.md).
 
 ## Deliverables
 
