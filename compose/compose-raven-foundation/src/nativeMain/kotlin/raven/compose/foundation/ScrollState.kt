@@ -22,7 +22,9 @@ import raven.cinterop.Rscroll_box_scroll_to_end
 import raven.cinterop.Rscroll_box_set_offset
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwidget_is_valid
+import raven.compose.ui.ScrollsToIndex
 import raven.compose.ui.WidgetFollower
+import raven.compose.foundation.lazy.LazyListState
 import raven.compose.ui.layoutWarningSink
 import kotlin.math.roundToInt
 
@@ -35,10 +37,13 @@ internal interface ScrollTarget {
 
     /** Applies a position asked for before, once the box is in a window, then reads where it is. */
     fun follow(widget: Rid)
+
+    /** Once the frame's composition is applied, before Raven lays out and paints. */
+    fun settle(widget: Rid) {}
 }
 
 /** Has a scroll box's node follow its state's [target], which can change from one composition to the next. */
-internal class ScrollFollower(private val vertical: Boolean) : WidgetFollower {
+internal class ScrollFollower(private val vertical: Boolean) : WidgetFollower, ScrollsToIndex {
     private var widget: Rid? = null
     private var attached: ScrollTarget? = null
 
@@ -59,6 +64,17 @@ internal class ScrollFollower(private val vertical: Boolean) : WidgetFollower {
 
     override fun follow(widget: Rid) {
         attached?.follow(widget)
+    }
+
+    override fun settle(widget: Rid) {
+        attached?.settle(widget)
+    }
+
+    /** A lazy list's items; -1 for a plain scroll box, whose children are its items. */
+    override val itemCount: Int get() = (attached as? LazyListState)?.itemCount ?: -1
+
+    override fun scrollToIndex(index: Int) {
+        (attached as? LazyListState)?.jumpTo(index, 0)
     }
 
     override fun detach(widget: Rid) {

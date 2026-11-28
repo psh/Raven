@@ -8,7 +8,7 @@ Give `LazyListState` Compose's `layoutInfo` and the `canScroll` flags, and the D
 `contentType`. Spec: [8: Lazy virtualisation](../spec.md#lazy-virtualisation-phase-5) and section 12.
 Planned in [Lists at scale: lazy virtualisation](archive/0214-lists-at-scale-lazy-virtualisation.md).
 
-**Depends on:** [Lists at scale: the lazy list window](0233-lists-at-scale-the-lazy-list-window.md).
+**Depends on:** [Lists at scale: the lazy list window](archive/0233-lists-at-scale-the-lazy-list-window.md).
 
 ## Deliverables
 

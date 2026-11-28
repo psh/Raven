@@ -104,15 +104,16 @@ class BringIntoViewTest {
         val requester = BringIntoViewRequester()
         setContent {
             LazyColumn(Modifier.height(100.dp), state) {
+                // Four items are in view; the fifth is composed too, one past the edge.
                 items(30) {
-                    val modifier = if (it == 20) Modifier.bringIntoViewRequester(requester) else Modifier
+                    val modifier = if (it == 4) Modifier.bringIntoViewRequester(requester) else Modifier
                     Text("Item $it", modifier.height(25.dp))
                 }
             }
         }
         runBlocking { requester.bringIntoView() }
         frame()
-        assertEquals(17, state.firstVisibleItemIndex, "item 20 is the last of the four shown")
+        assertEquals(1, state.firstVisibleItemIndex, "item 4 is the last of the four shown")
     }
 
     @Test

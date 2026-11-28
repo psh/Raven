@@ -38,5 +38,5 @@ Resolved on 2026-11-26, with the user, in one round: designed into
 - **Scope**: lists only. `LazyVerticalGrid` goes with TileView; sticky headers, `animateItem` and
   prefetching to fog.
 
-Filed as [Lists at scale: the lazy list window](../0233-lists-at-scale-the-lazy-list-window.md) and
+Filed as [Lists at scale: the lazy list window](0233-lists-at-scale-the-lazy-list-window.md) and
 [Lists at scale: layoutInfo and contentType](../0234-lists-at-scale-layoutinfo-and-contenttype.md).

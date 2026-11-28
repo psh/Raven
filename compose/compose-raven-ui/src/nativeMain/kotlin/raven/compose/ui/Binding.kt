@@ -555,8 +555,9 @@ private val onLabelLinkClicked = staticCFunction { _: Rid, url: CPointer<ByteVar
 
 /**
  * Follows a node's widget, for what Raven reports no change of (a text editor's cursor): [attach]
- * when the node takes it, [follow] once a frame before the frame recomposes, and [detach] when the
- * node lets it go or is released. A node holds one at most.
+ * when the node takes it, [follow] once a frame before the frame recomposes, [settle] once the
+ * frame's composition is applied, before Raven lays out and paints, and [detach] when the node lets
+ * it go or is released. A node holds one at most.
  */
 @InternalComposeRavenApi
 public interface WidgetFollower {
@@ -564,8 +565,28 @@ public interface WidgetFollower {
 
     public fun follow(widget: Rid)
 
+    /** After the frame's changes are applied: what needs the new widgets laid out (a lazy list's offset). */
+    public fun settle(widget: Rid) {}
+
     public fun detach(widget: Rid)
 }
+
+/**
+ * A follower that scrolls its widget to an item by index, for the test finders'
+ * `performScrollToIndex` on a lazy list, whose widgets are only the items in view.
+ */
+@InternalComposeRavenApi
+public interface ScrollsToIndex {
+    /** How many items there are to scroll to. */
+    public val itemCount: Int
+
+    /** Puts the item at [index] at the start, as `scrollToItem` does, from the next frame. */
+    public fun scrollToIndex(index: Int)
+}
+
+/** The node's follower, when it scrolls to items by index. */
+@InternalComposeRavenApi
+public val RavenNode.scrollsToIndex: ScrollsToIndex? get() = follower as? ScrollsToIndex
 
 /** Has [follower] follow the node's widget, when it changes; null stops the one there was. */
 @InternalComposeRavenApi

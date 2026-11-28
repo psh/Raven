@@ -1048,7 +1048,8 @@ is.
     of Compose's `scrollTo(maxValue)`. There is no `maxValue` and no `isScrollInProgress`.
 - **`LazyListState`** (`rememberLazyListState()`), the `state` of `LazyColumn`/`LazyRow`:
   - `firstVisibleItemIndex` and `firstVisibleItemScrollOffset`, from the ScrollBox offset and the
-    item widgets' positions (every item is composed in phase 3).
+    item widgets' positions (every item is composed in phase 3; from phase 5 the items not composed
+    are placed by their cached sizes: [Lazy virtualisation](#lazy-virtualisation-phase-5)).
   - `suspend scrollToItem(index, scrollOffset = 0)` puts the item at the top, as in Compose.
     `animateScrollToItem` jumps the same way. There is no `layoutInfo`, `isScrollInProgress` or
     `canScrollForward` (phase 5 adds `layoutInfo` and the `canScroll` flags:
@@ -1082,8 +1083,13 @@ of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](is
 
 - **Spacers in the ScrollBox**: the list stays a `VerticalScroll`/`HorizontalScroll` holding a
   Spacer, the visible items (each in its internal Box), and a Spacer, each Spacer sized to the items
-  it stands in for. The state's `follow` reads the offset at the start of the frame, before
-  recomposing, so the items it needs are composed, laid out and drawn in that same frame.
+  it stands in for, in whole dp, as Raven keeps a scroll box's offset on whole dp. The state's
+  `follow` reads the offset at the start of the frame, before recomposing, so the items it needs
+  are composed, laid out and drawn in that same frame. Once the frame's composition is applied,
+  before Raven lays out and paints, the state *settles*: a `WidgetFollower.settle` step that ui
+  gives every follower. It puts the first visible item, by its real place, where it should be, as
+  `Rscroll_box_set_offset` clamps to the content as laid out, so the offset can only be set once
+  the new Spacers are in.
 - **Sizes**: each item's size along the axis is read from its Box after layout and cached by key
   (an item without one by its place), and read again whenever it is composed. An item never
   measured counts as the average of those measured, 48 dp before any are. On its first frame a
@@ -1096,7 +1102,8 @@ of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](is
   item, found by its key, stays where it was on screen.
 - **State in items**: an item scrolled away is disposed, so its `remember` is lost, as in Compose.
   Its `rememberSaveable` is kept by a `SaveableStateHolder` under the item's key and comes back
-  with it.
+  with it. A `BringIntoViewRequester` in an item that isn't composed does nothing; `scrollToItem`
+  reaches it.
 - **`contentType`** on `item` and `items` is accepted, for Compose's code, and ignored: Raven has
   no compositions to reuse.
 - **`LazyListState`** gains:
@@ -1105,10 +1112,16 @@ of rows is cheap, with no Raven change ([Lists at scale: lazy virtualisation](is
     `viewportStartOffset` and `viewportEndOffset`, in dp;
   - `canScrollForward` and `canScrollBackward`.
   
-  `firstVisibleItemIndex` and its offset come from the cached sizes rather than every item's
-  widget. `scrollToItem` to an item never measured jumps to its estimated place and corrects over
-  the next frames until the item is at the start. `isScrollInProgress` stays out, as Raven reports
-  no scrolling.
+  `firstVisibleItemIndex` and its offset come from the items composed, and the cached sizes for a
+  place within a Spacer, rather than every item's widget. `scrollToItem` to an item never measured
+  jumps to its estimated place at once; the next frame composes the items there and settles the
+  item exactly at the start, and the frames after correct the Spacers as the new items are
+  measured. A position asked for while the list has no items waits for them. `isScrollInProgress`
+  stays out, as Raven reports no scrolling.
+- **Tests**: `performScrollToIndex` on a lazy list calls `scrollToItem`, through ui's internal
+  `ScrollsToIndex` hook on the scroll box's follower, as its widgets are only the items in view.
+  A test that scrolls the box itself (`Rscroll_box_set_offset`, `performScrollBy`) or moves the
+  focus draws a `frame()` before `waitForIdle()`, since nothing is pending until a frame reads it.
 - **The window**: the arithmetic is one internal, pure module, the lazy list window. From the
   cached sizes, the items' keys, the offset, the viewport and the focused item, it gives the range
   to compose, the two Spacers' sizes, the offset correction and the layout info. It is tested on

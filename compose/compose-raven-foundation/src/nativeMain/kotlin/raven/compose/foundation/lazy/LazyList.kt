@@ -1,9 +1,20 @@
 package raven.compose.foundation.lazy
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.SaveableStateHolder
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import raven.compose.foundation.layout.Arrangement
 import raven.compose.foundation.layout.HorizontalScroll
+import raven.compose.foundation.layout.Spacer
+import raven.compose.foundation.layout.height
+import raven.compose.foundation.layout.width
 import raven.compose.foundation.layout.VerticalScroll
 import raven.compose.ui.Alignment
 import raven.cinterop.R_ROLE_NONE
@@ -16,6 +27,7 @@ import raven.compose.ui.PanelLayout
 import raven.compose.ui.RavenWidget
 import raven.compose.ui.WidgetDescriptor
 import raven.compose.ui.bind
+import raven.compose.ui.unit.dp
 
 /** What an item of a [LazyColumn] or [LazyRow] is composed in. */
 public interface LazyItemScope
@@ -45,37 +57,117 @@ public inline fun <T> LazyListScope.itemsIndexed(
     crossinline itemContent: @Composable LazyItemScope.(index: Int, item: T) -> Unit,
 ): Unit = items(items.size, key?.let { { index: Int -> it(index, items[index]) } }) { itemContent(it, items[it]) }
 
-/** One item as the DSL gave it: its key, null for its place, and its content. */
-private class LazyItem(val key: Any?, val content: @Composable LazyItemScope.() -> Unit)
+/** [count] items from [start], as one call of the DSL gave them. */
+private class LazyInterval(
+    val start: Int,
+    val count: Int,
+    val key: ((index: Int) -> Any)?,
+    val content: @Composable LazyItemScope.(index: Int) -> Unit,
+)
 
-private class LazyListContent : LazyListScope {
-    val items = mutableListOf<LazyItem>()
+/**
+ * The items [content] declares, as intervals rather than an object each, so ten thousand of them
+ * cost little; each item's key (its place without one) and its index by key.
+ */
+internal class LazyListItems(content: LazyListScope.() -> Unit) : LazyListScope {
+    private val intervals = ArrayList<LazyInterval>()
+
+    var count: Int = 0
+        private set
 
     override fun item(key: Any?, content: @Composable LazyItemScope.() -> Unit) {
-        items += LazyItem(key, content)
+        intervals += LazyInterval(count, 1, key?.let { k -> { _: Int -> k } }) { content() }
+        count++
     }
 
     override fun items(count: Int, key: ((index: Int) -> Any)?, itemContent: @Composable LazyItemScope.(index: Int) -> Unit) {
         require(count >= 0) { "count must not be negative, not $count" }
-        repeat(count) { index -> items += LazyItem(key?.invoke(index)) { itemContent(index) } }
+        if (count == 0) return
+        intervals += LazyInterval(this.count, count, key, itemContent)
+        this.count += count
+    }
+
+    private val indexOfKey = HashMap<Any, Int>()
+
+    init {
+        content()
+        for (index in 0 until count) {
+            val key = keyOf(index)
+            require(indexOfKey.put(key, index) == null) { "the key $key is used by two items: keys must be unique" }
+        }
+    }
+
+    private fun intervalOf(index: Int): LazyInterval {
+        var low = 0
+        var high = intervals.size - 1
+        while (low < high) {
+            val mid = (low + high + 1) / 2
+            if (intervals[mid].start <= index) low = mid else high = mid - 1
+        }
+        return intervals[low]
+    }
+
+    /** The item's key, or its place when the DSL gave none. */
+    fun keyOf(index: Int): Any {
+        val interval = intervalOf(index)
+        return interval.key?.invoke(index - interval.start) ?: PlaceKey(index)
+    }
+
+    fun indexOf(key: Any): Int? = indexOfKey[key]
+
+    val keys: Set<Any> get() = indexOfKey.keys
+
+    @Composable
+    fun Content(index: Int) {
+        val interval = intervalOf(index)
+        interval.content(LazyItemScopeInstance, index - interval.start)
     }
 }
 
+/** The key of the [n]th Spacer of a list's scroll box. */
+private data class SpaceKey(val n: Int)
+
 /**
- * Composes the items [content] declares. A keyed item is composed in a group of its key, so when
- * the items move the composition moves its widgets with `Rwidget_move_child`, rather than
- * composing each again; an item without one is known by its place.
+ * Composes [window]'s slots: a Spacer for the items not composed, and each item composed in a
+ * group of its key, in its Box, so when the items move the composition moves its widgets with
+ * `Rwidget_move_child`. An item's `rememberSaveable` is kept by [holder] under its key while it is
+ * scrolled away.
  */
 @Composable
-private fun LazyItems(vertical: Boolean, content: LazyListScope.() -> Unit) {
-    val items = LazyListContent().apply(content).items
-    val keys = HashSet<Any>()
-    for (item in items) {
-        if (item.key != null) require(keys.add(item.key)) { "the key ${item.key} is used by two items: keys must be unique" }
+private fun LazySlots(vertical: Boolean, items: LazyListItems, window: LazyWindow, holder: SaveableStateHolder) {
+    var spaces = 0
+    for (slot in window.slots) {
+        // One keyed group a child, so the composition can move them among each other.
+        val slotKey = when (slot) {
+            is LazySlot.Space -> SpaceKey(spaces++)
+            is LazySlot.Item -> items.keyOf(slot.index)
+        }
+        key(slotKey) {
+            when (slot) {
+                is LazySlot.Space -> Spacer(if (vertical) Modifier.height(slot.size.dp) else Modifier.width(slot.size.dp))
+                is LazySlot.Item -> holder.SaveableStateProvider(slotKey) { LazyItemBox(vertical) { items.Content(slot.index) } }
+            }
+        }
     }
-    for ((index, item) in items.withIndex()) {
-        key(item.key ?: PlaceKey(index)) { LazyItemBox(vertical) { item.content(LazyItemScopeInstance) } }
-    }
+}
+
+/** A list over [state]: its items, read again whenever [content] reads state that changes, and its window. */
+@Composable
+private fun LazyList(
+    vertical: Boolean,
+    state: LazyListState,
+    spacing: Float,
+    content: LazyListScope.() -> Unit,
+    scroll: @Composable (@Composable () -> Unit) -> Unit,
+) {
+    val latest = rememberUpdatedState(content)
+    val items by remember { derivedStateOf { LazyListItems(latest.value) } }
+    val holder = rememberSaveableStateHolder()
+    val owner = remember { Any() }
+    val window = state.windowFor(items, spacing)
+    SideEffect { state.composed(owner, items, window, spacing) }
+    DisposableEffect(state) { onDispose { state.released(owner) } }
+    scroll { LazySlots(vertical, items, window, holder) }
 }
 
 /**
@@ -96,8 +188,11 @@ private data class PlaceKey(val index: Int)
 
 /**
  * A scrolling column of the items [content] declares, with Compose's DSL: `items(list, key = { it.id })
- * { item -> }`. [state] holds its position. In phase 3 every item is composed, whether shown or not: it is a [VerticalScroll]
- * holding them, so a list of thousands of rows wants [raven.compose.foundation.ListView].
+ * { item -> }`. [state] holds its position. Only the items in view are composed, and one past each
+ * edge, so a list of thousands of rows is cheap: an item scrolled away is disposed, its `remember`
+ * lost and its `rememberSaveable` kept under its key. Items are measured once composed; one never
+ * measured counts as the average of those that were. For rows of text only, Raven's
+ * [raven.compose.foundation.ListView] draws them without a widget each.
  */
 @Composable
 public fun LazyColumn(
@@ -107,7 +202,9 @@ public fun LazyColumn(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: LazyListScope.() -> Unit,
 ) {
-    VerticalScroll(modifier, state, verticalArrangement, horizontalAlignment) { LazyItems(vertical = true, content) }
+    LazyList(vertical = true, state, verticalArrangement.spacing.value, content) { slots ->
+        VerticalScroll(modifier, state, verticalArrangement, horizontalAlignment) { slots() }
+    }
 }
 
 /** A scrolling row of the items [content] declares, as [LazyColumn] is a column. */
@@ -119,5 +216,7 @@ public fun LazyRow(
     verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: LazyListScope.() -> Unit,
 ) {
-    HorizontalScroll(modifier, state, horizontalArrangement, verticalAlignment) { LazyItems(vertical = false, content) }
+    LazyList(vertical = false, state, horizontalArrangement.spacing.value, content) { slots ->
+        HorizontalScroll(modifier, state, horizontalArrangement, verticalAlignment) { slots() }
+    }
 }

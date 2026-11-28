@@ -384,6 +384,8 @@ public class RavenHost(
             dispatcher.drain()
             // Recomposes and applies, inside the frame callback, so layout and paint follow.
             clock.sendFrame(nextFrameTimeNanos())
+            // What needs the new widgets laid out settles before Raven lays out and paints.
+            followedNodes.toList().forEach { node -> node.follower?.settle(node.widget) }
             // The frame awaiters it resumed (animations, withFrameNanos loops) take their step now,
             // instead of leaving work queued after every frame.
             dispatcher.drain()

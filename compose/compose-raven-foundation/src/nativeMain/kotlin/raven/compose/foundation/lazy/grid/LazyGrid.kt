@@ -92,7 +92,7 @@ private val MinCellSize = Property<DpSize?> { widget, size -> Runiform_grid_set_
  * A scrolling grid of the items [content] declares, in [columns], left to right then top to
  * bottom, with Compose's DSL. Raven's UniformGrid gives every cell one size, that of the largest
  * item, at least [minCellSize], and each item fills its cell. [spacing] is the gap between cells,
- * in both directions. As `LazyColumn`, it composes every item in phase 3.
+ * in both directions. Unlike `LazyColumn`, it composes every item, shown or not.
  */
 @Composable
 public fun LazyVerticalGrid(

@@ -64,6 +64,7 @@ import raven.compose.ui.InternalComposeRavenApi
 import raven.compose.ui.RavenHost
 import raven.compose.ui.RavenNode
 import raven.compose.ui.graphics.Color
+import raven.compose.ui.scrollsToIndex
 import raven.compose.ui.input.key.KeyShortcut
 import raven.native.toRavenString
 
@@ -267,7 +268,11 @@ public class FoundNode internal constructor(
                 if (index !in 0 until count) fail("the node with $selector has $count rows, so none at $index")
                 Rlist_view_scroll_to_item(widget, index)
             }
-            R_WIDGET_SCROLL_BOX -> {
+            R_WIDGET_SCROLL_BOX -> node.scrollsToIndex?.takeIf { it.itemCount >= 0 }?.let { list ->
+                // A lazy list's widgets are only the items in view: it scrolls by its own places.
+                if (index !in 0 until list.itemCount) fail("the node with $selector has ${list.itemCount} items, so none at $index")
+                list.scrollToIndex(index)
+            } ?: run {
                 val count = Rwidget_get_child_count(widget)
                 if (index !in 0 until count) fail("the node with $selector has $count items, so none at $index")
                 val box = widgetRect(widget)
