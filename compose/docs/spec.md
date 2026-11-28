@@ -2372,7 +2372,7 @@ Decided in: [XML to Compose translator sample](issues/archive/0013-xml-to-compos
 ## 11. Required Raven changes
 
 These changes go into the `psh/Raven` fork and are offered upstream later. Changes 1, 3, 4, 5,
-6, 7, 8, 9, 10, 11, 13 and 14 are made, one commit each on the `compose-raven` branch, with a C test except
+6, 7, 8, 9, 10, 11, 13, 14 and 15 are made, one commit each on the `compose-raven` branch, with a C test except
 for change 6, which only a real macOS window reaches.
 
 1. **`Rwidget_move_child(Rid parent, int from, int to)`** (required): it moves one child, and
@@ -2474,10 +2474,12 @@ for change 6, which only a real macOS window reaches.
     double seconds)` returning the message's id, `Rtoast_hide_message(Rid toast, int id)` hiding it
     or taking it out of the queue, and `Rtoast_set_message_ended_callback(Rid toast,
     RToastEndedCallback callback, void* user_data)`, `typedef void (*RToastEndedCallback)(Rid toast,
-    int id, int by_action, void* user_data)` (required for `showSnackbar`'s result, to be made):
-    called once for every message that goes, timed out, hidden, cleared, replaced or ended by its
-    button. Raven reports only the button today, and a message has no identity, so the end of one
-    message among several can't be told. Planned in [Overlays and pagers: Toast](issues/archive/0243-overlays-and-pagers-toast.md).
+    int id, int by_action, void* user_data)` (required for `showSnackbar`'s result, made in
+    `2df5ca5`): called once for every message that goes, timed out, hidden, cleared, replaced or
+    ended by its button (after the action callback), once the toast is done changing. Raven
+    reported only the button, and a message had no identity, so the end of one message among
+    several couldn't be told. Ids start at 1 and aren't reused; the messages of `Rtoast_show` and
+    the notifications have them too. With a C test in `tests/test_more_widgets.c`. Planned in [Overlays and pagers: Toast](issues/archive/0243-overlays-and-pagers-toast.md).
 
 16. **`Rpdf_view_set_zoom_changed_callback(Rid view, RPdfZoomChangedCallback callback, void*
     user_data)`**, `typedef void (*RPdfZoomChangedCallback)(Rid view, float zoom, RPdfFit fit, void*

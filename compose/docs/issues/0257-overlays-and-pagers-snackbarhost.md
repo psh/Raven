@@ -7,7 +7,7 @@ status: open
 Bind Raven's Toast as Material 3's `SnackbarHost` and `SnackbarHostState`, with kinds and
 stacking. Spec: [8: Snackbars](../spec.md#snackbars-phase-5) and section 12. Planned in [Overlays and pagers: Toast](archive/0243-overlays-and-pagers-toast.md).
 
-**Depends on:** [Raven: toast message ids](0255-raven-toast-message-ids.md).
+**Depends on:** [Raven: toast message ids](archive/0255-raven-toast-message-ids.md).
 
 ## Deliverables
 
