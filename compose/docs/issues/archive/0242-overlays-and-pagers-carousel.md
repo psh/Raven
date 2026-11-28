@@ -35,4 +35,4 @@ Resolved on 2026-11-26, with the user, in three rounds: designed into
 - **No Raven change, no new harness API**; the `carousel` port has no port gaps.
 
 Filed as [Overlays and pagers: HorizontalPager and VerticalPager](0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
-and [samples/carousel](../0254-samples-carousel.md).
+and [samples/carousel](0254-samples-carousel.md).

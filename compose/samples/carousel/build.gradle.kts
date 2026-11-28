@@ -1,0 +1,22 @@
+plugins {
+    id("raven.native-target")
+    alias(libs.plugins.kotlin.compose)
+}
+
+kotlin {
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        binaries.executable {
+            entryPoint = "raven.sample.carousel.main"
+            baseName = "carousel"
+        }
+    }
+    sourceSets.nativeMain.dependencies {
+        implementation(project(":compose-raven-foundation"))
+    }
+    sourceSets.nativeTest {
+        dependencies {
+            implementation(project(":compose-raven-test"))
+            implementation(project(":compose-raven-native"))
+        }
+    }
+}

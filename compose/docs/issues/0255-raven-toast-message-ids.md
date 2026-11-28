@@ -8,7 +8,7 @@ Give each message of Raven's Toast an id, a way to hide it, and a callback when 
 `showSnackbar` can tell how its message ended. Spec:
 [11: change 15](../spec.md#11-required-raven-changes). Planned in [Overlays and pagers: Toast](archive/0243-overlays-and-pagers-toast.md).
 
-**Depends on:** [samples/carousel](0254-samples-carousel.md), the ticket before it in phase 5's
+**Depends on:** [samples/carousel](archive/0254-samples-carousel.md), the ticket before it in phase 5's
 implementation sequence.
 
 ## Deliverables

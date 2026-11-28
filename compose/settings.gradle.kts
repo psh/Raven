@@ -31,6 +31,7 @@ include(
     ":compose-raven-mcp",
     ":samples:animations",
     ":samples:hello",
+    ":samples:carousel",
     ":samples:music",
     ":samples:components",
     ":samples:editor",

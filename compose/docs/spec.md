@@ -1288,8 +1288,10 @@ shaped after Compose Foundation's pagers, with Raven's dots, arrows, loop and au
   (`initialPage`, a restored page, a move before the pages are composed) is shown as the frame
   settles, once the page is there; it is clamped to `pageCount` first, so an `initialPage` past
   the pages shows the last. When pages go, Raven keeps the page shown or clamps it, and the state
-  reads it as the frame settles. `autoplay` is given in seconds; Raven takes 50 ms at least. A
-  state given to a second pager logs an error, as the scroll states do.
+  reads it as the frame settles. `autoplay` is given in seconds; Raven takes 50 ms at least. One
+  state can pass from one pager to another put in its place (`samples/carousel` swaps
+  `HorizontalPager` for `VerticalPager`): the new one takes the state as the frame settles, once the
+  old one has let it go. A state given to two pagers at once logs an error, once.
 - The XML translator turns `<Carousel>` into `HorizontalPager` or `VerticalPager` by its
   `Orientation`, over a hoisted `rememberPagerState` with `Page` as `initialPage`, and `Loop`,
   `Autoplay` (as `.seconds`), `Indicators` and `Arrows` as their parameters. Each child element is
@@ -2224,7 +2226,9 @@ the page shown in a label, check boxes for `loop`, `autoplay` (three seconds) an
 which swaps `HorizontalPager` for `VerticalPager` over the same hoisted `PagerState`, and Back and
 Next buttons, Next going back to the first page from the last when it doesn't loop, as the C
 example does. No port gaps; the headless test checks each control
-([Overlays and pagers: Carousel](issues/archive/0242-overlays-and-pagers-carousel.md)).
+([Overlays and pagers: Carousel](issues/archive/0242-overlays-and-pagers-carousel.md)). Built: the
+C example's Back is disabled on the first page unless the pages loop, and Next reads "Get started"
+on the last; the port does the same.
 
 ### `samples/plot` (phase 5)
 

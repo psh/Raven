@@ -79,7 +79,7 @@ samples/notepad/launch-notepad README.md
 
 The scripts are `launch-hello`, `launch-components`, `launch-notepad`, `launch-notes`, `launch-overlay`,
 `launch-themes`, `launch-animations`, `launch-glass`, `launch-editor`, `launch-workspace`,
-`launch-music`, `launch-resources`, `launch-effects`, `launch-viewport-opengl`, `launch-viewport-vulkan` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
+`launch-music`, `launch-resources`, `launch-effects`, `launch-carousel`, `launch-viewport-opengl`, `launch-viewport-vulkan` and `launch-xml-translator`; they share `samples/launch-sample`, which picks the target (`macosArm64` on
 an Apple silicon Mac, `linuxX64` on Linux), links the release executable with Gradle and starts it.
 
 `samples/notes` is the list of notes every language's samples have. Started with `RAVEN_MCP=1`, it
@@ -119,6 +119,10 @@ a theme of its own, Markdown), runs the same way: `./gradlew :samples:themes:run
 or `samples/themes/build/bin/<target>/releaseExecutable/themes.kexe`. It reads the theme files and
 `notes.md` from Raven's `examples/themes`, whose path the build writes into it; give another folder
 as its first argument. Edit those files while it runs and the window follows.
+
+`samples/carousel`, the port of Raven's `examples/carousel` (an onboarding in five pages over
+`HorizontalPager`, with switches for loop, autoplay and vertical pages, and Back and Next), runs
+the same way: `./gradlew :samples:carousel:runReleaseExecutableMacosArm64`, or `carousel.kexe`.
 
 `samples/effects`, the port of Raven's `examples/effects` (Raven's eight built-in effects as cards,
 and two shaders of the application, one reading what is behind it), runs the same way:

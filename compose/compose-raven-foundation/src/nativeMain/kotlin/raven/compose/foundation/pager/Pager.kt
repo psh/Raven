@@ -100,9 +100,10 @@ public class PagerState(currentPage: Int = 0, pageCount: () -> Int) {
         if (page != currentPage) currentPage = page
     }
 
-    internal fun attach(widget: Rid): Boolean {
+    /** Takes [widget]; false when another pager holds the state, which logs an error when [warn]. */
+    internal fun attach(widget: Rid, warn: Boolean = true): Boolean {
         if (carousel != null && carousel != widget) {
-            warnSecondScrollable("PagerState")
+            if (warn) warnSecondScrollable("PagerState")
             return false
         }
         carousel = widget
@@ -152,19 +153,32 @@ private class PagerFollower : WidgetFollower {
             if (value === field) return
             widget?.let { box ->
                 attached?.detach(box)
-                attached = value?.takeIf { it.attach(box) }
+                attached = value?.takeIf { it.attach(box, warn = false) }
             }
             field = value
         }
 
+    // Whether this pager said once that another holds its state.
+    private var warned = false
+
     override fun attach(widget: Rid) {
         this.widget = widget
-        attached = state?.takeIf { it.attach(widget) }
+        attached = state?.takeIf { it.attach(widget, warn = false) }
     }
 
     override fun follow(widget: Rid) = Unit
 
     override fun settle(widget: Rid) {
+        // A pager put in another's place (HorizontalPager swapped for VerticalPager over one state)
+        // can be attached before the other lets the state go: it takes the state once it is free.
+        // Still held once the frame's changes are in, the other pager is there too: that is an error.
+        if (attached == null) {
+            attached = state?.takeIf { it.attach(widget, warn = false) }
+            if (attached == null && state != null && !warned) {
+                warnSecondScrollable("PagerState")
+                warned = true
+            }
+        }
         attached?.settle(widget)
     }
 

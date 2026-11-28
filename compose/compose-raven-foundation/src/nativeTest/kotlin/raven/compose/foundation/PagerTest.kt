@@ -22,12 +22,14 @@ import raven.cinterop.Rwidget_focus
 import raven.cinterop.Rwidget_get_window
 import raven.cinterop.Rwindow_inject_mouse_button
 import raven.cinterop.Rwindow_inject_mouse_move
+import raven.compose.foundation.layout.Column
 import raven.compose.foundation.layout.size
 import raven.compose.foundation.pager.HorizontalPager
 import raven.compose.foundation.pager.PagerState
 import raven.compose.foundation.pager.VerticalPager
 import raven.compose.foundation.pager.rememberPagerState
 import raven.compose.ui.Modifier
+import raven.compose.ui.layoutWarningSink
 import raven.compose.ui.input.key.Key
 import raven.compose.ui.test.RavenTestScope
 import raven.compose.ui.test.runRavenTest
@@ -163,5 +165,42 @@ class PagerTest {
         assertEquals(2, state!!.currentPage)
         assertEquals(2, Rcarousel_get_page(pager()), "restored, and shown")
         assertEquals(4, state!!.pageCount)
+    }
+
+    @Test
+    fun aPagerSwappedForAnotherKeepsTheStateAndTwoAtOnceWarn() = runRavenTest {
+        val warnings = mutableListOf<String>()
+        val sink = layoutWarningSink
+        layoutWarningSink = { warnings += it }
+        try {
+            var vertical by mutableStateOf(false)
+            var twice by mutableStateOf(false)
+            val state = PagerState(2) { 4 }
+            setContent {
+                Column {
+                    if (vertical) {
+                        VerticalPager(state, Modifier.size(300.dp, 200.dp).testTag("pager")) { Text("page $it") }
+                    } else {
+                        HorizontalPager(state, Modifier.size(300.dp, 200.dp).testTag("pager")) { Text("page $it") }
+                    }
+                    if (twice) HorizontalPager(state, Modifier.size(300.dp, 200.dp)) { Text("again $it") }
+                }
+            }
+            assertEquals(2, Rcarousel_get_page(pager()))
+            vertical = true
+            waitForIdle()
+            assertEquals(R_VERTICAL, Rcarousel_get_orientation(pager()))
+            assertEquals(2, Rcarousel_get_page(pager()), "the new pager shows the state's page")
+            runBlocking { state.scrollToPage(3) }
+            assertEquals(3, Rcarousel_get_page(pager()), "and follows it")
+            assertEquals(emptyList(), warnings)
+
+            twice = true
+            waitForIdle()
+            frame()
+            assertEquals(listOf("PagerState: a state follows one scrollable at most, so only the first uses it"), warnings)
+        } finally {
+            layoutWarningSink = sink
+        }
     }
 }
