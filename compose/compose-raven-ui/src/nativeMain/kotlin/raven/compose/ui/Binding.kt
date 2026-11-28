@@ -105,6 +105,13 @@ import raven.cinterop.Rtree_view_get_selection_count
 import raven.cinterop.Rtree_view_set_activated_callback
 import raven.cinterop.Rtree_view_set_context_callback
 import raven.cinterop.Rtree_view_set_selection_changed_callback
+import raven.cinterop.Rtree_item_is_expanded
+import raven.cinterop.Rtree_item_set_expanded
+import raven.cinterop.Rtree_item_get_child_count
+import raven.cinterop.Rtree_item_get_child
+import raven.cinterop.Rtree_view_get_item_count
+import raven.cinterop.Rtree_view_get_item
+import raven.cinterop.Rtree_view_set_expanded_callback
 import raven.cinterop.Rtable_get_selected
 import raven.cinterop.Rtable_set_selected
 import raven.cinterop.Rtable_get_sort_column
@@ -258,6 +265,14 @@ public fun <L : Any> Updater<RavenNode>.bind(handler: L?, event: Event<L>): Unit
 /** Shows [value] as the composed value of [controlled], when it changes. */
 @InternalComposeRavenApi
 public fun <T> Updater<RavenNode>.bind(value: T, controlled: ControlledValue<T>): Unit = set(value) { compose(controlled, it) }
+
+/**
+ * Shows `value()` as the composed value of [controlled] whenever [key] changes, computed as the
+ * change is applied rather than as it composes: for a value of what an earlier binding makes, a
+ * tree's expanded items once its items are added.
+ */
+@InternalComposeRavenApi
+public fun <T> Updater<RavenNode>.bind(key: Any?, controlled: ControlledValue<T>, value: () -> T): Unit = set(key) { compose(controlled, value()) }
 
 /** Sets how the node places its children, which places them again when it changes. */
 @InternalComposeRavenApi
@@ -896,6 +911,40 @@ public val TreeViewSelection: ControlledValue<Set<Rid>> = ControlledValue(
         items.forEach { Rtree_item_set_selected(it, R_TRUE) }
     },
 )
+
+/**
+ * A tree view's expanded items, as Raven's item handles, every item the tree has (shown or not).
+ * Raven calls no callback when it is written.
+ */
+@InternalComposeRavenApi
+public val TreeViewExpansion: ControlledValue<Set<Rid>> = ControlledValue(
+    read = { tree -> LinkedHashSet<Rid>().also { open -> forEachTreeItem(tree) { if (Rtree_item_is_expanded(it) == R_TRUE) open += it } } },
+    write = { tree, open ->
+        forEachTreeItem(tree) { item ->
+            val wanted = item in open
+            if ((Rtree_item_is_expanded(item) == R_TRUE) != wanted) Rtree_item_set_expanded(item, if (wanted) R_TRUE else R_FALSE)
+        }
+    },
+)
+
+/** The tree view opened or closed an item itself (Raven change 14): the item, and whether it is open now. */
+@InternalComposeRavenApi
+public val TreeViewExpandedChanged: Event<(item: Rid, expanded: Boolean) -> Unit> = Event(marks = TreeViewExpansion) { widget, userData ->
+    Rtree_view_set_expanded_callback(widget, onTreeViewExpandedChanged, userData)
+}
+
+/** Calls [action] for every item of [tree], parents before their children. */
+private fun forEachTreeItem(tree: Rid, action: (Rid) -> Unit) {
+    fun visit(item: Rid) {
+        action(item)
+        repeat(Rtree_item_get_child_count(item)) { visit(Rtree_item_get_child(item, it)) }
+    }
+    repeat(Rtree_view_get_item_count(tree)) { visit(Rtree_view_get_item(tree, it)) }
+}
+
+private val onTreeViewExpandedChanged = staticCFunction { _: Rid, item: Rid, expanded: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TreeViewExpandedChanged) { it(item, expanded == R_TRUE) }
+}
 
 /** The user changed a tree view's selection: the items selected now. */
 @InternalComposeRavenApi

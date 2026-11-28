@@ -34,4 +34,4 @@ Resolved on 2026-11-26, with the user, in one round: designed into
   item is already controlled; the item at a point waits for drags inside the app.
 
 Filed as [Raven: tree expand callback](0237-raven-tree-expand-callback.md) and
-[Lists at scale: TreeView expansion and revealItem](../0238-lists-at-scale-treeview-expansion-and-revealitem.md).
+[Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md).

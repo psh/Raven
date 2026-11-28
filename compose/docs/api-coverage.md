@@ -8,13 +8,13 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-27, when TileView was bound.*
+*Last updated 2026-11-27, when TreeView's expansion was bound over Raven's new expand callback.*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 581 of 1,704 (34%) |
+| Functions used | 370 of 1,157 (31%) | 587 of 1,705 (34%) |
 | Widget types bound | 36 of 51 | 44 of 58 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
@@ -36,7 +36,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 
 | Header | Used | Declared | Coverage | Main reason for the rest |
 |---|---:|---:|---:|---|
-| `raven_controls.h` | 163 | 557 | 29% | Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Toast unbound; the Table's editing, check and progress columns, cell colours, frozen columns and several rows selected; the tile view's sections, drags and `get_item_at`; the pickers' time zones and instants; getters |
+| `raven_controls.h` | 169 | 558 | 30% | Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Toast unbound; the Table's editing, check and progress columns, cell colours, frozen columns and several rows selected; the tile view's sections, drags and `get_item_at`; the pickers' time zones and instants; getters |
 | `raven_tools.h` | 8 | 231 | 3% | NodeGraph, Timeline, BlockEditor, DiffView unbound (phase 5 fog) |
 | `raven_window.h` | 46 | 108 | 43% | drag and drop inside the app, window themes, shortcuts, the inspector, mobile insets and keyboard, getters |
 | `raven_text_editor.h` | 40 | 94 | 43% | find bar, folding, spell checking, several cursors, search, the language server; the token at a position, lines and length, `set_syntax`, `set_markdown`, `is_completing` (not needed) |
@@ -64,7 +64,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
 | `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
-| **Total** | **581** | **1,704** | **34%** | |
+| **Total** | **587** | **1,705** | **34%** | |
 
 ## Not needed by design
 
@@ -167,8 +167,9 @@ SizeBox and Canvas are the other unbound widget types, which Compose idioms cove
   Not yet bound: the find bar, folding, spell checking, several cursors, search and replace, and
   the language server.
 - **TreeView, ListView**: item-level operations. `ListViewState.revealItem` covers scrolling a
-  ListView row into view; `TreeViewState.revealItem`, controlled expansion and its Raven change are
-  filed ([Lists at scale: TreeView expansion and item operations](issues/archive/0217-lists-at-scale-treeview-expansion-and-item-operations.md)).
+  ListView row into view; `TreeViewState.revealItem` and controlled expansion, over Raven's new
+  expand callback, are bound ([Lists at scale: TreeView expansion and revealItem](issues/archive/0238-lists-at-scale-treeview-expansion-and-revealitem.md)).
+  The item at a point waits for drags inside the app.
   The selected item is controlled state already; the item at a point waits for drags inside the
   app.
 - **Textures**: no SVG data in memory or async loading from bytes (`Rtexture_create_from_svg`,

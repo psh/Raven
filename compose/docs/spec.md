@@ -1029,8 +1029,8 @@ Added for the `overlay` and `glass` ports:
   out of place among siblings the rest are destroyed and added again, keeping their expansion.
   - Selection is a controlled set of keys.
   - Expansion stays Raven's, because Raven reports no expansion. `initiallyExpanded` applies to
-    new items only. From phase 5 expansion is controlled
-    ([TreeView expansion](#treeview-expansion-phase-5)).
+    new items only. From phase 5 expansion is controlled, `expanded` and `onExpandedChange`
+    replacing `initiallyExpanded` ([TreeView expansion](#treeview-expansion-phase-5)).
   - `contextMenuItems` opens a menu at the pointer.
 
 ### Scroll position (phase 3)
@@ -1243,7 +1243,21 @@ From phase 5 `TreeView`'s expansion is the app's state, over Raven change 14, an
 - **Item operations**: a tab is renamed through `Tab(title)`, as Raven reads its slot's title when it
   paints; the selected item is already controlled; the item at a point (`Rtree_view_get_item_at`)
   waits for drags inside the app, its only use.
-- The XML translator's `Expanded` on `<Item>` gives the initial `expanded` set.
+- **The signature** from phase 5: `TreeView(roots, children, itemText, key, selection,
+  onSelectionChange, expanded, onExpandedChange, multiSelect = false, onActivate, contextMenuItems,
+  itemIcon, modifier, state = rememberTreeViewState())`. `expanded` and `onExpandedChange` are
+  required, as a default that refuses every change would leave the arrows dead.
+- **Built over** ui's `TreeViewExpansion`, a controlled set of item handles, and
+  `TreeViewExpandedChanged`, over change 14. The composed set is resolved to handles as it is
+  applied, after the items new to the tree are added (a deferred `bind`), so an item restored open
+  opens once it is there. `onExpandedChange` is given what Raven shows now, plus the keys of the set
+  that have no items yet, so the two branches a selection opens arrive as one set.
+- **`revealItem`** finds the item by searching the data (`children` asked along the way), and is
+  scrolled to on the composition after `onExpandedChange`, once only.
+- The XML translator maps `<TreeView>` and its nested `<Item Text>`s, each known by its place
+  (`"0"`, `"0.1"`), with maps of the texts and the children. Its `Expanded="true"` items give the
+  initial `expanded` set, the selection and the expansion are hoisted state, and `Icon` is a
+  warning, as an icon is a painter given through `itemIcon`.
 
 ### Pagers (phase 5)
 
@@ -2058,6 +2072,7 @@ This sample translates Raven XML into compose-raven source.
   | `Spacer` | `Spacer` |
   | `Table`, with `<Column>`s and `<Row>`s (phase 5) | `Table`, the rows a `listOf` ([Table](#table-phase-5)) |
   | `TileView` (phase 5) | `TileView`, its items left to the app ([TileView](#tileview-phase-5)) |
+  | `TreeView` with nested `<Item>`s (phase 5) | `TreeView`, its items by place ([TreeView expansion](#treeview-expansion-phase-5)) |
   | `Slot.*`, `Width`/`Height`, `Min*`/`Max*` | Modifiers |
   | `Spacing` | `Arrangement.spacedBy` |
 - **Faithful output**: wherever the XML relies on Raven's `Fill` default, the output adds
@@ -2547,7 +2562,7 @@ Decided in: [Node model and Applier](issues/archive/0007-node-model-and-applier.
 | `TileView`'s tiles are described by data (`TileContent`), not composed; no drags out yet | no tile view in Compose | [8](#tileview-phase-5) |
 | `contentType` is accepted and ignored, and there are no sticky headers, `animateItem` or prefetching | compositions reused by content type | [8](#lazy-virtualisation-phase-5) |
 | `ListView` and `TreeView` take data and text, not composable rows | rows are composables in lazy lists | [8](#8-component-vocabulary) |
-| `TreeView` expansion is Raven's, not controlled | n/a (no tree in Compose Foundation) | [8](#8-component-vocabulary) |
+| `TreeView` expansion is a controlled set of keys (Raven's own in phase 3), and `children` is asked for only for the items shown | n/a (no tree in Compose Foundation) | [8](#treeview-expansion-phase-5) |
 | `TabView` holds its pages | Material's `TabRow` is separate from the content | [8](#8-component-vocabulary) |
 | `LazyVerticalGrid` has `GridCells.Fixed` only and one spacing, and a `minCellSize` | `Adaptive` cells, separate arrangements | [8](#8-component-vocabulary) |
 | `filterQuality` is a property of `ImageBitmap`, not a parameter of `Image` | `Image(filterQuality)` | [8](#images-and-resources-phase-3) |

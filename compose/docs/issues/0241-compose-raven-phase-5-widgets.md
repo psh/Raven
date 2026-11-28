@@ -42,7 +42,7 @@ Batch ten is built straight after batch eight; batch nine's tickets follow it, o
   bindings regenerated, an entry in spec section 11, and an on-hold upstream ticket.
 - **Implementation tickets**: ordinary tracker tickets (no `wayfinder:` field), each linking its
   spec section, with Deliverables. They are built **in sequence** after phase 5's last,
-  [Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md):
+  [Lists at scale: TreeView expansion and revealItem](archive/0238-lists-at-scale-treeview-expansion-and-revealitem.md):
   each batch's first implementation ticket names the previous batch's last in its **Depends on:**
   line. Decision tickets have blocking edges only within their batch, so the design can run ahead
   of the build.

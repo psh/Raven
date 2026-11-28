@@ -8,7 +8,7 @@ Bind Raven's Carousel as `HorizontalPager` and `VerticalPager` with a `PagerStat
 [8: Pagers](../spec.md#pagers-phase-5) and section 12. Planned in
 [Overlays and pagers: Carousel](archive/0242-overlays-and-pagers-carousel.md).
 
-**Depends on:** [Lists at scale: TreeView expansion and revealItem](0238-lists-at-scale-treeview-expansion-and-revealitem.md).
+**Depends on:** [Lists at scale: TreeView expansion and revealItem](archive/0238-lists-at-scale-treeview-expansion-and-revealitem.md).
 
 ## Deliverables
 

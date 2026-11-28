@@ -16,7 +16,6 @@ import raven.cinterop.Rtree_item_get_child
 import raven.cinterop.Rtree_item_get_child_count
 import raven.cinterop.Rtree_item_get_text
 import raven.cinterop.Rtree_item_is_expanded
-import raven.cinterop.Rtree_item_set_expanded
 import raven.cinterop.Rtree_view_get_item
 import raven.cinterop.Rtree_view_get_item_at
 import raven.cinterop.Rtree_view_get_item_count
@@ -175,7 +174,7 @@ class ListsTest {
         var roots by mutableStateOf(emptyList<Node>())
         var selection by mutableStateOf(emptySet<Any>())
         setContent {
-            TreeView(roots, { it.children }, { it.name }, { it.id }, selection, {}, modifier = Modifier.testTag("tree"))
+            TreeView(roots, { it.children }, { it.name }, { it.id }, selection, {}, emptySet(), {}, modifier = Modifier.testTag("tree"))
         }
         // Items and their selection in one change, as an app adds and selects an object.
         roots = listOf(Node(1, "A"), Node(2, "B"))
@@ -208,15 +207,18 @@ class ListsTest {
         val docs = Node(1, "Docs", listOf(Node(11, "a.md"), Node(12, "b.md")))
         val src = Node(2, "Src", listOf(Node(21, "main.kt")))
         var roots by mutableStateOf(listOf(docs, src))
+        var expanded by mutableStateOf(emptySet<Any>())
         setContent {
-            TreeView(roots, { it.children }, { it.name }, { it.id }, emptySet(), {}, modifier = Modifier.testTag("tree"))
+            TreeView(roots, { it.children }, { it.name }, { it.id }, emptySet(), {}, expanded, { expanded = it }, modifier = Modifier.testTag("tree"))
         }
         val tree = widget("tree")
         assertEquals(listOf("Docs", "  a.md", "  b.md", "Src", "  main.kt"), treeTexts(tree))
         val docsItem = item(tree, 0)
         val srcItem = item(tree, 1)
-        // The user expands Src.
-        Rtree_item_set_expanded(srcItem, R_TRUE)
+        // Src is expanded.
+        expanded = setOf(2)
+        waitForIdle()
+        assertEquals(R_TRUE, Rtree_item_is_expanded(srcItem))
 
         // Renamed: the same item, re-texted.
         roots = listOf(docs.copy(name = "Documents"), src)
@@ -239,21 +241,6 @@ class ListsTest {
     }
 
     @Test
-    fun onlyNewItemsStartExpanded() = runRavenTest {
-        var roots by mutableStateOf(listOf(Node(1, "A", listOf(Node(11, "a")))))
-        setContent {
-            TreeView(roots, { it.children }, { it.name }, { it.id }, emptySet(), {}, initiallyExpanded = { true }, modifier = Modifier.testTag("tree"))
-        }
-        val tree = widget("tree")
-        assertEquals(R_TRUE, Rtree_item_is_expanded(item(tree, 0)))
-        Rtree_item_set_expanded(item(tree, 0), R_FALSE)
-        roots = roots + Node(2, "B", listOf(Node(21, "b")))
-        waitForIdle()
-        assertEquals(R_FALSE, Rtree_item_is_expanded(item(tree, 0)), "the user's choice stays")
-        assertEquals(R_TRUE, Rtree_item_is_expanded(item(tree, 1)))
-    }
-
-    @Test
     fun aTreesSelectionIsAControlledSetOfKeys() = runRavenTest {
         var selection by mutableStateOf(setOf<Any>(2))
         var take by mutableStateOf(true)
@@ -263,7 +250,7 @@ class ListsTest {
         setContent {
             TreeView(
                 roots, { it.children }, { it.name }, { it.id }, selection,
-                { reported += it; if (take) selection = it },
+                { reported += it; if (take) selection = it }, emptySet(), {},
                 onActivate = { activated += it.name },
                 modifier = Modifier.testTag("tree").fillMaxSize(),
             )
@@ -297,7 +284,7 @@ class ListsTest {
         setContent {
             TreeView(
                 listOf(Node(1, "A"), Node(2, "B"), Node(3, "C")), { it.children }, { it.name }, { it.id },
-                setOf(1, 3), {}, multiSelect = true, modifier = Modifier.testTag("tree"),
+                setOf(1, 3), {}, emptySet(), {}, multiSelect = true, modifier = Modifier.testTag("tree"),
             )
         }
         val tree = widget("tree")
@@ -310,7 +297,7 @@ class ListsTest {
         val chosen = mutableListOf<String>()
         setContent {
             TreeView(
-                listOf(Node(1, "A"), Node(2, "B")), { it.children }, { it.name }, { it.id }, emptySet(), {},
+                listOf(Node(1, "A"), Node(2, "B")), { it.children }, { it.name }, { it.id }, emptySet(), {}, emptySet(), {},
                 contextMenuItems = { node -> asked += node?.name; listOf(ContextMenuItem("Rename") { chosen += "Rename ${node?.name}" }) },
                 modifier = Modifier.testTag("tree").fillMaxSize(),
             )
@@ -342,7 +329,7 @@ class ListsTest {
             painter = remember { BitmapPainter(ImageBitmap(2, 2, ByteArray(16) { -1 })) }
             val icon = if (withIcon) painter else null
             TreeView(
-                listOf(Node(1, "A")), { it.children }, { it.name }, { it.id }, emptySet(), {},
+                listOf(Node(1, "A")), { it.children }, { it.name }, { it.id }, emptySet(), {}, emptySet(), {},
                 itemIcon = { icon }, modifier = Modifier.testTag("tree"),
             )
         }

@@ -180,6 +180,9 @@ private fun EditorWindow(
                         editor.objects, { emptyList() }, { it.name }, { it.id },
                         selection = setOfNotNull(editor.selectedId),
                         onSelectionChange = { editor.selectedId = it.firstOrNull() as Int? },
+                        // The objects have no children, so nothing opens.
+                        expanded = emptySet(),
+                        onExpandedChange = {},
                         modifier = Modifier.weight(1f).fillMaxWidth().testTag("outliner"),
                     )
                 }

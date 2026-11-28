@@ -321,6 +321,49 @@ class TranslatorTest {
     }
 
     @Test
+    fun aTreeViewsExpandedItemsAreTheInitialExpandedSet() {
+        val translation = translate(
+            el(
+                "TreeView", "Name" to "library",
+                children = listOf(
+                    el("Item", "Text" to "Listen now"),
+                    el(
+                        "Item", "Text" to "Playlists", "Expanded" to "true",
+                        children = listOf(el("Item", "Text" to "Favourites"), el("Item", "Text" to "Focus", "Icon" to "raven:folder")),
+                    ),
+                ),
+            ),
+        )
+        assertEquals(
+            """
+            var library by remember { mutableStateOf(emptySet<Any>()) }
+            var libraryExpanded by remember { mutableStateOf(setOf<Any>("1")) }
+            val libraryTexts = mapOf(
+                "0" to "Listen now",
+                "1" to "Playlists",
+                "1.0" to "Favourites",
+                "1.1" to "Focus",
+            )
+            val libraryChildren = mapOf(
+                "1" to listOf("1.0", "1.1"),
+            )
+            TreeView(
+                listOf("0", "1"),
+                { libraryChildren[it].orEmpty() },
+                { libraryTexts.getValue(it) },
+                { it },
+                library,
+                { library = it },
+                libraryExpanded,
+                { libraryExpanded = it },
+            )
+            """.trimIndent(),
+            body(translation),
+        )
+        assertEquals(listOf("Icon: an icon is a painter given through itemIcon"), translation.warnings.map { it.message })
+    }
+
+    @Test
     fun aTextInputsPasswordMaxLengthAndActionAreTranslated() {
         val translation = translate(el("TextInput", "Password" to "true", "MaxLength" to "20", "OnCommitted" to "login.submit"))
         val code = translation.code

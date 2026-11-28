@@ -2,6 +2,7 @@ package raven.compose.foundation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import raven.cinterop.R_FALSE
 import raven.cinterop.R_INVALID_ID
@@ -11,7 +12,6 @@ import raven.cinterop.R_WIDGET_TREE_VIEW
 import raven.cinterop.Rid
 import raven.cinterop.Rtree_item_destroy
 import raven.cinterop.Rtree_item_is_expanded
-import raven.cinterop.Rtree_item_set_expanded
 import raven.cinterop.Rtree_item_set_icon
 import raven.cinterop.Rtree_item_set_selected
 import raven.cinterop.Rtree_item_set_text
@@ -20,6 +20,7 @@ import raven.cinterop.Rtree_view_clear_selection
 import raven.cinterop.Rtree_view_get_selection
 import raven.cinterop.Rtree_view_get_selection_count
 import raven.cinterop.Rtree_view_set_multi_select
+import raven.cinterop.Rtree_view_scroll_to_item
 import raven.cinterop.Rwidget_get_window
 import raven.compose.ui.ListViewActivated
 import raven.compose.ui.ListViewItemText
@@ -31,6 +32,8 @@ import raven.compose.ui.Property
 import raven.compose.ui.RavenWidget
 import raven.compose.ui.TreeViewActivated
 import raven.compose.ui.TreeViewContext
+import raven.compose.ui.TreeViewExpandedChanged
+import raven.compose.ui.TreeViewExpansion
 import raven.compose.ui.TreeViewSelection
 import raven.compose.ui.TreeViewSelectionChanged
 import raven.compose.ui.WidgetDescriptor
@@ -43,7 +46,7 @@ private val ListViewWidget = WidgetDescriptor(
     "ListView", R_WIDGET_LIST_VIEW, events = listOf(ListViewItemText, ListViewSelectionChanged, ListViewActivated),
 )
 private val TreeViewWidget = WidgetDescriptor(
-    "TreeView", R_WIDGET_TREE_VIEW, events = listOf(TreeViewSelectionChanged, TreeViewActivated, TreeViewContext),
+    "TreeView", R_WIDGET_TREE_VIEW, events = listOf(TreeViewSelectionChanged, TreeViewExpandedChanged, TreeViewActivated, TreeViewContext),
 )
 
 /**
@@ -90,11 +93,17 @@ public fun <T> ListView(
  *
  * - The selection is a controlled set of keys, one at most unless [multiSelect]: the user's change
  *   calls [onSelectionChange], and one the app doesn't take reverts.
- * - Raven expands and collapses items itself and reports neither, so expansion isn't controlled:
- *   [initiallyExpanded] says whether an item new to the tree starts expanded.
+ * - The expansion is too: [expanded] holds the keys of the open items, and the user's change (the
+ *   arrow, a double click, Left and Right, the branches a selection opens) calls
+ *   [onExpandedChange]. Hold it in `rememberSaveable` to keep it. A collapse that moves the
+ *   selection to the collapsed item calls [onSelectionChange] too.
+ * - [children] is asked for only for the items shown (the roots, and the children of open items),
+ *   so their arrows show: a file tree lists a folder once its parent is open. Items Raven has stay
+ *   when their branch closes.
  * - [onActivate] gets an item double-clicked, or Enter pressed on it.
  * - [contextMenuItems], given the item right-clicked (selected first) or null for the empty space,
  *   lists the menu opened at the pointer; none opens when it is null or the list is empty.
+ * - [state] reveals an item by key, opening the branches above it.
  */
 @Composable
 public fun <T> TreeView(
@@ -104,38 +113,69 @@ public fun <T> TreeView(
     key: (T) -> Any,
     selection: Set<Any>,
     onSelectionChange: (Set<Any>) -> Unit,
+    expanded: Set<Any>,
+    onExpandedChange: (Set<Any>) -> Unit,
     multiSelect: Boolean = false,
-    initiallyExpanded: (T) -> Boolean = { false },
     onActivate: (T) -> Unit = {},
     contextMenuItems: ((T?) -> List<ContextMenuItem>)? = null,
     itemIcon: ((T) -> Painter?)? = null,
     modifier: Modifier = Modifier,
+    state: TreeViewState = rememberTreeViewState(),
 ) {
     require(multiSelect || selection.size <= 1) { "a TreeView without multiSelect selects one item at most, not ${selection.size}" }
     val mirror = remember { TreeMirror<T>() }
     val reportError = rememberErrorReporter()
     val menu = remember(reportError) { ContextMenu(reportError) }
     DisposableEffect(menu) { onDispose { menu.discard() } }
-    val data = TreeData(mirror, roots, children, itemText, key, initiallyExpanded, itemIcon, selection)
+    val data = TreeData(mirror, roots, children, itemText, key, expanded, itemIcon, selection)
+    state.reveal = { target -> mirror.reveal(target, data, onExpandedChange) }
     val onContext: (Rid, Float, Float) -> Unit = { item, x, y ->
         val entries = contextMenuItems?.invoke(mirror.itemOf(item)).orEmpty()
         menu.open(entries, Rwidget_get_window(mirror.tree), x, y)
     }
     RavenWidget(TreeViewWidget, modifier, {
         bind(multiSelect, MultiSelect)
-        // The items before the selection, which is of their handles.
+        // The items before the expansion and the selection, which are of their handles.
         bind(data, TreeItems)
+        bind(data, TreeViewExpansion) { mirror.handlesOf(expanded) }
+        bind(data, TreeReveal)
         bind(data.selectedHandles(selection), TreeViewSelection)
         bind({ handles: Set<Rid> -> onSelectionChange(handles.mapNotNullTo(LinkedHashSet()) { mirror.keyOf(it) }) }, TreeViewSelectionChanged)
+        bind({ _: Rid, _: Boolean -> onExpandedChange(mirror.expandedKeys(expanded)) }, TreeViewExpandedChanged)
         bind({ item: Rid -> mirror.itemOf(item)?.let(onActivate) ?: Unit }, TreeViewActivated)
         bind(if (contextMenuItems != null) onContext else null, TreeViewContext)
     })
 }
 
+/**
+ * What an app can ask of a [TreeView]: [revealItem]. Raven can't report the tree's position, so it
+ * isn't saved; on a state not given to a tree, [revealItem] does nothing.
+ */
+@Stable
+public class TreeViewState internal constructor() {
+    internal var reveal: ((Any) -> Unit)? = null
+
+    /**
+     * Shows the item of [key]: one inside a closed branch calls `onExpandedChange` with the branches
+     * above it added, and is scrolled to once they are open; a shown one is scrolled to at once
+     * (`Rtree_view_scroll_to_item`).
+     */
+    public suspend fun revealItem(key: Any) {
+        reveal?.invoke(key)
+    }
+}
+
+/** A [TreeViewState]. */
+@Composable
+public fun rememberTreeViewState(): TreeViewState = remember { TreeViewState() }
+
 private val MultiSelect = Property<Boolean> { widget, multi -> Rtree_view_set_multi_select(widget, if (multi) R_TRUE else R_FALSE) }
 
 /** Matches the tree's items to the data. Its value is new on each composition, so it does each time. */
 private val TreeItems = Property<TreeData<*>> { widget, data -> data.sync(widget) }
+
+/** Scrolls to the item `revealItem` asked for, once the expansion above it is shown. */
+private val TreeReveal = Property<TreeData<*>> { _, data -> data.mirror.revealPending() }
 
 /** What a TreeView is given in one composition, for its [TreeMirror]. */
 private class TreeData<T>(
@@ -144,7 +184,7 @@ private class TreeData<T>(
     val children: (T) -> List<T>,
     val itemText: (T) -> String,
     val key: (T) -> Any,
-    val initiallyExpanded: (T) -> Boolean,
+    val expanded: Set<Any>,
     val itemIcon: ((T) -> Painter?)?,
     val selection: Set<Any>,
 ) {
@@ -174,18 +214,29 @@ private class TreeMirror<T> {
     private val byKey = HashMap<Any, Item<T>>()
     private val byHandle = HashMap<Rid, Item<T>>()
 
+    // The item revealItem asked for, scrolled to once the branches above it are open.
+    private var pendingReveal: Any? = null
+
     fun handleOf(key: Any): Rid? = byKey[key]?.handle
 
     fun keyOf(handle: Rid): Any? = byHandle[handle]?.key
 
     fun itemOf(handle: Rid): T? = byHandle[handle]?.value
 
+    /** The handles of the items of [keys] the tree has. */
+    fun handlesOf(keys: Set<Any>): Set<Rid> = keys.mapNotNullTo(LinkedHashSet()) { byKey[it]?.handle }
+
+    /** The keys open now: Raven's items as it shows them, and the keys of [composed] it has no items for. */
+    fun expandedKeys(composed: Set<Any>): Set<Any> {
+        val open = composed.filterTo(LinkedHashSet()) { it !in byKey }
+        byKey.values.forEach { if (Rtree_item_is_expanded(it.handle) == R_TRUE) open += it.key }
+        return open
+    }
+
     fun sync(tree: Rid, data: TreeData<T>) {
         this.tree = tree
-        // Whether each item is expanded now, Raven's to change: an item added again keeps it.
-        val expanded = byKey.mapValues { (_, item) -> Rtree_item_is_expanded(item.handle) == R_TRUE }
         val keys = HashSet<Any>()
-        syncChildren(R_INVALID_ID, roots, data.roots, data, expanded, keys)
+        syncChildren(R_INVALID_ID, roots, data.roots, data, shown = true, keys)
         // The selection's handles were looked up as it composed, before the items new to the tree
         // were added: the selection is shown again now that they are.
         val wanted = data.selectedHandles(data.selection)
@@ -196,14 +247,11 @@ private class TreeMirror<T> {
         }
     }
 
-    private fun syncChildren(
-        parent: Rid,
-        existing: MutableList<Item<T>>,
-        values: List<T>,
-        data: TreeData<T>,
-        expanded: Map<Any, Boolean>,
-        keys: HashSet<Any>,
-    ) {
+    /**
+     * Matches [existing] to [values]. Children are asked of [TreeData.children] only for the items
+     * [shown], so their arrows show; the children of an item in a closed branch stay as they were.
+     */
+    private fun syncChildren(parent: Rid, existing: MutableList<Item<T>>, values: List<T>, data: TreeData<T>, shown: Boolean, keys: HashSet<Any>) {
         val valueKeys = values.map { value -> data.key(value).also { require(keys.add(it)) { "the key $it is used by two items: keys must be unique" } } }
         var kept = 0
         while (kept < existing.size && kept < values.size && existing[kept].key == valueKeys[kept]) kept++
@@ -211,24 +259,49 @@ private class TreeMirror<T> {
         for (item in existing.subList(kept, existing.size)) forget(item)
         existing.subList(kept, existing.size).forEach { Rtree_item_destroy(it.handle) }
         existing.subList(kept, existing.size).clear()
-        for (i in 0 until kept) {
-            val item = existing[i]
-            item.value = values[i]
+        for (i in values.indices) {
+            val item = if (i < kept) {
+                existing[i].also { it.value = values[i] }
+            } else {
+                val text = data.itemText(values[i])
+                Item(valueKeys[i], values[i], Rtree_view_add_item(tree, parent, text), text, null).also {
+                    existing += it
+                    byKey[it.key] = it
+                    byHandle[it.handle] = it
+                }
+            }
             update(item, data)
-            syncChildren(item.handle, item.children, data.children(values[i]), data, expanded, keys)
+            if (shown) syncChildren(item.handle, item.children, data.children(item.value), data, shown = item.key in data.expanded, keys)
         }
-        for (i in kept until values.size) {
-            val value = values[i]
-            val text = data.itemText(value)
-            val item = Item(valueKeys[i], value, Rtree_view_add_item(tree, parent, text), text, null)
-            existing += item
-            byKey[item.key] = item
-            byHandle[item.handle] = item
-            update(item, data)
-            syncChildren(item.handle, item.children, data.children(value), data, expanded, keys)
-            // Once it has its children: an item without any can't be expanded.
-            if (expanded[item.key] ?: data.initiallyExpanded(value)) Rtree_item_set_expanded(item.handle, R_TRUE)
+    }
+
+    /** [target]'s branches opened through [onExpandedChange], then scrolled to; at once when it is shown. */
+    fun reveal(target: Any, data: TreeData<T>, onExpandedChange: (Set<Any>) -> Unit) {
+        val above = pathTo(target, data.roots, data) ?: return
+        val closed = above.filter { it !in data.expanded }
+        if (closed.isEmpty()) {
+            byKey[target]?.let { Rtree_view_scroll_to_item(tree, it.handle) }
+            return
         }
+        pendingReveal = target
+        onExpandedChange(data.expanded + closed)
+    }
+
+    /** After the expansion is shown: the item asked for, scrolled to; asked for once only. */
+    fun revealPending() {
+        val target = pendingReveal ?: return
+        pendingReveal = null
+        byKey[target]?.let { Rtree_view_scroll_to_item(tree, it.handle) }
+    }
+
+    /** The keys of the items above [target], outermost first, searching the data; null when it isn't there. */
+    private fun pathTo(target: Any, values: List<T>, data: TreeData<T>): List<Any>? {
+        for (value in values) {
+            val key = data.key(value)
+            if (key == target) return emptyList()
+            pathTo(target, data.children(value), data)?.let { return listOf(key) + it }
+        }
+        return null
     }
 
     private fun update(item: Item<T>, data: TreeData<T>) {

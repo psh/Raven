@@ -47,7 +47,8 @@ private enum class Tag(vararg val names: String) {
     Separator("Separator"),
     Spacer("Spacer"),
     Table("Table"),
-    TileView("TileView");
+    TileView("TileView"),
+    TreeView("TreeView");
 
     companion object {
         // (SizeBox's alias Box is Raven's SizeBox, not Overlay: it isn't in the vocabulary)
@@ -108,6 +109,7 @@ private val imports = mapOf(
     "TileContent" to "raven.compose.foundation",
     "TileLayout" to "raven.compose.foundation",
     "TileView" to "raven.compose.foundation",
+    "TreeView" to "raven.compose.foundation",
     "Switch" to "raven.compose.foundation",
     "Text" to "raven.compose.foundation",
     "TextButton" to "raven.compose.foundation",
@@ -588,6 +590,7 @@ internal class Translator(private val context: FileContext? = null) {
             Tag.Spacer -> leaf(element, attrs, "Spacer", listOf(modifier ?: "Modifier".also { use("Modifier") }))
             Tag.Table -> table(element, attrs, modifier)
             Tag.TileView -> tileView(element, attrs, modifier)
+            Tag.TreeView -> treeView(element, attrs, modifier)
             Tag.Window -> error("handled by the caller")
         }
     }
@@ -797,6 +800,65 @@ internal class Translator(private val context: FileContext? = null) {
         out.line("// TODO(raven-xml): <TileView>'s items are the app's to give")
         use("TileContent")
         leaf(element, attrs, "TileView", args, trailing = "{ TileContent(it) }")
+    }
+
+    /**
+     * `<TreeView>` and its nested `<Item Text>`s: each item is known by its place ("0", "0.1"), with
+     * maps of the texts and of the children, and the items written `Expanded="true"` are the
+     * initial `expanded` set. The selection and the expansion are hoisted state.
+     */
+    private fun treeView(element: XmlElement, attrs: Attrs, modifier: String?) {
+        val texts = mutableListOf<Pair<String, String>>()
+        val children = mutableListOf<Pair<String, List<String>>>()
+        val open = mutableListOf<String>()
+        fun items(parent: XmlElement, path: String): List<String> {
+            val keys = mutableListOf<String>()
+            for (child in parent.children) {
+                if (child.isComment) continue
+                if (!child.tag.equals("Item", ignoreCase = true)) {
+                    warn(child, "<${child.tag}> in a <TreeView> has no equivalent and is left out")
+                    continue
+                }
+                val key = if (path.isEmpty()) "${keys.size}" else "$path.${keys.size}"
+                keys += key
+                val itemAttrs = Attrs(child)
+                texts += key to (itemAttrs.str("Text") ?: itemAttrs.str(itemAttrs.parse("Text", child.text.trim())) ?: "\"\"")
+                if (itemAttrs.truth("Expanded")?.constant == true) open += key
+                itemAttrs.raw("Icon")?.let { itemAttrs.note("Icon", "an icon is a painter given through itemIcon") }
+                itemAttrs.reportUnused("an item")
+                val below = items(child, key)
+                if (below.isNotEmpty()) children += key to below
+            }
+            return keys
+        }
+        val roots = items(element, "")
+        val name = state(attrs, "tree", "emptySet<Any>()")
+        val expandedName = unique("${name}Expanded", names)
+        holder.state += "var $expandedName by remember { mutableStateOf(${if (open.isEmpty()) "emptySet<Any>()" else "setOf<Any>(${open.joinToString(", ") { kotlinString(it) }})"}) }"
+        val textsName = unique("${name}Texts", names)
+        holder.state += if (texts.isEmpty()) {
+            "val $textsName = emptyMap<String, String>()"
+        } else {
+            "val $textsName = mapOf(\n" + texts.joinToString("") { (key, text) -> "    ${kotlinString(key)} to $text,\n" } + ")"
+        }
+        val childrenName = unique("${name}Children", names)
+        holder.state += if (children.isEmpty()) {
+            "val $childrenName = emptyMap<String, List<String>>()"
+        } else {
+            "val $childrenName = mapOf(\n" + children.joinToString("") { (key, below) ->
+                "    ${kotlinString(key)} to listOf(${below.joinToString(", ") { kotlinString(it) }}),\n"
+            } + ")"
+        }
+        val rootList = if (roots.isEmpty()) "emptyList<String>()" else "listOf(${roots.joinToString(", ") { kotlinString(it) }})"
+        val args = mutableListOf(
+            rootList, "{ $childrenName[it].orEmpty() }", "{ $textsName.getValue(it) }", "{ it }",
+            name, "{ $name = it }", expandedName, "{ $expandedName = it }",
+        )
+        attrs.truth("MultiSelect")?.let { flag("multiSelect", it, unless = false)?.let { args += it } }
+        action(attrs)?.let { args += "onActivate = ${stub(it)}" }
+        modifier?.let { args += "modifier = $it" }
+        out.line(call("TreeView", args), attrs.reportUnused("TreeView"))
+        use("TreeView")
     }
 
     // ---- templates ----

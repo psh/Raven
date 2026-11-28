@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import raven.compose.foundation.Button
@@ -248,6 +249,7 @@ private fun SideBar(dark: Boolean, onDarkChange: (Boolean) -> Unit, modifier: Mo
     var search by remember { mutableStateOf("") }
     var selection by remember { mutableStateOf<Set<Any>>(emptySet()) }
     var crossfade by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(setOf<Any>("Playlists")) }
     var volume by remember { mutableFloatStateOf(0.62f) }
     Surface(
         modifier.padding(start = 18.dp, top = 18.dp, bottom = 18.dp).width(264.dp).fillMaxHeight()
@@ -260,7 +262,7 @@ private fun SideBar(dark: Boolean, onDarkChange: (Boolean) -> Unit, modifier: Mo
             TextField(search, { search = it }, Modifier.fillMaxWidth(), placeholder = "Search")
             TreeView(
                 Library, { it.children }, { it.name }, { it.name }, selection, { selection = it },
-                initiallyExpanded = { it.name == "Playlists" },
+                expanded, { expanded = it },
                 modifier = Modifier.weight(1f).fillMaxWidth().testTag("library"),
             )
             HorizontalDivider()
