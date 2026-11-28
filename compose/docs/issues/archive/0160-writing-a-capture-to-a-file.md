@@ -23,7 +23,7 @@ one line, for previews, PR screenshots and bug reports?
 - **Errors**: return `R_TRUE`/`R_FALSE`, reported through `Rerror_set_callback`, and no capture on
   the null backend.
 - **Upstream**: proposed to Raven's `main` like the drawing additions
-  ([0143](../0143-propose-the-drawing-additions-upstream.md)).
+  ([0143](../on-hold/0143-propose-the-drawing-additions-upstream.md)).
 
 `Rwindow_save_preview(window, png_path, scale)` and the `raven_preview` tool are built on this
 call ([Prototyping Raven UI with an agent](0156-prototyping-raven-ui-with-an-agent.md)), so its

@@ -1,17 +1,17 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Raven: a bar chart widget, proposed upstream
 
 Raven has no bar or column chart, the one chart kind every Compose chart library has
-([Charts: how Compose chart libraries shape their APIs](archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md)).
+([Charts: how Compose chart libraries shape their APIs](../archive/0244-charts-how-compose-chart-libraries-shape-their-apis.md)).
 Design and build one in Raven's C, as Plot and Chart are built (retained, index-addressed, themed,
 values gliding as they change), and propose it to Raven's `main`. compose-raven binds it later, in
-a map of its own: [compose-raven phase 5 widgets](maps/0241-compose-raven-phase-5-widgets.md) rules bars
+a map of its own: [compose-raven phase 5 widgets](../maps/0241-compose-raven-phase-5-widgets.md) rules bars
 out of its scope.
 
-> **Upstream on hold (2026-11-27).** Nothing is released beyond the local machine for now, and
+> **On hold (2026-11-27).** Nothing is released beyond the local machine for now, and
 > opening a pull request on Raven's `main` publishes it. The widget itself can be built on
 > `compose-raven` meanwhile.
 

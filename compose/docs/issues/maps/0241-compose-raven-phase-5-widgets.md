@@ -103,7 +103,7 @@ are the fog that remains, moved on 2026-11-27 to
   `browser` is SystemWebView now.
 - **Bar and column charts**: Raven has no widget for them, so binding one would mean building a
   Raven widget first, beyond binding what Raven draws. That is
-  [Raven: a bar chart widget, proposed upstream](../0258-raven-a-bar-chart-widget-proposed-upstream.md),
+  [Raven: a bar chart widget, proposed upstream](../on-hold/0258-raven-a-bar-chart-widget-proposed-upstream.md),
   outside this map.
 - **The vector map's catching up with upstream's** (markers, animated moves, coordinate
   conversion): an improvement to the fork's widget rather than a binding, filed as

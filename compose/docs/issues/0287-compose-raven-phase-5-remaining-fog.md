@@ -71,6 +71,6 @@ from those two maps' fog; phase 5 is then wholly designed.
 - **raven_web's `WebView` and the `browser` port**: SystemWebView covers web pages in the window
   ([compose-raven phase 5 widgets](maps/0241-compose-raven-phase-5-widgets.md#out-of-scope)).
 - **Work already ticketed outside the maps**:
-  [Raven: a bar chart widget, proposed upstream](0258-raven-a-bar-chart-widget-proposed-upstream.md),
+  [Raven: a bar chart widget, proposed upstream](on-hold/0258-raven-a-bar-chart-widget-proposed-upstream.md),
   [Vector map: features from upstream's MapView](0271-vector-map-features-from-upstreams-mapview.md)
   and [samples/git-history](0268-samples-git-history.md).

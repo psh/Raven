@@ -1,14 +1,17 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose the maps spike's drawing additions upstream
 
+> **On hold (2026-11-27).** Nothing is released beyond the local machine for now, and opening a
+> pull request on Raven's `main` publishes it.
+
 Propose the drawing calls the maps spike added to Raven, to Raven's `main`, on their own: they are
 useful to any custom drawing, map or not, and the Map widget draws with them. First of the two
-proposals the [native Map widget](archive/0140-a-native-map-widget.md) recommends.
+proposals the [native Map widget](../archive/0140-a-native-map-widget.md) recommends.
 
-**Depends on:** [0141](0141-map-widget-on-windows-and-linux.md), the additions run on Windows and
+**Depends on:** [0141](../0141-map-widget-on-windows-and-linux.md), the additions run on Windows and
 Linux.
 
 The additions, each its own commit on `spike/maps`:

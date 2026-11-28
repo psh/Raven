@@ -35,7 +35,7 @@ and section 12.
 - **The Chart kinds take lists of data classes**, compared by value; the pie's selected slice is
   controlled, the heatmap's click an event.
 - **Bars out of scope**: Raven has none; filed as
-  [Raven: a bar chart widget, proposed upstream](../0258-raven-a-bar-chart-widget-proposed-upstream.md).
+  [Raven: a bar chart widget, proposed upstream](../on-hold/0258-raven-a-bar-chart-widget-proposed-upstream.md).
 - No Raven change and no new harness API; both ports without port gaps; the XML translator covers
   both widgets.
 

@@ -52,7 +52,7 @@ To settle:
   how it sits beside `Rmcp_expose_action(name, description)` for a single action.
 - **Upstream**: the change is useful beyond MCP (command palettes, menus built from the actions,
   scripting), so propose it to Raven's `main` as the drawing additions were
-  ([0143](../0143-propose-the-drawing-additions-upstream.md)). Check how the other bindings in
+  ([0143](../on-hold/0143-propose-the-drawing-additions-upstream.md)). Check how the other bindings in
   `bindings/` would surface it.
 
 ## Resolution

@@ -15,4 +15,4 @@ Rename the fork's vector map widget's C API so that upstream's map keeps `Map`: 
 - [ ] The functions, types (`RMapStats` and the others), the widget type and the build option renamed in `raven_controls.h`, `src/widgets/map.c`, `src/map/`, CMake and the docs; the files renamed where their names say map (`tests/test_map.c` to `test_vector_map.c`, `map_benchmark.c`).
 - [ ] `examples/vector_map`, `bindings/python/map_example.py` and compose-raven's cinterop use moved over; nothing of upstream's MapView touched.
 - [ ] The C tests and `bindgen.py --check` passing; the bindings regenerated and the reference updated, in one commit on `compose-raven`.
-- [ ] Spec section 11's change 17 marked made; [Propose the Map widget upstream](0144-propose-the-map-widget-upstream.md) checked against the new names.
+- [ ] Spec section 11's change 17 marked made; [Propose the Map widget upstream](on-hold/0144-propose-the-map-widget-upstream.md) checked against the new names.

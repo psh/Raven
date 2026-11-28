@@ -246,5 +246,5 @@ The work stays on `spike/maps-native`, unmerged. Not done here, and ticketed as 
 
 - [The Map widget on Windows and Linux](../0141-map-widget-on-windows-and-linux.md)
 - [The maps spike's own Kotlin drawing: retire it or keep it as a reference](0142-the-map-spikes-kotlin-drawing.md)
-- [Propose the maps spike's drawing additions upstream](../0143-propose-the-drawing-additions-upstream.md)
-- [Propose the Map widget upstream](../0144-propose-the-map-widget-upstream.md), after the other three
+- [Propose the maps spike's drawing additions upstream](../on-hold/0143-propose-the-drawing-additions-upstream.md)
+- [Propose the Map widget upstream](../on-hold/0144-propose-the-map-widget-upstream.md), after the other three
