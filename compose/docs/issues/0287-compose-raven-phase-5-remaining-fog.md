@@ -7,8 +7,8 @@ wayfinder: map
 
 ## Destination
 
-The fog left by [compose-raven phase 5 spec](0204-compose-raven-phase-5-spec.md#not-yet-specified)
-and [compose-raven phase 5 widgets](0241-compose-raven-phase-5-widgets.md#not-yet-specified),
+The fog left by [compose-raven phase 5 spec](maps/0204-compose-raven-phase-5-spec.md#not-yet-specified)
+and [compose-raven phase 5 widgets](maps/0241-compose-raven-phase-5-widgets.md#not-yet-specified),
 designed into `compose/docs/spec.md` as phase 5 **batches** eleven to eighteen, each with its
 implementation tickets filed in the tracker, ready to build in this order: gestures and drag,
 popups and motion, lists at scale continued, windows, layout and direction, touch and pen, widget
@@ -69,7 +69,7 @@ from those two maps' fog; phase 5 is then wholly designed.
 - **App bundling** (a macOS `.app` with MoltenVK, Linux packages): it goes with the release, phase
   4, on hold while nothing is released beyond the local machine.
 - **raven_web's `WebView` and the `browser` port**: SystemWebView covers web pages in the window
-  ([compose-raven phase 5 widgets](0241-compose-raven-phase-5-widgets.md#out-of-scope)).
+  ([compose-raven phase 5 widgets](maps/0241-compose-raven-phase-5-widgets.md#out-of-scope)).
 - **Work already ticketed outside the maps**:
   [Raven: a bar chart widget, proposed upstream](0258-raven-a-bar-chart-widget-proposed-upstream.md),
   [Vector map: features from upstream's MapView](0271-vector-map-features-from-upstreams-mapview.md)

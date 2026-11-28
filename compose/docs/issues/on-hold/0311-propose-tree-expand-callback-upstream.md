@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose the tree expand callback upstream
@@ -11,10 +11,10 @@ Propose `Rtree_view_set_expanded_callback` and `RTreeExpandCallback` to Raven's 
 own, as the way for an application to hold a tree view's expansion as its own state (to save it,
 or load children lazily as branches open), while Raven opens and closes items itself and reports
 none of it today. It doesn't mention compose-raven. Split out of
-[Raven: tree expand callback](archive/0237-raven-tree-expand-callback.md), which built it (spec
+[Raven: tree expand callback](../archive/0237-raven-tree-expand-callback.md), which built it (spec
 section 11, change 14; commit `41af6b4`).
 
-**Depends on:** [Raven: tree expand callback](archive/0237-raven-tree-expand-callback.md).
+**Depends on:** [Raven: tree expand callback](../archive/0237-raven-tree-expand-callback.md).
 
 ## Deliverables
 

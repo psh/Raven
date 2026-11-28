@@ -38,5 +38,5 @@ section 9 and section 12.
   so does `themes` in phase 3, in place of its stand-in swatches: that port gap moved from phase 5
   to phase 3 ([samples/themes](0071-samples-themes.md), and the sample's own comment).
 - **Fog and roadmap**: `ColorPicker` left the specialist widgets on
-  [compose-raven phase 3 spec](../0023-compose-raven-phase-3-spec.md#not-yet-specified) and the
+  [compose-raven phase 3 spec](../maps/0023-compose-raven-phase-3-spec.md#not-yet-specified) and the
   roadmap's Later section, and joined its phase 3 list.

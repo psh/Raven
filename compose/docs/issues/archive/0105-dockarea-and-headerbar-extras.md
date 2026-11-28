@@ -36,4 +36,4 @@ Decided 2026-11-12. Written into spec section 8 (docking, and the phase 2 `Heade
 - **With Navigation 3**: phase 3 puts a DockArea inside an entry (or beside a `NavDisplay`), so
   `showPanel` is unaffected. Panels as back-stack entries, a docking scene where showing a panel is
   pushing its key and the user's tab picks and closes report back, went to the phase 5 fog under
-  "More navigation" on [compose-raven phase 3 spec](../0023-compose-raven-phase-3-spec.md#not-yet-specified).
+  "More navigation" on [compose-raven phase 3 spec](../maps/0023-compose-raven-phase-3-spec.md#not-yet-specified).

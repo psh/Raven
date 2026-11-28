@@ -4,7 +4,7 @@ status: accepted
 
 # Phase split after the phase 2 sample gaps
 
-[compose-raven phase 2 sample gaps](../issues/0073-compose-raven-phase-2-sample-gaps.md) pulled
+[compose-raven phase 2 sample gaps](../issues/maps/0073-compose-raven-phase-2-sample-gaps.md) pulled
 window, host and harness work into phase 2, and left phase 3 holding app vocabulary, graphics and
 distribution together. On 2026-11-11 we re-cut the phases so that each finishes what it starts and
 the release isn't held back by vocabulary it doesn't need:

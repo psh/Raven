@@ -1,8 +1,8 @@
 # compose-raven specification
 
 **Status: phases 1, 2 and 3 complete.** Every decision below is settled. Both wayfinder maps,
-[compose-raven spec](issues/0001-compose-raven-spec.md) and
-[compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), are closed. What remains
+[compose-raven spec](issues/maps/0001-compose-raven-spec.md) and
+[compose-raven phase 3 spec](issues/maps/0023-compose-raven-phase-3-spec.md), are closed. What remains
 is fog, listed on the phase 3 map and in [`roadmap.md`](roadmap.md), for a future phase 5 map. The vocabulary is in
 [`compose/GLOSSARY.md`](../GLOSSARY.md).
 

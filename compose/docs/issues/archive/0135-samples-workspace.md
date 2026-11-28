@@ -18,7 +18,7 @@ Port Raven's `examples/workspace`: docked panels, a file browser, materials, an 
 
 ## Gaps
 
-None: its gaps were decided into phase 3 on [compose-raven phase 3 sample gaps](../0095-compose-raven-phase-3-sample-gaps.md).
+None: its gaps were decided into phase 3 on [compose-raven phase 3 sample gaps](../maps/0095-compose-raven-phase-3-sample-gaps.md).
 
 ## Resolution
 

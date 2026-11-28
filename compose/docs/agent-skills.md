@@ -6,7 +6,7 @@ later): for every step a skill asks of the stack, Raven's equivalent. Most skill
 found 21 of 27 stack-neutral). The others need to **see**, **drive** or **test** a UI.
 
 This design is being written under the map
-[Raven works with the Matt Pocock skills](issues/0157-raven-works-with-the-matt-pocock-skills.md).
+[Raven works with the Matt Pocock skills](issues/maps/0157-raven-works-with-the-matt-pocock-skills.md).
 Sections arrive as its tickets close. Words are defined in [`GLOSSARY.md`](../GLOSSARY.md).
 
 ## Guidance for agents

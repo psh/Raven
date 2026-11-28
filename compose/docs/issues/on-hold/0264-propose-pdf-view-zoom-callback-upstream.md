@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose PDF view zoom callback upstream
@@ -9,9 +9,9 @@ status: open
 
 Propose `Rpdf_view_set_zoom_changed_callback` to Raven's `main`, on its own, as the way for any
 app to follow a PdfView's zoom without polling it (the `pdf` example does, on a timer). It doesn't
-mention compose-raven. Split out of [Documents: PdfView](archive/0247-documents-pdfview.md).
+mention compose-raven. Split out of [Documents: PdfView](../archive/0247-documents-pdfview.md).
 
-**Depends on:** [Raven: PDF view zoom callback](0263-raven-pdf-view-zoom-callback.md).
+**Depends on:** [Raven: PDF view zoom callback](../0263-raven-pdf-view-zoom-callback.md).
 
 ## Deliverables
 

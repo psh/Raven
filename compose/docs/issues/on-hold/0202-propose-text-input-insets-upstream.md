@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose text input insets upstream
@@ -10,10 +10,10 @@ status: open
 Propose `Rtext_input_set_insets` and `Rtext_input_get_insets` to Raven's `main`, on their own, as
 the way for any app to lay an icon or a button over a text input (a search glass, a clear button,
 a password's eye) without the text running under it. It doesn't mention compose-raven. Split out
-of [Leading and trailing icons on TextField](archive/0200-leading-and-trailing-icons-on-textfield.md),
+of [Leading and trailing icons on TextField](../archive/0200-leading-and-trailing-icons-on-textfield.md),
 which built it (spec section 11, change 10; commit `89e9e14`).
 
-**Depends on:** [Leading and trailing icons on TextField](archive/0200-leading-and-trailing-icons-on-textfield.md).
+**Depends on:** [Leading and trailing icons on TextField](../archive/0200-leading-and-trailing-icons-on-textfield.md).
 
 ## Deliverables
 

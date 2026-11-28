@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose mask textures upstream
@@ -10,10 +10,10 @@ status: open
 Propose `Rtexture_create_mask_from_file_async` to Raven's `main`, on its own, as the way for any app
 to colour an icon drawn in black (the Material icons, most icon sets) with a tint, the text colour
 or a theme's: the image's alpha as an `R_TEXTURE_ALPHA8` texture. It doesn't mention compose-raven.
-Split out of [Raven: mask textures](archive/0221-raven-mask-textures.md), which built it (spec
+Split out of [Raven: mask textures](../archive/0221-raven-mask-textures.md), which built it (spec
 section 11, change 12; commit `67da73d`).
 
-**Depends on:** [Raven: mask textures](archive/0221-raven-mask-textures.md).
+**Depends on:** [Raven: mask textures](../archive/0221-raven-mask-textures.md).
 
 ## Deliverables
 

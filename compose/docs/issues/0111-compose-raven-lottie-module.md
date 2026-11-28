@@ -6,7 +6,7 @@ status: open
 
 An idea to revisit after phase 3: an opt-in module that plays Lottie animations with Compose's
 familiar API, over ThorVG. No sample needs it, so it waits in the phase 5 fog
-([compose-raven phase 3 spec](0023-compose-raven-phase-3-spec.md#not-yet-specified)). This ticket
+([compose-raven phase 3 spec](maps/0023-compose-raven-phase-3-spec.md#not-yet-specified)). This ticket
 keeps what was found on 2026-11-12, so nothing has to be looked up again.
 
 ## What was found

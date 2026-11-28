@@ -10,4 +10,4 @@ assignee: null
 
 ## Question
 
-Whether DockArea's floating, torn-off panels become real compose-raven `Window`s, with their own window-level settings (title, size, `onCloseRequest`), and how that meets the panel's place in the DockArea ([DockArea and HeaderBar extras](archive/0105-dockarea-and-headerbar-extras.md)). From [compose-raven phase 5 spec](0204-compose-raven-phase-5-spec.md#not-yet-specified).
+Whether DockArea's floating, torn-off panels become real compose-raven `Window`s, with their own window-level settings (title, size, `onCloseRequest`), and how that meets the panel's place in the DockArea ([DockArea and HeaderBar extras](archive/0105-dockarea-and-headerbar-extras.md)). From [compose-raven phase 5 spec](maps/0204-compose-raven-phase-5-spec.md#not-yet-specified).

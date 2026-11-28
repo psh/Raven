@@ -18,12 +18,12 @@ Design: [Driving a UI](../../agent-skills.md#driving-a-ui).
 - [x] Rows carry their own rects (today they carry their widget's); `Rbutton_get_text`; `Rwidget_get_accessible_description`.
 - [x] Tests in `tests/` over the examples' XML: finding by each key, clicking a row, typing, a disabled button refusing a click, the failure messages.
 - [x] The bindings regenerated with `tools/bindgen`.
-- [ ] The upstream proposal opened (the header, the window list and idle, and the fixes), as what makes every binding testable: moved to [Propose the UI driver upstream](../0187-propose-the-ui-driver-upstream.md), on hold.
+- [ ] The upstream proposal opened (the header, the window list and idle, and the fixes), as what makes every binding testable: moved to [Propose the UI driver upstream](../on-hold/0187-propose-the-ui-driver-upstream.md), on hold.
 
 ## Resolution
 
 Done, on macOS (arm64), headless, except the upstream proposal: that publishes outside this
-machine, so it moved to [Propose the UI driver upstream](../0187-propose-the-ui-driver-upstream.md),
+machine, so it moved to [Propose the UI driver upstream](../on-hold/0187-propose-the-ui-driver-upstream.md),
 on hold. `tests/test_driver.c` (99 checks) passes, and so do `bindings_up_to_date`, `binding_cpp`
 and `./gradlew :raven-mcp:check`. The rest of `ctest` passes apart from `test_shell` and
 `test_themes`, which already failed.

@@ -47,5 +47,5 @@ Built on 2026-11-27, in commit `41af6b4`.
   All 108 C tests pass, with `test_pdf` skipped as before; `test_widgets` has 368 checks.
 - **Bindings** are regenerated (20 files), and `bindgen.py --check` passes.
 - **Spec** section 11's change 14 is marked made. The upstream proposal is
-  [Propose the tree expand callback upstream](../0311-propose-tree-expand-callback-upstream.md),
+  [Propose the tree expand callback upstream](../on-hold/0311-propose-tree-expand-callback-upstream.md),
   on hold.

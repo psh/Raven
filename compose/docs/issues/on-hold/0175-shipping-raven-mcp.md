@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Shipping Raven MCP
@@ -8,9 +8,9 @@ status: open
 > release assets, no Maven Central, no registry packages. `publishToMavenLocal` is fine.
 
 Get the Raven MCP library to every kind of app. Design:
-[Building and shipping](../mcp.md#building-and-shipping).
+[Building and shipping](../../mcp.md#building-and-shipping).
 
-**Depends on:** [Raven MCP in every binding](archive/0183-raven-mcp-in-every-binding.md), which took the
+**Depends on:** [Raven MCP in every binding](../archive/0183-raven-mcp-in-every-binding.md), which took the
 `tools/bindgen` deliverable.
 
 ## Deliverables

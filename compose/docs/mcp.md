@@ -7,7 +7,7 @@ lists and calls them. Every **call** gets exactly one **reply** from the app. Th
 
 Every language uses the same C contract, `raven_mcp.h`. Python, Rust and the other bindings wrap it,
 and compose-raven reaches the same registry through its Kotlin module. This document is that contract.
-It is being designed under the map [MCP middleware for Raven apps](issues/0145-mcp-middleware-for-raven-apps.md),
+It is being designed under the map [MCP middleware for Raven apps](issues/maps/0145-mcp-middleware-for-raven-apps.md),
 and the sections marked *open* wait on that map's tickets.
 
 ## The header
@@ -627,7 +627,7 @@ Built in [Python and Rust MCP wrappers](issues/archive/0180-python-and-rust-mcp-
 left open was settled this way:
 
 - **Where they are.** `raven_mcp.py` sits beside `raven.py` and isn't in the wheel yet: the
-  optional `raven-gui[mcp]` package waits for [Shipping Raven MCP](issues/0175-shipping-raven-mcp.md),
+  optional `raven-gui[mcp]` package waits for [Shipping Raven MCP](issues/on-hold/0175-shipping-raven-mcp.md),
   which is on hold. `raven_mcp` for Rust is the crate in `bindings/rust/mcp`. `tools/bindgen` writes
   its `Cargo.toml`, so its version follows Raven's, and its `build.rs`, which gives its programs the
   run-time paths of both libraries, since a dependency's link arguments don't carry over.

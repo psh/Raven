@@ -76,7 +76,7 @@ name (`MacOSGlassLight`), not on anything this changes. I looked at the PNGs, no
   0176 and 0179 that hadn't been regenerated (Rust's `sys/mcp.rs`).
 - **Not here**:
   - compose-raven's `renderPreview`. It is deferred with the rest of compose-raven's side of the
-    skills ([0157](../0157-raven-works-with-the-matt-pocock-skills.md), 2026-11-18). It also needs
+    skills ([0157](../maps/0157-raven-works-with-the-matt-pocock-skills.md), 2026-11-18). It also needs
     `RavenHost` to offer headless Vulkan.
   - In the capture, the mouse stays where a script's last click left it, so that button shows hovered.
   - Not tried on Linux or Windows.

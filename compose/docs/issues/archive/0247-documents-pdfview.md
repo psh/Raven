@@ -35,5 +35,5 @@ Resolved on 2026-11-27, with the user, in two rounds: designed into
   is decided there too.
 
 Filed as [Raven: PDF view zoom callback](../0263-raven-pdf-view-zoom-callback.md),
-[Propose PDF view zoom callback upstream](../0264-propose-pdf-view-zoom-callback-upstream.md) (on
+[Propose PDF view zoom callback upstream](../on-hold/0264-propose-pdf-view-zoom-callback-upstream.md) (on
 hold) and [Documents: PdfView](../0265-documents-pdfview.md).

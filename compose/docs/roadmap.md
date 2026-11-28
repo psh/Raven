@@ -3,10 +3,10 @@
 The source of truth for **what gets built, in what order**. [`spec.md`](spec.md) says *what*
 compose-raven is, and this file says *when*. Implementation planning starts here: each milestone
 links to the spec sections that define it. Phases 1 to 3 are fully designed, and all four wayfinder
-maps are closed ([compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
-and [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md) settled
+maps are closed ([compose-raven phase 2 sample gaps](issues/maps/0073-compose-raven-phase-2-sample-gaps.md)
+and [compose-raven phase 3 sample gaps](issues/maps/0095-compose-raven-phase-3-sample-gaps.md) settled
 the samples of phases 2 and 3). The remaining fog, listed on
-[compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
+[compose-raven phase 3 spec](issues/maps/0023-compose-raven-phase-3-spec.md#not-yet-specified), waits
 for a phase 5 map. The split between phases 2, 3 and 4 follows [ADR 0001](adr/0001-phase-split-after-the-phase-2-sample-gaps.md).
 
 ## Milestones at a glance
@@ -100,7 +100,7 @@ with local builds on macOS only.
 Each family is fully decided. Broken into tickets, in dependency order; each ticket's **Depends
 on** line names its blockers. The samples port when their families are done, and each sample
 ticket lists its port gaps, each with the later phase that completes it (listed under that phase
-below). The map [compose-raven phase 2 sample gaps](issues/0073-compose-raven-phase-2-sample-gaps.md)
+below). The map [compose-raven phase 2 sample gaps](issues/maps/0073-compose-raven-phase-2-sample-gaps.md)
 settled every one; nothing is left open before implementation.
 
 | Family | Spec | Needed by | Ticket |
@@ -127,8 +127,8 @@ settled every one; nothing is left open before implementation.
 
 ## 4. Phase 3
 
-Designed on [compose-raven phase 3 spec](issues/0023-compose-raven-phase-3-spec.md), and its
-samples' port gaps settled by [compose-raven phase 3 sample gaps](issues/0095-compose-raven-phase-3-sample-gaps.md).
+Designed on [compose-raven phase 3 spec](issues/maps/0023-compose-raven-phase-3-spec.md), and its
+samples' port gaps settled by [compose-raven phase 3 sample gaps](issues/maps/0095-compose-raven-phase-3-sample-gaps.md).
 Broken into tickets, in dependency order; each ticket's **Depends on** line names its blockers.
 They were worked in lanes, by agents at once, and are all closed. The
 five samples have no port gap left, and phase 3 also completes the phase 2 samples (the default
@@ -247,11 +247,11 @@ Decided for phase 4 (in the spec):
 [Raven API coverage](api-coverage.md) tracks what of Raven's C API is still unbound, and which of
 those gaps have tickets or wait here.
 
-**Phase 5** is charted on [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md):
+**Phase 5** is charted on [compose-raven phase 5 spec](issues/maps/0204-compose-raven-phase-5-spec.md):
 its first four batches (designed samples, icons and resources, small widgets, lists at scale) are
 designed there, and built (the last, lists at scale, on 2026-11-27), and the rest is fog on that map. Batches five to nine, the widgets with no
 composable yet (overlays and pagers, charts, documents and the web, maps, specialist widgets), are
-designed on [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md) (closed
+designed on [compose-raven phase 5 widgets](issues/maps/0241-compose-raven-phase-5-widgets.md) (closed
 2026-11-27), with printing and PDF documents as batch ten; their implementation tickets run from
 [Overlays and pagers: HorizontalPager and VerticalPager](issues/0253-overlays-and-pagers-horizontalpager-and-verticalpager.md)
 to [samples/blocks](issues/0286-samples-blocks.md). `browser` is out of scope there, since

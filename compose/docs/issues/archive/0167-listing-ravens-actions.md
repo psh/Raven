@@ -17,12 +17,12 @@ Let code list the registered actions, describe them and hear when they change: f
 - [x] `Raction_set_list_callback(callback, user_data)`: one slot, called on the UI thread as actions are bound and unbound.
 - [x] Tests in `tests/`: listing, descriptions surviving rebinding of the callback, the list callback on bind and unbind.
 - [x] The bindings regenerated with `tools/bindgen`.
-- [ ] The upstream proposal opened, on its own, as a command-palette and scripting feature: moved to [Propose listing actions upstream](../0186-propose-listing-actions-upstream.md), on hold.
+- [ ] The upstream proposal opened, on its own, as a command-palette and scripting feature: moved to [Propose listing actions upstream](../on-hold/0186-propose-listing-actions-upstream.md), on hold.
 
 ## Resolution
 
 Done, on macOS (arm64), except the upstream proposal: that publishes outside this machine, so it
-moved to [Propose listing actions upstream](../0186-propose-listing-actions-upstream.md), on hold.
+moved to [Propose listing actions upstream](../on-hold/0186-propose-listing-actions-upstream.md), on hold.
 `tests/test_actions.c` (34 checks) passes, and so do `bindings_up_to_date` and
 `./gradlew :raven-mcp:check`. The rest of `ctest` passes apart from `test_shell` and `test_themes`,
 which already failed.

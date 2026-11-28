@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose listing actions upstream
@@ -9,9 +9,9 @@ status: open
 
 Propose listing, describing and hearing about Raven's actions to Raven's `main`, on its own, as a
 feature for command palettes, menus built from the actions and scripting. It doesn't mention MCP.
-Split out of [Listing Raven's actions](archive/0167-listing-ravens-actions.md), which built it.
+Split out of [Listing Raven's actions](../archive/0167-listing-ravens-actions.md), which built it.
 
-**Depends on:** [Listing Raven's actions](archive/0167-listing-ravens-actions.md).
+**Depends on:** [Listing Raven's actions](../archive/0167-listing-ravens-actions.md).
 
 ## Deliverables
 

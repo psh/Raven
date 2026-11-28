@@ -149,8 +149,8 @@ Found while doing them:
 | Pagination | 6 | | built: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/archive/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 | Breadcrumb | 6 | | built: [Small widgets: Rating, Pagination, Breadcrumb and VerticalSlider](issues/archive/0228-small-widgets-rating-pagination-breadcrumb-and-verticalslider.md) |
 
-Every widget here is designed, and those marked built have their composable now: seven by the [compose-raven phase 5 spec](issues/0204-compose-raven-phase-5-spec.md)
-map and the rest by [compose-raven phase 5 widgets](issues/0241-compose-raven-phase-5-widgets.md);
+Every widget here is designed, and those marked built have their composable now: seven by the [compose-raven phase 5 spec](issues/maps/0204-compose-raven-phase-5-spec.md)
+map and the rest by [compose-raven phase 5 widgets](issues/maps/0241-compose-raven-phase-5-widgets.md);
 each waits on its implementation ticket.
 
 NodeGraph, Timeline and BlockEditor alone are 182 functions, about 11% of Raven's API. Switcher,

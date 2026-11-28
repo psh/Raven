@@ -59,7 +59,7 @@ View menus, a language ComboBox, and a status line. Spec: [10. Samples](../../sp
   [CodeEditor placeholder](0092-codeeditor-placeholder.md): the port passes it.
 
 Everything else of the C example is in phase 2, settled by
-[compose-raven phase 2 sample gaps](../0073-compose-raven-phase-2-sample-gaps.md).
+[compose-raven phase 2 sample gaps](../maps/0073-compose-raven-phase-2-sample-gaps.md).
 
 **Filled in phase 3** ([The phase 2 samples completed](0133-phase-2-samples-completed.md)): the
 dialogs are the default ones, on `Dialog` and `FileBrowser`, with headless tests of the open, save

@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose focus on click upstream
@@ -11,10 +11,10 @@ Propose `Rwidget_set_focus_on_click` and `Rwidget_get_focus_on_click` to Raven's
 own, as the way for a button that acts on another widget (a toolbar button, a password's eye over
 its field) to be clicked without taking the keyboard focus, while Tab still reaches it. It doesn't
 mention compose-raven. Split out of
-[Leading and trailing icons on TextField](archive/0200-leading-and-trailing-icons-on-textfield.md),
+[Leading and trailing icons on TextField](../archive/0200-leading-and-trailing-icons-on-textfield.md),
 which built it (spec section 11, change 11; commit `113cc66`).
 
-**Depends on:** [Leading and trailing icons on TextField](archive/0200-leading-and-trailing-icons-on-textfield.md).
+**Depends on:** [Leading and trailing icons on TextField](../archive/0200-leading-and-trailing-icons-on-textfield.md).
 
 ## Deliverables
 

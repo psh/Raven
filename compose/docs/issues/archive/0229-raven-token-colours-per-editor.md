@@ -48,5 +48,5 @@ Built on 2026-11-27, in commit `c3d5a2b`.
   All 108 C tests pass (1,356 checks in the editor's).
 - **Bindings** regenerated (20 files), and `bindgen.py --check` passes.
 - **Spec** section 11's change 13 is marked made. The upstream proposal is
-  [Propose token colours per editor upstream](../0310-propose-token-colours-per-editor-upstream.md),
+  [Propose token colours per editor upstream](../on-hold/0310-propose-token-colours-per-editor-upstream.md),
   on hold.

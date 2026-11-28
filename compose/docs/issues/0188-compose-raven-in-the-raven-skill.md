@@ -22,4 +22,4 @@ This ticket adds it. Asked for on 2026-11-24, and kept apart from 0181.
 - [ ] `SKILL.md`'s list of language files names `compose.md`.
 
 Verifying the skills on compose-raven's samples stays deferred, as
-[0157](0157-raven-works-with-the-matt-pocock-skills.md) decided.
+[0157](maps/0157-raven-works-with-the-matt-pocock-skills.md) decided.

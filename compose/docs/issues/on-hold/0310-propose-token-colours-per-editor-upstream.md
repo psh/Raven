@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose token colours per editor upstream
@@ -12,10 +12,10 @@ Propose `Rtext_editor_set_token_color`, `Rtext_editor_clear_token_colors` and
 code of one editor differently from another (a diff beside its source, a read-only preview, a
 user's per-document scheme) while Raven's colours of tokens are otherwise only the theme's. It
 doesn't mention compose-raven. Split out of
-[Raven: token colours per editor](archive/0229-raven-token-colours-per-editor.md), which built it
+[Raven: token colours per editor](../archive/0229-raven-token-colours-per-editor.md), which built it
 (spec section 11, change 13; commit `c3d5a2b`).
 
-**Depends on:** [Raven: token colours per editor](archive/0229-raven-token-colours-per-editor.md).
+**Depends on:** [Raven: token colours per editor](../archive/0229-raven-token-colours-per-editor.md).
 
 ## Deliverables
 

@@ -19,7 +19,7 @@ phase 5's implementation sequence.
 - [x] An SVG mask is redrawn at each scale as a colour texture is (the same `svg_wanted` path); a raster mask keeps its alpha channel.
 - [x] A C test: a Material Symbol and a two-tone Material Icon decode with coverage where the icon is and none outside, the two-tone layer lighter; a raster image with alpha; a missing file.
 - [x] One commit on `compose-raven`, the bindings regenerated, spec section 11's change 12 marked made.
-- [x] An on-hold upstream ticket, as [Propose text input insets upstream](../0202-propose-text-input-insets-upstream.md).
+- [x] An on-hold upstream ticket, as [Propose text input insets upstream](../on-hold/0202-propose-text-input-insets-upstream.md).
 
 ## Resolution
 
@@ -42,4 +42,4 @@ lost device it is remade from its file as a mask. `Rtexture_update` refuses it, 
   change (`test_themes`: this machine's macOS 26 look names its theme `MacOSGlassLight`).
 - The bindings regenerated; spec section 11's change 12 marked made; `api-coverage.md` updated
   (1,223 functions, the new one unbound until `Icon`).
-- Upstream: [Propose mask textures upstream](../0239-propose-mask-textures-upstream.md), on hold.
+- Upstream: [Propose mask textures upstream](../on-hold/0239-propose-mask-textures-upstream.md), on hold.

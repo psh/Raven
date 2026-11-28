@@ -106,8 +106,8 @@ capture works through `raven::sys`, but there is no PNG encoder
 - **Where the Raven version of the skill lives**: a project skill in this repository
   (`.claude/skills/`) adapting `UI.md` to previews, notes in `CLAUDE.md`, or nothing, if the skill's
   "adapt to the project's framework" is enough once previews exist.
-- **Scope**: moved from [MCP middleware for Raven apps](../0145-mcp-middleware-for-raven-apps.md) to
-  [Raven works with the Matt Pocock skills](../0157-raven-works-with-the-matt-pocock-skills.md) on
+- **Scope**: moved from [MCP middleware for Raven apps](../maps/0145-mcp-middleware-for-raven-apps.md) to
+  [Raven works with the Matt Pocock skills](../maps/0157-raven-works-with-the-matt-pocock-skills.md) on
   2026-11-18. Previews belong here. The interactive part leans on the MCP map's UI tools.
 
 ## Resolution

@@ -1,5 +1,5 @@
 ---
-status: open
+status: on-hold
 ---
 
 # Propose the UI driver upstream
@@ -9,11 +9,11 @@ status: open
 
 Propose the UI driver to Raven's `main` as one proposal, as what makes every binding testable:
 `raven_driver.h`, the window list and idle, and the fixes that came with them. Split out of
-[The UI driver in Raven's C](archive/0169-the-ui-driver.md), which built it, as the design asks
+[The UI driver in Raven's C](../archive/0169-the-ui-driver.md), which built it, as the design asks
 (`agent-skills.md`, "Upstream").
 
-**Depends on:** [The UI driver in Raven's C](archive/0169-the-ui-driver.md),
-[Idle and the window list in Raven's C](archive/0168-idle-and-the-window-list.md).
+**Depends on:** [The UI driver in Raven's C](../archive/0169-the-ui-driver.md),
+[Idle and the window list in Raven's C](../archive/0168-idle-and-the-window-list.md).
 
 ## Deliverables
 
