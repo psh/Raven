@@ -32,4 +32,4 @@ Resolved on 2026-11-26, with the user, in one round: designed into
 - **`TableState.revealRow`**, not saveable; `headerVisible`, `gridLines` and `striped`.
 - **Tests** in the headless host; the XML translator maps `<Table>`.
 
-Filed as [Lists at scale: Table](../0235-lists-at-scale-table.md).
+Filed as [Lists at scale: Table](0235-lists-at-scale-table.md).

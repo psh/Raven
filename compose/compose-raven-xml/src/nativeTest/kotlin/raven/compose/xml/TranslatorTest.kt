@@ -233,6 +233,68 @@ class TranslatorTest {
     }
 
     @Test
+    fun aTableWithColumnsAndStoredRows() {
+        val translation = translate(
+            el(
+                "Table", "Name" to "people", "Selected" to "1", "SortColumn" to "0", "SortDescending" to "true", "GridLines" to "true",
+                "SelectionMode" to "Multiple", "FrozenColumns" to "1",
+                children = listOf(
+                    el("Column", "Header" to "Name", "Width" to "160"),
+                    el("Column", "Header" to "Age", "Width" to "60", "Align" to "Right", "Sortable" to "false"),
+                    el("Column", "Header" to "City", "Fill" to "1", "Editable" to "true"),
+                    el("Row", text = "Ada|36|London"),
+                    el("Row", text = "Grace|85"),
+                ),
+            ),
+        )
+        assertEquals(
+            """
+            var people by remember { mutableStateOf(1) }
+            val peopleRows = listOf(
+                listOf("Ada", "36", "London"),
+                listOf("Grace", "85", ""),
+            )
+            var peopleSort by remember { mutableStateOf<TableSort?>(TableSort(0, descending = true)) }
+            val peopleShown = peopleSort?.let { sort ->
+                val sorted = peopleRows.sortedWith(
+                    compareBy<List<String>>(
+                        { it[sort.column].toDoubleOrNull() == null },
+                        { it[sort.column].toDoubleOrNull() },
+                        { it[sort.column].lowercase() },
+                    ),
+                )
+                if (sort.descending) sorted.reversed() else sorted
+            } ?: peopleRows
+            Table( // raven-xml: SelectionMode: Table selects one row; FrozenColumns: Table freezes no columns yet left out
+                peopleShown,
+                people,
+                { people = it },
+                sort = peopleSort,
+                onSortChange = { peopleSort = it },
+                gridLines = true,
+            ) {
+                column("Name", width = 160.dp) { it[0] }
+                column("Age", width = 60.dp, align = Alignment.End, sortable = false) { it[1] }
+                column("City", fill = 1f) { it[2] } // raven-xml: Editable: Table's cells aren't edited yet left out
+            }
+            """.trimIndent(),
+            body(translation),
+        )
+        assertTrue("import raven.compose.foundation.TableSort" in translation.code)
+        assertEquals(
+            setOf("SelectionMode: Table selects one row", "FrozenColumns: Table freezes no columns yet", "Editable: Table's cells aren't edited yet"),
+            translation.warnings.map { it.message }.toSet(),
+        )
+    }
+
+    @Test
+    fun aTableOfColumnsWrittenAsOneAttribute() {
+        val code = body(translate(el("Table", "Columns" to "A|B", "ShowHeader" to "false", children = listOf(el("Row", text = "1|2")))))
+        assertTrue("column(\"A\") { it[0] }" in code && "column(\"B\") { it[1] }" in code, code)
+        assertTrue("headerVisible = false" in code && "mutableStateOf(-1)" in code && "mutableStateOf<TableSort?>(null)" in code, code)
+    }
+
+    @Test
     fun aTextInputsPasswordMaxLengthAndActionAreTranslated() {
         val translation = translate(el("TextInput", "Password" to "true", "MaxLength" to "20", "OnCommitted" to "login.submit"))
         val code = translation.code

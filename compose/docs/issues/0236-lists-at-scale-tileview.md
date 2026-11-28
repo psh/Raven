@@ -8,7 +8,7 @@ Add `TileView` over Raven's virtualised TileView: the app's items and a controll
 keys, and a `tile` function giving each item's `TileContent`. Spec: [8: TileView](../spec.md#tileview-phase-5)
 and section 12. Planned in [Lists at scale: TileView](archive/0216-lists-at-scale-tileview.md).
 
-**Depends on:** [Lists at scale: Table](0235-lists-at-scale-table.md).
+**Depends on:** [Lists at scale: Table](archive/0235-lists-at-scale-table.md).
 
 ## Deliverables
 

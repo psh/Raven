@@ -1164,8 +1164,16 @@ Compose has no data table, so the shape follows `ListView`'s.
   (`Rtable_scroll_to_row`); Raven can't report the table's position, so it isn't saveable.
 - **Not yet**: composable cells (a table over the lazy lists), several rows selected, a context
   menu, and widths the app controls, which would need Raven to report a resize.
-- The XML translator maps `<Table>` and its `<Column>`s onto `Table`, its stored `<Row>`s
-  becoming a `listOf` of each row's texts.
+- **Columns are matched by place** through a mirror of what Raven was last told: a changed header,
+  width, fill, alignment or sortable flag is set alone, and a different number of columns clears
+  and adds them again, keeping the sort. The cell callback is rebound each composition, so it reads
+  the latest `items` and columns; the rows are set again (`Rtable_set_virtual_rows`, which keeps
+  the selection and the scroll position) when the list changes, compared by a copy, as `ListView`'s.
+- The XML translator maps `<Table>` and its `<Column>`s (or `Columns="A|B"`) onto `Table`, its
+  stored `<Row>`s becoming a `listOf` of each row's texts, padded to the columns. `Selected` and
+  `SortColumn`/`SortDescending` become hoisted state, and the translation sorts the rows as Raven
+  sorts stored ones: numbers first by value, then texts without regard to case. `Editable`, `Kind`,
+  `FrozenColumns` and a `SelectionMode` other than `Single` are warnings.
 
 ### TileView (phase 5)
 
@@ -2040,6 +2048,7 @@ This sample translates Raven XML into compose-raven source.
   | `ProgressBar` | `LinearProgressIndicator` |
   | `Separator` | `HorizontalDivider` / `VerticalDivider` |
   | `Spacer` | `Spacer` |
+  | `Table`, with `<Column>`s and `<Row>`s (phase 5) | `Table`, the rows a `listOf` ([Table](#table-phase-5)) |
   | `Slot.*`, `Width`/`Height`, `Min*`/`Max*` | Modifiers |
   | `Spacing` | `Arrangement.spacedBy` |
 - **Faithful output**: wherever the XML relies on Raven's `Fill` default, the output adds

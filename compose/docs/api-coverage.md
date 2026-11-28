@@ -8,14 +8,14 @@ on 2026-11-14 at `fdfca11`; this file replaces it and is kept in step with the w
 change, and rerun [`tools/api-coverage.sh`](../tools/api-coverage.sh) to refresh the numbers and
 the table. A gap found later gets a row and a ticket, or a line on the roadmap.
 
-*Last updated 2026-11-27, when the taskbar's progress, badge and Dock menu were bound.*
+*Last updated 2026-11-27, when Table was bound.*
 
 ## Summary
 
 | | 2026-11-14 (`fdfca11`) | Now |
 |---|---:|---:|
-| Functions used | 370 of 1,157 (31%) | 547 of 1,704 (32%) |
-| Widget types bound | 36 of 51 | 42 of 58 |
+| Functions used | 370 of 1,157 (31%) | 569 of 1,704 (33%) |
+| Widget types bound | 36 of 51 | 43 of 58 |
 
 compose-raven covers everything the ported samples need, but not all of Raven. About 350 of the
 functions it doesn't call are deliberately unnecessary in a Compose binding. Of the everyday
@@ -36,7 +36,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 
 | Header | Used | Declared | Coverage | Main reason for the rest |
 |---|---:|---:|---:|---|
-| `raven_controls.h` | 129 | 557 | 23% | Table, TileView, Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Toast unbound; the pickers' time zones and instants; getters |
+| `raven_controls.h` | 151 | 557 | 27% | TileView, Plot, Chart, MapView, PdfView, Carousel, SystemWebView, Toast unbound; the Table's editing, check and progress columns, cell colours, frozen columns and several rows selected; the pickers' time zones and instants; getters |
 | `raven_tools.h` | 8 | 231 | 3% | NodeGraph, Timeline, BlockEditor, DiffView unbound (phase 5 fog) |
 | `raven_window.h` | 46 | 108 | 43% | drag and drop inside the app, window themes, shortcuts, the inspector, mobile insets and keyboard, getters |
 | `raven_text_editor.h` | 40 | 94 | 43% | find bar, folding, spell checking, several cursors, search, the language server; the token at a position, lines and length, `set_syntax`, `set_markdown`, `is_completing` (not needed) |
@@ -64,7 +64,7 @@ getters, and whole headers (XML, host embedding, Emscripten) have no place in a 
 | `raven_emscripten.h` | 0 | 8 | 0% | web build (not needed) |
 | `raven_backend.h` | 0 | 3 | 0% | backend registration (not needed) |
 | `raven_android.h` | 0 | 1 | 0% | Android app glue (not needed) |
-| **Total** | **547** | **1,704** | **32%** | |
+| **Total** | **569** | **1,704** | **33%** | |
 
 ## Not needed by design
 
@@ -132,7 +132,7 @@ Found while doing them:
 |---|---:|---|---|
 | NodeGraph | 87 | specialist (`studio`) | designed: [Specialist widgets: NodeGraph, the composable](issues/0281-specialist-widgets-nodegraph-the-composable.md) |
 | Timeline | 59 | specialist (`studio`) | designed: [Specialist widgets: Timeline, the composable](issues/0283-specialist-widgets-timeline-the-composable.md) |
-| Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation | designed: [Lists at scale: Table](issues/0235-lists-at-scale-table.md) |
+| Table | 56 | sortable data grid; the one apps reach for first. With lazy virtualisation | built: [Lists at scale: Table](issues/archive/0235-lists-at-scale-table.md) |
 | Plot | 55 | charts; `examples/plot`. Needs a design decision first | designed: [Charts: Plot and PlotState](issues/0259-charts-plot-and-plotstate.md) |
 | Chart | 48 | dashboard charts: pie, donut, gauge, heatmap, sparkline. With Plot's design decision | designed: [Charts: PieChart, Gauge, Heatmap and Sparkline](issues/0261-charts-piechart-gauge-heatmap-and-sparkline.md) |
 | PdfView | 44 | PDF pages shown (PDFium at run time) and PDF documents written | designed: [Documents: PdfView](issues/0265-documents-pdfview.md); writing and printing: [Printing and PDF documents: buildPdf and printPdf](issues/0279-printing-and-pdf-documents-buildpdf-and-printpdf.md) |

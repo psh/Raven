@@ -105,6 +105,16 @@ import raven.cinterop.Rtree_view_get_selection_count
 import raven.cinterop.Rtree_view_set_activated_callback
 import raven.cinterop.Rtree_view_set_context_callback
 import raven.cinterop.Rtree_view_set_selection_changed_callback
+import raven.cinterop.Rtable_get_selected
+import raven.cinterop.Rtable_set_selected
+import raven.cinterop.Rtable_get_sort_column
+import raven.cinterop.Rtable_is_sort_descending
+import raven.cinterop.Rtable_get_column_count
+import raven.cinterop.Rtable_sort
+import raven.cinterop.Rtable_set_virtual_rows
+import raven.cinterop.Rtable_set_selection_changed_callback
+import raven.cinterop.Rtable_set_activated_callback
+import raven.cinterop.Rtable_set_sort_callback
 import raven.cinterop.Rwidget_get_user_handle
 import raven.cinterop.Rtab_view_get_active
 import raven.cinterop.Rtab_view_set_active
@@ -806,6 +816,74 @@ public val ListViewActivated: Event<(Int) -> Unit> = Event { widget, userData ->
     Rlist_view_set_activated_callback(widget, onListViewActivated, userData)
 }
 
+// The table's controlled values and event kinds.
+
+/** A table's selected row, -1 for none. Raven calls no callback when it is written. */
+@InternalComposeRavenApi
+public val TableSelected: ControlledValue<Int> = ControlledValue(
+    read = { Rtable_get_selected(it) },
+    write = { widget, row -> Rtable_set_selected(widget, row) },
+)
+
+/**
+ * A table's sort: the column whose arrow shows, -1 for none, and whether it is descending, which
+ * means nothing without a column. In virtual mode Raven only shows it; the app orders its rows.
+ */
+@InternalComposeRavenApi
+public val TableSortOrder: ControlledValue<Pair<Int, Boolean>> = ControlledValue(
+    read = { Rtable_get_sort_column(it) to (Rtable_is_sort_descending(it) == R_TRUE) },
+    write = { widget, (column, descending) ->
+        if (column < Rtable_get_column_count(widget)) Rtable_sort(widget, column, if (descending) R_TRUE else R_FALSE)
+    },
+    equals = { a, b -> a.first == b.first && (a.first < 0 || a.second == b.second) },
+)
+
+/** A table's rows, in virtual mode: their count, each cell's text asked of [TableCellText]. */
+@InternalComposeRavenApi
+public val TableRows: Property<List<*>> = Property { widget, rows ->
+    // Set again, the cells are asked for again; Raven keeps the selection and the scroll position.
+    Rtable_set_virtual_rows(widget, rows.size, onTableCellText, Rwidget_get_user_handle(widget))
+}
+
+/** The text of a table's cell, asked as Raven paints it, or reads it with `Rtable_get_cell`. */
+@InternalComposeRavenApi
+public val TableCellText: Event<(row: Int, column: Int) -> String> = Event { _, _ -> }
+
+@InternalComposeRavenApi
+public val TableSelectionChanged: Event<(Int) -> Unit> = Event(marks = TableSelected) { widget, userData ->
+    Rtable_set_selection_changed_callback(widget, onTableSelectionChanged, userData)
+}
+
+/** A row activated: double-clicked, or Enter pressed on it. */
+@InternalComposeRavenApi
+public val TableActivated: Event<(Int) -> Unit> = Event { widget, userData ->
+    Rtable_set_activated_callback(widget, onTableActivated, userData)
+}
+
+/** The user sorted by a header: the column (-1 for none) and whether descending, already shown. */
+@InternalComposeRavenApi
+public val TableSortChanged: Event<(column: Int, descending: Boolean) -> Unit> = Event(marks = TableSortOrder) { widget, userData ->
+    Rtable_set_sort_callback(widget, onTableSortChanged, userData)
+}
+
+private val onTableCellText = staticCFunction { _: Rid, row: Int, column: Int, userData: COpaquePointer? ->
+    var text = ""
+    dispatchEvent(userData, TableCellText) { text = it(row, column) }
+    lastTextCopy(text)
+}
+
+private val onTableSelectionChanged = staticCFunction { _: Rid, row: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TableSelectionChanged) { it(row) }
+}
+
+private val onTableActivated = staticCFunction { _: Rid, row: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TableActivated) { it(row) }
+}
+
+private val onTableSortChanged = staticCFunction { _: Rid, column: Int, descending: Int, userData: COpaquePointer? ->
+    dispatchEvent(userData, TableSortChanged) { it(column, descending == R_TRUE) }
+}
+
 /**
  * A tree view's selected items, as Raven's item handles: one at most unless it is multi-select.
  * Raven calls no callback when it is written.
@@ -850,6 +928,11 @@ private val onListViewItemText = staticCFunction { _: Rid, index: Int, userData:
 private fun listViewItemText(index: Int, userData: COpaquePointer?): CPointer<ByteVar>? {
     var text = ""
     dispatchEvent(userData, ListViewItemText) { text = it(index) }
+    return lastTextCopy(text)
+}
+
+/** [text] as a C string that lives until the next one: Raven copies or draws it at once. */
+private fun lastTextCopy(text: String): CPointer<ByteVar>? {
     lastItemText?.let { nativeHeap.free(it) }
     val bytes = text.encodeToByteArray()
     val copy = nativeHeap.allocArray<ByteVar>(bytes.size + 1)

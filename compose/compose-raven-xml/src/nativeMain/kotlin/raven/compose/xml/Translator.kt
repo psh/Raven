@@ -45,7 +45,8 @@ private enum class Tag(vararg val names: String) {
     Slider("Slider"),
     ProgressBar("ProgressBar"),
     Separator("Separator"),
-    Spacer("Spacer");
+    Spacer("Spacer"),
+    Table("Table");
 
     companion object {
         // (SizeBox's alias Box is Raven's SizeBox, not Overlay: it isn't in the vocabulary)
@@ -101,6 +102,8 @@ private val imports = mapOf(
     "OutlinedButton" to "raven.compose.foundation",
     "RadioButton" to "raven.compose.foundation",
     "Slider" to "raven.compose.foundation",
+    "Table" to "raven.compose.foundation",
+    "TableSort" to "raven.compose.foundation",
     "Switch" to "raven.compose.foundation",
     "Text" to "raven.compose.foundation",
     "TextButton" to "raven.compose.foundation",
@@ -287,7 +290,7 @@ internal class Translator(private val context: FileContext? = null) {
 
     /** The state, then the code, one level in. */
     private fun body(): String = buildString {
-        for (declaration in holder.state) append("    $declaration\n")
+        for (declaration in holder.state) declaration.lines().forEach { append("    $it\n") }
         for (line in out.lines) append(if (line.isBlank()) "\n" else "    $line\n")
     }
 
@@ -579,6 +582,7 @@ internal class Translator(private val context: FileContext? = null) {
                 leaf(element, attrs, name, listOfNotNull(modifier))
             }
             Tag.Spacer -> leaf(element, attrs, "Spacer", listOf(modifier ?: "Modifier".also { use("Modifier") }))
+            Tag.Table -> table(element, attrs, modifier)
             Tag.Window -> error("handled by the caller")
         }
     }
@@ -680,6 +684,88 @@ internal class Translator(private val context: FileContext? = null) {
         }
         if (orientation(attrs, vertical = false) == "vertical") warn(element, "Slider is horizontal only")
         leaf(element, attrs, "Slider", args)
+    }
+
+    /**
+     * `<Table>` with `<Column>`s (or `Columns="A|B"`) and stored `<Row>a|b</Row>`s: the rows become
+     * a `listOf` of each row's texts, and the selection and the sort hoisted state. Raven sorts
+     * stored rows itself; Table leaves it to the app, so the translation sorts them as Raven does,
+     * numbers first by value, then texts without regard to case.
+     */
+    private fun table(element: XmlElement, attrs: Attrs, modifier: String?) {
+        val columnElements = element.children.filter { it.tag.equals("Column", ignoreCase = true) }
+        val rowElements = element.children.filter { it.tag.equals("Row", ignoreCase = true) }
+        for (child in element.children) {
+            if (!child.isComment && child !in columnElements && child !in rowElements) warn(child, "<${child.tag}> in a <Table> has no equivalent and is left out")
+        }
+        val columns = mutableListOf<Pair<String, String?>>()
+        val written = attrs.raw("Columns")
+        if (columnElements.isEmpty()) {
+            written?.split('|')?.forEach { header -> columns += "column(${kotlinString(header)})" to null }
+        } else {
+            if (written != null) warn(element, "Columns=\"$written\": the <Column> children are used")
+            for (column in columnElements) {
+                val columnAttrs = Attrs(column)
+                val args = mutableListOf(columnAttrs.str("Header") ?: "\"\"")
+                columnAttrs.num("Width")?.let { args += "width = ${dp(it)}" }
+                columnAttrs.num("Fill")?.let { if (it.constant != 0f) args += "fill = ${kotlinFloat(it)}" }
+                when (columnAttrs.choice("Align", "left", "start", "center", "right", "end")) {
+                    "center" -> args += "align = Alignment.CenterHorizontally".also { use("Alignment") }
+                    "right", "end" -> args += "align = Alignment.End".also { use("Alignment") }
+                }
+                columnAttrs.truth("Sortable")?.let { flag("sortable", it, unless = true)?.let { args += it } }
+                if (columnAttrs.truth("Editable")?.constant == true) columnAttrs.note("Editable", "Table's cells aren't edited yet")
+                columnAttrs.choice("Kind", "text", "check", "progress")?.takeIf { it != "text" }?.let { columnAttrs.note("Kind", "Table's cells are texts") }
+                columns += "column(${args.joinToString(", ")})" to columnAttrs.reportUnused("column")
+            }
+        }
+        if (columns.isEmpty()) warn(element, "a <Table> with no columns shows nothing")
+
+        val rows = rowElements.map { row -> row.text.trim().split('|').let { cells -> List(columns.size) { cells.getOrElse(it) { "" } } } }
+        val selected = attrs.num("Selected")
+        val name = state(attrs, "table", selected?.let { it.constant?.toInt()?.toString() ?: it.expr.to(KType.Int).code } ?: "-1")
+        val rowsName = unique("${name}Rows", names)
+        holder.state += if (rows.isEmpty()) {
+            "val $rowsName = emptyList<List<String>>()"
+        } else {
+            "val $rowsName = listOf(\n" + rows.joinToString("") { row -> "    listOf(${row.joinToString(", ") { kotlinString(it) }}),\n" } + ")"
+        }
+        val sortColumn = attrs.num("SortColumn")?.constant?.toInt()?.takeIf { it >= 0 }
+        val descending = attrs.truth("SortDescending")?.constant == true
+        val sortName = unique("${name}Sort", names)
+        holder.state += "var $sortName by remember { mutableStateOf<TableSort?>(${sortColumn?.let { "TableSort($it${if (descending) ", descending = true" else ""})" } ?: "null"}) }"
+        use("TableSort", "getValue", "setValue", "mutableStateOf", "remember")
+
+        val mode = attrs.choice("SelectionMode", "single", "multiple", "none")
+        if (mode != null && mode != "single") attrs.note("SelectionMode", "Table selects one row")
+        if (attrs.truth("MultiSelect")?.constant == true) attrs.note("MultiSelect", "Table selects one row")
+        attrs.raw("FrozenColumns")?.let { attrs.note("FrozenColumns", "Table freezes no columns yet") }
+
+        val shown = unique("${name}Shown", names)
+        out.line(
+            "val $shown = $sortName?.let { sort ->\n" +
+                "    val sorted = $rowsName.sortedWith(\n" +
+                "        compareBy<List<String>>(\n" +
+                "            { it[sort.column].toDoubleOrNull() == null },\n" +
+                "            { it[sort.column].toDoubleOrNull() },\n" +
+                "            { it[sort.column].lowercase() },\n" +
+                "        ),\n" +
+                "    )\n" +
+                "    if (sort.descending) sorted.reversed() else sorted\n" +
+                "} ?: $rowsName",
+        )
+        val args = mutableListOf(shown, name, "{ $name = it }")
+        modifier?.let { args += "modifier = $it" }
+        args += "sort = $sortName"
+        args += "onSortChange = { $sortName = it${action(attrs)?.let { " /* $it */" } ?: ""} }"
+        attrs.truth("ShowHeader")?.let { flag("headerVisible", it, unless = true)?.let { args += it } }
+        attrs.truth("GridLines")?.let { flag("gridLines", it, unless = false)?.let { args += it } }
+        attrs.truth("Striped")?.let { flag("striped", it, unless = false)?.let { args += it } }
+        val comment = attrs.reportUnused("Table")
+        use("Table")
+        out.block(call("Table", args), comment) {
+            columns.forEachIndexed { i, (column, note) -> out.line("$column { it[$i] }", note) }
+        }
     }
 
     // ---- templates ----
@@ -857,7 +943,7 @@ internal class Translator(private val context: FileContext? = null) {
         scope = outerScope
         if (inner.lines.isEmpty() && innerHolder.state.isEmpty()) return out.line("$header }")
         out.line(header)
-        out.addAll(innerHolder.state.map { "    ".repeat(out.depth + 1) + it })
+        out.addAll(innerHolder.state.flatMap { it.lines() }.map { "    ".repeat(out.depth + 1) + it })
         out.addAll(inner.lines)
         out.line("}")
     }
